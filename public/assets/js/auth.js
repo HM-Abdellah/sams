@@ -1,1 +1,31 @@
-document.querySelector('#loginForm')?.addEventListener('submit',async e=>{e.preventDefault();const form=e.currentTarget;const error=document.querySelector('#error');error.hidden=true;const body={username:form.username.value.trim(),password:form.password.value,csrf:form.csrf.value};try{const r=await fetch('../api/auth.php?action=login',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(body)});const data=await r.json();if(!r.ok||!data.success)throw new Error(data.error||'Login failed');location.href='index.php'}catch(err){error.textContent=err.message;error.hidden=false}});
+import { API, setCsrf } from './api.js';
+
+export function isAuthenticated(user) { return Boolean(user && Number.isInteger(Number(user.id)) && ['admin','teacher','counselor'].includes(user.role)); }
+
+async function submitLogin(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const button = document.querySelector('#loginBtn');
+  const error = document.querySelector('#loginError');
+  const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+  setCsrf(csrf);
+  error.hidden = true;
+  button.disabled = true;
+  try {
+    const data = await API.login(form.username.value.trim(), form.password.value, csrf);
+    if (data.csrf) setCsrf(data.csrf);
+    window.location.href = 'index.php';
+  } catch (e) {
+    error.textContent = e.message || 'Échec de connexion.';
+    error.hidden = false;
+  } finally { button.disabled = false; }
+}
+
+if (document.querySelector('#loginForm')) {
+  document.querySelector('#loginForm').addEventListener('submit', submitLogin);
+} else {
+  document.querySelector('#logoutBtn')?.addEventListener('click', async () => {
+    try { await API.logout(); window.location.href = 'login.php'; }
+    catch (e) { alert(e.message || 'Impossible de se déconnecter.'); }
+  });
+}
