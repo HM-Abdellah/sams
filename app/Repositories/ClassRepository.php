@@ -1,0 +1,2 @@
+<?php
+declare(strict_types=1); namespace SAMS\Repositories; use SAMS\Helpers\Database; final class ClassRepository{public function forUser(int $userId,string $role):array{$pdo=Database::connection();if(in_array($role,['admin','counselor'],true))return $pdo->query("SELECT id,name,level,branch FROM classes WHERE is_active=1 ORDER BY name")->fetchAll();$q=$pdo->prepare("SELECT c.id,c.name,c.level,c.branch FROM classes c JOIN teacher_classes tc ON tc.class_id=c.id WHERE tc.teacher_id=? AND c.is_active=1 ORDER BY c.name");$q->execute([$userId]);return $q->fetchAll();}}
