@@ -1,0 +1,2 @@
+<?php
+declare(strict_types=1); namespace SAMS\Repositories; use SAMS\Helpers\Database; final class AttendanceRepository{public function forClassWeek(int $classId,string $start):array{$end=date('Y-m-d',strtotime($start.' +5 days'));$q=Database::connection()->prepare('SELECT a.student_id,a.attendance_date,a.period,a.status FROM attendance a JOIN students s ON s.id=a.student_id WHERE s.class_id=? AND a.attendance_date BETWEEN ? AND ?');$q->execute([$classId,$start,$end]);return $q->fetchAll();}}
