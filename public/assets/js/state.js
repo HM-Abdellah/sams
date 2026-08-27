@@ -1,6 +1,2 @@
-/** Central frontend state placeholder. Server data remains authoritative. */
-export class AppState {
-    constructor() {
-        this.data = Object.freeze({});
-    }
-}
+export const state={user:null,csrf:'',classes:[],students:[],attendance:[],classId:null,weekStart:'',tab:'attendance'};
+export function setState(patch){Object.assign(state,patch);window.dispatchEvent(new CustomEvent('sams:state'));}
