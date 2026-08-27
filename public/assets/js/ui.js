@@ -1,11 +1,123 @@
-import {state} from './state.js'; import {DAYS,PERIODS,mapAttendance,calculateAttendancePercentage,key} from './logic.js';
-export const ui={
- toast(msg){const el=document.querySelector('#toast');if(!el)return;el.textContent=msg;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2200)},
- classes(){const s=document.querySelector('#classSelect');s.innerHTML='';for(const c of state.classes){const o=document.createElement('option');o.value=c.id;o.textContent=c.name;s.appendChild(o)}if(state.classId)s.value=state.classId},
- attendance(){const h=document.querySelector('#attendanceHead');const b=document.querySelector('#attendanceBody');if(!h||!b)return;h.innerHTML='<th class="sticky">التلميذ</th>';const start=new Date(`${state.weekStart}T00:00:00`);for(let d=0;d<6;d++){const dt=new Date(start);dt.setDate(start.getDate()+d);for(const p of PERIODS){const th=document.createElement('th');th.textContent=`${dt.getDate()}/${dt.getMonth()+1} · ${p}`;h.appendChild(th)}}b.innerHTML='';const m=mapAttendance(state.attendance);for(const [i,st] of state.students.entries()){const tr=document.createElement('tr');const name=document.createElement('th');name.className='sticky';name.textContent=`${i+1}. ${st.first_name} ${st.last_name}`;tr.appendChild(name);for(let d=0;d<6;d++){const dt=new Date(start);dt.setDate(start.getDate()+d);const date=dt.toISOString().slice(0,10);for(const p of PERIODS){const td=document.createElement('td');td.className='attendance-cell';const status=m.get(key(st.id,date,p))||'';td.dataset.student=st.id;td.dataset.date=date;td.dataset.period=p;td.dataset.status=status;td.textContent=status==='present'?'✓':status==='absent'?'✕':'';td.classList.toggle('present',status==='present');td.classList.toggle('absent',status==='absent');tr.appendChild(td)}}b.appendChild(tr)}this.stats(m)},
- stats(m){let present=0,absent=0;for(const v of m.values()){if(v==='present')present++;if(v==='absent')absent++}const total=present+absent;document.querySelector('#studentsCount').textContent=state.students.length;document.querySelector('#presentCount').textContent=present;document.querySelector('#absenceCount').textContent=absent;document.querySelector('#attendanceRate').textContent=`${calculateAttendancePercentage(present,total).toFixed(1)}%`},
- students(){const box=document.querySelector('#studentsList');box.innerHTML='';for(const st of state.students){const card=document.createElement('div');card.className='student-card';card.innerHTML=`<span>${escapeHtml(st.first_name)} ${escapeHtml(st.last_name)}</span>`;box.appendChild(card)}},
- statistics(){const box=document.querySelector('#statisticsContent');const by=new Map();for(const r of state.attendance){const x=by.get(r.student_id)||{present:0,absent:0};if(r.status==='present')x.present++;if(r.status==='absent')x.absent++;by.set(r.student_id,x)}box.innerHTML='';for(const st of state.students){const x=by.get(st.id)||{present:0,absent:0};const card=document.createElement('div');card.className='stat-card';card.innerHTML=`<div>${escapeHtml(st.first_name)} ${escapeHtml(st.last_name)}</div><strong>${x.absent}</strong><small>غياب · ${calculateAttendancePercentage(x.present,x.present+x.absent).toFixed(1)}% حضور</small>`;box.appendChild(card)}},
+import { state } from './state.js';
+import { DAYS, PERIODS, attendanceKey, countsForStudent, attendanceRate, isRisk, displayName } from './logic.js';
+
+const esc = value => { const d = document.createElement('div'); d.textContent = String(value ?? ''); return d.innerHTML; };
+
+export const ui = {
+  toast(message, error = false) {
+    const el = document.querySelector('#toast');
+    if (!el) return;
+    el.textContent = message;
+    el.className = `toast show${error ? ' error-toast' : ''}`;
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => { el.className = 'toast'; }, 2600);
+  },
+
+  classes() {
+    const select = document.querySelector('#classSelect');
+    if (!select) return;
+    select.innerHTML = '';
+    for (const c of state.classes) {
+      const option = document.createElement('option');
+      option.value = c.id;
+      option.textContent = c.name;
+      select.appendChild(option);
+    }
+    if (state.classId) select.value = String(state.classId);
+  },
+
+  attendance() {
+    const head = document.querySelector('#attendanceHead');
+    const body = document.querySelector('#attendanceBody');
+    if (!head || !body) return;
+    const rows = state.attendance;
+    const map = new Map(rows.map(r => [attendanceKey(r.student_id, r.attendance_date, Number(r.period)), r.status]));
+    const days = DAYS.map((name, offset) => ({name, date: addDays(state.weekStart, offset)}));
+
+    head.innerHTML = '<tr><th class="sticky student-col">Élève</th>' + days.flatMap(day => PERIODS.map((p, i) => `<th title="${day.date} · ${p}">${day.name}<br><small>${p}</small></th>`)).join('') + '</tr>';
+    body.innerHTML = '';
+
+    const search = state.search.trim().toLowerCase();
+    const filtered = state.students.filter(st => {
+      const name = displayName(st).toLowerCase();
+      if (search && !name.includes(search)) return false;
+      if (state.filter === 'risk' && !isRisk(st.id, rows)) return false;
+      if (state.filter === 'committed') {
+        const c = countsForStudent(st.id, rows);
+        if (c.total > 0 && c.absent > 0) return false;
+      }
+      return true;
+    });
+
+    for (const [index, st] of filtered.entries()) {
+      const tr = document.createElement('tr');
+      const c = countsForStudent(st.id, rows);
+      const name = document.createElement('th');
+      name.className = 'sticky student-col';
+      name.innerHTML = `<span>${index + 1}. ${esc(displayName(st))}</span><small>${c.absent} absence(s)</small>`;
+      tr.appendChild(name);
+
+      for (const day of days) {
+        for (let p = 1; p <= PERIODS.length; p++) {
+          const td = document.createElement('td');
+          const status = map.get(attendanceKey(st.id, day.date, p)) || '';
+          td.className = `attendance-cell ${status}`;
+          td.dataset.student = st.id;
+          td.dataset.date = day.date;
+          td.dataset.period = String(p);
+          td.textContent = status === 'present' ? '✓' : status === 'absent' ? '✕' : status === 'late' ? 'L' : status === 'excused' ? 'E' : '·';
+          td.title = `${displayName(st)} · ${day.date} · ${PERIODS[p-1]} · ${status || 'non marqué'}`;
+          tr.appendChild(td);
+        }
+      }
+      body.appendChild(tr);
+    }
+    if (!filtered.length) body.innerHTML = '<tr><td class="empty-state" colspan="49">Aucun élève ne correspond aux filtres.</td></tr>';
+    this.stats();
+  },
+
+  students() {
+    const box = document.querySelector('#studentsList');
+    const count = document.querySelector('#studentCount');
+    if (!box) return;
+    if (count) count.textContent = `${state.students.length} élève(s)`;
+    box.innerHTML = '';
+    for (const st of state.students) {
+      const item = document.createElement('article');
+      item.className = 'student-card';
+      item.innerHTML = `<div><strong>${esc(displayName(st))}</strong><small>${esc(st.student_number || 'Sans numéro')}</small></div><button class="btn danger small" data-delete-student="${st.id}" type="button">Supprimer</button>`;
+      box.appendChild(item);
+    }
+  },
+
+  stats() {
+    let present = 0, absent = 0, other = 0;
+    for (const r of state.attendance) {
+      if (r.status === 'present') present++;
+      else if (r.status === 'absent') absent++;
+      else other++;
+    }
+    const total = present + absent + other;
+    document.querySelector('#statPresent').textContent = present;
+    document.querySelector('#statAbsent').textContent = absent;
+    document.querySelector('#statOther').textContent = other;
+    document.querySelector('#statRate').textContent = `${attendanceRate(present, total)}%`;
+  },
+
+  statistics() {
+    const box = document.querySelector('#statisticsGrid');
+    if (!box) return;
+    box.innerHTML = '';
+    for (const st of state.students) {
+      const c = countsForStudent(st.id, state.attendance);
+      const total = c.present + c.absent + c.other;
+      const card = document.createElement('article');
+      card.className = `stat-card ${c.absent >= 8 ? 'risk' : ''}`;
+      card.innerHTML = `<strong>${esc(displayName(st))}</strong><span>${c.absent} absence(s)</span><span>${c.present} présence(s)</span><b>${attendanceRate(c.present, total)}%</b>`;
+      box.appendChild(card);
+    }
+  }
 };
-function escapeHtml(v){const d=document.createElement('div');d.textContent=String(v??'');return d.innerHTML}
-export function renderAll(){ui.classes();ui.attendance();ui.students();ui.statistics()}
+
+function addDays(iso, offset) { const d = new Date(`${iso}T00:00:00`); d.setDate(d.getDate() + offset); return d.toISOString().slice(0, 10); }
+export function renderAll() { ui.classes(); ui.attendance(); ui.students(); ui.statistics(); }
