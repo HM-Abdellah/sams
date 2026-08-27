@@ -1,0 +1,49 @@
+# ================================
+# SAMS - Git Ignore
+# ================================
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+config/config.php
+config/database.php
+
+# Local database exports / dumps
+*.sql.gz
+*.dump
+backups/
+
+# Runtime / uploaded data
+storage/runtime/
+storage/logs/
+storage/uploads/
+
+# XAMPP / local server files
+xampp/
+
+# IDEs
+.vscode/
+.idea/
+*.code-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+~$*
+
+# Test / coverage output
+coverage/
+.phpunit.result.cache
+
+# Node tooling (only if introduced later)
+node_modules/
+npm-debug.log*
