@@ -1,3 +1,1 @@
-export function isAuthenticated(user) {
-    return Boolean(user && Number.isInteger(user.id) && user.is_active === true);
-}
+document.querySelector('#loginForm')?.addEventListener('submit',async e=>{e.preventDefault();const form=e.currentTarget;const error=document.querySelector('#error');error.hidden=true;const body={username:form.username.value.trim(),password:form.password.value,csrf:form.csrf.value};try{const r=await fetch('../api/auth.php?action=login',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(body)});const data=await r.json();if(!r.ok||!data.success)throw new Error(data.error||'Login failed');location.href='index.php'}catch(err){error.textContent=err.message;error.hidden=false}});
