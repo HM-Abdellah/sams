@@ -1,5 +1,2 @@
-/**
- * Central API client. All browser requests will use this module so JSON
- * parsing, credentials, CSRF protection, and HTTP error handling stay uniform.
- */
-export const API = Object.freeze({});
+export async function request(url, options={}){const headers={'Accept':'application/json',...(options.body&&!(options.body instanceof FormData)?{'Content-Type':'application/json'}:{}) ,...(options.headers||{})};const r=await fetch(url,{credentials:'same-origin',...options,headers});const ct=r.headers.get('content-type')||'';const data=ct.includes('application/json')?await r.json():await r.text();if(!r.ok||data?.success===false)throw new Error(data?.error||`HTTP ${r.status}`);return data;}
+export const API=Object.freeze({session:()=>request('../api/auth.php?action=session'),logout:()=>request('../api/auth.php?action=logout',{method:'POST'}),classes:()=>request('../api/classes.php'),students:id=>request(`../api/students.php?class_id=${encodeURIComponent(id)}`),attendance:(id,start)=>request(`../api/attendance.php?class_id=${encodeURIComponent(id)}&week_start=${encodeURIComponent(start)}`),setAttendance:(csrf,data)=>request('../api/attendance.php',{method:'POST',headers:{'X-CSRF-Token':csrf},body:JSON.stringify(data)})});
