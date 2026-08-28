@@ -9,7 +9,12 @@ use SAMS\Services\StudentService;
 
 final class StudentController
 {
-    public function __construct(private readonly StudentService $service = new StudentService()) {}
+    private StudentService $service;
+
+    public function __construct(?StudentService $service = null)
+    {
+        $this->service = $service ?? new StudentService();
+    }
 
     public function validateCreate(array $input): array
     {
