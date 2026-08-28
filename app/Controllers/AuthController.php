@@ -1,3 +1,18 @@
 <?php
-declare(strict_types=1); session_start(); require_once __DIR__.'/../Services/AuthService.php'; require_once __DIR__.'/../Helpers/Auth.php'; require_once __DIR__.'/../Helpers/Response.php';
-// HTTP authentication is currently exposed through api/auth.php; this controller is the application-layer entry point reserved for routing/refactoring.
+
+declare(strict_types=1);
+
+namespace SAMS\Controllers;
+
+use SAMS\Helpers\Validation;
+
+final class AuthController
+{
+    public function validateLogin(array $input): array
+    {
+        $username = Validation::requiredString($input['username'] ?? null, 'username', 50);
+        $password = (string)($input['password'] ?? '');
+        if ($password === '') throw new \InvalidArgumentException('Password is required.');
+        return ['username' => $username, 'password' => $password];
+    }
+}
