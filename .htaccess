@@ -1,0 +1,19 @@
+# Root Apache rules for SAMS when the repository is placed directly in htdocs.
+# Private application directories must never be served as public files.
+
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Keep the public web root simple: /sams/ serves public/index.php.
+    RewriteRule ^$ public/index.php [L]
+
+    # Deny direct HTTP access to application internals.
+    RewriteRule ^(?:app|config|database|storage|scripts|tests)(?:/|$) - [F,L,NC]
+    RewriteRule \.(?:sql|log|env|ini|bak|old|dist)$ - [F,L,NC]
+</IfModule>
+
+<FilesMatch "^(?:\.env|.*\.sql|.*\.log|.*\.bak|.*\.old)$">
+    Require all denied
+</FilesMatch>
