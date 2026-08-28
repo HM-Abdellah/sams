@@ -8,7 +8,12 @@ use SAMS\Services\SignatureService;
 
 final class SignatureController
 {
-    public function __construct(private readonly SignatureService $service = new SignatureService()) {}
+    private SignatureService $service;
+
+    public function __construct(?SignatureService $service = null)
+    {
+        $this->service = $service ?? new SignatureService();
+    }
 
     public function validate(array $input): string
     {
