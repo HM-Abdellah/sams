@@ -1,5 +1,22 @@
 <?php
+
 declare(strict_types=1);
+
 namespace SAMS\Controllers;
+
 use SAMS\Helpers\Validation;
-final class ClassController{public function validateCreate(array $input):array{return['name'=>Validation::requiredString($input['name']??null,'name',100),'level'=>isset($input['level'])?trim((string)$input['level']):null,'branch'=>isset($input['branch'])?trim((string)$input['branch']):null];}}
+use SAMS\Services\ClassService;
+
+final class ClassController
+{
+    public function __construct(private readonly ClassService $service = new ClassService()) {}
+
+    public function validateCreate(array $input): array
+    {
+        return [
+            'name' => $this->service->normalizeName((string)($input['name'] ?? '')),
+            'level' => $this->service->optionalText(isset($input['level']) ? (string)$input['level'] : null, 50),
+            'branch' => $this->service->optionalText(isset($input['branch']) ? (string)$input['branch'] : null, 100),
+        ];
+    }
+}
