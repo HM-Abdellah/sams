@@ -9,7 +9,12 @@ use SAMS\Services\AttendanceService;
 
 final class AttendanceController
 {
-    public function __construct(private readonly AttendanceService $service = new AttendanceService()) {}
+    private AttendanceService $service;
+
+    public function __construct(?AttendanceService $service = null)
+    {
+        $this->service = $service ?? new AttendanceService();
+    }
 
     public function validatePayload(array $input): array
     {
