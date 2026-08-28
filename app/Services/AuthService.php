@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace SAMS\Services;
 
+use RuntimeException;
 use SAMS\Helpers\Security;
 use SAMS\Repositories\UserRepository;
-use RuntimeException;
 
 final class AuthService
 {
@@ -23,12 +23,6 @@ final class AuthService
             $lockedUntil = $attempts >= 5 ? date('Y-m-d H:i:s', time() + 300) : null;
             $this->users->recordLoginFailure((int)$user['id'], $attempts, $lockedUntil);
             throw new RuntimeException('Invalid credentials.');
-        }
-
-        if (Security::shouldRehashPassword((string)$user['password_hash'])) {
-            $hash = Security::hashPassword($password);
-            // Password rehashing can be added to the repository without exposing the hash elsewhere.
-            // The current schema/API remains compatible with PASSWORD_DEFAULT.
         }
 
         $this->users->recordLoginSuccess((int)$user['id']);
