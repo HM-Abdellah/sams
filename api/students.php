@@ -1,6 +1,55 @@
 <?php
-declare(strict_types=1); session_start();
-require_once __DIR__.'/../app/Helpers/Database.php'; require_once __DIR__.'/../app/Helpers/Auth.php'; require_once __DIR__.'/../app/Helpers/Csrf.php'; require_once __DIR__.'/../app/Helpers/Response.php';
-use SAMS\Helpers\Database; use SAMS\Helpers\Auth; use SAMS\Helpers\Csrf; use SAMS\Helpers\Response;
-header('Content-Type: application/json; charset=UTF-8');
-try{$u=Auth::requireLogin();$pdo=Database::connection();$cid=(int)($_GET['class_id']??0);if($cid<1)Response::error('Invalid class.',422);$check=$pdo->prepare($u['role']==='admin'||$u['role']==='counselor'?'SELECT 1 FROM classes WHERE id=? AND is_active=1':'SELECT 1 FROM classes c JOIN teacher_classes tc ON tc.class_id=c.id WHERE c.id=? AND c.is_active=1 AND tc.teacher_id=?');$check->execute($u['role']==='admin'||$u['role']==='counselor'?[$cid]:[$cid,$u['id']]);if(!$check->fetchColumn())Response::error('Forbidden.',403);if($_SERVER['REQUEST_METHOD']==='GET'){$q=$pdo->prepare("SELECT id,student_number,first_name,last_name,status FROM students WHERE class_id=? ORDER BY last_name,first_name");$q->execute([$cid]);Response::success(['students'=>$q->fetchAll()]);}if(!Csrf::verify((string)($_SERVER['HTTP_X_CSRF_TOKEN']??'')))Response::error('Invalid CSRF token.',419);$b=json_decode((string)file_get_contents('php://input'),true)??[];if(($b['action']??'')==='create'){$fn=trim((string)($b['first_name']??''));$ln=trim((string)($b['last_name']??''));if($fn===''||$ln==='')Response::error('First and last name are required.',422);$q=$pdo->prepare('INSERT INTO students(class_id,student_number,first_name,last_name) VALUES(?,?,?,?)');$q->execute([$cid,($b['student_number']??null)?trim((string)$b['student_number']):null,$fn,$ln]);Response::success(['id'=>(int)$pdo->lastInsertId()],201);}if(($b['action']??'')==='delete'){Auth::requireRole('admin');$id=(int)($b['id']??0);$q=$pdo->prepare('UPDATE students SET status=\'inactive\' WHERE id=? AND class_id=?');$q->execute([$id,$cid]);Response::success();}Response::error('Unknown action.',400);}catch(Throwable $e){Response::error('Server error.',500);}
+
+declare(strict_types=1);
+
+require_once dirname(__DIR__) . '/app/bootstrap.php';
+
+use SAMS\Helpers\Auth;
+use SAMS\Helpers\Csrf;
+use SAMS\Helpers\Response;
+use SAMS\Repositories\ClassRepository;
+use SAMS\Repositories\StudentRepository;
+use SAMS\Services\StudentService;
+
+try {
+    $user = Auth::requireLogin();
+    $classId = (int)($_GET['class_id'] ?? 0);
+    if ($classId < 1) Response::error('Invalid class.', 422);
+    if (!(new ClassRepository())->hasAccess((int)$user['id'], (string)$user['role'], $classId)) Response::error('Forbidden.', 403);
+
+    $repo = new StudentRepository();
+    $method = sams_method();
+    if ($method === 'GET') Response::success(['students' => $repo->forClass($classId)]);
+
+    if (!Csrf::verify((string)($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''))) Response::error('Invalid CSRF token.', 419);
+    $body = sams_json_body();
+    $action = (string)($body['action'] ?? '');
+
+    if ($action === 'create' && in_array($user['role'], ['admin', 'teacher'], true)) {
+        $service = new StudentService();
+        $first = $service->validateName((string)($body['first_name'] ?? ''), 'first_name');
+        $last = $service->validateName((string)($body['last_name'] ?? ''), 'last_name');
+        $number = $service->normalizeNumber(isset($body['student_number']) ? (string)$body['student_number'] : null);
+        try {
+            $id = $repo->create($classId, $number, $first, $last);
+        } catch (PDOException $e) {
+            if ((int)($e->errorInfo[1] ?? 0) === 1062) Response::error('Student number already exists in this class.', 409);
+            throw $e;
+        }
+        Response::success(['id' => $id], 201);
+    }
+
+    if ($action === 'delete') {
+        Auth::requireRole('admin');
+        $studentId = (int)($body['id'] ?? 0);
+        if ($studentId < 1) Response::error('Invalid student.', 422);
+        if (!$repo->findInClass($studentId, $classId)) Response::error('Student not found.', 404);
+        $repo->deactivate($studentId, $classId);
+        Response::success();
+    }
+
+    Response::error('Unknown action.', 400);
+} catch (Throwable $e) {
+    error_log('[SAMS students] ' . $e->getMessage());
+    Response::error('Server error.', 500);
+}
