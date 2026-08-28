@@ -1,6 +1,45 @@
 <?php
-declare(strict_types=1); session_start();
-require_once __DIR__.'/../app/Helpers/Database.php'; require_once __DIR__.'/../app/Helpers/Auth.php'; require_once __DIR__.'/../app/Helpers/Csrf.php'; require_once __DIR__.'/../app/Helpers/Response.php';
-use SAMS\Helpers\Database; use SAMS\Helpers\Auth; use SAMS\Helpers\Csrf; use SAMS\Helpers\Response;
-header('Content-Type: application/json; charset=UTF-8');
-try{$u=Auth::requireLogin();$pdo=Database::connection();if($_SERVER['REQUEST_METHOD']==='GET'){if($u['role']==='admin'||$u['role']==='counselor'){$s=$pdo->query("SELECT id,name,level,branch FROM classes WHERE is_active=1 ORDER BY name");}else{$s=$pdo->prepare("SELECT c.id,c.name,c.level,c.branch FROM classes c JOIN teacher_classes tc ON tc.class_id=c.id WHERE tc.teacher_id=? AND c.is_active=1 ORDER BY c.name");$s->execute([$u['id']]);}Response::success(['classes'=>$s->fetchAll()]);}if(!Csrf::verify((string)($_SERVER['HTTP_X_CSRF_TOKEN']??'')))Response::error('Invalid CSRF token.',419);$b=json_decode((string)file_get_contents('php://input'),true)??[];$name=trim((string)($b['name']??''));if($name==='')Response::error('Class name required.',422);Auth::requireRole('admin');$ay=$pdo->query('SELECT id FROM academic_years WHERE is_active=1 ORDER BY id DESC LIMIT 1')->fetchColumn();if(!$ay)Response::error('No active academic year.',422);$s=$pdo->prepare('INSERT INTO classes(academic_year_id,name,level,branch) VALUES(?,?,?,?)');$s->execute([$ay,$name,trim((string)($b['level']??''))?:null,trim((string)($b['branch']??''))?:null]);Response::success(['id'=>(int)$pdo->lastInsertId()],201);}catch(Throwable $e){Response::error('Server error.',500);}
+
+declare(strict_types=1);
+
+require_once dirname(__DIR__) . '/app/bootstrap.php';
+
+use SAMS\Helpers\Auth;
+use SAMS\Helpers\Csrf;
+use SAMS\Helpers\Response;
+use SAMS\Repositories\ClassRepository;
+use SAMS\Services\ClassService;
+
+try {
+    $user = Auth::requireLogin();
+    $repo = new ClassRepository();
+    $method = sams_method();
+
+    if ($method === 'GET') {
+        Response::success(['classes' => $repo->forUser((int)$user['id'], (string)$user['role'])]);
+    }
+
+    if ($method !== 'POST') Response::error('Method not allowed.', 405);
+    Auth::requireRole('admin');
+    if (!Csrf::verify((string)($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''))) Response::error('Invalid CSRF token.', 419);
+
+    $body = sams_json_body();
+    $service = new ClassService();
+    $name = $service->normalizeName((string)($body['name'] ?? ''));
+    $level = $service->optionalText(isset($body['level']) ? (string)$body['level'] : null, 50);
+    $branch = $service->optionalText(isset($body['branch']) ? (string)$body['branch'] : null, 100);
+    $pdo = SAMS\Helpers\Database::connection();
+    $yearId = (int)$pdo->query('SELECT id FROM academic_years WHERE is_active = 1 ORDER BY id DESC LIMIT 1')->fetchColumn();
+    if ($yearId < 1) Response::error('No active academic year configured.', 422);
+
+    try {
+        $id = $repo->create($yearId, $name, $level, $branch);
+    } catch (PDOException $e) {
+        if ((int)$e->errorInfo[1] === 1062) Response::error('A class with this name already exists for the active academic year.', 409);
+        throw $e;
+    }
+    Response::success(['id' => $id], 201);
+} catch (Throwable $e) {
+    error_log('[SAMS classes] ' . $e->getMessage());
+    Response::error('Server error.', 500);
+}
