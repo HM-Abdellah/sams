@@ -1,14 +1,59 @@
 <?php
+
 declare(strict_types=1);
-session_start();
-require_once __DIR__.'/../app/Helpers/Database.php';require_once __DIR__.'/../app/Helpers/Auth.php';require_once __DIR__.'/../app/Helpers/Csrf.php';require_once __DIR__.'/../app/Helpers/Response.php';
-use SAMS\Helpers\Database;use SAMS\Helpers\Auth;use SAMS\Helpers\Csrf;use SAMS\Helpers\Response;
-header('Content-Type: application/json; charset=UTF-8');
-function body():array{$v=json_decode((string)file_get_contents('php://input'),true);return is_array($v)?$v:[];}
-function canAccess(PDO $pdo,array $u,int $classId):bool{$sql=in_array($u['role'],['admin','counselor'],true)?'SELECT 1 FROM classes WHERE id=? AND is_active=1':'SELECT 1 FROM classes c JOIN teacher_classes tc ON tc.class_id=c.id WHERE c.id=? AND c.is_active=1 AND tc.teacher_id=?';$q=$pdo->prepare($sql);$q->execute(in_array($u['role'],['admin','counselor'],true)?[$classId]:[$classId,$u['id']]);return(bool)$q->fetchColumn();}
-try{$u=Auth::requireLogin();$pdo=Database::connection();$classId=(int)($_GET['class_id']??0);if($classId<1||!canAccess($pdo,$u,$classId))Response::error('Forbidden.',403);$method=$_SERVER['REQUEST_METHOD'];
- if($method==='GET'){ $month=(string)($_GET['month']??'');if(!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/',$month))Response::error('Invalid month.',422);$start=$month.'-01';$end=date('Y-m-t',strtotime($start));$q=$pdo->prepare('SELECT a.student_id,a.attendance_date,a.period,a.status FROM attendance a JOIN students s ON s.id=a.student_id WHERE s.class_id=? AND s.status=\'active\' AND a.attendance_date BETWEEN ? AND ? ORDER BY a.attendance_date,a.period,a.student_id');$q->execute([$classId,$start,$end]);Response::success(['attendance'=>$q->fetchAll()]);}
- if(!in_array($method,['POST','DELETE'],true))Response::error('Method not allowed.',405);if(!Csrf::verify((string)($_SERVER['HTTP_X_CSRF_TOKEN']??'')))Response::error('Invalid CSRF token.',419);$b=body();$sid=(int)($b['student_id']??0);$date=(string)($b['attendance_date']??'');$period=(int)($b['period']??0);if($sid<1||$period<1||$period>8||!preg_match('/^\d{4}-\d{2}-\d{2}$/',$date))Response::error('Invalid attendance data.',422);$q=$pdo->prepare('SELECT 1 FROM students WHERE id=? AND class_id=? AND status=\'active\'');$q->execute([$sid,$classId]);if(!$q->fetchColumn())Response::error('Student not found.',404);
- if($method==='DELETE'){$pdo->prepare('DELETE FROM attendance WHERE student_id=? AND attendance_date=? AND period=?')->execute([$sid,$date,$period]);Response::success();}
- $status=(string)($b['status']??'');if(!in_array($status,['present','absent','late','excused'],true))Response::error('Invalid status.',422);$q=$pdo->prepare('INSERT INTO attendance(student_id,attendance_date,period,status,recorded_by) VALUES(?,?,?,?,?) ON DUPLICATE KEY UPDATE status=VALUES(status),recorded_by=VALUES(recorded_by),updated_at=CURRENT_TIMESTAMP');$q->execute([$sid,$date,$period,$status,$u['id']]);Response::success();
-}catch(Throwable $e){error_log('[SAMS attendance] '.$e->getMessage());Response::error('Server error.',500);}
+
+require_once dirname(__DIR__) . '/app/bootstrap.php';
+
+use SAMS\Helpers\Auth;
+use SAMS\Helpers\Csrf;
+use SAMS\Helpers\Response;
+use SAMS\Repositories\AttendanceRepository;
+use SAMS\Repositories\ClassRepository;
+use SAMS\Repositories\StudentRepository;
+use SAMS\Services\AttendanceService;
+
+try {
+    $user = Auth::requireLogin();
+    $classId = (int)($_GET['class_id'] ?? 0);
+    if ($classId < 1) Response::error('Invalid class.', 422);
+
+    $classes = new ClassRepository();
+    if (!$classes->hasAccess((int)$user['id'], (string)$user['role'], $classId)) Response::error('Forbidden.', 403);
+
+    $method = sams_method();
+    $repo = new AttendanceRepository();
+
+    if ($method === 'GET') {
+        $month = (string)($_GET['month'] ?? '');
+        if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month)) Response::error('Invalid month.', 422);
+        Response::success(['attendance' => $repo->forClassMonth($classId, $month)]);
+    }
+
+    if (!in_array((string)$user['role'], ['admin', 'teacher'], true)) Response::error('Forbidden.', 403);
+    if (!Csrf::verify((string)($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''))) Response::error('Invalid CSRF token.', 419);
+
+    $body = sams_json_body();
+    $studentId = (int)($body['student_id'] ?? 0);
+    $date = (string)($body['attendance_date'] ?? '');
+    $period = (int)($body['period'] ?? 0);
+    $action = (string)($body['action'] ?? 'upsert');
+    $studentRepo = new StudentRepository();
+    if (!$studentRepo->findInClass($studentId, $classId)) Response::error('Student not found.', 404);
+
+    $service = new AttendanceService();
+    if ($action === 'delete' || $method === 'DELETE') {
+        $service->validate($studentId, $date, $period, 'present');
+        $repo->delete($studentId, $date, $period);
+        Response::success();
+    }
+
+    $status = (string)($body['status'] ?? '');
+    $service->validate($studentId, $date, $period, $status);
+    $repo->upsert($studentId, $date, $period, $status, (int)$user['id']);
+    Response::success();
+} catch (InvalidArgumentException $e) {
+    Response::error($e->getMessage(), 422);
+} catch (Throwable $e) {
+    error_log('[SAMS attendance] ' . $e->getMessage());
+    Response::error('Server error.', 500);
+}
