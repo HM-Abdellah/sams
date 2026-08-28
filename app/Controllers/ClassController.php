@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace SAMS\Controllers;
 
-use SAMS\Helpers\Validation;
 use SAMS\Services\ClassService;
 
 final class ClassController
 {
-    public function __construct(private readonly ClassService $service = new ClassService()) {}
+    private ClassService $service;
+
+    public function __construct(?ClassService $service = null)
+    {
+        $this->service = $service ?? new ClassService();
+    }
 
     public function validateCreate(array $input): array
     {
