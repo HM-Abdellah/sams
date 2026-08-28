@@ -39,10 +39,13 @@ try {
     $password = (string)($body['password'] ?? '');
     if ($username === '' || mb_strlen($username) > 50 || $password === '') Response::error('Invalid credentials.', 422);
 
+    $config = $GLOBALS['appConfig'] ?? [];
+    $lockMinutes = max(1, (int)($config['login_lock_minutes'] ?? 5));
+
     $service = new AuthService(new UserRepository());
     try {
-        $user = $service->authenticate($username, $password);
-    } catch (Throwable $e) {
+        $user = $service->authenticate($username, $password, $lockMinutes);
+    } catch (RuntimeException $e) {
         $status = str_contains($e->getMessage(), 'temporarily locked') ? 429 : 401;
         Response::error('Invalid credentials.', $status);
     }
