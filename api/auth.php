@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/app/bootstrap.php';
 
-use RuntimeException;
 use SAMS\Helpers\Auth;
 use SAMS\Helpers\Csrf;
 use SAMS\Helpers\Response;
 use SAMS\Repositories\AuditLogRepository;
 use SAMS\Repositories\UserRepository;
 use SAMS\Services\AuthService;
-use Throwable;
 
 try {
     $action = (string)($_GET['action'] ?? '');
