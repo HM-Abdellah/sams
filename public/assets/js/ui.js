@@ -467,38 +467,23 @@ export const ui = {
     archive(data, view = 'days') {
         const table = document.querySelector('#archiveTable');
         if (!table) return;
-
         const head = table.querySelector('thead');
         const body = table.querySelector('tbody');
-
         if (view === 'month') {
-            head.innerHTML = '<tr><th>Élève</th><th>Présences</th><th>Absences</th><th>Retards</th><th>Excusés</th><th>Jours enregistrés</th><th>Historique</th></tr>';
+            head.innerHTML = '<tr><th>' + esc(t('student')) + '</th><th>' + esc(t('present_count')) + '</th><th>' + esc(t('absent_count_label')) + '</th><th>' + esc(t('late')) + '</th><th>' + esc(t('excused')) + '</th><th>' + esc(t('recorded_days')) + '</th><th>' + esc(t('history')) + '</th></tr>';
             const rows = Array.isArray(data?.students) ? data.students : [];
-            body.innerHTML = rows.map((row) =>
-                '<tr><td>' + esc((String(row.first_name || '') + ' ' + String(row.last_name || '')).trim()) + '</td>'
-                + '<td>' + Number(row.present_count) + '</td>'
-                + '<td>' + Number(row.absent_count) + '</td>'
-                + '<td>' + Number(row.late_count) + '</td>'
-                + '<td>' + Number(row.excused_count) + '</td>'
-                + '<td>' + Number(row.recorded_days) + '</td>'
-                + '<td><button class="btn small" type="button" data-student-history="' + esc(row.id) + '">Voir</button></td></tr>'
-            ).join('') || '<tr><td colspan="7" class="empty-state">Aucun enregistrement.</td></tr>';
+            body.innerHTML = rows.map((row) => '<tr><td>' + esc((String(row.first_name || '') + ' ' + String(row.last_name || '')).trim()) + '</td>'
+                + '<td>' + Number(row.present_count) + '</td><td>' + Number(row.absent_count) + '</td><td>' + Number(row.late_count) + '</td><td>' + Number(row.excused_count) + '</td><td>' + Number(row.recorded_days) + '</td>'
+                + '<td><button class="btn small" type="button" data-student-history="' + esc(row.id) + '">' + esc(t('view')) + '</button></td></tr>').join('')
+                || '<tr><td colspan="7" class="empty-state">' + esc(t('no_records')) + '</td></tr>';
             return;
         }
-
-        head.innerHTML = '<tr><th>Date</th><th>Enregistrements</th><th>Présences</th><th>Absences</th><th>Retards</th><th>Excusés</th><th>Détails</th></tr>';
+        head.innerHTML = '<tr><th>' + esc(t('date')) + '</th><th>' + esc(t('records')) + '</th><th>' + esc(t('present_count')) + '</th><th>' + esc(t('absent_count_label')) + '</th><th>' + esc(t('late')) + '</th><th>' + esc(t('excused')) + '</th><th>' + esc(t('details')) + '</th></tr>';
         const rows = Array.isArray(data?.days) ? data.days : [];
-        body.innerHTML = rows.map((row) =>
-            '<tr><td>' + esc(row.attendance_date) + '</td>'
-            + '<td>' + Number(row.recorded_count) + '</td>'
-            + '<td>' + Number(row.present_count) + '</td>'
-            + '<td>' + Number(row.absent_count) + '</td>'
-            + '<td>' + Number(row.late_count) + '</td>'
-            + '<td>' + Number(row.excused_count) + '</td>'
-            + '<td><button class="btn small" type="button" data-archive-day="' + esc(row.attendance_date) + '">Ouvrir</button></td></tr>'
-        ).join('') || '<tr><td colspan="7" class="empty-state">Aucun enregistrement.</td></tr>';
+        body.innerHTML = rows.map((row) => '<tr><td>' + esc(row.attendance_date) + '</td><td>' + Number(row.recorded_count) + '</td><td>' + Number(row.present_count) + '</td><td>' + Number(row.absent_count) + '</td><td>' + Number(row.late_count) + '</td><td>' + Number(row.excused_count) + '</td>'
+            + '<td><button class="btn small" type="button" data-archive-day="' + esc(row.attendance_date) + '">' + esc(t('open')) + '</button></td></tr>').join('')
+            || '<tr><td colspan="7" class="empty-state">' + esc(t('no_records')) + '</td></tr>';
     },
-
     stats() {
         let present = 0;
         let absent = 0;
