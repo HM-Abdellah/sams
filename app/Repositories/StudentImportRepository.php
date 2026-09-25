@@ -57,7 +57,7 @@ final class StudentImportRepository
     ): int {
         $stmt = Database::connection()->prepare(
             'INSERT INTO student_import_rows
-                (batch_id, row_number, first_name, last_name, massar_code,
+                (batch_id, `row_number`, first_name, last_name, massar_code,
                  birth_date, student_number, status, issues, raw_data)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
@@ -133,12 +133,12 @@ final class StudentImportRepository
     {
         $stmt = Database::connection()->prepare(
             'SELECT
-                id, batch_id, row_number, first_name, last_name, massar_code,
+                id, batch_id, `row_number`, first_name, last_name, massar_code,
                 birth_date, student_number, status, issues, raw_data, student_id,
                 created_at, updated_at
              FROM student_import_rows
              WHERE batch_id = ?
-             ORDER BY row_number'
+             ORDER BY `row_number`'
         );
         $stmt->execute([$batchId]);
 
