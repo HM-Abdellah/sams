@@ -65,3 +65,79 @@ jobs:
         shell: sh
         run: |
           find public/assets/js tests/e2e -type f -name '*.js' -print0             | xargs -0 -n1 node --check
+
+  e2e:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.55.0-noble
+
+    services:
+      db:
+        image: mariadb:11.4
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: sams
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      SAMS_TEST_DB_HOST: db
+      SAMS_TEST_DB_PORT: 3306
+      SAMS_TEST_DB_NAME: sams
+      SAMS_TEST_DB_USER: root
+      SAMS_TEST_DB_PASS: root
+      SAMS_E2E_PASSWORD: e2e-admin-password-2026
+      SAMS_E2E_TEACHER_PASSWORD: e2e-teacher-password-2026
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install PHP and MySQL extension
+        run: |
+          apt-get update
+          apt-get install -y php-cli php-mysql curl
+
+      - name: Configure E2E database
+        shell: bash
+        run: |
+          cat > config/database.php <<'PHP'
+          <?php
+          return [
+              'host' => getenv('SAMS_TEST_DB_HOST') ?: 'db',
+              'port' => (int)(getenv('SAMS_TEST_DB_PORT') ?: 3306),
+              'database' => getenv('SAMS_TEST_DB_NAME') ?: 'sams',
+              'username' => getenv('SAMS_TEST_DB_USER') ?: 'root',
+              'password' => getenv('SAMS_TEST_DB_PASS') ?: 'root',
+              'charset' => 'utf8mb4',
+          ];
+          PHP
+
+      - name: Seed clean E2E school
+        run: php scripts/e2e_seed.php
+
+      - name: Install Node dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Start PHP server
+        shell: bash
+        run: |
+          php -S 0.0.0.0:8080 -t public > /tmp/sams-server.log 2>&1 &
+          for i in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:8080/login.php > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/sams-server.log
+          exit 1
+
+      - name: Run Playwright E2E
+        env:
+          SAMS_BASE_URL: http://127.0.0.1:8080
+          SAMS_E2E_USERNAME: admin
+          SAMS_E2E_TEACHER_USERNAME: teacher.e2e
+        run: npm run test:e2e
