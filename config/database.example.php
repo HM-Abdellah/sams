@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Copy this file to config/database.php for the local XAMPP installation.
+ * Copy this file to config/database.php for local development/deployment.
  * database.php is ignored by Git because it may contain local credentials.
  */
 
