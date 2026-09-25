@@ -40,31 +40,31 @@ $csrf = Csrf::token();
 </header>
 
 <main class="app-shell">
-    <section class="toolbar" aria-label="Filtres principaux">
+    <section class="toolbar" aria-label="Filtres principaux" data-i18n-aria="main_filters">
         <div class="toolbar-left">
-            <label>Classe<select id="classSelect" aria-label="Classe"></select></label>
-            <label>Mois<input id="monthSelect" type="month" aria-label="Mois"></label>
-            <button id="reloadBtn" class="btn primary" type="button">Actualiser</button>
+            <label><span data-i18n="class">Classe</span><select id="classSelect" aria-label="Classe"></select></label>
+            <label><span data-i18n="month">Mois</span><input id="monthSelect" type="month" aria-label="Mois"></label>
+            <button id="reloadBtn" class="btn primary" type="button" data-i18n="refresh">Actualiser</button>
         </div>
         <div class="toolbar-right">
-            <button id="addClassBtn" class="btn success admin-only" type="button">+ Classe</button>
-            <button id="reportBtn" class="btn" type="button">Rapport</button>
+            <button id="addClassBtn" class="btn success admin-only" type="button" data-i18n="add_class">+ Classe</button>
+            <button id="reportBtn" class="btn" type="button" data-i18n="report">Rapport</button>
         </div>
     </section>
 
     <section class="stats" aria-label="Statistiques">
-        <article><span>Présences</span><strong id="statPresent">0</strong></article>
-        <article><span>Absences</span><strong id="statAbsent">0</strong></article>
-        <article><span>Retards / excusés</span><strong id="statOther">0</strong></article>
-        <article><span>Taux de présence</span><strong id="statRate">0%</strong></article>
+        <article><span data-i18n="present_count">Présences</span><strong id="statPresent">0</strong></article>
+        <article><span data-i18n="absent_count_label">Absences</span><strong id="statAbsent">0</strong></article>
+        <article><span data-i18n="late_excused">Retards / excusés</span><strong id="statOther">0</strong></article>
+        <article><span data-i18n="presence_rate">Taux de présence</span><strong id="statRate">0%</strong></article>
     </section>
 
     <nav class="tabs" aria-label="Navigation principale">
-        <button class="tab active" data-tab="attendance" type="button">Absence</button>
-        <button class="tab" data-tab="students" type="button">Élèves</button>
-        <button class="tab" data-tab="statistics" type="button">Statistiques</button>
-        <button class="tab" data-tab="signature" type="button">Signature</button>
-        <button class="tab" data-tab="archive" type="button">Archive</button>
+        <button class="tab active" data-tab="attendance" type="button" data-i18n="attendance">Présence</button>
+        <button class="tab" data-tab="students" type="button" data-i18n="students">Élèves</button>
+        <button class="tab" data-tab="statistics" type="button" data-i18n="statistics">Statistiques</button>
+        <button class="tab" data-tab="signature" type="button" data-i18n="signature">Signature</button>
+        <button class="tab" data-tab="archive" type="button" data-i18n="archive">Archive</button>
         <button class="tab admin-only" data-tab="teachers" type="button" data-i18n="teachers">Enseignants</button><button class="tab admin-only" data-tab="admin" type="button" data-i18n="administration">Administration</button>
     </nav>
 
@@ -169,30 +169,30 @@ $csrf = Csrf::token();
             <article class="student-card">
                 <div>
                     <strong>Créer un utilisateur</strong>
-                    <small>Admin, enseignant ou conseiller.</small>
+                    <small data-i18n="user_types">Admin, enseignant ou conseiller.</small>
                 </div>
             </article>
             <form id="userForm">
-                <label>Nom utilisateur<input id="userUsernameInput" required maxlength="50"></label>
-                <label>Nom complet<input id="userFullNameInput" required maxlength="120"></label>
-                <label>Rôle<select id="userRoleInput"><option value="teacher">teacher</option><option value="counselor">counselor</option><option value="admin">admin</option></select></label>
-                <label>Mot de passe<input id="userPasswordInput" type="password" required></label>
-                <button class="btn success" type="submit">Créer</button>
+                <label><span data-i18n="username">Nom utilisateur</span><input id="userUsernameInput" required maxlength="50"></label>
+                <label><span data-i18n="full_name">Nom complet</span><input id="userFullNameInput" required maxlength="120"></label>
+                <label><span data-i18n="role">Rôle</span><select id="userRoleInput"><option value="teacher">teacher</option><option value="counselor">counselor</option><option value="admin">admin</option></select></label>
+                <label><span data-i18n="password">Mot de passe</span><input id="userPasswordInput" type="password" required></label>
+                <button class="btn success" type="submit" data-i18n="create">Créer</button>
             </form>
         </div>
 
         <div class="students-list">
             <article class="student-card">
                 <div>
-                    <strong>Années scolaires</strong>
-                    <small>Une seule année active à la fois.</small>
+                    <strong data-i18n="school_years">Années scolaires</strong>
+                    <small data-i18n="one_active_year">Une seule année active à la fois.</small>
                 </div>
             </article>
             <form id="academicYearForm">
                 <label>Nom<input id="academicYearNameInput" required maxlength="20" placeholder="2026/2027"></label>
-                <label>Début<input id="academicYearStartInput" type="date" required></label>
-                <label>Fin<input id="academicYearEndInput" type="date" required></label>
-                <label>Activer<select id="academicYearActivateInput"><option value="1">Oui</option><option value="0">Non</option></select></label>
+                <label><span data-i18n="start">Début</span><input id="academicYearStartInput" type="date" required></label>
+                <label><span data-i18n="end">Fin</span><input id="academicYearEndInput" type="date" required></label>
+                <label><span data-i18n="activate">Activer</span><select id="academicYearActivateInput"><option value="1">Oui</option><option value="0">Non</option></select></label>
                 <button class="btn success" type="submit">Créer</button>
             </form>
         </div>
@@ -200,13 +200,13 @@ $csrf = Csrf::token();
         <div class="students-list">
             <article class="student-card">
                 <div>
-                    <strong>Affectation enseignant → classe</strong>
-                    <small>Les enseignants ne voient que leurs classes opérationnelles.</small>
+                    <strong data-i18n="teacher_class_assignment">Affectation enseignant → classe</strong>
+                    <small data-i18n="teacher_class_assignment_desc">Les enseignants ne voient que leurs classes opérationnelles.</small>
                 </div>
             </article>
             <form id="assignmentForm">
-                <label>Enseignant<select id="assignmentTeacherInput"></select></label>
-                <label>Classe<select id="assignmentClassInput"></select></label>
+                <label><span data-i18n="teacher">Enseignant</span><select id="assignmentTeacherInput"></select></label>
+                <label><span data-i18n="class">Classe</span><select id="assignmentClassInput"></select></label>
                 <button class="btn primary" type="submit">Affecter</button>
             </form>
             <div class="table-scroll"><table id="usersTable"><thead></thead><tbody></tbody></table></div>
@@ -215,13 +215,13 @@ $csrf = Csrf::token();
         <div class="students-list">
             <article class="student-card">
                 <div>
-                    <strong>Import élèves CSV</strong>
-                    <small>Validation puis import transactionnel.</small>
+                    <strong data-i18n="csv_import">Import élèves CSV</strong>
+                    <small data-i18n="csv_import_desc">Validation puis import transactionnel.</small>
                 </div>
             </article>
             <form id="importForm">
                 <label>Fichier CSV<input id="studentImportFile" type="file" accept=".csv,text/csv" required></label>
-                <button class="btn primary" type="submit">Analyser / staging</button>
+                <button class="btn primary" type="submit" data-i18n="analyze_staging">Analyser / staging</button>
             </form>
             <div class="table-scroll"><table id="importsTable"><thead></thead><tbody></tbody></table></div>
         </div>
@@ -229,8 +229,8 @@ $csrf = Csrf::token();
         <div class="students-list">
             <article class="student-card">
                 <div>
-                    <strong>Activité / audit</strong>
-                    <small>Dernières actions enregistrées.</small>
+                    <strong data-i18n="activity_audit">Activité / audit</strong>
+                    <small data-i18n="latest_actions">Dernières actions enregistrées.</small>
                 </div>
             </article>
             <div class="table-scroll"><table id="auditTable"><thead></thead><tbody></tbody></table></div>
