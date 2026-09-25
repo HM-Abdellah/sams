@@ -965,3 +965,24 @@ function wire() {
 
     setupSignature({
         canvas: document.querySelector('#signatureCanvas'),
+        clearButton: document.querySelector('#clearSignatureBtn'),
+        saveButton: document.querySelector('#saveSignatureBtn'),
+    });
+}
+
+async function loadSignature() {
+    if (!state.classId) return;
+    try {
+        const result = await API.signature(state.classId);
+        window.dispatchEvent(new CustomEvent('sams:signature-load', { detail: result.signature?.signature_data || '' }));
+    } catch (error) {
+        ui.toast(error.message || 'Impossible de charger la signature.', true);
+    }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    ensureArchiveDynamicUI();
+    ensureAdminDynamicUI();
+    wire();
+    boot();
+});
