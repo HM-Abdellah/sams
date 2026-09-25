@@ -75,6 +75,19 @@ final class StudentEnrollmentRepository
         return (int)Database::connection()->lastInsertId();
     }
 
+    public function hasAttendanceOnOrAfter(int $enrollmentId, string $date): bool
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT 1
+             FROM attendance
+             WHERE enrollment_id = ?
+               AND attendance_date >= ?
+             LIMIT 1'
+        );
+        $stmt->execute([$enrollmentId, $date]);
+        return (bool)$stmt->fetchColumn();
+    }
+
     public function close(int $enrollmentId, string $endsOn): void
     {
         $stmt = Database::connection()->prepare(
