@@ -70,8 +70,10 @@ Use this checklist on a clean database before the 2026-09-28 release freeze.
 Run the critical flows on:
 
 - Desktop Chromium.
-- Mobile Chromium.
+- Mobile Chromium smoke checks.
 - A narrow viewport suitable for teacher phone usage.
+
+Stateful authenticated E2E workflows run sequentially on the clean test database to prevent cross-test data contamination.
 
 ## 8. Release gate
 
