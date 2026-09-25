@@ -2,11 +2,14 @@ import { API, setCsrf, getCsrf } from './api.js';
 import { state, setState } from './state.js';
 import { ui, renderAll } from './ui.js';
 import { setupSignature } from './signature.js';
+import { initLanguage, t } from './i18n.js';
 
 let loading = false;
 let clickTimer = null;
 let attendanceFlushTimer = null;
 let attendanceFlushPromise = null;
+let teacherRefreshTimer = null;
+let presenceTimer = null;
 let attendanceVersion = 0;
 const pendingAttendance = new Map();
 
@@ -57,6 +60,8 @@ async function boot() {
         setCsrf(session.csrf || '');
         const month = currentMonth();
         setState({ user: session.user, csrf: session.csrf || '', month });
+        initLanguage();
+        await startPresenceHeartbeat();
 
         const classes = await API.classes();
         const list = Array.isArray(classes.classes) ? classes.classes : [];
@@ -72,7 +77,9 @@ async function boot() {
         ensureArchiveDynamicUI();
         renderAll();
         if (state.classId) await loadClass();
-        if (state.user?.role === 'admin') await loadAdmin();
+        if (state.user?.role === 'admin') {
+            await loadAdmin();
+        }
     } catch (error) {
         ui.toast(error.message || 'Erreur de démarrage.', true);
     } finally {
@@ -352,6 +359,41 @@ async function loadAdmin() {
     }
 }
 
+async function loadTeachers() {
+    if (state.user?.role !== 'admin') return;
+    try {
+        const data = await API.teachers();
+        setState({
+            teachers: data.teachers || [],
+            subjects: data.subjects || [],
+            teachings: data.teachings || [],
+        });
+        renderAll();
+    } catch (error) {
+        ui.toast(error.message || 'Erreur de chargement des enseignants.', true);
+    }
+}
+
+function restartTeacherRefresh() {
+    clearInterval(teacherRefreshTimer);
+    teacherRefreshTimer = null;
+    if (state.user?.role !== 'admin' || state.tab !== 'teachers') return;
+    teacherRefreshTimer = setInterval(() => loadTeachers(), 15000);
+}
+
+async function startPresenceHeartbeat() {
+    if (presenceTimer) return;
+    const send = async () => {
+        try {
+            await API.presence();
+        } catch {
+            // Presence is best-effort; authentication and app operation must continue.
+        }
+    };
+    await send();
+    presenceTimer = setInterval(send, 30000);
+}
+
 async function loadArchive(view = 'days') {
     if (!state.classId) return;
     try {
@@ -578,8 +620,112 @@ function wire() {
         setState({ tab: button.dataset.tab });
 
         if (button.dataset.tab === 'archive') await loadArchive('days');
+        if (button.dataset.tab === 'teachers') await loadTeachers();
         if (button.dataset.tab === 'admin') await loadAdmin();
+        restartTeacherRefresh();
     }));
+
+    document.querySelector('#teacherSearch')?.addEventListener('input', () => ui.teachers());
+    document.querySelector('#teacherStatusFilter')?.addEventListener('change', () => ui.teachers());
+    document.querySelector('#teacherSubjectFilter')?.addEventListener('change', () => ui.teachers());
+    document.querySelector('#teacherClassFilter')?.addEventListener('change', () => ui.teachers());
+
+    document.querySelector('#addSubjectBtn')?.addEventListener('click', () => document.querySelector('#subjectDialog')?.showModal());
+    document.querySelector('#assignTeachingBtn')?.addEventListener('click', () => {
+        document.querySelector('#teachingTeacherId').value = '';
+        document.querySelector('#teachingSubjectId').value = '';
+        document.querySelector('#teachingClassId').value = '';
+        ui.teachers();
+        document.querySelector('#teachingDialog')?.showModal();
+    });
+
+    document.querySelector('#teacherEditForm')?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const id = Number(document.querySelector('#teacherEditId')?.value || 0);
+        const teacher = state.teachers.find((item) => Number(item.id) === id);
+        if (!teacher) return;
+        try {
+            await API.updateUser(id, {
+                full_name: document.querySelector('#teacherEditFullName').value.trim(),
+                role: 'teacher',
+                is_active: document.querySelector('#teacherEditActive').value === '1',
+                employee_id: document.querySelector('#teacherEditEmployeeId').value.trim(),
+                phone: document.querySelector('#teacherEditPhone').value.trim() || null,
+            });
+            document.querySelector('#teacherEditDialog')?.close();
+            await loadTeachers();
+            ui.toast(t('save'));
+        } catch (error) {
+            ui.toast(error.message || 'Erreur de modification.', true);
+        }
+    });
+
+    document.querySelector('#teachingForm')?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        try {
+            await API.assignTeaching(
+                Number(document.querySelector('#teachingTeacherId').value),
+                Number(document.querySelector('#teachingSubjectId').value),
+                Number(document.querySelector('#teachingClassId').value)
+            );
+            document.querySelector('#teachingDialog')?.close();
+            await loadTeachers();
+            ui.toast(t('assign'));
+        } catch (error) {
+            ui.toast(error.message || 'Erreur d’affectation.', true);
+        }
+    });
+
+    document.querySelector('#subjectForm')?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        try {
+            await API.createSubject({
+                code: document.querySelector('#subjectCodeInput').value.trim(),
+                name_fr: document.querySelector('#subjectNameFrInput').value.trim(),
+                name_ar: document.querySelector('#subjectNameArInput').value.trim(),
+                name_en: document.querySelector('#subjectNameEnInput').value.trim(),
+            });
+            document.querySelector('#subjectDialog')?.close();
+            event.currentTarget.reset();
+            await loadTeachers();
+            ui.toast(t('create'));
+        } catch (error) {
+            ui.toast(error.message || 'Erreur de création de matière.', true);
+        }
+    });
+
+    document.querySelector('#teachersList')?.addEventListener('click', async (event) => {
+        const edit = event.target.closest('[data-edit-teacher]');
+        const assign = event.target.closest('[data-assign-teacher]');
+        const remove = event.target.closest('[data-unassign-teaching]');
+        try {
+            if (edit) {
+                const teacher = state.teachers.find((item) => Number(item.id) === Number(edit.dataset.editTeacher));
+                if (!teacher) return;
+                document.querySelector('#teacherEditId').value = String(teacher.id);
+                document.querySelector('#teacherEditEmployeeId').value = teacher.employee_id || teacher.username || '';
+                document.querySelector('#teacherEditFullName').value = teacher.full_name || '';
+                document.querySelector('#teacherEditPhone').value = teacher.phone || '';
+                document.querySelector('#teacherEditActive').value = Number(teacher.is_active) === 1 ? '1' : '0';
+                document.querySelector('#teacherEditDialog')?.showModal();
+                return;
+            }
+            if (assign) {
+                document.querySelector('#teachingTeacherId').value = String(assign.dataset.assignTeacher || '');
+                document.querySelector('#teachingSubjectId').value = '';
+                document.querySelector('#teachingClassId').value = '';
+                document.querySelector('#teachingDialog')?.showModal();
+                return;
+            }
+            if (remove) {
+                if (!window.confirm(t('remove') + '?')) return;
+                await API.unassignTeaching(Number(remove.dataset.unassignTeaching));
+                await loadTeachers();
+            }
+        } catch (error) {
+            ui.toast(error.message || 'Erreur de gestion enseignant.', true);
+        }
+    });
 
     const attendanceBody = document.querySelector('#attendanceBody');
     attendanceBody?.addEventListener('click', (event) => {
