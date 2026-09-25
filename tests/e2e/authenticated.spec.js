@@ -146,6 +146,44 @@ test.describe('authenticated SAMS smoke', () => {
     await expect(page.locator('#studentCount')).toContainText('5');
   });
 
+  test('admin can transfer a student without losing historical attendance', async ({ page }) => {
+    await page.goto('/login.php');
+    await page.locator('#username').fill(username);
+    await page.locator('#password').fill(password);
+    await page.locator('#loginForm').evaluate((form) => {
+      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    });
+
+    await page.waitForURL(/index\.php$/);
+    await page.locator('.tab[data-tab="admin"]').click();
+
+    const studentCard = page.locator('#studentsList .student-card').filter({ hasText: 'E2E001' }).first();
+    await expect(studentCard).toBeVisible();
+    await studentCard.locator('[data-transfer-student]').click();
+
+    await expect(page.locator('#transferStudentDialog')).toBeVisible();
+    await page.locator('#transferTargetClassInput').selectOption({ label: 'E2E-2BAC-B' });
+    await page.locator('#transferEffectiveDateInput').fill('2026-10-01');
+    await page.locator('#transferStudentForm button[type="submit"]').click();
+
+    await page.locator('.tab[data-tab="admin"]').click();
+    await expect(page.locator('#studentsList .student-card').filter({ hasText: 'E2E001' })).toHaveCount(0);
+
+    await page.locator('#classSelect').selectOption({ label: 'E2E-2BAC-B' });
+    await expect(page.locator('#studentsList .student-card').filter({ hasText: 'E2E001' })).toHaveCount(1);
+
+    await page.locator('.tab[data-tab="archive"]').click();
+    await page.locator('#loadArchiveBtn').click();
+    const sourceClass = page.locator('#classSelect');
+    await sourceClass.selectOption({ label: 'E2E-2BAC-A' });
+    await page.locator('#loadArchiveBtn').click();
+
+    const dayRow = page.locator('#archiveTable tbody tr').filter({ hasText: '2026-09-25' }).first();
+    await expect(dayRow).toBeVisible();
+    await dayRow.locator('[data-archive-day]').click();
+    await expect(page.locator('#archiveDayDialog')).toContainText('E2E001');
+  });
+
   test('admin can manage a class and a user through the UI', async ({ page }) => {
     await page.goto('/login.php');
     await page.locator('#username').fill(username);
