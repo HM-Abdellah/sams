@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace SAMSRepositories;
+namespace SAMS\Repositories;
 
 use SAMS\Helpers\Database;
 
