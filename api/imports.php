@@ -68,9 +68,13 @@ try {
     $audit = new AuditLogRepository();
 
     if ($method === 'POST') {
-        $action = isset($_FILES['file'])
-            ? (string)($_POST['action'] ?? 'stage')
-            : (string)(sams_json_body()['action'] ?? '');
+        $body = [];
+        if (isset($_FILES['file'])) {
+            $action = (string)($_POST['action'] ?? 'stage');
+        } else {
+            $body = sams_json_body();
+            $action = (string)($body['action'] ?? '');
+        }
 
         if ($action === 'stage') {
             $classId = (int)($_POST['class_id'] ?? 0);
@@ -198,7 +202,6 @@ try {
             ], 201);
         }
 
-        $body = sams_json_body();
         $batchId = (int)($body['batch_id'] ?? 0);
         if ($batchId < 1) Response::error('Invalid import batch.', 422);
 
