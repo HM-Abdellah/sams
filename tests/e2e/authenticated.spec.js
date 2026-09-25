@@ -91,8 +91,8 @@ test.describe('authenticated SAMS smoke', () => {
     await login(page, username, password);
     await expect(page.locator('#attendanceMobileList .attendance-student-card').first()).toBeVisible();
     await page.locator('#periods [data-select-period="1"]').click();
-    const statusButtons = page.locator('#attendanceMobileList [data-attendance-status="present"]');
-    await expect(statusButtons).toHaveCount(4);
+    const statusButtons = page.locator('#attendanceMobileList [data-attendance-toggle]');
+    await expect(statusButtons).toHaveCount(3);
     await statusButtons.nth(0).click();
     await statusButtons.nth(1).click();
     await statusButtons.nth(2).click();
@@ -102,7 +102,7 @@ test.describe('authenticated SAMS smoke', () => {
     expect(batches).toHaveLength(1);
     expect(batches[0]?.action).toBe('bulk');
     expect(batches[0]?.entries).toHaveLength(3);
-    expect(batches[0].entries.every((entry) => ['upsert', 'delete'].includes(entry.action))).toBe(true);
+    expect(batches[0].entries.every((entry) => entry.action === 'upsert' && entry.status === 'absent')).toBe(true);
   });
 
   test('teacher cannot access historical archive and weekly sheet supports all three languages', async ({ page }) => {
@@ -136,6 +136,36 @@ test.describe('authenticated SAMS smoke', () => {
     await expect(page.locator('#attendanceMobileList .attendance-student-card')).toHaveCount(4);
     await expect(page.locator('.tab[data-tab="admin"]')).toHaveCount(0);
     await expect(page.locator('.tab[data-tab="archive"]')).toHaveCount(0);
+  });
+
+  test('teacher can sign, reopen, correct and re-sign a lesson, then certify the week', async ({ page }) => {
+    test.skip(!teacherUsername || !teacherPassword, 'Set teacher E2E credentials to run teacher isolation tests.');
+
+    await login(page, teacherUsername, teacherPassword);
+
+    await page.locator('#weekDays [data-select-day="2026-09-26"]').click();
+    await page.locator('#periods [data-select-period="8"]').click();
+
+    await expect(page.locator('#attendanceWorkflow [data-sign-period]')).toBeVisible();
+    const firstMark = page.locator('#attendanceMobileList [data-attendance-toggle]').first();
+    await firstMark.click();
+    await expect(firstMark).toHaveText('X');
+
+    await page.locator('#attendanceWorkflow [data-sign-period]').click();
+    await expect(page.locator('#attendanceWorkflow .attendance-seal')).toContainText(/Validée par|Certified by|تمت المصادقة/);
+    await expect(page.locator('#attendanceMobileList [data-attendance-toggle]').first()).toBeDisabled();
+
+    await page.locator('#attendanceWorkflow [data-reopen-period]').click();
+    await expect(page.locator('#attendanceWorkflow .attendance-seal')).toContainText(/Correction|re-sign|إعادة/);
+
+    const reopenedMark = page.locator('#attendanceMobileList [data-attendance-toggle]').first();
+    await reopenedMark.click();
+    await expect(reopenedMark).toHaveText('');
+
+    await page.locator('#attendanceWorkflow [data-sign-period]').click();
+    await page.locator('#weeklyTeacherSignatures [data-sign-week]').click();
+    await expect(page.locator('#weeklyTeacherSignatures .weekly-teacher-status.signed')).toHaveCount(1);
+    await expect(page.locator('#weeklyTeacherSignatures')).toContainText('1/1');
   });
 
   test('teacher weekly attendance is touch-friendly and weekly print is populated', async ({ page }) => {
