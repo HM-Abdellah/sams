@@ -167,6 +167,8 @@ function wire() {
     document.querySelector('#classSelect')?.addEventListener('change', async (event) => {
         setState({ classId: Number(event.target.value) });
         await loadClass();
+        if (state.user?.role === 'admin') await loadAdmin();
+        if (state.tab === 'archive') await loadArchive(state.archiveView || 'days');
     });
 
     document.querySelector('#monthSelect')?.addEventListener('change', async (event) => {
