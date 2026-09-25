@@ -48,7 +48,7 @@ async function loadClass() {
         setState({
             students: students.students || [],
             attendance: attendance.attendance || [],
-            attendanceSignoffs: signoffs || { week_start: state.weekStart, week_end: dateFromWeek(state.weekStart, 5), teachers: [], period_signoffs: [], weekly_signatures: [] },
+            attendanceSignoffs: signoffs || { week_start: state.weekStart, week_end: dateFromWeek(state.weekStart, 5), teachers: [], period_signoffs: [], weekly_signatures: [], submission: null },
             selectedDay: state.selectedDay || state.weekStart,
         });
         renderAll();
@@ -635,7 +635,7 @@ async function loadAttendanceSignoffs() {
     if (!state.classId || !state.weekStart) return;
     try {
         const result = await API.attendanceSignoffs(state.classId, state.weekStart);
-        setState({ attendanceSignoffs: result || { week_start: state.weekStart, week_end: dateFromWeek(state.weekStart, 5), teachers: [], period_signoffs: [], weekly_signatures: [] } });
+        setState({ attendanceSignoffs: result || { week_start: state.weekStart, week_end: dateFromWeek(state.weekStart, 5), teachers: [], period_signoffs: [], weekly_signatures: [], submission: null } });
         renderAll();
     } catch (error) {
         ui.toast(error.message || t('attendance_signoff_load_error'), true);
@@ -690,6 +690,18 @@ async function signSelectedWeek() {
         });
         await loadAttendanceSignoffs();
         ui.toast(t('week_signed_success'));
+    } catch (error) {
+        ui.toast(error.message || t('attendance_signoff_error'), true);
+    }
+}
+
+async function receiveSelectedWeek() {
+    if (!state.classId || state.user?.role !== 'admin') return;
+    if (!await flushAttendanceQueue()) return;
+    try {
+        await API.receiveAttendanceWeek(state.classId, state.weekStart);
+        await loadAttendanceSignoffs();
+        ui.toast(t('register_received'));
     } catch (error) {
         ui.toast(error.message || t('attendance_signoff_error'), true);
     }
@@ -1017,6 +1029,7 @@ function wire() {
 
     document.querySelector('#weeklyTeacherSignatures')?.addEventListener('click', async (event) => {
         if (event.target.closest('[data-sign-week]')) await signSelectedWeek();
+        if (event.target.closest('[data-receive-week]')) await receiveSelectedWeek();
     });
 
     document.querySelector('#weekDays')?.addEventListener('click', (event) => {
