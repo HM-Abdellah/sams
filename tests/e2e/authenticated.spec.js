@@ -126,6 +126,7 @@ test.describe('authenticated SAMS smoke', () => {
     await expect(page.locator('#periods .period-btn')).toHaveCount(8);
     await expect(page.locator('#attendanceMobileList .attendance-student-card')).toHaveCount(3);
 
+    await page.locator('.language-btn[data-lang="en"]').click();
     await page.evaluate(() => {
       window.print = () => {};
     });
