@@ -77,6 +77,10 @@ final class StudentImportService
                     throw new InvalidArgumentException('The CSV file contains too many student rows.');
                 }
 
+                if (count($values) > count($headers)) {
+                    throw new InvalidArgumentException("CSV row {$rowNumber} contains more fields than the header.");
+                }
+
                 $raw = [];
                 foreach ($headers as $index => $header) {
                     $raw[$header] = trim((string)($values[$index] ?? ''));
