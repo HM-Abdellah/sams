@@ -572,12 +572,21 @@ export const ui = {
     statistics() {
         const box = document.querySelector('#statisticsGrid');
         if (!box) return;
-        const signedLessons = (state.attendanceSignoffs?.period_signoffs || []).filter((row) => row.status === 'signed').length;
+        const signoffRows = Array.isArray(state.attendanceSignoffs?.period_signoffs)
+            ? state.attendanceSignoffs.period_signoffs
+            : [];
+        const signedLessonRows = signoffRows.filter((row) => row.status === 'signed');
+        const signedLessons = signedLessonRows.length;
+        const signedLessonKeys = new Set(
+            signedLessonRows.map((row) => String(row.attendance_date) + '|' + Number(row.period))
+        );
         box.innerHTML = '';
 
         for (const student of state.students) {
             const absent = state.attendance.filter((row) =>
-                Number(row.student_id) === Number(student.id) && row.status === 'absent'
+                Number(row.student_id) === Number(student.id)
+                && row.status === 'absent'
+                && signedLessonKeys.has(String(row.attendance_date) + '|' + Number(row.period))
             ).length;
             const certifiedPresent = Math.max(0, signedLessons - absent);
             const rate = signedLessons > 0 ? attendanceRate(certifiedPresent, signedLessons) : 0;
