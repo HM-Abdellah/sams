@@ -213,6 +213,12 @@ try {
             Response::error('Forbidden.', 403);
         }
 
+        if (in_array((string)$batch['status'], ['imported', 'failed'], true)) {
+            if (in_array($action, ['correct', 'revalidate', 'import'], true)) {
+                Response::error('This import batch can no longer be modified.', 409);
+            }
+        }
+
         if ($action === 'correct') {
             $rowId = (int)($body['row_id'] ?? 0);
             if ($rowId < 1) Response::error('Invalid import row.', 422);
