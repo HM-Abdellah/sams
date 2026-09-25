@@ -140,11 +140,15 @@ final class AdminDashboardRepository
             "SELECT c.id, c.name, c.level, c.branch, ay.name AS academic_year_name
              FROM classes c
              INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-             LEFT JOIN attendance a ON a.attendance_date = CURDATE()
-             LEFT JOIN student_enrollments e ON e.id = a.enrollment_id AND e.class_id = c.id
-             WHERE c.is_active = 1 AND ay.is_active = 1
-             GROUP BY c.id, c.name, c.level, c.branch, ay.name
-             HAVING COUNT(a.id) = 0
+             WHERE c.is_active = 1
+               AND ay.is_active = 1
+               AND NOT EXISTS (
+                   SELECT 1
+                   FROM attendance a
+                   INNER JOIN student_enrollments e ON e.id = a.enrollment_id
+                   WHERE e.class_id = c.id
+                     AND a.attendance_date = CURDATE()
+               )
              ORDER BY c.branch, c.level, c.name"
         )->fetchAll();
     }
