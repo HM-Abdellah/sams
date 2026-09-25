@@ -14,6 +14,7 @@ use SAMS\Repositories\AuditLogRepository;
 use SAMS\Repositories\ClassRepository;
 use SAMS\Repositories\StudentRepository;
 use SAMS\Services\AttendanceService;
+use SAMS\Services\ReportService;
 
 try {
     $user = Auth::requireLogin();
@@ -29,6 +30,33 @@ try {
     $repo = new AttendanceRepository();
 
     if ($method === 'GET') {
+        $weekStart = (string)($_GET['week_start'] ?? '');
+        if ($weekStart !== '') {
+            [$start, $end] = (new ReportService())->weekRange($weekStart);
+            $class = $classes->find($classId);
+            if ($class === null) Response::error('Class not found.', 404);
+
+            if (
+                $end < (string)$class['academic_year_starts_on']
+                || $start > (string)$class['academic_year_ends_on']
+            ) {
+                Response::success([
+                    'attendance' => [],
+                    'week_start' => $start,
+                    'week_end' => $end,
+                ]);
+            }
+
+            $start = max($start, (string)$class['academic_year_starts_on']);
+            $end = min($end, (string)$class['academic_year_ends_on']);
+
+            Response::success([
+                'attendance' => $repo->forClassRange($classId, $start, $end),
+                'week_start' => $start,
+                'week_end' => $end,
+            ]);
+        }
+
         $month = (string)($_GET['month'] ?? '');
         if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month)) {
             Response::error('Invalid month.', 422);
