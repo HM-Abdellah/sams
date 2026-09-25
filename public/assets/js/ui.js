@@ -127,7 +127,7 @@ export const ui = {
             const counts = countsForStudent(student.id, state.attendance);
             return '<tr><td class="sticky student-col">' + (index + 1) + '</td><td class="sticky second-student-col"><strong>' + esc(displayName(student)) + '</strong><small>' + esc(student.student_number || student.massar_code || t('no_student_number')) + '</small></td><td>'
                 + '<div class="desktop-status-buttons">' + statusButton(student.id, 'present', '✓', currentStatus) + statusButton(student.id, 'absent', 'A', currentStatus) + statusButton(student.id, 'late', 'R', currentStatus) + statusButton(student.id, 'excused', 'E', currentStatus) + statusButton(student.id, '', '×', currentStatus) + '</div>'
-                + '</td><td>' + counts.absent + '</td><td>' + counts.other + '</td><td>' + counts.other + '</td></tr>';
+                + '</td><td>' + counts.absent + '</td><td>' + counts.late + '</td><td>' + counts.excused + '</td></tr>';
         }).join('');
         this.stats();
     },
