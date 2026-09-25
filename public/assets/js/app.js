@@ -583,6 +583,7 @@ function buildWeeklyPrintSheet() {
     const sheet = document.querySelector('#weeklyPrintSheet');
     if (!sheet || !state.weekStart) return;
     const currentClass = state.classes.find((item) => Number(item.id) === Number(state.classId)) || {};
+    const teacherName = state.user?.role === 'teacher' ? String(state.user.full_name || '') : '';
     const start = state.weekStart;
     const end = dateFromWeek(start, 5);
     const map = new Map(state.attendance.map((row) => [attendanceKey(row.student_id, row.attendance_date, Number(row.period)), row.status]));
@@ -613,7 +614,8 @@ function buildWeeklyPrintSheet() {
         + '<div><strong>' + esc(t('branch')) + ':</strong> ' + esc(currentClass.branch || '—') + '</div>'
         + '<div><strong>' + esc(t('level')) + ':</strong> ' + esc(currentClass.level || '—') + '</div>'
         + '<div><strong>' + esc(t('academic_year')) + ':</strong> ' + esc(currentClass.academic_year_name || '—') + '</div>'
-        + '<div><strong>' + esc(t('week')) + ':</strong> ' + esc(start) + ' → ' + esc(end) + '</div></div></div>'
+        + '<div><strong>' + esc(t('week')) + ':</strong> ' + esc(start) + ' → ' + esc(end) + '</div>'
+        + '<div><strong>' + esc(t('teacher')) + ':</strong> ' + esc(teacherName || '________________') + '</div></div></div>'
         + '<table class="print-attendance-table"><thead><tr><th rowspan="2">#</th><th rowspan="2">' + esc(t('student')) + '</th><th rowspan="2">' + esc(t('student_number_short')) + '</th>' + dayHeaders
         + '<th rowspan="2">' + esc(t('absence_short')) + '</th><th rowspan="2">' + esc(t('late_short')) + '</th><th rowspan="2">' + esc(t('excused_short')) + '</th></tr></thead><tbody>' + rows + '</tbody></table>'
         + '<div class="print-legend"><span><strong>P</strong> ' + esc(t('present')) + '</span><span><strong>A</strong> ' + esc(t('absent')) + '</span><span><strong>R</strong> ' + esc(t('late')) + '</span><span><strong>E</strong> ' + esc(t('excused')) + '</span><span>· ' + esc(t('not_marked')) + '</span></div>'
