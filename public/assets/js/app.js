@@ -63,20 +63,51 @@ async function boot() {
     }
 }
 
+function ensureAdminDynamicUI() {
+    const adminPanel = document.querySelector('[data-panel="admin"]');
+    if (!adminPanel) return;
+
+    if (!document.querySelector('#assignmentsTable')) {
+        const table = document.createElement('div');
+        table.className = 'table-scroll';
+        table.innerHTML = '<table id="assignmentsTable"><thead></thead><tbody></tbody></table>';
+        const form = document.querySelector('#assignmentForm');
+        form?.insertAdjacentElement('afterend', table);
+    }
+
+    if (!document.querySelector('#academicYearsTable')) {
+        const table = document.createElement('div');
+        table.className = 'table-scroll';
+        table.innerHTML = '<table id="academicYearsTable"><thead></thead><tbody></tbody></table>';
+        const form = document.querySelector('#academicYearForm');
+        form?.insertAdjacentElement('afterend', table);
+    }
+
+    if (!document.querySelector('#importCorrectionDialog')) {
+        const dialog = document.createElement('dialog');
+        dialog.id = 'importCorrectionDialog';
+        dialog.innerHTML = '<form id="importCorrectionForm"><h2>Corriger les lignes invalides</h2><div id="importCorrectionRows"></div><div class="dialog-actions"><button class="btn" type="button" data-close-dialog="importCorrectionDialog">Annuler</button><button class="btn primary" type="submit">Corriger et revalider</button></div></form>';
+        document.body.appendChild(dialog);
+    }
+}
+
 async function loadAdmin() {
     if (state.user?.role !== 'admin') return;
     try {
+        ensureAdminDynamicUI();
         const requests = [
             API.users(),
             API.academicYears(),
             state.classId ? API.imports(state.classId) : Promise.resolve({ imports: [] }),
+            state.classId ? API.teacherClasses({ classId: state.classId }) : Promise.resolve({ teachers: [] }),
             API.audit({ page: 1, per_page: 20 }),
         ];
-        const [users, academicYears, imports, audit] = await Promise.all(requests);
+        const [users, academicYears, imports, assignments, audit] = await Promise.all(requests);
         setState({
             users: users.users || [],
             academicYears: academicYears.academic_years || [],
             imports: imports.imports || [],
+            assignments: assignments.teachers || [],
             auditItems: audit.items || [],
         });
         renderAll();
