@@ -20,8 +20,14 @@ final class Auth
         $id = (int)($user['id'] ?? 0);
         $role = (string)($user['role'] ?? '');
         $name = trim((string)($user['full_name'] ?? ''));
+        $sessionVersion = (int)($user['session_version'] ?? 0);
 
-        if ($id < 1 || !in_array($role, self::ROLES, true) || $name === '') {
+        if (
+            $id < 1
+            || !in_array($role, self::ROLES, true)
+            || $name === ''
+            || $sessionVersion < 1
+        ) {
             throw new \InvalidArgumentException('Invalid user identity.');
         }
 
