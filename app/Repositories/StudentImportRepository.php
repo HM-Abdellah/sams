@@ -204,14 +204,14 @@ final class StudentImportRepository
         string $status
     ): void {
         $stmt = Database::connection()->prepare(
-            'UPDATE student_import_batches
+            "UPDATE student_import_batches
              SET status = ?,
                  total_rows = ?,
                  valid_rows = ?,
                  warning_rows = ?,
                  error_rows = ?,
                  imported_at = CASE WHEN ? = 'imported' THEN CURRENT_TIMESTAMP ELSE imported_at END
-             WHERE id = ?'
+             WHERE id = ?"
         );
 
         $stmt->execute([
