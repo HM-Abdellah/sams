@@ -79,9 +79,9 @@ $csrf = Csrf::token();
             <input id="studentSearch" type="search" placeholder="Rechercher un élève…" data-i18n-placeholder="search_student" autocomplete="off" aria-label="Rechercher un élève">
         </div>
 
-        <div class="week-day-strip" id="weekDays" role="tablist" aria-label="Jours de la semaine"></div>
+        <div class="week-day-strip" id="weekDays" role="tablist" aria-label="Jours de la semaine" data-i18n-aria="weekdays"></div>
 
-        <div class="period-strip" id="periods" role="group" aria-label="Périodes"></div>
+        <div class="period-strip" id="periods" role="group" aria-label="Périodes" data-i18n-aria="periods"></div>
 
         <div class="filters">
             <button class="filter active" data-filter="all" type="button" data-i18n="all">Tous</button>
@@ -101,26 +101,26 @@ $csrf = Csrf::token();
     </section>
 
     <section class="panel hidden" data-panel="students">
-        <div class="panel-head"><div><h1>Élèves de la classe</h1><p id="studentCount">0 élève</p></div><button class="btn success" id="addStudentBtn" type="button">+ Élève</button></div>
+        <div class="panel-head"><div><h1 data-i18n="class_students">Élèves de la classe</h1><p id="studentCount">0 élève</p></div><button class="btn success" id="addStudentBtn" type="button" data-i18n="add_student">+ Élève</button></div>
         <div class="students-list" id="studentsList"></div>
     </section>
 
     <section class="panel hidden" data-panel="statistics">
-        <div class="panel-head"><div><h1>Statistiques mensuelles</h1><p>Les indicateurs sont calculés depuis MySQL.</p></div></div>
+        <div class="panel-head"><div><h1 data-i18n="weekly_statistics">Statistiques de la semaine</h1><p data-i18n="weekly_statistics_desc">Les indicateurs sont calculés depuis les enregistrements de la semaine sélectionnée.</p></div></div>
         <div class="statistics-grid" id="statisticsGrid"></div>
     </section>
 
-    <section class="panel hidden" data-panel="archive">
+    <section class="panel hidden admin-only" data-panel="archive">
         <div class="panel-head">
-            <div><h1>Archive historique</h1><p>Lecture des classes et présences historiques.</p></div>
+            <div><h1 data-i18n="archive_title">Archive historique</h1><p data-i18n="archive_desc">Lecture des classes et présences historiques.</p></div>
             <div class="toolbar-left">
-                <label>Mois<input id="archiveMonth" type="month" aria-label="Mois archive"></label>
-                <button class="btn primary" id="loadArchiveBtn" type="button">Charger</button>
+                <label><span data-i18n="month">Mois</span><input id="archiveMonth" type="month" aria-label="Mois archive"></label>
+                <button class="btn primary" id="loadArchiveBtn" type="button" data-i18n="load">Charger</button>
             </div>
         </div>
         <div class="filters">
-            <button class="filter active" data-archive-view="days" type="button">Jours</button>
-            <button class="filter" data-archive-view="month" type="button">Élèves</button>
+            <button class="filter active" data-archive-view="days" type="button" data-i18n="days">Jours</button>
+            <button class="filter" data-archive-view="month" type="button" data-i18n="students">Élèves</button>
         </div>
         <div class="table-scroll"><table id="archiveTable"><thead></thead><tbody></tbody></table></div>
     </section>
@@ -251,10 +251,10 @@ $csrf = Csrf::token();
     <section class="panel hidden" data-panel="signature">
         <div class="panel-head"><div><h1>Signature de l'enseignant</h1><p>La signature est conservée pour la classe active.</p></div></div>
         <div class="signature-panel">
-            <canvas id="signatureCanvas" width="900" height="320" aria-label="Zone de signature"></canvas>
+            <canvas id="signatureCanvas" width="900" height="320" aria-label="Zone de signature" data-i18n-aria="signature_area"></canvas>
             <div class="signature-actions">
-                <button class="btn" id="clearSignatureBtn" type="button">Effacer</button>
-                <button class="btn primary" id="saveSignatureBtn" type="button">Enregistrer</button>
+                <button class="btn" id="clearSignatureBtn" type="button" data-i18n="clear">Effacer</button>
+                <button class="btn primary" id="saveSignatureBtn" type="button" data-i18n="save">Enregistrer</button>
             </div>
         </div>
     </section>
@@ -288,17 +288,17 @@ $csrf = Csrf::token();
 </form></dialog>
 
 <dialog id="studentDialog"><form id="studentForm">
-    <h2>Ajouter un élève</h2>
-    <label>Prénom<input id="firstNameInput" required maxlength="80"></label>
-    <label>Nom<input id="lastNameInput" required maxlength="80"></label>
-    <label>Massar<input id="massarInput" maxlength="32"></label>
-    <label>Date de naissance<input id="birthDateInput" type="date"></label>
-    <label>N° élève<input id="studentNumberInput" maxlength="30"></label>
-    <div class="dialog-actions"><button class="btn" value="cancel" type="button" data-close-dialog="studentDialog">Annuler</button><button class="btn primary" id="saveStudentBtn" type="submit">Ajouter</button></div>
+    <h2 data-i18n="add_student">Ajouter un élève</h2>
+    <label><span data-i18n="first_name">Prénom</span><input id="firstNameInput" required maxlength="80"></label>
+    <label><span data-i18n="last_name">Nom</span><input id="lastNameInput" required maxlength="80"></label>
+    <label><span data-i18n="massar">Massar</span><input id="massarInput" maxlength="32"></label>
+    <label><span data-i18n="birth_date">Date de naissance</span><input id="birthDateInput" type="date"></label>
+    <label><span data-i18n="student_number">N° élève</span><input id="studentNumberInput" maxlength="30"></label>
+    <div class="dialog-actions"><button class="btn" value="cancel" type="button" data-close-dialog="studentDialog">Annuler</button><button class="btn primary" id="saveStudentBtn" type="submit" data-i18n="add">Ajouter</button></div>
 </form></dialog>
 
 <dialog id="editStudentDialog"><form id="editStudentForm">
-    <h2>Modifier un élève</h2>
+    <h2 data-i18n="edit_student">Modifier un élève</h2>
     <input id="editStudentId" type="hidden">
     <label>Prénom<input id="editFirstNameInput" required maxlength="80"></label>
     <label>Nom<input id="editLastNameInput" required maxlength="80"></label>
@@ -309,10 +309,10 @@ $csrf = Csrf::token();
 </form></dialog>
 
 <dialog id="classDialog"><form id="classForm">
-    <h2>Créer une classe</h2>
-    <label>Nom<input id="classNameInput" required maxlength="100"></label>
-    <label>Niveau<input id="classLevelInput" maxlength="50"></label>
-    <label>Branche<input id="classBranchInput" maxlength="100"></label>
+    <h2 data-i18n="create_class">Créer une classe</h2>
+    <label><span data-i18n="name">Nom</span><input id="classNameInput" required maxlength="100"></label>
+    <label><span data-i18n="level">Niveau</span><input id="classLevelInput" maxlength="50"></label>
+    <label><span data-i18n="branch">Branche</span><input id="classBranchInput" maxlength="100"></label>
     <div class="dialog-actions"><button class="btn" type="button" data-close-dialog="classDialog">Annuler</button><button class="btn primary" id="saveClassBtn" type="submit">Créer</button></div>
 </form></dialog>
 
