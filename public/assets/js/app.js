@@ -171,6 +171,53 @@ async function openStudentHistory(studentId) {
 }
 
 function ensureAdminDynamicUI() {
+    if (!document.querySelector('#adminClassesTable')) {
+        const table = document.createElement('div');
+        table.className = 'table-scroll';
+        table.innerHTML = '<table id="adminClassesTable"><thead></thead><tbody></tbody></table>';
+        const form = document.querySelector('#classForm');
+        form?.insertAdjacentElement('afterend', table);
+    }
+
+    if (!document.querySelector('#editClassDialog')) {
+        const dialog = document.createElement('dialog');
+        dialog.id = 'editClassDialog';
+        dialog.innerHTML = '<form id="editClassForm">'
+            + '<h2>Modifier une classe</h2>'
+            + '<input id="editClassId" type="hidden">'
+            + '<label>Nom<input id="editClassNameInput" required maxlength="100"></label>'
+            + '<label>Niveau<input id="editClassLevelInput" maxlength="50"></label>'
+            + '<label>Branche<input id="editClassBranchInput" maxlength="100"></label>'
+            + '<div class="dialog-actions"><button class="btn" type="button" data-close-dialog="editClassDialog">Annuler</button><button class="btn primary" type="submit">Enregistrer</button></div>'
+            + '</form>';
+        document.body.appendChild(dialog);
+    }
+
+    if (!document.querySelector('#editUserDialog')) {
+        const dialog = document.createElement('dialog');
+        dialog.id = 'editUserDialog';
+        dialog.innerHTML = '<form id="editUserForm">'
+            + '<h2>Modifier un utilisateur</h2>'
+            + '<input id="editUserId" type="hidden">'
+            + '<label>Nom complet<input id="editUserFullNameInput" required maxlength="120"></label>'
+            + '<label>Rôle<select id="editUserRoleInput"><option value="teacher">teacher</option><option value="counselor">counselor</option><option value="admin">admin</option></select></label>'
+            + '<label>Actif<select id="editUserActiveInput"><option value="1">Oui</option><option value="0">Non</option></select></label>'
+            + '<div class="dialog-actions"><button class="btn" type="button" data-close-dialog="editUserDialog">Annuler</button><button class="btn primary" type="submit">Enregistrer</button></div>'
+            + '</form>';
+        document.body.appendChild(dialog);
+    }
+
+    if (!document.querySelector('#resetUserPasswordDialog')) {
+        const dialog = document.createElement('dialog');
+        dialog.id = 'resetUserPasswordDialog';
+        dialog.innerHTML = '<form id="resetUserPasswordForm">'
+            + '<h2>Réinitialiser le mot de passe</h2>'
+            + '<input id="resetUserId" type="hidden">'
+            + '<label>Nouveau mot de passe<input id="resetUserPasswordInput" type="password" minlength="10" maxlength="255" required></label>'
+            + '<div class="dialog-actions"><button class="btn" type="button" data-close-dialog="resetUserPasswordDialog">Annuler</button><button class="btn primary" type="submit">Réinitialiser</button></div>'
+            + '</form>';
+        document.body.appendChild(dialog);
+    }
     const adminPanel = document.querySelector('[data-panel="admin"]');
     if (!adminPanel) return;
 
@@ -252,14 +299,16 @@ async function loadAdmin() {
         ensureAdminDynamicUI();
         const requests = [
             API.users(),
+            API.adminClasses(),
             API.academicYears(),
             state.classId ? API.imports(state.classId) : Promise.resolve({ imports: [] }),
             state.classId ? API.teacherClasses({ classId: state.classId }) : Promise.resolve({ teachers: [] }),
             API.audit({ page: 1, per_page: 20 }),
         ];
-        const [users, academicYears, imports, assignments, audit] = await Promise.all(requests);
+        const [users, classes, academicYears, imports, assignments, audit] = await Promise.all(requests);
         setState({
             users: users.users || [],
+            adminClasses: classes.classes || [],
             academicYears: academicYears.academic_years || [],
             imports: imports.imports || [],
             assignments: assignments.teachers || [],
@@ -635,6 +684,58 @@ function wire() {
     const archiveMonth = document.querySelector('#archiveMonth');
     if (archiveMonth) archiveMonth.value = state.month;
 
+    document.querySelector('#editClassForm')?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const classId = Number(document.querySelector('#editClassId').value);
+        try {
+            await API.updateClass(classId, {
+                name: document.querySelector('#editClassNameInput').value.trim(),
+                level: document.querySelector('#editClassLevelInput').value.trim(),
+                branch: document.querySelector('#editClassBranchInput').value.trim(),
+            });
+            document.querySelector('#editClassDialog')?.close();
+            const classes = await API.classes();
+            setState({ classes: classes.classes || [] });
+            await loadAdmin();
+            renderAll();
+            ui.toast('Classe modifiée.');
+        } catch (error) {
+            ui.toast(error.message || 'Erreur de modification de classe.', true);
+        }
+    });
+
+    document.querySelector('#editUserForm')?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const userId = Number(document.querySelector('#editUserId').value);
+        try {
+            await API.updateUser(userId, {
+                full_name: document.querySelector('#editUserFullNameInput').value.trim(),
+                role: document.querySelector('#editUserRoleInput').value,
+                is_active: document.querySelector('#editUserActiveInput').value === '1',
+            });
+            document.querySelector('#editUserDialog')?.close();
+            await loadAdmin();
+            ui.toast('Utilisateur modifié.');
+        } catch (error) {
+            ui.toast(error.message || 'Erreur de modification utilisateur.', true);
+        }
+    });
+
+    document.querySelector('#resetUserPasswordForm')?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const userId = Number(document.querySelector('#resetUserId').value);
+        const password = document.querySelector('#resetUserPasswordInput').value;
+        try {
+            await API.resetUserPassword(userId, password);
+            event.currentTarget.reset();
+            document.querySelector('#resetUserPasswordDialog')?.close();
+            await loadAdmin();
+            ui.toast('Mot de passe réinitialisé.');
+        } catch (error) {
+            ui.toast(error.message || 'Erreur de réinitialisation.', true);
+        }
+    });
+
     document.querySelector('#userForm')?.addEventListener('submit', async (event) => {
         event.preventDefault();
         try {
@@ -704,10 +805,58 @@ function wire() {
         }
     });
 
+    document.querySelector('#adminClassesTable')?.addEventListener('click', async (event) => {
+        const edit = event.target.closest('[data-edit-class]');
+        const toggle = event.target.closest('[data-toggle-class]');
+        try {
+            if (edit) {
+                const item = state.adminClasses.find((cls) => Number(cls.id) === Number(edit.dataset.editClass));
+                if (!item) return;
+                document.querySelector('#editClassId').value = String(item.id);
+                document.querySelector('#editClassNameInput').value = item.name || '';
+                document.querySelector('#editClassLevelInput').value = item.level || '';
+                document.querySelector('#editClassBranchInput').value = item.branch || '';
+                document.querySelector('#editClassDialog')?.showModal();
+                return;
+            }
+            if (toggle) {
+                const id = Number(toggle.dataset.toggleClass);
+                const active = toggle.dataset.active !== '1';
+                if (!window.confirm(active ? 'Activer cette classe ?' : 'Désactiver cette classe ?')) return;
+                await API.setClassActive(id, active);
+                const classes = await API.classes();
+                setState({ classes: classes.classes || [] });
+                await loadAdmin();
+                renderAll();
+                ui.toast(active ? 'Classe activée.' : 'Classe désactivée.');
+            }
+        } catch (error) {
+            ui.toast(error.message || 'Erreur de classe.', true);
+        }
+    });
+
     document.querySelector('#usersTable')?.addEventListener('click', async (event) => {
+        const edit = event.target.closest('[data-edit-user]');
+        const reset = event.target.closest('[data-reset-user]');
         const unlock = event.target.closest('[data-unlock-user]');
         const toggle = event.target.closest('[data-toggle-user]');
         try {
+            if (edit) {
+                const user = state.users.find((item) => Number(item.id) === Number(edit.dataset.editUser));
+                if (!user) return;
+                document.querySelector('#editUserId').value = String(user.id);
+                document.querySelector('#editUserFullNameInput').value = user.full_name || '';
+                document.querySelector('#editUserRoleInput').value = user.role || 'teacher';
+                document.querySelector('#editUserActiveInput').value = Number(user.is_active) === 1 ? '1' : '0';
+                document.querySelector('#editUserDialog')?.showModal();
+                return;
+            }
+            if (reset) {
+                document.querySelector('#resetUserId').value = String(reset.dataset.resetUser);
+                document.querySelector('#resetUserPasswordInput').value = '';
+                document.querySelector('#resetUserPasswordDialog')?.showModal();
+                return;
+            }
             if (unlock) {
                 await API.unlockUser(Number(unlock.dataset.unlockUser));
                 await loadAdmin();
