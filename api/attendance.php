@@ -220,6 +220,10 @@ try {
                         ]
                     );
 
+                    $weekStartForEntry = (new ReportService())->weekRange($entry['attendance_date'])[0];
+                    $signoffs->invalidatePeriod($classId, $entry['attendance_date'], $entry['period'], (int)$user['id']);
+                    $signoffs->invalidateWeekSignature($classId, $weekStartForEntry, (int)$user['id']);
+
                     ++$changed;
                     continue;
                 }
@@ -253,6 +257,10 @@ try {
                         'batch' => true,
                     ]
                 );
+
+                $weekStartForEntry = (new ReportService())->weekRange($entry['attendance_date'])[0];
+                $signoffs->invalidatePeriod($classId, $entry['attendance_date'], $entry['period'], (int)$user['id']);
+                $signoffs->invalidateWeekSignature($classId, $weekStartForEntry, (int)$user['id']);
 
                 ++$changed;
             }
