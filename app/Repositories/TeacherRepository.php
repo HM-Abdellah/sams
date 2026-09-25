@@ -123,6 +123,13 @@ final class TeacherRepository
         return (bool)$stmt->fetchColumn();
     }
 
+    public function subjectExistsActive(int $subjectId): bool
+    {
+        $stmt = Database::connection()->prepare('SELECT 1 FROM subjects WHERE id = ? AND is_active = 1 LIMIT 1');
+        $stmt->execute([$subjectId]);
+        return (bool)$stmt->fetchColumn();
+    }
+
     public function classExistsActive(int $classId): bool
     {
         $stmt = Database::connection()->prepare(
