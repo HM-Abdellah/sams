@@ -343,8 +343,9 @@ async function loadAdmin() {
             state.classId ? API.imports(state.classId) : Promise.resolve({ imports: [] }),
             state.classId ? API.teacherClasses({ classId: state.classId }) : Promise.resolve({ teachers: [] }),
             API.audit({ page: 1, per_page: 20 }),
+            API.adminDashboard(),
         ];
-        const [users, classes, academicYears, imports, assignments, audit] = await Promise.all(requests);
+        const [users, classes, academicYears, imports, assignments, audit, dashboard] = await Promise.all(requests);
         setState({
             users: users.users || [],
             adminClasses: classes.classes || [],
@@ -352,6 +353,7 @@ async function loadAdmin() {
             imports: imports.imports || [],
             assignments: assignments.teachers || [],
             auditItems: audit.items || [],
+            adminDashboard: dashboard || null,
         });
         renderAll();
     } catch (error) {
@@ -624,6 +626,11 @@ function wire() {
         if (button.dataset.tab === 'admin') await loadAdmin();
         restartTeacherRefresh();
     }));
+
+    document.querySelector('#refreshDashboardBtn')?.addEventListener('click', async () => {
+        await loadAdmin();
+        ui.toast(t('refresh'));
+    });
 
     document.querySelector('#teacherSearch')?.addEventListener('input', () => ui.teachers());
     document.querySelector('#teacherStatusFilter')?.addEventListener('change', () => ui.teachers());
