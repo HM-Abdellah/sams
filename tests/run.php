@@ -7,6 +7,9 @@ require_once __DIR__ . '/../app/Services/ClassService.php';
 require_once __DIR__ . '/../app/Services/StudentService.php';
 require_once __DIR__ . '/../app/Services/UserService.php';
 require_once __DIR__ . '/../app/Services/AcademicYearService.php';
+require_once __DIR__ . '/../app/Helpers/Security.php';
+require_once __DIR__ . '/../app/Helpers/Csrf.php';
+require_once __DIR__ . '/../app/Helpers/Auth.php';
 
 function expect_true(bool $condition, string $message): void
 {
@@ -112,6 +115,35 @@ $tests = [
             static fn() => $service->validateRange('2027-07-31', '2026-09-01'),
             'reversed academic year range should be rejected'
         );
+    },
+
+    'auth login stores a valid session identity' => static function (): void {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+
+        try {
+            SAMS\Helpers\Auth::login([
+                'id' => 42,
+                'full_name' => 'Integration User',
+                'role' => 'teacher',
+                'session_version' => 7,
+            ]);
+
+            expect_true(
+                ($_SESSION['_auth_user']['id'] ?? null) === 42,
+                'authenticated user id was not stored in session'
+            );
+            expect_true(
+                ($_SESSION['_auth_user']['session_version'] ?? null) === 7,
+                'session version was not stored correctly'
+            );
+        } finally {
+            $_SESSION = [];
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_destroy();
+            }
+        }
     },
 ];
 
