@@ -12,16 +12,42 @@ jobs:
     container:
       image: php:8.4-cli
 
+    services:
+      db:
+        image: mariadb:11.4
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: sams
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      SAMS_TEST_DB_HOST: db
+      SAMS_TEST_DB_PORT: 3306
+      SAMS_TEST_DB_NAME: sams
+      SAMS_TEST_DB_USER: root
+      SAMS_TEST_DB_PASS: root
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Install MySQL PDO extension
+        shell: sh
+        run: docker-php-ext-install pdo_mysql
+
       - name: Lint PHP sources
         shell: sh
         run: |
-          find api app config public scripts tests -type f -name '*.php' -print0 \
-            | xargs -0 -n1 php -l
+          find api app config public scripts tests -type f -name '*.php' -print0             | xargs -0 -n1 php -l
 
       - name: Run service tests
         shell: sh
         run: php tests/run.php
+
+      - name: Run MariaDB integration tests
+        shell: sh
+        run: php tests/integration.php
