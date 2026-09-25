@@ -125,7 +125,7 @@ jobs:
       - name: Start PHP server
         shell: bash
         run: |
-          php -S 0.0.0.0:8080 -t . > /tmp/sams-server.log 2>&1 &
+          php -S 0.0.0.0:8080 scripts/dev_router.php > /tmp/sams-server.log 2>&1 &
           for i in $(seq 1 20); do
             if curl -fsS http://127.0.0.1:8080/public/login.php > /dev/null; then
               exit 0
