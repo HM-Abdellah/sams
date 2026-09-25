@@ -34,6 +34,24 @@ final class ClassRepository
         return $stmt->fetchAll();
     }
 
+    public function allForAdmin(): array
+    {
+        return Database::connection()->query(
+            'SELECT
+                c.id,
+                c.name,
+                c.level,
+                c.branch,
+                c.academic_year_id,
+                c.is_active,
+                ay.name AS academic_year_name,
+                ay.is_active AS academic_year_active
+             FROM classes c
+             INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+             ORDER BY ay.starts_on DESC, c.name, c.id'
+        )->fetchAll();
+    }
+
     public function find(int $classId): ?array
     {
         $stmt = Database::connection()->prepare(
