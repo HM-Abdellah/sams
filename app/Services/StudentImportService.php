@@ -56,6 +56,13 @@ final class StudentImportService
 
             $headers = $this->normalizeHeaders($headers);
             $headerMap = array_flip($headers);
+            $allowedHeaders = array_merge(self::REQUIRED_HEADERS, self::OPTIONAL_HEADERS);
+
+            foreach ($headers as $header) {
+                if (!in_array($header, $allowedHeaders, true)) {
+                    throw new InvalidArgumentException("Unsupported CSV column: {$header}.");
+                }
+            }
 
             foreach (self::REQUIRED_HEADERS as $header) {
                 if (!isset($headerMap[$header])) {
