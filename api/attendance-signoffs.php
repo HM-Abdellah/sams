@@ -33,6 +33,21 @@ try {
     if ($method === 'GET') {
         $weekInput = (string)($_GET['week_start'] ?? '');
         [$weekStart, $weekEnd] = (new ReportService())->weekRange($weekInput);
+        $teachers = $signoffs->teachersForClass($classId);
+        $subjectsByTeacher = [];
+        foreach ($signoffs->subjectsForClassTeachers($classId) as $subject) {
+            $subjectsByTeacher[(int)$subject['teacher_id']][] = [
+                'id' => (int)$subject['subject_id'],
+                'code' => $subject['subject_code'],
+                'name_fr' => $subject['subject_name_fr'],
+                'name_ar' => $subject['subject_name_ar'],
+                'name_en' => $subject['subject_name_en'],
+            ];
+        }
+        foreach ($teachers as &$teacher) {
+            $teacher['subjects'] = $subjectsByTeacher[(int)$teacher['id']] ?? [];
+        }
+        unset($teacher);
         if (
             $weekEnd < (string)$class['academic_year_starts_on']
             || $weekStart > (string)$class['academic_year_ends_on']
@@ -40,7 +55,7 @@ try {
             Response::success([
                 'week_start' => $weekStart,
                 'week_end' => $weekEnd,
-                'teachers' => $signoffs->teachersForClass($classId),
+                'teachers' => $teachers,
                 'period_signoffs' => [],
                 'weekly_signatures' => [],
                 'submission' => $signoffs->findSubmission($classId, $weekStart),
