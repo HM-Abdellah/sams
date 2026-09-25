@@ -71,18 +71,21 @@ try {
     $date = (string)($body['attendance_date'] ?? '');
     $period = (int)($body['period'] ?? 0);
 
-    if (!in_array($action, ['sign_period', 'reopen_period', 'sign_week'], true)) {
+    if (!in_array($action, ['sign_period', 'reopen_period', 'sign_week', 'receive_week'], true)) {
         Response::error('Unknown attendance sign-off action.', 422);
     }
 
     $isTeacher = (string)$user['role'] === 'teacher';
-    if ($action !== 'reopen_period' && !$isTeacher) {
+    if (in_array($action, ['sign_period', 'sign_week'], true) && !$isTeacher) {
         Response::error('Only teachers can sign attendance.', 403);
+    }
+    if ($action === 'receive_week' && (string)$user['role'] !== 'admin') {
+        Response::error('Only administrators can receive the weekly register.', 403);
     }
 
     $signatureRepo = new SignatureRepository();
     $signature = $signatureRepo->findByTeacherAndClass((int)$user['id'], $classId);
-    if (($action === 'sign_period' || $action === 'sign_week') && $signature === null) {
+    if (in_array($action, ['sign_period', 'sign_week'], true) && $signature === null) {
         Response::error('Save your class signature before signing attendance.', 422);
     }
 
@@ -99,22 +102,64 @@ try {
         $weekStart = (new ReportService())->weekRange($date)[0];
     }
 
+    $existingPeriod = null;
+    $existingWeekSignature = null;
+    $weekCounts = null;
+    $submission = null;
+
+    if ($action === 'sign_period') {
+        $existingPeriod = $signoffs->findPeriod($classId, $date, $period);
+        if ($existingPeriod !== null && (int)$existingPeriod['teacher_id'] !== (int)$user['id']) {
+            Response::error('This lesson is already signed by another teacher.', 409);
+        }
+    } elseif ($action === 'reopen_period') {
+        $existingPeriod = $signoffs->findPeriod($classId, $date, $period);
+        if ($existingPeriod === null) {
+            Response::success(['changed' => false]);
+        }
+        if ($isTeacher && (int)$existingPeriod['teacher_id'] !== (int)$user['id']) {
+            Response::error('Only the signing teacher can reopen this lesson.', 403);
+        }
+    } elseif ($action === 'sign_week') {
+        $existingWeekSignature = $signoffs->findWeekSignature($classId, (int)$user['id'], $weekStart);
+        $weekCounts = $signoffs->countTeacherPeriodSignoffs($classId, (int)$user['id'], $weekStart, $weekEnd);
+        if ((int)$weekCounts['signed_lessons'] < 1) {
+            Response::error('Sign at least one lesson before signing the week.', 422);
+        }
+        if ((int)$weekCounts['needs_resign'] > 0) {
+            Response::error('Correct and re-sign all changed lessons before signing the week.', 422);
+        }
+    } elseif ($action === 'receive_week') {
+        $teachers = $signoffs->teachersForClass($classId);
+        $weeklyRows = $signoffs->weekSignatures($classId, $weekStart);
+        $weeklyByTeacher = [];
+        foreach ($weeklyRows as $row) {
+            $weeklyByTeacher[(int)$row['teacher_id']] = $row;
+        }
+        if ($teachers === [] || count($weeklyByTeacher) < count($teachers)) {
+            Response::error('All assigned teachers must sign the week before administration can receive it.', 422);
+        }
+        foreach ($teachers as $teacher) {
+            $row = $weeklyByTeacher[(int)$teacher['id']] ?? null;
+            if ($row === null || (string)$row['status'] !== 'signed') {
+                Response::error('All assigned teachers must sign the week before administration can receive it.', 422);
+            }
+        }
+        $submission = $signoffs->findSubmission($classId, $weekStart);
+    }
+
     $pdo = Database::connection();
     $audit = new AuditLogRepository();
     $pdo->beginTransaction();
 
     try {
         if ($action === 'sign_period') {
-            $existing = $signoffs->findPeriod($classId, $date, $period);
-            if ($existing !== null && (int)$existing['teacher_id'] !== (int)$user['id'] && $isTeacher) {
-                Response::error('This lesson is already signed by another teacher.', 409);
-            }
             $signoffs->upsertPeriod($classId, (int)$user['id'], $date, $period, (string)$signature['signature_data']);
             $audit->record(
                 (int)$user['id'],
                 'attendance.sign_period',
                 'attendance_signoff',
-                $existing ? (int)$existing['id'] : null,
+                $existingPeriod ? (int)$existingPeriod['id'] : null,
                 ['class_id' => $classId, 'attendance_date' => $date, 'period' => $period]
             );
             $pdo->commit();
@@ -122,45 +167,50 @@ try {
         }
 
         if ($action === 'reopen_period') {
-            $existing = $signoffs->findPeriod($classId, $date, $period);
-            if ($existing === null) {
-                $pdo->commit();
-                Response::success(['changed' => false]);
-            }
-            if ($isTeacher && (int)$existing['teacher_id'] !== (int)$user['id']) {
-                Response::error('Only the signing teacher can reopen this lesson.', 403);
-            }
             $changed = $signoffs->reopenPeriod($classId, $date, $period, (int)$user['id']);
+            $invalidatedSignatures = $signoffs->invalidateWeekSignature($classId, $weekStart, (int)$user['id']);
+            $clearedSubmission = $signoffs->clearSubmission($classId, $weekStart);
             $audit->record(
                 (int)$user['id'],
                 'attendance.reopen_period',
                 'attendance_signoff',
-                (int)$existing['id'],
-                ['class_id' => $classId, 'attendance_date' => $date, 'period' => $period]
+                (int)$existingPeriod['id'],
+                [
+                    'class_id' => $classId,
+                    'attendance_date' => $date,
+                    'period' => $period,
+                    'invalidated_week_signatures' => $invalidatedSignatures,
+                    'cleared_week_submission' => $clearedSubmission !== null,
+                ]
             );
             $pdo->commit();
             Response::success(['changed' => $changed]);
         }
 
         if ($action === 'sign_week') {
-            $existing = $signoffs->findWeekSignature($classId, (int)$user['id'], $weekStart);
-            $counts = $signoffs->countTeacherPeriodSignoffs($classId, (int)$user['id'], $weekStart, $weekEnd);
-            if ((int)$counts['signed_lessons'] < 1) {
-                Response::error('Sign at least one lesson before signing the week.', 422);
-            }
-            if ((int)$counts['needs_resign'] > 0) {
-                Response::error('Correct and re-sign all changed lessons before signing the week.', 422);
-            }
             $signoffs->upsertWeekSignature($classId, (int)$user['id'], $weekStart, (string)$signature['signature_data']);
             $audit->record(
                 (int)$user['id'],
                 'attendance.sign_week',
                 'attendance_week_signature',
-                $existing ? (int)$existing['id'] : null,
+                $existingWeekSignature ? (int)$existingWeekSignature['id'] : null,
                 ['class_id' => $classId, 'week_start' => $weekStart]
             );
             $pdo->commit();
             Response::success(['signed' => true]);
+        }
+
+        if ($action === 'receive_week') {
+            $signoffs->receiveWeek($classId, $weekStart, (int)$user['id']);
+            $audit->record(
+                (int)$user['id'],
+                'attendance.receive_week',
+                'attendance_week_submission',
+                $submission ? (int)$submission['id'] : null,
+                ['class_id' => $classId, 'week_start' => $weekStart]
+            );
+            $pdo->commit();
+            Response::success(['received' => true]);
         }
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
