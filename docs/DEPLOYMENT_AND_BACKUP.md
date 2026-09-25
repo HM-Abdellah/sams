@@ -26,13 +26,13 @@ Do not place database credentials in Git.
 
 From the repository root:
 
-    php -S 0.0.0.0:8080 -t .
+    php -S 0.0.0.0:8080 scripts/dev_router.php
 
 Then open:
 
     http://localhost:8080/public/
 
-This is for development/testing. It is not a replacement for the intended Apache deployment.
+This is for development/testing. The router exposes only public/ and api/ and keeps application source/configuration outside the HTTP surface. It is not a replacement for the intended Apache deployment.
 
 ## Configuration
 
