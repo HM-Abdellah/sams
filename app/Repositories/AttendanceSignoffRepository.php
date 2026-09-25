@@ -68,6 +68,25 @@ final class AttendanceSignoffRepository
         return $stmt->fetchAll();
     }
 
+    public function subjectsForClassTeachers(int $classId): array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT
+                tt.teacher_id,
+                s.id AS subject_id,
+                s.code AS subject_code,
+                s.name_fr AS subject_name_fr,
+                s.name_ar AS subject_name_ar,
+                s.name_en AS subject_name_en
+             FROM teacher_teachings tt
+             INNER JOIN subjects s ON s.id = tt.subject_id
+             WHERE tt.class_id = ?
+             ORDER BY tt.teacher_id, s.name_fr, s.id'
+        );
+        $stmt->execute([$classId]);
+        return $stmt->fetchAll();
+    }
+
     public function findPeriod(int $classId, string $date, int $period): ?array
     {
         $stmt = Database::connection()->prepare(
