@@ -36,6 +36,8 @@ export function countsForStudent(studentId, rows = []) {
   return {
     present: own.filter(r => r.status === 'present').length,
     absent: own.filter(r => r.status === 'absent').length,
+    late: own.filter(r => r.status === 'late').length,
+    excused: own.filter(r => r.status === 'excused').length,
     other: own.filter(r => r.status === 'late' || r.status === 'excused').length,
     total: own.length,
   };
