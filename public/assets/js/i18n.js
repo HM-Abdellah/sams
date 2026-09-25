@@ -117,7 +117,7 @@ export function setLanguage(language) {
   localStorage.setItem('sams-language', language);
   document.documentElement.lang = language;
   document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-  document.title = t('app_title');
+  document.title = t(document.documentElement.dataset.page === 'login' ? 'login_title' : 'app_title');
 
   document.querySelectorAll('[data-i18n]').forEach((element) => {
     const key = element.dataset.i18n;
