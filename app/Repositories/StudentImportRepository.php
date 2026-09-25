@@ -228,9 +228,9 @@ final class StudentImportRepository
     public function markRowImported(int $batchId, int $rowId, int $studentId): void
     {
         $stmt = Database::connection()->prepare(
-            'UPDATE student_import_rows
+            "UPDATE student_import_rows
              SET status = 'imported', student_id = ?, issues = NULL
-             WHERE id = ? AND batch_id = ?'
+             WHERE id = ? AND batch_id = ?"
         );
         $stmt->execute([$studentId, $rowId, $batchId]);
     }
