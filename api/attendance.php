@@ -10,6 +10,7 @@ use SAMS\Helpers\Csrf;
 use SAMS\Helpers\Database;
 use SAMS\Helpers\Response;
 use SAMS\Repositories\AttendanceRepository;
+use SAMS\Repositories\AcademicYearRepository;
 use SAMS\Repositories\AuditLogRepository;
 use SAMS\Repositories\ClassRepository;
 use SAMS\Repositories\StudentRepository;
@@ -52,6 +53,16 @@ try {
     $period = (int)($body['period'] ?? 0);
     $action = (string)($body['action'] ?? 'upsert');
 
+    $class = $classes->find($classId);
+    if ($class === null) {
+        Response::error('Class not found.', 404);
+    }
+
+    $academicYear = (new AcademicYearRepository())->find((int)$class['academic_year_id']);
+    if ($academicYear === null) {
+        Response::error('Academic year not found.', 422);
+    }
+
     $studentRepo = new StudentRepository();
     $student = $studentRepo->findInClass($studentId, $classId);
     if (!$student || (string)$student['status'] !== 'active') {
@@ -60,6 +71,10 @@ try {
 
     $service = new AttendanceService();
     $service->validateKey($studentId, $date, $period);
+
+    if ($date < (string)$academicYear['starts_on'] || $date > (string)$academicYear['ends_on']) {
+        Response::error('Attendance date is outside the academic year.', 422);
+    }
 
     $pdo = Database::connection();
     $audit = new AuditLogRepository();
