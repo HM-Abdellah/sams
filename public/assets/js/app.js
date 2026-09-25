@@ -40,13 +40,15 @@ async function loadClass() {
     if (!await flushAttendanceQueue()) return;
     try {
         ui.setLoading?.(true);
-        const [students, attendance] = await Promise.all([
+        const [students, attendance, signoffs] = await Promise.all([
             API.students(state.classId),
             API.attendanceWeek(state.classId, state.weekStart),
+            API.attendanceSignoffs(state.classId, state.weekStart),
         ]);
         setState({
             students: students.students || [],
             attendance: attendance.attendance || [],
+            attendanceSignoffs: signoffs || { week_start: state.weekStart, week_end: dateFromWeek(state.weekStart, 5), teachers: [], period_signoffs: [], weekly_signatures: [] },
             selectedDay: state.selectedDay || state.weekStart,
         });
         renderAll();
@@ -548,26 +550,108 @@ async function flushAttendanceQueue() {
     return attendanceFlushPromise;
 }
 
-function queueAttendanceStatus(studentId, status) {
+function currentPeriodSignoff() {
+    const date = state.selectedDay || state.weekStart;
+    const period = Number(state.selectedPeriod || 1);
+    return (state.attendanceSignoffs?.period_signoffs || []).find((row) =>
+        String(row.attendance_date) === String(date) && Number(row.period) === period
+    ) || null;
+}
+
+function queueAttendanceToggle(studentId) {
     const date = state.selectedDay || state.weekStart;
     const period = Number(state.selectedPeriod || 1);
     if (!state.classId || !date || !studentId) return;
+
+    const signoff = currentPeriodSignoff();
+    if (signoff?.status === 'signed') {
+        ui.toast(t('api_signed_lesson'), true);
+        return;
+    }
+
     const payload = { student_id: Number(studentId), attendance_date: date, period };
-    const key = attendanceEntryKey(payload);
     const currentStatus = localAttendanceStatus(payload);
+    const nextStatus = currentStatus === 'absent' ? '' : 'absent';
+    const key = attendanceEntryKey(payload);
     const pending = pendingAttendance.get(key);
+
     pendingAttendance.set(key, {
         ...payload,
-        action: status === '' ? 'delete' : 'upsert',
-        status: status || null,
+        action: nextStatus === '' ? 'delete' : 'upsert',
+        status: nextStatus || null,
         previousStatus: pending?.previousStatus ?? currentStatus,
         version: ++attendanceVersion,
     });
-    setLocalAttendanceStatus(payload, status);
+
+    setLocalAttendanceStatus(payload, nextStatus);
     ui.attendance();
     ui.stats();
     ui.statistics();
     scheduleAttendanceFlush();
+}
+
+async function loadAttendanceSignoffs() {
+    if (!state.classId || !state.weekStart) return;
+    try {
+        const result = await API.attendanceSignoffs(state.classId, state.weekStart);
+        setState({ attendanceSignoffs: result || { week_start: state.weekStart, week_end: dateFromWeek(state.weekStart, 5), teachers: [], period_signoffs: [], weekly_signatures: [] } });
+        renderAll();
+    } catch (error) {
+        ui.toast(error.message || t('attendance_signoff_load_error'), true);
+    }
+}
+
+async function signSelectedLesson() {
+    if (!state.classId) return;
+    if (!await flushAttendanceQueue()) return;
+    const signoff = currentPeriodSignoff();
+    if (signoff?.status === 'signed') return;
+    try {
+        await API.attendanceSignoffAction(state.classId, {
+            action: 'sign_period',
+            attendance_date: state.selectedDay || state.weekStart,
+            period: Number(state.selectedPeriod || 1),
+            week_start: state.weekStart,
+        });
+        await loadAttendanceSignoffs();
+        ui.toast(t('lesson_signed'));
+    } catch (error) {
+        ui.toast(error.message || t('attendance_signoff_error'), true);
+    }
+}
+
+async function reopenSelectedLesson() {
+    if (!state.classId) return;
+    if (!await flushAttendanceQueue()) return;
+    const signoff = currentPeriodSignoff();
+    if (!signoff) return;
+    try {
+        await API.attendanceSignoffAction(state.classId, {
+            action: 'reopen_period',
+            attendance_date: state.selectedDay || state.weekStart,
+            period: Number(state.selectedPeriod || 1),
+            week_start: state.weekStart,
+        });
+        await loadAttendanceSignoffs();
+        ui.toast(t('correction_reopened'));
+    } catch (error) {
+        ui.toast(error.message || t('attendance_signoff_error'), true);
+    }
+}
+
+async function signSelectedWeek() {
+    if (!state.classId) return;
+    if (!await flushAttendanceQueue()) return;
+    try {
+        await API.attendanceSignoffAction(state.classId, {
+            action: 'sign_week',
+            week_start: state.weekStart,
+        });
+        await loadAttendanceSignoffs();
+        ui.toast(t('week_signed_success'));
+    } catch (error) {
+        ui.toast(error.message || t('attendance_signoff_error'), true);
+    }
 }
 
 function shiftWeek(delta) {
@@ -831,13 +915,22 @@ function wire() {
     });
 
     const handleAttendanceAction = (event) => {
-        const button = event.target.closest('[data-attendance-status]');
-        if (!button) return;
-        queueAttendanceStatus(Number(button.dataset.student), button.dataset.attendanceStatus || '');
+        const button = event.target.closest('[data-attendance-toggle]');
+        if (!button || button.disabled) return;
+        queueAttendanceToggle(Number(button.dataset.student));
     };
 
     document.querySelector('#attendanceMobileList')?.addEventListener('click', handleAttendanceAction);
     document.querySelector('#attendanceBody')?.addEventListener('click', handleAttendanceAction);
+
+    document.querySelector('#attendanceWorkflow')?.addEventListener('click', async (event) => {
+        if (event.target.closest('[data-sign-period]')) await signSelectedLesson();
+        if (event.target.closest('[data-reopen-period]')) await reopenSelectedLesson();
+    });
+
+    document.querySelector('#weeklyTeacherSignatures')?.addEventListener('click', async (event) => {
+        if (event.target.closest('[data-sign-week]')) await signSelectedWeek();
+    });
 
     document.querySelector('#weekDays')?.addEventListener('click', (event) => {
         const button = event.target.closest('[data-select-day]');
