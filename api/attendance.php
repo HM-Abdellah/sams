@@ -48,6 +48,191 @@ try {
     }
 
     $body = sams_json_body();
+    if ($method === 'POST' && (string)($body['action'] ?? '') === 'bulk') {
+        $entries = $body['entries'] ?? null;
+
+        if (!is_array($entries) || $entries === [] || count($entries) > 500) {
+            Response::error('Invalid attendance batch.', 422);
+        }
+
+        $class = $classes->find($classId);
+        if ($class === null) {
+            Response::error('Class not found.', 404);
+        }
+
+        $academicYear = (new AcademicYearRepository())->find((int)$class['academic_year_id']);
+        if ($academicYear === null) {
+            Response::error('Academic year not found.', 422);
+        }
+
+        // Load the class roster once instead of issuing one student query per entry.
+        $students = $studentRepo->forClass($classId);
+        $allowedStudents = [];
+        foreach ($students as $rosterStudent) {
+            if ((string)$rosterStudent['status'] === 'active') {
+                $allowedStudents[(int)$rosterStudent['id']] = true;
+            }
+        }
+
+        $normalized = [];
+        $seen = [];
+        $minDate = null;
+        $maxDate = null;
+
+        foreach ($entries as $index => $entry) {
+            if (!is_array($entry)) {
+                Response::error('Invalid attendance batch entry.', 422, ['index' => $index]);
+            }
+
+            $entryStudentId = (int)($entry['student_id'] ?? 0);
+            $entryDate = (string)($entry['attendance_date'] ?? '');
+            $entryPeriod = (int)($entry['period'] ?? 0);
+            $entryAction = (string)($entry['action'] ?? 'upsert');
+
+            if (!isset($allowedStudents[$entryStudentId])) {
+                Response::error('Student not found.', 404, ['index' => $index]);
+            }
+
+            $service->validateKey($entryStudentId, $entryDate, $entryPeriod);
+
+            if (
+                $entryDate < (string)$academicYear['starts_on']
+                || $entryDate > (string)$academicYear['ends_on']
+            ) {
+                Response::error(
+                    'Attendance date is outside the academic year.',
+                    422,
+                    ['index' => $index]
+                );
+            }
+
+            $key = $entryStudentId . ':' . $entryDate . ':' . $entryPeriod;
+            if (isset($seen[$key])) {
+                Response::error(
+                    'Duplicate attendance entry in batch.',
+                    422,
+                    ['index' => $index, 'key' => $key]
+                );
+            }
+            $seen[$key] = true;
+
+            $status = null;
+            if ($entryAction !== 'delete') {
+                $status = (string)($entry['status'] ?? '');
+                $service->validate($entryStudentId, $entryDate, $entryPeriod, $status);
+            } elseif (!in_array($entryAction, ['delete'], true)) {
+                Response::error('Invalid attendance action.', 422, ['index' => $index]);
+            }
+
+            $minDate = $minDate === null || $entryDate < $minDate ? $entryDate : $minDate;
+            $maxDate = $maxDate === null || $entryDate > $maxDate ? $entryDate : $maxDate;
+
+            $normalized[] = [
+                'student_id' => $entryStudentId,
+                'attendance_date' => $entryDate,
+                'period' => $entryPeriod,
+                'action' => $entryAction,
+                'status' => $status,
+            ];
+        }
+
+        $existingRows = $repo->forClassRange($classId, $minDate, $maxDate);
+        $existing = [];
+        foreach ($existingRows as $row) {
+            $key = (int)$row['student_id'] . ':' . $row['attendance_date'] . ':' . (int)$row['period'];
+            $existing[$key] = $row;
+        }
+
+        $pdo = Database::connection();
+        $audit = new AuditLogRepository();
+        $pdo->beginTransaction();
+
+        try {
+            $changed = 0;
+            $unchanged = 0;
+
+            foreach ($normalized as $entry) {
+                $key = $entry['student_id'] . ':' . $entry['attendance_date'] . ':' . $entry['period'];
+                $previous = $existing[$key] ?? null;
+
+                if ($entry['action'] === 'delete') {
+                    if ($previous === null) {
+                        ++$unchanged;
+                        continue;
+                    }
+
+                    $repo->delete(
+                        $entry['student_id'],
+                        $entry['attendance_date'],
+                        $entry['period']
+                    );
+
+                    $audit->record(
+                        (int)$user['id'],
+                        'attendance.delete',
+                        'attendance',
+                        (int)$previous['id'],
+                        [
+                            'class_id' => $classId,
+                            'student_id' => $entry['student_id'],
+                            'attendance_date' => $entry['attendance_date'],
+                            'period' => $entry['period'],
+                            'previous_status' => $previous['status'],
+                            'batch' => true,
+                        ]
+                    );
+
+                    ++$changed;
+                    continue;
+                }
+
+                if ($previous !== null && (string)$previous['status'] === $entry['status']) {
+                    ++$unchanged;
+                    continue;
+                }
+
+                $repo->upsert(
+                    $entry['student_id'],
+                    $entry['attendance_date'],
+                    $entry['period'],
+                    $entry['status'],
+                    (int)$user['id']
+                );
+
+                $audit->record(
+                    (int)$user['id'],
+                    'attendance.upsert',
+                    'attendance',
+                    $previous ? (int)$previous['id'] : null,
+                    [
+                        'class_id' => $classId,
+                        'student_id' => $entry['student_id'],
+                        'attendance_date' => $entry['attendance_date'],
+                        'period' => $entry['period'],
+                        'previous_status' => $previous['status'] ?? null,
+                        'status' => $entry['status'],
+                        'batch' => true,
+                    ]
+                );
+
+                ++$changed;
+            }
+
+            $pdo->commit();
+
+            Response::success([
+                'changed' => $changed,
+                'unchanged' => $unchanged,
+                'total' => count($normalized),
+            ]);
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
     $studentId = (int)($body['student_id'] ?? 0);
     $date = (string)($body['attendance_date'] ?? '');
     $period = (int)($body['period'] ?? 0);
