@@ -155,7 +155,7 @@ test.describe('authenticated SAMS smoke', () => {
     });
 
     await page.waitForURL(/index\.php$/);
-    await page.locator('.tab[data-tab="admin"]').click();
+    await page.locator('.tab[data-tab="attendance"]').click();
 
     const studentCard = page.locator('#studentsList .student-card').filter({ hasText: 'E2E001' }).first();
     await expect(studentCard).toBeVisible();
