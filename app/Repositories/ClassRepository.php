@@ -83,6 +83,35 @@ final class ClassRepository
         $stmt->execute([$active ? 1 : 0, $classId]);
     }
 
+    public function hasHistoricalAccess(int $userId, string $role, int $classId): bool
+    {
+        if (in_array($role, ['admin', 'counselor'], true)) {
+            $stmt = Database::connection()->prepare(
+                'SELECT 1
+                 FROM classes
+                 WHERE id = ?
+                 LIMIT 1'
+            );
+            $stmt->execute([$classId]);
+            return (bool)$stmt->fetchColumn();
+        }
+
+        if ($role !== 'teacher') {
+            return false;
+        }
+
+        $stmt = Database::connection()->prepare(
+            'SELECT 1
+             FROM classes c
+             INNER JOIN teacher_classes tc ON tc.class_id = c.id
+             WHERE c.id = ? AND tc.teacher_id = ?
+             LIMIT 1'
+        );
+        $stmt->execute([$classId, $userId]);
+
+        return (bool)$stmt->fetchColumn();
+    }
+
     public function hasAccess(int $userId, string $role, int $classId): bool
     {
         if (in_array($role, ['admin', 'counselor'], true)) {
