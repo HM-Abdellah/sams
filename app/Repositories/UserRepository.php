@@ -82,11 +82,10 @@ final class UserRepository
         string $fullName,
         string $role,
         bool $isActive,
+        string $username,
         ?string $employeeId = null,
-        ?string $phone = null,
-        ?string $username = null
+        ?string $phone = null
     ): void {
-        $username = $username ?? $employeeId;
         $stmt = Database::connection()->prepare(
             'UPDATE users
              SET username = ?,
