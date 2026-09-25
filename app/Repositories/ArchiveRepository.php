@@ -132,6 +132,19 @@ final class ArchiveRepository
         return $stmt->fetchAll();
     }
 
+    public function studentInClass(int $studentId, int $classId): bool
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT 1
+             FROM student_enrollments
+             WHERE student_id = ? AND class_id = ?
+             LIMIT 1'
+        );
+        $stmt->execute([$studentId, $classId]);
+
+        return (bool)$stmt->fetchColumn();
+    }
+
     public function studentHistory(
         int $studentId,
         int $classId
