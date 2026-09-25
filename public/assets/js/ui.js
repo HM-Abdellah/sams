@@ -572,16 +572,25 @@ export const ui = {
     statistics() {
         const box = document.querySelector('#statisticsGrid');
         if (!box) return;
+        const signedLessons = (state.attendanceSignoffs?.period_signoffs || []).filter((row) => row.status === 'signed').length;
         box.innerHTML = '';
+
         for (const student of state.students) {
-            const counts = countsForStudent(student.id, state.attendance);
-            const total = counts.present + counts.absent + counts.other;
+            const absent = state.attendance.filter((row) =>
+                Number(row.student_id) === Number(student.id) && row.status === 'absent'
+            ).length;
+            const certifiedPresent = Math.max(0, signedLessons - absent);
+            const rate = signedLessons > 0 ? attendanceRate(certifiedPresent, signedLessons) : 0;
             const card = document.createElement('article');
-            card.className = `stat-card ${counts.absent >= 8 ? 'risk' : ''}`;
-            card.innerHTML = '<strong>' + esc(displayName(student)) + '</strong><span>' + counts.absent + ' ' + esc(t('absences_count')) + '</span><span>' + counts.present + ' ' + esc(t('presence_count')) + '</span><span>' + counts.other + ' ' + esc(t('other_count')) + '</span><b>' + attendanceRate(counts.present, total) + '%</b>';
+            card.className = `stat-card ${absent >= 8 ? 'risk' : ''}`;
+            card.innerHTML = '<strong>' + esc(displayName(student)) + '</strong>'
+                + '<span>' + absent + ' ' + esc(t('absences_count')) + '</span>'
+                + '<span>' + certifiedPresent + ' ' + esc(t('certified_presence_count')) + '</span>'
+                + '<span>' + signedLessons + ' ' + esc(t('signed_lessons_count')) + '</span>'
+                + '<b>' + rate + '%</b>';
             box.appendChild(card);
         }
-    },
+    }
 };
 
 function roleLabel(role) {
