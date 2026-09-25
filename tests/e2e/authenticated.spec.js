@@ -105,6 +105,27 @@ test.describe('authenticated SAMS smoke', () => {
     expect(batches[0].entries.every((entry) => ['upsert', 'delete'].includes(entry.action))).toBe(true);
   });
 
+  test('teacher cannot access historical archive and weekly sheet supports all three languages', async ({ page }) => {
+    test.skip(!teacherUsername || !teacherPassword, 'Set teacher E2E credentials to run teacher isolation tests.');
+
+    await login(page, teacherUsername, teacherPassword);
+
+    await page.locator('.language-btn[data-lang="ar"]').click();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+    await expect(page.locator('[data-i18n="weekly_attendance"]')).toHaveText('ورقة الحضور الأسبوعية');
+
+    await page.locator('.language-btn[data-lang="en"]').click();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+    await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+    await expect(page.locator('[data-i18n="weekly_attendance"]')).toHaveText('Weekly attendance sheet');
+
+    await page.locator('.language-btn[data-lang="fr"]').click();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+    await expect(page.locator('[data-i18n="weekly_attendance"]')).toHaveText('Feuille hebdomadaire de présence');
+    await expect(page.locator('.tab[data-tab="archive"]')).toHaveCount(0);
+  });
+
   test('teacher sees only assigned classes', async ({ page }) => {
     test.skip(!teacherUsername || !teacherPassword, 'Set teacher E2E credentials to run teacher isolation tests.');
 
