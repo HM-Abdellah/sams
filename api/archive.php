@@ -28,6 +28,10 @@ try {
         Response::error('Invalid archive view.', 422);
     }
 
+    if ((string)$user['role'] !== 'admin') {
+        Response::error('Forbidden.', 403);
+    }
+
     $classes = new ClassRepository();
     if (!$classes->hasHistoricalAccess((int)$user['id'], (string)$user['role'], $classId)) {
         Response::error('Forbidden.', 403);
