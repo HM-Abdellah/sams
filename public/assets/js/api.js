@@ -48,6 +48,11 @@ export const API = Object.freeze({
     report: (classId, month) => request(`reports.php?class_id=${encodeURIComponent(classId)}&month=${encodeURIComponent(month)}`),
 
     users: () => request('users.php'),
+    teachers: () => request('teachers.php'),
+    assignTeaching: (teacherId, subjectId, classId) => request('teachers.php', { method:'POST', body:JSON.stringify({action:'assign',teacher_id:teacherId,subject_id:subjectId,class_id:classId}) }),
+    unassignTeaching: (id) => request('teachers.php', { method:'POST', body:JSON.stringify({action:'unassign',id}) }),
+    createSubject: (data) => request('teachers.php', { method:'POST', body:JSON.stringify({action:'create_subject',...data}) }),
+    updateSubject: (id, data) => request('teachers.php', { method:'POST', body:JSON.stringify({action:'update_subject',id,...data}) }),
     createUser: (data) => request('users.php', { method:'POST', body:JSON.stringify({action:'create',...data}) }),
     updateUser: (id, data) => request('users.php', { method:'POST', body:JSON.stringify({action:'update',id,...data}) }),
     resetUserPassword: (id, password) => request('users.php', { method:'POST', body:JSON.stringify({action:'reset_password',id,password}) }),
@@ -83,6 +88,8 @@ export const API = Object.freeze({
     archiveMonth: (classId, month) => request(`archive.php?view=month&class_id=${encodeURIComponent(classId)}&month=${encodeURIComponent(month)}`),
     archiveDay: (classId, date) => request(`archive.php?view=day&class_id=${encodeURIComponent(classId)}&date=${encodeURIComponent(date)}`),
     studentHistory: (classId, studentId) => request(`archive.php?view=student&class_id=${encodeURIComponent(classId)}&student_id=${encodeURIComponent(studentId)}`),
+
+    presence: () => request('presence.php', { method:'POST' }),
 
     audit: (params = {}) => {
         const query = new URLSearchParams(params);
