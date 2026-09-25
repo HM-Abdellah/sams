@@ -1,5 +1,6 @@
 const DICTIONARY = {
   fr: {
+    school_dashboard:'Tableau de bord de l’établissement',dashboard_as_of:'Situation du jour :',refresh:'Actualiser',attention:'À surveiller',teacher_status:'État des enseignants',recent:'Récent',branch_statistics:'Statistiques par branche',branch_statistics_desc:'Chaque branche reste séparée pour éviter de mélanger les filières.',class_statistics:'Statistiques par classe',class_statistics_desc:'Une ligne correspond à une classe précise dans l’année scolaire active.',attention_students:'Élèves à surveiller',absence_threshold:"Seuil d'absence :",recent_activity:'Activité récente',today_records:"Enregistrements aujourd’hui",presence_rate:'Taux de présence enregistré',records:'Enregistrements',present:'Présents',absent:'Absents',late:'Retards',excused:'Excusés',branch:'Branche',student_count:'Élèves',class_count:'Classes',class_name:'Classe',absence_count:'Absences',late_count:'Retards',no_alerts:'Aucun point à surveiller.',no_records_today:'Aucun enregistrement de présence aujourd’hui.',review:'À vérifier',student:'Élève',user:'Utilisateur',activity:'Action',entity:'Entité',school:'Établissement',
     logout: 'Déconnexion', teachers: 'Enseignants', administration: 'Administration',
     teacher_management: 'Gestion des enseignants',
     teacher_management_desc: 'Présence, identité professionnelle, matières et classes enseignées.',
@@ -16,6 +17,7 @@ const DICTIONARY = {
     no_employee_id: 'Aucun matricule', manage: 'Gérer', remove: 'Retirer', duplicate_assignment: 'Cette affectation existe déjà.'
   },
   ar: {
+    school_dashboard:'لوحة قيادة المؤسسة',dashboard_as_of:'وضع اليوم:',refresh:'تحديث',attention:'يحتاج إلى الانتباه',teacher_status:'حالة الأساتذة',recent:'حديثًا',branch_statistics:'الإحصائيات حسب الشعبة',branch_statistics_desc:'تبقى كل شعبة منفصلة حتى لا تختلط المسارات الدراسية.',class_statistics:'الإحصائيات حسب القسم',class_statistics_desc:'كل سطر يمثل قسمًا محددًا داخل السنة الدراسية النشطة.',attention_students:'تلاميذ يحتاجون إلى المتابعة',absence_threshold:'عتبة الغياب:',recent_activity:'النشاط الأخير',today_records:'تسجيلات الحضور اليوم',presence_rate:'نسبة الحضور المسجّلة',records:'التسجيلات',present:'حاضرون',absent:'غائبون',late:'متأخرون',excused:'معفون',branch:'الشعبة',student_count:'التلاميذ',class_count:'الأقسام',class_name:'القسم',absence_count:'الغيابات',late_count:'التأخرات',no_alerts:'لا توجد نقاط تحتاج إلى المتابعة.',no_records_today:'لا توجد تسجيلات حضور اليوم.',review:'يحتاج إلى التحقق',student:'التلميذ',user:'المستخدم',activity:'الإجراء',entity:'الكيان',school:'المؤسسة',
     logout: 'تسجيل الخروج', teachers: 'الأساتذة', administration: 'الإدارة',
     teacher_management: 'إدارة الأساتذة',
     teacher_management_desc: 'الحضور، الهوية المهنية، المواد والأقسام التي يدرّسها كل أستاذ.',
@@ -32,6 +34,7 @@ const DICTIONARY = {
     no_employee_id: 'لا يوجد رقم مهني', manage: 'إدارة', remove: 'إزالة', duplicate_assignment: 'هذا التكليف موجود بالفعل.'
   },
   en: {
+    school_dashboard:'School dashboard',dashboard_as_of:'Today:',refresh:'Refresh',attention:'Needs attention',teacher_status:'Teacher status',recent:'Recent',branch_statistics:'Statistics by branch',branch_statistics_desc:'Each branch remains separate so study tracks are not mixed.',class_statistics:'Statistics by class',class_statistics_desc:'Each row represents one specific class in the active academic year.',attention_students:'Students to monitor',absence_threshold:'Absence threshold:',recent_activity:'Recent activity',today_records:'Attendance records today',presence_rate:'Recorded attendance rate',records:'Records',present:'Present',absent:'Absent',late:'Late',excused:'Excused',branch:'Branch',student_count:'Students',class_count:'Classes',class_name:'Class',absence_count:'Absences',late_count:'Late',no_alerts:'Nothing needs attention.',no_records_today:'No attendance records today.',review:'Review',student:'Student',user:'User',activity:'Action',entity:'Entity',school:'School',
     logout: 'Log out', teachers: 'Teachers', administration: 'Administration',
     teacher_management: 'Teacher management',
     teacher_management_desc: 'Presence, professional identity, subjects and classes taught.',
