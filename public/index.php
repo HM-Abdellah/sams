@@ -64,6 +64,8 @@ $csrf = Csrf::token();
         <button class="tab" data-tab="students" type="button">Élèves</button>
         <button class="tab" data-tab="statistics" type="button">Statistiques</button>
         <button class="tab" data-tab="signature" type="button">Signature</button>
+        <button class="tab" data-tab="archive" type="button">Archive</button>
+        <button class="tab admin-only" data-tab="admin" type="button">Administration</button>
     </nav>
 
     <section class="panel" data-panel="attendance">
@@ -95,6 +97,98 @@ $csrf = Csrf::token();
     <section class="panel hidden" data-panel="statistics">
         <div class="panel-head"><div><h1>Statistiques mensuelles</h1><p>Les indicateurs sont calculés depuis MySQL.</p></div></div>
         <div class="statistics-grid" id="statisticsGrid"></div>
+    </section>
+
+    <section class="panel hidden" data-panel="archive">
+        <div class="panel-head">
+            <div><h1>Archive historique</h1><p>Lecture des classes et présences historiques.</p></div>
+            <div class="toolbar-left">
+                <label>Mois<input id="archiveMonth" type="month" aria-label="Mois archive"></label>
+                <button class="btn primary" id="loadArchiveBtn" type="button">Charger</button>
+            </div>
+        </div>
+        <div class="filters">
+            <button class="filter active" data-archive-view="days" type="button">Jours</button>
+            <button class="filter" data-archive-view="month" type="button">Élèves</button>
+        </div>
+        <div class="table-scroll"><table id="archiveTable"><thead></thead><tbody></tbody></table></div>
+    </section>
+
+    <section class="panel hidden admin-only" data-panel="admin">
+        <div class="panel-head">
+            <div><h1>Administration</h1><p>Gestion fonctionnelle du périmètre SAMS.</p></div>
+        </div>
+
+        <div class="students-list">
+            <article class="student-card">
+                <div>
+                    <strong>Créer un utilisateur</strong>
+                    <small>Admin, enseignant ou conseiller.</small>
+                </div>
+            </article>
+            <form id="userForm">
+                <label>Nom utilisateur<input id="userUsernameInput" required maxlength="50"></label>
+                <label>Nom complet<input id="userFullNameInput" required maxlength="120"></label>
+                <label>Rôle<select id="userRoleInput"><option value="teacher">teacher</option><option value="counselor">counselor</option><option value="admin">admin</option></select></label>
+                <label>Mot de passe<input id="userPasswordInput" type="password" required></label>
+                <button class="btn success" type="submit">Créer</button>
+            </form>
+        </div>
+
+        <div class="students-list">
+            <article class="student-card">
+                <div>
+                    <strong>Années scolaires</strong>
+                    <small>Une seule année active à la fois.</small>
+                </div>
+            </article>
+            <form id="academicYearForm">
+                <label>Nom<input id="academicYearNameInput" required maxlength="20" placeholder="2026/2027"></label>
+                <label>Début<input id="academicYearStartInput" type="date" required></label>
+                <label>Fin<input id="academicYearEndInput" type="date" required></label>
+                <label>Activer<select id="academicYearActivateInput"><option value="1">Oui</option><option value="0">Non</option></select></label>
+                <button class="btn success" type="submit">Créer</button>
+            </form>
+        </div>
+
+        <div class="students-list">
+            <article class="student-card">
+                <div>
+                    <strong>Affectation enseignant → classe</strong>
+                    <small>Les enseignants ne voient que leurs classes opérationnelles.</small>
+                </div>
+            </article>
+            <form id="assignmentForm">
+                <label>Enseignant<select id="assignmentTeacherInput"></select></label>
+                <label>Classe<select id="assignmentClassInput"></select></label>
+                <button class="btn primary" type="submit">Affecter</button>
+            </form>
+            <div class="table-scroll"><table id="usersTable"><thead></thead><tbody></tbody></table></div>
+        </div>
+
+        <div class="students-list">
+            <article class="student-card">
+                <div>
+                    <strong>Import élèves CSV</strong>
+                    <small>Validation puis import transactionnel.</small>
+                </div>
+            </article>
+            <form id="importForm">
+                <label>Fichier CSV<input id="studentImportFile" type="file" accept=".csv,text/csv" required></label>
+                <button class="btn primary" type="submit">Analyser / staging</button>
+            </form>
+            <div class="table-scroll"><table id="importsTable"><thead></thead><tbody></tbody></table></div>
+        </div>
+
+        <div class="students-list">
+            <article class="student-card">
+                <div>
+                    <strong>Activité / audit</strong>
+                    <small>Dernières actions enregistrées.</small>
+                </div>
+            </article>
+            <div class="table-scroll"><table id="auditTable"><thead></thead><tbody></tbody></table></div>
+        </div>
     </section>
 
     <section class="panel hidden" data-panel="signature">
