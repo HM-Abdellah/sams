@@ -128,7 +128,8 @@ try {
 
         $pdo->beginTransaction();
         try {
-            $repo->updateProfile($userId, $fullName, $role, $isActive, $employeeId, $phone);
+            $usernameForUpdate = $role === 'teacher' ? (string)$employeeId : (string)$existing['username'];
+            $repo->updateProfile($userId, $fullName, $role, $isActive, $usernameForUpdate, $employeeId, $phone);
             $audit->record(
                 (int)$admin['id'],
                 'user.update',
