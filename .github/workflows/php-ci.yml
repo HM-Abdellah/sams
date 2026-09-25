@@ -103,7 +103,7 @@ jobs:
       - name: Install PHP and MySQL extension
         run: |
           apt-get update
-          apt-get install -y php-cli php-mysql curl
+          apt-get install -y php-cli php-mysql php-mbstring curl
 
       - name: Configure E2E database
         shell: bash
