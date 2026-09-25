@@ -62,6 +62,10 @@
     font-size: 5.8pt;
   }
 
+  .print-attendance-table thead { display: table-header-group; }
+
+  .print-attendance-table tr { break-inside: avoid; }
+
   .print-attendance-table th,
   .print-attendance-table td {
     border: 1px solid #000;
