@@ -8,7 +8,7 @@ export default defineConfig({
   workers: 1,
   reporter: [['html', { open: 'never' }], ['list']],
   use: {
-    baseURL: process.env.SAMS_BASE_URL || 'http://localhost/sams/public',
+    baseURL: process.env.SAMS_BASE_URL || 'http://localhost/sams/public/',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure'
