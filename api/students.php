@@ -8,8 +8,10 @@ use SAMS\Helpers\Auth;
 use SAMS\Helpers\Csrf;
 use SAMS\Helpers\Database;
 use SAMS\Helpers\Response;
+use SAMS\Repositories\AcademicYearRepository;
 use SAMS\Repositories\AuditLogRepository;
 use SAMS\Repositories\ClassRepository;
+use SAMS\Repositories\StudentEnrollmentRepository;
 use SAMS\Repositories\StudentRepository;
 use SAMS\Services\StudentService;
 
@@ -19,7 +21,9 @@ try {
 
     if ($classId < 1) Response::error('Invalid class.', 422);
 
-    if (!(new ClassRepository())->hasAccess(
+    $classes = new ClassRepository();
+
+    if (!$classes->hasAccess(
         (int)$user['id'],
         (string)$user['role'],
         $classId
@@ -77,6 +81,11 @@ try {
             Response::error('Current class not found.', 404);
         }
 
+        $academicYear = (new AcademicYearRepository())->find((int)$sourceClass['academic_year_id']);
+        if ($academicYear === null) {
+            Response::error('Academic year not found.', 422);
+        }
+
         if (!(bool)$targetClass['is_active']) {
             Response::error('Target class is not active.', 409);
         }
@@ -86,8 +95,8 @@ try {
         }
 
         if (
-            $effectiveDate < (string)$sourceClass['academic_year_starts_on']
-            || $effectiveDate > (string)$sourceClass['academic_year_ends_on']
+            $effectiveDate < (string)$academicYear['starts_on']
+            || $effectiveDate > (string)$academicYear['ends_on']
         ) {
             Response::error('Transfer date is outside the current academic year.', 422);
         }
