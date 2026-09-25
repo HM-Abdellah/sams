@@ -38,10 +38,10 @@ final class ArchiveRepository
             'SELECT
                 a.attendance_date,
                 COUNT(*) AS recorded_count,
-                SUM(a.status = 'present') AS present_count,
-                SUM(a.status = 'absent') AS absent_count,
-                SUM(a.status = 'late') AS late_count,
-                SUM(a.status = 'excused') AS excused_count,
+                SUM(a.status = \'present\') AS present_count,
+                SUM(a.status = \'absent\') AS absent_count,
+                SUM(a.status = \'late\') AS late_count,
+                SUM(a.status = \'excused\') AS excused_count,
                 COUNT(DISTINCT a.student_id) AS students_with_records
              FROM attendance a
              INNER JOIN student_enrollments e ON e.id = a.enrollment_id
@@ -67,10 +67,10 @@ final class ArchiveRepository
                 s.birth_date,
                 e.starts_on AS enrollment_starts_on,
                 e.ends_on AS enrollment_ends_on,
-                COALESCE(SUM(a.status = 'present'), 0) AS present_count,
-                COALESCE(SUM(a.status = 'absent'), 0) AS absent_count,
-                COALESCE(SUM(a.status = 'late'), 0) AS late_count,
-                COALESCE(SUM(a.status = 'excused'), 0) AS excused_count,
+                COALESCE(SUM(a.status = \'present\'), 0) AS present_count,
+                COALESCE(SUM(a.status = \'absent\'), 0) AS absent_count,
+                COALESCE(SUM(a.status = \'late\'), 0) AS late_count,
+                COALESCE(SUM(a.status = \'excused\'), 0) AS excused_count,
                 COUNT(a.id) AS recorded_count,
                 COUNT(DISTINCT a.attendance_date) AS recorded_days
              FROM student_enrollments e
