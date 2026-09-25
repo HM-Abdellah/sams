@@ -125,9 +125,9 @@ jobs:
       - name: Start PHP server
         shell: bash
         run: |
-          php -S 0.0.0.0:8080 -t public > /tmp/sams-server.log 2>&1 &
+          php -S 0.0.0.0:8080 -t . > /tmp/sams-server.log 2>&1 &
           for i in $(seq 1 20); do
-            if curl -fsS http://127.0.0.1:8080/login.php > /dev/null; then
+            if curl -fsS http://127.0.0.1:8080/public/login.php > /dev/null; then
               exit 0
             fi
             sleep 1
@@ -137,7 +137,7 @@ jobs:
 
       - name: Run Playwright E2E
         env:
-          SAMS_BASE_URL: http://127.0.0.1:8080
+          SAMS_BASE_URL: http://127.0.0.1:8080/public
           SAMS_E2E_USERNAME: admin
           SAMS_E2E_TEACHER_USERNAME: teacher.e2e
         run: npm run test:e2e
