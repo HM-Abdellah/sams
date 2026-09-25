@@ -6,17 +6,20 @@ const teacherUsername = process.env.SAMS_E2E_TEACHER_USERNAME;
 const teacherPassword = process.env.SAMS_E2E_TEACHER_PASSWORD;
 
 test.describe('authenticated SAMS smoke', () => {
+  async function login(page, user, pass) {
+    await page.goto('login.php');
+    await page.locator('#username').fill(user);
+    await page.locator('#password').fill(pass);
+    await Promise.all([
+      page.waitForURL(/index\.php$/),
+      page.locator('#loginBtn').click(),
+    ]);
+  }
+
   test.skip(!username || !password, 'Set SAMS_E2E_USERNAME and SAMS_E2E_PASSWORD to run authenticated E2E tests.');
 
   test('login, operational roster and archive are reachable', async ({ page }) => {
-    await page.goto('login.php');
-    await page.locator('#username').fill(username);
-    await page.locator('#password').fill(password);
-    await page.locator('#loginForm').evaluate((form) => {
-      form.requestSubmit();
-    });
-
-    await page.waitForURL(/index\.php$/);
+    await login(page, username, password);
     await expect(page.locator('#classSelect')).toBeVisible();
     await expect(page.locator('#attendanceBody')).toBeVisible();
 
@@ -71,14 +74,7 @@ test.describe('authenticated SAMS smoke', () => {
       });
     });
 
-    await page.goto('login.php');
-    await page.locator('#username').fill(username);
-    await page.locator('#password').fill(password);
-    await page.locator('#loginForm').evaluate((form) => {
-      form.requestSubmit();
-    });
-
-    await page.waitForURL(/index\.php$/);
+    await login(page, username, password);
     await expect(page.locator('.attendance-cell').first()).toBeVisible();
 
     await page.evaluate(() => {
@@ -97,28 +93,14 @@ test.describe('authenticated SAMS smoke', () => {
   test('teacher sees only assigned classes', async ({ page }) => {
     test.skip(!teacherUsername || !teacherPassword, 'Set teacher E2E credentials to run teacher isolation tests.');
 
-    await page.goto('login.php');
-    await page.locator('#username').fill(teacherUsername);
-    await page.locator('#password').fill(teacherPassword);
-    await page.locator('#loginForm').evaluate((form) => {
-      form.requestSubmit();
-    });
-
-    await page.waitForURL(/index\.php$/);
+    await login(page, teacherUsername, teacherPassword);
     await expect(page.locator('#attendanceBody')).toBeVisible();
     await expect(page.locator('#classSelect option:not([disabled])')).toHaveCount(1);
     await expect(page.locator('.tab[data-tab="admin"]')).toHaveCount(0);
   });
 
   test('admin can complete a CSV import after correcting staged data', async ({ page }) => {
-    await page.goto('login.php');
-    await page.locator('#username').fill(username);
-    await page.locator('#password').fill(password);
-    await page.locator('#loginForm').evaluate((form) => {
-      form.requestSubmit();
-    });
-
-    await page.waitForURL(/index\.php$/);
+    await login(page, username, password);
     const classSelect = page.locator('#classSelect');
     await expect(classSelect).toHaveValue(/\d+/);
 
@@ -147,14 +129,7 @@ test.describe('authenticated SAMS smoke', () => {
   });
 
   test('admin can transfer a student without losing historical attendance', async ({ page }) => {
-    await page.goto('login.php');
-    await page.locator('#username').fill(username);
-    await page.locator('#password').fill(password);
-    await page.locator('#loginForm').evaluate((form) => {
-      form.requestSubmit();
-    });
-
-    await page.waitForURL(/index\.php$/);
+    await login(page, username, password);
     await page.locator('.tab[data-tab="students"]').click();
 
     const studentCard = page.locator('#studentsList .student-card').filter({ hasText: 'E2E001' }).first();
@@ -185,14 +160,7 @@ test.describe('authenticated SAMS smoke', () => {
   });
 
   test('admin can manage a class and a user through the UI', async ({ page }) => {
-    await page.goto('login.php');
-    await page.locator('#username').fill(username);
-    await page.locator('#password').fill(password);
-    await page.locator('#loginForm').evaluate((form) => {
-      form.requestSubmit();
-    });
-
-    await page.waitForURL(/index\.php$/);
+    await login(page, username, password);
     await page.locator('.tab[data-tab="admin"]').click();
     await expect(page.locator('#adminClassesTable')).toBeVisible();
 
@@ -249,14 +217,7 @@ test.describe('authenticated SAMS smoke', () => {
   });
 
   test('logout invalidates the authenticated browser session', async ({ page }) => {
-    await page.goto('login.php');
-    await page.locator('#username').fill(username);
-    await page.locator('#password').fill(password);
-    await page.locator('#loginForm').evaluate((form) => {
-      form.requestSubmit();
-    });
-
-    await page.waitForURL(/index\.php$/);
+    await login(page, username, password);
     await page.locator('#logoutBtn').click();
     await page.waitForURL(/login\.php$/);
 
