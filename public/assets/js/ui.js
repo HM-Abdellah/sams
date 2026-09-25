@@ -414,7 +414,7 @@ export const ui = {
                 return '<tr><td>' + esc(year.name) + '</td>'
                     + '<td>' + esc(year.starts_on) + '</td>'
                     + '<td>' + esc(year.ends_on) + '</td>'
-                    + '<td>' + (active ? 'Oui' : 'Non') + '</td>'
+                    + '<td>' + (active ? t('yes') : t('no')) + '</td>'
                     + '<td><button class="btn small" data-activate-year="' + esc(year.id) + '" type="button" ' + (active ? 'disabled' : '') + '>' + esc(t('activate')) + '</button></td></tr>';
             }).join('') || '<tr><td colspan="5" class="empty-state">' + esc(t('empty_years')) + '</td></tr>';
         }
