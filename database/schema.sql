@@ -113,9 +113,33 @@ CREATE TABLE students (
         ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
+CREATE TABLE student_enrollments (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    student_id BIGINT UNSIGNED NOT NULL,
+    class_id BIGINT UNSIGNED NOT NULL,
+    starts_on DATE NOT NULL,
+    ends_on DATE NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_enrollments_student_start (student_id, starts_on),
+    UNIQUE KEY uq_enrollments_id_student (id, student_id),
+    KEY idx_enrollments_class_dates (class_id, starts_on, ends_on),
+    KEY idx_enrollments_student_dates (student_id, starts_on, ends_on),
+    CONSTRAINT fk_enrollments_student
+        FOREIGN KEY (student_id) REFERENCES students(id)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_enrollments_class
+        FOREIGN KEY (class_id) REFERENCES classes(id)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT chk_enrollment_dates
+        CHECK (ends_on IS NULL OR starts_on <= ends_on)
+) ENGINE=InnoDB;
+
 CREATE TABLE attendance (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     student_id BIGINT UNSIGNED NOT NULL,
+    enrollment_id BIGINT UNSIGNED NOT NULL,
     attendance_date DATE NOT NULL,
     period TINYINT UNSIGNED NOT NULL,
     status ENUM('present', 'absent', 'late', 'excused') NOT NULL,
@@ -123,12 +147,17 @@ CREATE TABLE attendance (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    UNIQUE KEY uq_attendance_student_date_period (student_id, attendance_date, period),
+    UNIQUE KEY uq_attendance_enrollment_student_date_period (enrollment_id, student_id, attendance_date, period),
     KEY idx_attendance_student_date (student_id, attendance_date),
+    KEY idx_attendance_enrollment_date (enrollment_id, attendance_date),
     KEY idx_attendance_date_status (attendance_date, status),
     KEY idx_attendance_recorder_date (recorded_by, attendance_date),
     CONSTRAINT fk_attendance_student
         FOREIGN KEY (student_id) REFERENCES students(id)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_attendance_enrollment_student
+        FOREIGN KEY (enrollment_id, student_id)
+        REFERENCES student_enrollments(id, student_id)
         ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT fk_attendance_recorder
         FOREIGN KEY (recorded_by) REFERENCES users(id)
