@@ -313,6 +313,10 @@ test.describe('authenticated SAMS smoke', () => {
 
     await page.locator('#weeklyTeacherSignatures [data-receive-week]').click();
     await expect(page.locator('#weeklyTeacherSignatures .register-receipt.received')).toBeVisible();
+
+    await page.reload();
+    await expect(page.locator('#weeklyTeacherSignatures .register-receipt.received')).toBeVisible();
+    await expect(page.locator('#weeklyTeacherSignatures [data-receive-week]')).toHaveCount(0);
   });
 
   test('admin can manage a class and a user through the UI', async ({ page }) => {
