@@ -23,16 +23,67 @@ export const API = Object.freeze({
     session: () => request('auth.php?action=session'),
     login: (username, password, csrf) => request('auth.php?action=login', { method:'POST', headers:{'X-CSRF-Token':csrf}, body:JSON.stringify({username,password,csrf}) }),
     logout: () => request('auth.php?action=logout', { method:'POST' }),
+
     classes: () => request('classes.php'),
     createClass: (data) => request('classes.php', { method:'POST', body:JSON.stringify(data) }),
+    updateClass: (id, data) => request('classes.php', { method:'POST', body:JSON.stringify({action:'update', id, ...data}) }),
+    setClassActive: (id, active) => request('classes.php', { method:'POST', body:JSON.stringify({action:active ? 'activate' : 'deactivate', id}) }),
+
     students: (classId) => request(`students.php?class_id=${encodeURIComponent(classId)}`),
     createStudent: (classId, data) => request(`students.php?class_id=${encodeURIComponent(classId)}`, { method:'POST', body:JSON.stringify({action:'create',...data}) }),
+    updateStudent: (classId, id, data) => request(`students.php?class_id=${encodeURIComponent(classId)}`, { method:'POST', body:JSON.stringify({action:'update',id,...data}) }),
     deleteStudent: (classId, id) => request(`students.php?class_id=${encodeURIComponent(classId)}`, { method:'POST', body:JSON.stringify({action:'delete',id}) }),
+
     attendance: (classId, month) => request(`attendance.php?class_id=${encodeURIComponent(classId)}&month=${encodeURIComponent(month)}`),
     setAttendance: (data) => request('attendance.php', { method:'POST', body:JSON.stringify(data) }),
+    bulkAttendance: (entries) => request('attendance.php', { method:'POST', body:JSON.stringify({action:'bulk', entries}) }),
     deleteAttendance: (data) => request('attendance.php', { method:'DELETE', body:JSON.stringify(data) }),
+
     signature: (classId) => request(`signatures.php?class_id=${encodeURIComponent(classId)}`),
     saveSignature: (classId, signatureData) => request(`signatures.php?class_id=${encodeURIComponent(classId)}`, { method:'POST', body:JSON.stringify({signature_data:signatureData}) }),
     deleteSignature: (classId) => request(`signatures.php?class_id=${encodeURIComponent(classId)}`, { method:'DELETE', body:JSON.stringify({}) }),
+
     report: (classId, month) => request(`reports.php?class_id=${encodeURIComponent(classId)}&month=${encodeURIComponent(month)}`),
+
+    users: () => request('users.php'),
+    createUser: (data) => request('users.php', { method:'POST', body:JSON.stringify({action:'create',...data}) }),
+    updateUser: (id, data) => request('users.php', { method:'POST', body:JSON.stringify({action:'update',id,...data}) }),
+    resetUserPassword: (id, password) => request('users.php', { method:'POST', body:JSON.stringify({action:'reset_password',id,password}) }),
+    unlockUser: (id) => request('users.php', { method:'POST', body:JSON.stringify({action:'unlock',id}) }),
+
+    teacherClasses: ({ classId, teacherId } = {}) => {
+        const params = new URLSearchParams();
+        if (classId) params.set('class_id', classId);
+        if (teacherId) params.set('teacher_id', teacherId);
+        return request(`teacher-classes.php?${params.toString()}`);
+    },
+    assignTeacher: (teacherId, classId) => request('teacher-classes.php', { method:'POST', body:JSON.stringify({teacher_id:teacherId,class_id:classId}) }),
+    unassignTeacher: (teacherId, classId) => request('teacher-classes.php', { method:'DELETE', body:JSON.stringify({teacher_id:teacherId,class_id:classId}) }),
+
+    academicYears: () => request('academic-years.php'),
+    createAcademicYear: (data) => request('academic-years.php', { method:'POST', body:JSON.stringify({action:'create',...data}) }),
+    activateAcademicYear: (id) => request('academic-years.php', { method:'POST', body:JSON.stringify({action:'activate',id}) }),
+
+    imports: (classId) => request(`imports.php?class_id=${encodeURIComponent(classId)}`),
+    importBatch: (batchId) => request(`imports.php?batch_id=${encodeURIComponent(batchId)}`),
+    stageImport: (classId, file) => {
+        const form = new FormData();
+        form.append('action', 'stage');
+        form.append('class_id', String(classId));
+        form.append('file', file);
+        return request('imports.php', { method:'POST', body:form });
+    },
+    correctImportRow: (batchId, rowId, data) => request('imports.php', { method:'POST', body:JSON.stringify({action:'correct',batch_id:batchId,row_id:rowId,...data}) }),
+    revalidateImport: (batchId) => request('imports.php', { method:'POST', body:JSON.stringify({action:'revalidate',batch_id:batchId}) }),
+    runImport: (batchId) => request('imports.php', { method:'POST', body:JSON.stringify({action:'import',batch_id:batchId}) }),
+
+    archiveDays: (classId, month) => request(`archive.php?view=days&class_id=${encodeURIComponent(classId)}&month=${encodeURIComponent(month)}`),
+    archiveMonth: (classId, month) => request(`archive.php?view=month&class_id=${encodeURIComponent(classId)}&month=${encodeURIComponent(month)}`),
+    archiveDay: (classId, date) => request(`archive.php?view=day&class_id=${encodeURIComponent(classId)}&date=${encodeURIComponent(date)}`),
+    studentHistory: (classId, studentId) => request(`archive.php?view=student&class_id=${encodeURIComponent(classId)}&student_id=${encodeURIComponent(studentId)}`),
+
+    audit: (params = {}) => {
+        const query = new URLSearchParams(params);
+        return request(`audit.php?${query.toString()}`);
+    },
 });
