@@ -11,7 +11,7 @@ final class UserRepository
     public function findByUsername(string $username): ?array
     {
         $stmt = Database::connection()->prepare(
-            'SELECT id, username, full_name, password_hash, role, is_active, failed_login_attempts, locked_until, session_version, last_login_at
+            'SELECT id, username, employee_id, full_name, phone, phone_verified, password_hash, role, is_active, failed_login_attempts, locked_until, session_version, last_login_at, last_seen_at
              FROM users WHERE username = ? LIMIT 1'
         );
         $stmt->execute([$username]);
@@ -22,8 +22,8 @@ final class UserRepository
     public function findByUsernameForUpdate(string $username): ?array
     {
         $stmt = Database::connection()->prepare(
-            'SELECT id, username, full_name, password_hash, role, is_active,
-                    failed_login_attempts, locked_until, session_version, last_login_at
+            'SELECT id, username, employee_id, full_name, phone, phone_verified, password_hash, role, is_active,
+                    failed_login_attempts, locked_until, session_version, last_login_at, last_seen_at
              FROM users WHERE username = ? LIMIT 1 FOR UPDATE'
         );
         $stmt->execute([$username]);
@@ -34,7 +34,7 @@ final class UserRepository
     public function findActiveById(int $userId): ?array
     {
         $stmt = Database::connection()->prepare(
-            'SELECT id, username, full_name, role, is_active, session_version
+            'SELECT id, username, employee_id, full_name, phone, phone_verified, role, is_active, session_version
              FROM users
              WHERE id = ? AND is_active = 1
              LIMIT 1'
@@ -47,7 +47,7 @@ final class UserRepository
     public function findById(int $userId): ?array
     {
         $stmt = Database::connection()->prepare(
-            'SELECT id, username, full_name, role, is_active, failed_login_attempts, locked_until, session_version, last_login_at, created_at, updated_at
+            'SELECT id, username, employee_id, full_name, phone, phone_verified, role, is_active, failed_login_attempts, locked_until, session_version, last_login_at, last_seen_at, created_at, updated_at
              FROM users
              WHERE id = ?
              LIMIT 1'
@@ -60,20 +60,20 @@ final class UserRepository
     public function forAdmin(): array
     {
         return Database::connection()->query(
-            'SELECT id, username, full_name, role, is_active, failed_login_attempts,
-                    locked_until, last_login_at, created_at, updated_at
+            'SELECT id, username, employee_id, full_name, phone, phone_verified, role, is_active, failed_login_attempts,
+                    locked_until, last_login_at, last_seen_at, created_at, updated_at
              FROM users
              ORDER BY full_name, username, id'
         )->fetchAll();
     }
 
-    public function create(string $username, string $fullName, string $passwordHash, string $role): int
+    public function create(string $username, string $fullName, string $passwordHash, string $role, ?string $employeeId = null, ?string $phone = null): int
     {
         $stmt = Database::connection()->prepare(
-            'INSERT INTO users (username, full_name, password_hash, role, is_active)
-             VALUES (?, ?, ?, ?, 1)'
+            'INSERT INTO users (username, employee_id, full_name, phone, password_hash, role, is_active)
+             VALUES (?, ?, ?, ?, ?, ?, 1)'
         );
-        $stmt->execute([$username, $fullName, $passwordHash, $role]);
+        $stmt->execute([$username, $employeeId, $fullName, $phone, $passwordHash, $role]);
         return (int)Database::connection()->lastInsertId();
     }
 
@@ -81,17 +81,21 @@ final class UserRepository
         int $userId,
         string $fullName,
         string $role,
-        bool $isActive
+        bool $isActive,
+        ?string $employeeId = null,
+        ?string $phone = null
     ): void {
         $stmt = Database::connection()->prepare(
             'UPDATE users
-             SET full_name = ?,
+             SET employee_id = ?,
+                 full_name = ?,
+                 phone = ?,
                  role = ?,
                  is_active = ?,
                  session_version = session_version + 1
              WHERE id = ?'
         );
-        $stmt->execute([$fullName, $role, $isActive ? 1 : 0, $userId]);
+        $stmt->execute([$employeeId, $fullName, $phone, $role, $isActive ? 1 : 0, $userId]);
     }
 
     public function updatePasswordHash(int $userId, string $passwordHash): void
@@ -147,8 +151,25 @@ final class UserRepository
             'UPDATE users
              SET failed_login_attempts = 0,
                  locked_until = NULL,
-                 last_login_at = CURRENT_TIMESTAMP
+                 last_login_at = CURRENT_TIMESTAMP,
+                 last_seen_at = CURRENT_TIMESTAMP
              WHERE id = ?'
+        );
+        $stmt->execute([$userId]);
+    }
+
+    public function touchPresence(int $userId): void
+    {
+        $stmt = Database::connection()->prepare(
+            'UPDATE users SET last_seen_at = CURRENT_TIMESTAMP WHERE id = ? AND is_active = 1'
+        );
+        $stmt->execute([$userId]);
+    }
+
+    public function clearPresence(int $userId): void
+    {
+        $stmt = Database::connection()->prepare(
+            'UPDATE users SET last_seen_at = NULL WHERE id = ?'
         );
         $stmt->execute([$userId]);
     }
