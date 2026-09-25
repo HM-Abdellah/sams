@@ -9,7 +9,7 @@ test.describe('authenticated SAMS smoke', () => {
   test.skip(!username || !password, 'Set SAMS_E2E_USERNAME and SAMS_E2E_PASSWORD to run authenticated E2E tests.');
 
   test('login, operational roster and archive are reachable', async ({ page }) => {
-    await page.goto('/login.php');
+    await page.goto('login.php');
     await page.locator('#username').fill(username);
     await page.locator('#password').fill(password);
     await page.locator('#loginForm').evaluate((form) => {
@@ -71,7 +71,7 @@ test.describe('authenticated SAMS smoke', () => {
       });
     });
 
-    await page.goto('/login.php');
+    await page.goto('login.php');
     await page.locator('#username').fill(username);
     await page.locator('#password').fill(password);
     await page.locator('#loginForm').evaluate((form) => {
@@ -97,7 +97,7 @@ test.describe('authenticated SAMS smoke', () => {
   test('teacher sees only assigned classes', async ({ page }) => {
     test.skip(!teacherUsername || !teacherPassword, 'Set teacher E2E credentials to run teacher isolation tests.');
 
-    await page.goto('/login.php');
+    await page.goto('login.php');
     await page.locator('#username').fill(teacherUsername);
     await page.locator('#password').fill(teacherPassword);
     await page.locator('#loginForm').evaluate((form) => {
@@ -111,7 +111,7 @@ test.describe('authenticated SAMS smoke', () => {
   });
 
   test('admin can complete a CSV import after correcting staged data', async ({ page }) => {
-    await page.goto('/login.php');
+    await page.goto('login.php');
     await page.locator('#username').fill(username);
     await page.locator('#password').fill(password);
     await page.locator('#loginForm').evaluate((form) => {
@@ -147,7 +147,7 @@ test.describe('authenticated SAMS smoke', () => {
   });
 
   test('admin can transfer a student without losing historical attendance', async ({ page }) => {
-    await page.goto('/login.php');
+    await page.goto('login.php');
     await page.locator('#username').fill(username);
     await page.locator('#password').fill(password);
     await page.locator('#loginForm').evaluate((form) => {
@@ -185,7 +185,7 @@ test.describe('authenticated SAMS smoke', () => {
   });
 
   test('admin can manage a class and a user through the UI', async ({ page }) => {
-    await page.goto('/login.php');
+    await page.goto('login.php');
     await page.locator('#username').fill(username);
     await page.locator('#password').fill(password);
     await page.locator('#loginForm').evaluate((form) => {
@@ -249,7 +249,7 @@ test.describe('authenticated SAMS smoke', () => {
   });
 
   test('logout invalidates the authenticated browser session', async ({ page }) => {
-    await page.goto('/login.php');
+    await page.goto('login.php');
     await page.locator('#username').fill(username);
     await page.locator('#password').fill(password);
     await page.locator('#loginForm').evaluate((form) => {
@@ -260,7 +260,7 @@ test.describe('authenticated SAMS smoke', () => {
     await page.locator('#logoutBtn').click();
     await page.waitForURL(/login\.php$/);
 
-    await page.goto('/index.php');
+    await page.goto('index.php');
     await expect(page).toHaveURL(/login\.php$/);
   });
 });
