@@ -141,7 +141,7 @@ jobs:
 
       - name: Run Playwright E2E
         env:
-          SAMS_BASE_URL: http://127.0.0.1:8080/public
+          SAMS_BASE_URL: http://127.0.0.1:8080/public/
           SAMS_E2E_USERNAME: admin
           SAMS_E2E_TEACHER_USERNAME: teacher.e2e
         run: npm run test:e2e
