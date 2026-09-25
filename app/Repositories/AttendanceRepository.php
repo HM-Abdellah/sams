@@ -108,9 +108,14 @@ final class AttendanceRepository
         ]);
     }
 
-    public function delete(int $studentId, string $date, int $period): void
+    public function delete(
+        int $studentId,
+        string $date,
+        int $period,
+        ?int $classId = null
+    ): void
     {
-        $enrollmentId = $this->resolveEnrollmentId($studentId, $date);
+        $enrollmentId = $this->resolveEnrollmentId($studentId, $date, $classId);
 
         $stmt = Database::connection()->prepare(
             'DELETE FROM attendance
