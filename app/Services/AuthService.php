@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SAMS\Services;
 
 use RuntimeException;
+use Throwable;
 use SAMS\Helpers\Database;
 use SAMS\Helpers\Security;
 use SAMS\Repositories\UserRepository;
@@ -18,12 +19,24 @@ final class AuthService
         $this->users = $users ?? new UserRepository();
     }
 
-    public function authenticate(string $username, string $password, int $lockMinutes = 5): array
-    {
+    public function authenticate(
+        string $username,
+        string $password,
+        int $lockMinutes = 5,
+        int $maxAttempts = 5
+    ): array {
+        if ($username === '' || $password === '') {
+            throw new RuntimeException('Invalid credentials.');
+        }
+
+        $lockMinutes = max(1, $lockMinutes);
+        $maxAttempts = max(1, min(65535, $maxAttempts));
         $pdo = Database::connection();
 
         $pdo->beginTransaction();
         try {
+            // Lock the account row so concurrent failed requests cannot overwrite
+            // each other's failure counters.
             $user = $this->users->findByUsernameForUpdate($username);
 
             if (!$user || !(bool)$user['is_active']) {
@@ -38,8 +51,8 @@ final class AuthService
 
             if (!Security::verifyPassword($password, (string)$user['password_hash'])) {
                 $attempts = min(65535, (int)$user['failed_login_attempts'] + 1);
-                $lockSeconds = max(60, $lockMinutes * 60);
-                $lockedUntil = $attempts >= 5
+                $lockSeconds = $lockMinutes * 60;
+                $lockedUntil = $attempts >= $maxAttempts
                     ? date('Y-m-d H:i:s', time() + $lockSeconds)
                     : null;
 
