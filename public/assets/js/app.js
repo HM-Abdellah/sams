@@ -86,7 +86,10 @@ async function boot() {
         if (weekInput) weekInput.value = state.weekStart;
 
         const currentUser = document.querySelector('#currentUser');
-        if (currentUser && state.user) currentUser.textContent = `${state.user.full_name} · ${state.user.role}`;
+        if (currentUser && state.user) {
+            const roleKey = state.user.role === 'admin' ? 'role_admin' : state.user.role === 'teacher' ? 'role_teacher' : 'role_counselor';
+            currentUser.textContent = `${state.user.full_name} · ${t(roleKey)}`;
+        }
 
         if (state.user?.role !== 'admin') document.querySelectorAll('.admin-only').forEach((el) => el.remove());
         renderAll();
