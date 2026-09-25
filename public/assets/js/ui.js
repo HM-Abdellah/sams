@@ -67,6 +67,8 @@ export const ui = {
         const table = document.querySelector('#attendanceTable');
         const weekDays = document.querySelector('#weekDays');
         const periods = document.querySelector('#periods');
+        const workflow = document.querySelector('#attendanceWorkflow');
+        const weeklySignatures = document.querySelector('#weeklyTeacherSignatures');
         if (!mobile || !weekDays || !periods || !table) return;
 
         const weekStart = state.weekStart;
@@ -91,6 +93,43 @@ export const ui = {
         const map = new Map(state.attendance.map((row) => [
             attendanceKey(row.student_id, row.attendance_date, Number(row.period)), row.status
         ]));
+        const signoffRows = Array.isArray(state.attendanceSignoffs?.period_signoffs) ? state.attendanceSignoffs.period_signoffs : [];
+        const weeklyRows = Array.isArray(state.attendanceSignoffs?.weekly_signatures) ? state.attendanceSignoffs.weekly_signatures : [];
+        const currentSignoff = signoffRows.find((row) =>
+            String(row.attendance_date) === String(selectedDay) && Number(row.period) === selectedPeriod
+        ) || null;
+        const signed = currentSignoff?.status === 'signed';
+        const needsResign = currentSignoff?.status === 'needs_resign';
+        const selectedDayLabel = formatWeekDay(selectedDay);
+
+        if (workflow) {
+            const signerName = currentSignoff?.teacher_name || t('not_signed');
+            let statusText = t('lesson_not_signed');
+            let statusClass = 'pending';
+            if (signed) {
+                statusText = t('lesson_signed_by') + ' ' + signerName;
+                statusClass = 'signed';
+            } else if (needsResign) {
+                statusText = t('lesson_needs_resign');
+                statusClass = 'needs-resign';
+            }
+
+            const canReopen = signed && (state.user?.role === 'admin' || Number(currentSignoff?.teacher_id) === Number(state.user?.id));
+            const signButton = state.user?.role === 'teacher' && !signed
+                ? '<button class="btn primary" type="button" data-sign-period="1">' + esc(needsResign ? t('resign_lesson') : t('sign_lesson')) + '</button>'
+                : '';
+            const reopenButton = canReopen
+                ? '<button class="btn" type="button" data-reopen-period="1">' + esc(t('reopen_correction')) + '</button>'
+                : '';
+
+            workflow.innerHTML =
+                '<div class="attendance-workflow-head">'
+                + '<div><strong>' + esc(selectedDayLabel.weekday + ' ' + selectedDayLabel.date) + ' · ' + esc(t('period')) + ' ' + selectedPeriod + '</strong><small>' + esc(PERIODS[selectedPeriod - 1] || '') + '</small></div>'
+                + '<span class="attendance-seal ' + statusClass + '">' + esc(statusText) + '</span></div>'
+                + '<div class="attendance-workflow-actions">' + signButton + reopenButton + '</div>'
+                + '<p class="attendance-workflow-note">' + esc(signed ? t('lesson_signed_hint') : needsResign ? t('lesson_needs_resign_hint') : t('lesson_sign_hint')) + '</p>';
+        }
+
         const search = state.search.trim().toLowerCase();
         const filtered = state.students.filter((student) => {
             const name = displayName(student).toLowerCase();
@@ -100,35 +139,53 @@ export const ui = {
             return true;
         });
 
-        const statusButton = (studentId, status, label, currentStatus) =>
-            '<button class="attendance-status-btn status-' + status + ' ' + (currentStatus === status ? 'selected' : '') + '" type="button" data-attendance-status="' + status + '" data-student="' + esc(studentId) + '" aria-pressed="' + (currentStatus === status ? 'true' : 'false') + '">' + esc(label) + '</button>';
+        const markButton = (studentId, currentStatus) =>
+            '<button class="attendance-mark-btn ' + (currentStatus === 'absent' ? 'absent' : 'present') + '" type="button" data-attendance-toggle="1" data-student="' + esc(studentId) + '" aria-pressed="' + (currentStatus === 'absent' ? 'true' : 'false') + '"' + (signed ? ' disabled' : '') + '>'
+            + (currentStatus === 'absent' ? 'X' : '') + '</button>';
 
         mobile.innerHTML = filtered.map((student, index) => {
             const currentStatus = map.get(attendanceKey(student.id, selectedDay, selectedPeriod)) || '';
             const counts = countsForStudent(student.id, state.attendance);
             return '<article class="attendance-student-card">'
-                + '<div class="attendance-student-head"><div><strong>' + (index + 1) + '. ' + esc(displayName(student)) + '</strong><small>' + esc(student.student_number || student.massar_code || t('no_student_number')) + '</small></div><div class="week-counts"><span>A ' + counts.absent + '</span><span>R ' + counts.late + '</span><span>E ' + counts.excused + '</span></div></div>'
-                + '<div class="attendance-student-actions">'
-                + statusButton(student.id, 'present', '✓', currentStatus)
-                + statusButton(student.id, 'absent', 'A', currentStatus)
-                + statusButton(student.id, 'late', 'R', currentStatus)
-                + statusButton(student.id, 'excused', 'E', currentStatus)
-                + '<button class="attendance-status-btn status-clear" type="button" data-attendance-status="" data-student="' + esc(student.id) + '" aria-label="' + esc(t('clear')) + '">×</button>'
-                + '</div></article>';
+                + '<div class="attendance-student-head"><div><strong>' + (index + 1) + '. ' + esc(displayName(student)) + '</strong><small>' + esc(student.student_number || student.massar_code || t('no_student_number')) + '</small></div><div class="week-counts"><span>' + esc(t('week_absence_short')) + ' ' + counts.absent + '</span></div></div>'
+                + '<div class="attendance-mark-row"><span class="attendance-mark-label">' + esc(currentStatus === 'absent' ? t('absent_mark') : t('present_blank')) + '</span>' + markButton(student.id, currentStatus) + '</div>'
+                + '</article>';
         }).join('');
 
         if (!filtered.length) mobile.innerHTML = '<div class="empty-state">' + esc(t('no_students_filter')) + '</div>';
 
         const head = table.querySelector('thead');
         const body = table.querySelector('tbody');
-        head.innerHTML = '<tr><th class="sticky student-col">#</th><th class="sticky second-student-col">' + esc(t('student')) + '</th><th>' + esc(t('current_period')) + '</th><th>' + esc(t('week_absences')) + '</th><th>' + esc(t('week_late')) + '</th><th>' + esc(t('week_excused')) + '</th></tr>';
+        head.innerHTML = '<tr><th class="sticky student-col">#</th><th class="sticky second-student-col">' + esc(t('student')) + '</th><th>' + esc(t('current_period')) + '</th><th>' + esc(t('week_absences')) + '</th></tr>';
         body.innerHTML = filtered.map((student, index) => {
             const currentStatus = map.get(attendanceKey(student.id, selectedDay, selectedPeriod)) || '';
             const counts = countsForStudent(student.id, state.attendance);
             return '<tr><td class="sticky student-col">' + (index + 1) + '</td><td class="sticky second-student-col"><strong>' + esc(displayName(student)) + '</strong><small>' + esc(student.student_number || student.massar_code || t('no_student_number')) + '</small></td><td>'
-                + '<div class="desktop-status-buttons">' + statusButton(student.id, 'present', '✓', currentStatus) + statusButton(student.id, 'absent', 'A', currentStatus) + statusButton(student.id, 'late', 'R', currentStatus) + statusButton(student.id, 'excused', 'E', currentStatus) + statusButton(student.id, '', '×', currentStatus) + '</div>'
-                + '</td><td>' + counts.absent + '</td><td>' + counts.late + '</td><td>' + counts.excused + '</td></tr>';
+                + markButton(student.id, currentStatus)
+                + '</td><td>' + counts.absent + '</td></tr>';
         }).join('');
+
+        if (weeklySignatures) {
+            const teachers = Array.isArray(state.attendanceSignoffs?.teachers) ? state.attendanceSignoffs.teachers : [];
+            const weeklyMap = new Map(weeklyRows.map((row) => [Number(row.teacher_id), row]));
+            const signedCount = weeklyRows.filter((row) => row.status === 'signed').length;
+            weeklySignatures.innerHTML =
+                '<div class="weekly-signatures-head"><div><h2>' + esc(t('weekly_certification')) + '</h2><p>' + esc(t('weekly_certification_hint')) + '</p></div>'
+                + '<strong>' + signedCount + '/' + teachers.length + '</strong></div>'
+                + '<div class="weekly-teacher-list">'
+                + (teachers.length ? teachers.map((teacher) => {
+                    const row = weeklyMap.get(Number(teacher.id));
+                    const isCurrent = Number(teacher.id) === Number(state.user?.id);
+                    const status = row?.status || 'pending';
+                    const canSign = isCurrent && state.user?.role === 'teacher' && !row?.status;
+                    return '<article class="weekly-teacher-row">'
+                        + '<div><strong>' + esc(teacher.full_name) + '</strong><small>' + esc(teacher.employee_id || '') + '</small></div>'
+                        + '<span class="weekly-teacher-status ' + esc(status) + '">' + esc(status === 'signed' ? t('week_signed') : status === 'needs_resign' ? t('week_needs_resign') : t('week_pending')) + '</span>'
+                        + (canSign ? '<button class="btn primary small" type="button" data-sign-week="1">' + esc(t('sign_week')) + '</button>' : '')
+                        + '</article>';
+                }).join('') : '<p class="empty-state">' + esc(t('no_class_teachers')) + '</p>')
+                + '</div>';
+        }
         this.stats();
     },
 
