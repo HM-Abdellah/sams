@@ -107,6 +107,32 @@ final class UserRepository
         $stmt->execute([$passwordHash, $userId]);
     }
 
+    public function unlock(int $userId): void
+    {
+        $stmt = Database::connection()->prepare(
+            'UPDATE users
+             SET failed_login_attempts = 0,
+                 locked_until = NULL,
+                 session_version = session_version + 1
+             WHERE id = ?'
+        );
+        $stmt->execute([$userId]);
+    }
+
+    public function findSecurityById(int $userId): ?array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT id, password_hash, session_version
+             FROM users
+             WHERE id = ? AND is_active = 1
+             LIMIT 1'
+        );
+        $stmt->execute([$userId]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
     public function recordLoginFailure(int $userId, int $attempts, ?string $lockedUntil): void
     {
         $stmt = Database::connection()->prepare(
