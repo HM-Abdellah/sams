@@ -37,7 +37,9 @@ Ends the current session. Requires CSRF.
 
 ### GET `api/classes.php`
 
-Returns operational classes visible to the current role. Operational visibility is limited to active classes in the active academic year.
+Without query parameters, returns operational classes visible to the current role. Operational visibility is limited to active classes in the active academic year.
+
+For administrators, `?scope=all` returns all classes, including inactive classes and classes from historical academic years, for administration only.
 
 ### POST `api/classes.php`
 
