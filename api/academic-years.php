@@ -104,7 +104,9 @@ try {
     }
 
     Response::error('Unknown action.', 400);
-} catch (Throwable $e) {
+} catch (\InvalidArgumentException $e) {
+    Response::error($e->getMessage(), 422);
+} catch (\Throwable $e) {
     error_log('[SAMS academic years] ' . $e->getMessage());
     Response::error('Server error.', 500);
 }
