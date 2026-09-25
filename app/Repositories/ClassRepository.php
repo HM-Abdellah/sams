@@ -55,9 +55,19 @@ final class ClassRepository
     public function find(int $classId): ?array
     {
         $stmt = Database::connection()->prepare(
-            'SELECT id, name, level, branch, academic_year_id, is_active
-             FROM classes
-             WHERE id = ?
+            'SELECT
+                c.id,
+                c.name,
+                c.level,
+                c.branch,
+                c.academic_year_id,
+                c.is_active,
+                ay.name AS academic_year_name,
+                ay.starts_on AS academic_year_starts_on,
+                ay.ends_on AS academic_year_ends_on
+             FROM classes c
+             INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+             WHERE c.id = ?
              LIMIT 1'
         );
         $stmt->execute([$classId]);
