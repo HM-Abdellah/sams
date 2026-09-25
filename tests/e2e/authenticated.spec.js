@@ -110,6 +110,42 @@ test.describe('authenticated SAMS smoke', () => {
     await expect(page.locator('.tab[data-tab="admin"]')).toHaveCount(0);
   });
 
+  test('admin can complete a CSV import after correcting staged data', async ({ page }) => {
+    await page.goto('/login.php');
+    await page.locator('#username').fill(username);
+    await page.locator('#password').fill(password);
+    await page.locator('#loginForm').evaluate((form) => {
+      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    });
+
+    await page.waitForURL(/index\.php$/);
+    const classSelect = page.locator('#classSelect');
+    await expect(classSelect).toHaveValue(/\d+/);
+
+    await page.locator('.tab[data-tab="admin"]').click();
+    await page.locator('#studentImportFile').setInputFiles('tests/fixtures/students-invalid.csv');
+    await page.locator('#importForm button[type="submit"]').click();
+
+    const importRow = page.locator('#importsTable tbody tr').filter({ hasText: 'students-invalid.csv' }).first();
+    await expect(importRow).toBeVisible();
+
+    await importRow.locator('[data-edit-import]').click();
+    await expect(page.locator('#importCorrectionDialog')).toBeVisible();
+    const birthDate = page.locator('#importCorrectionRows .import-correction-row input[name="birth_date"]').first();
+    await expect(birthDate).toHaveValue('');
+    await birthDate.fill('2010-03-15');
+    await page.locator('#importCorrectionForm button[type="submit"]').click();
+
+    await page.locator('.tab[data-tab="admin"]').click();
+    const validatedRow = page.locator('#importsTable tbody tr').filter({ hasText: 'students-invalid.csv' }).first();
+    await expect(validatedRow).toContainText('validated');
+
+    page.once('dialog', (dialog) => dialog.accept());
+    await validatedRow.locator('[data-run-import]').click();
+
+    await expect(page.locator('#studentCount')).toContainText('5');
+  });
+
   test('admin can manage a class and a user through the UI', async ({ page }) => {
     await page.goto('/login.php');
     await page.locator('#username').fill(username);
