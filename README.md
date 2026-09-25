@@ -46,23 +46,40 @@ sams/
 
 ## Development stages
 
-1. GitHub
-2. Clone
-3. XAMPP
-4. MySQL
-5. Database
-6. Config
-7. PHP backend
-8. Login
-9. Frontend
-10. Attendance
-11. Signatures
-12. Reports
-13. Security
-14. Playwright
-15. Final testing
+The release candidate is executed in ordered layers. See [docs/RELEASE_PLAN.md](docs/RELEASE_PLAN.md) for the gates and acceptance criteria.
 
-Stages 14–15 are intentionally left for the final validation phase after the local integration is stable.
+1. Baseline / scope freeze
+2. Teacher attendance
+3. Administration
+4. Archive, reports, signatures
+5. Security / reliability
+6. Playwright E2E
+7. Clean-school acceptance
+8. Deployment and documentation
+9. Final review / release freeze
+
+The layers are delivery and verification gates; they do not require an architectural rewrite.
+
+## Development on CS50.dev / PHP built-in server
+
+SAMS needs both PHP and MySQL/MariaDB. php -S replaces Apache for development only; it does not replace the database.
+
+From the project root:
+
+:::shell
+cp config/database.example.php config/database.php
+# Edit config/database.php with the local MariaDB credentials.
+
+php -S 0.0.0.0:8080 -t .
+:::
+
+Open:
+
+:::text
+http://localhost:8080/public/
+:::
+
+Using the project root as the built-in server document root is intentional because the application keeps public/ and api/ as sibling directories. The built-in server is for development/testing; Apache remains the intended school-LAN deployment target.
 
 ## Local setup — XAMPP on Windows
 
