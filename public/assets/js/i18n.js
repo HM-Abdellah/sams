@@ -1,5 +1,6 @@
 const DICTIONARY = {
   fr: {
+    no_classes:'Aucune classe',
     login_title:'SAMS — Connexion',
     signature_saved:'Signature enregistrée.',signature_cleared:'Signature effacée.',
     student_count_zero:'0 élève',
@@ -34,6 +35,7 @@ const DICTIONARY = {
     no_employee_id: 'Aucun matricule', manage: 'Gérer', remove: 'Retirer', duplicate_assignment: 'Cette affectation existe déjà.'
   },
   ar: {
+    no_classes:'لا توجد أقسام',
     login_title:'SAMS — تسجيل الدخول',
     signature_saved:'تم حفظ التوقيع.',signature_cleared:'تم مسح التوقيع.',
     student_count_zero:'0 تلميذ',
@@ -68,6 +70,7 @@ const DICTIONARY = {
     no_employee_id: 'لا يوجد رقم مهني', manage: 'إدارة', remove: 'إزالة', duplicate_assignment: 'هذا التكليف موجود بالفعل.'
   },
   en: {
+    no_classes:'No classes',
     login_title:'SAMS — Log in',
     signature_saved:'Signature saved.',signature_cleared:'Signature cleared.',
     student_count_zero:'0 students',
