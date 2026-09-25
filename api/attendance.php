@@ -336,6 +336,9 @@ try {
                         'previous_status' => $existing['status'],
                     ]
                 );
+                $weekStartForEntry = (new ReportService())->weekRange($date)[0];
+                $signoffs->invalidatePeriod($classId, $date, $period, (int)$user['id']);
+                $signoffs->invalidateWeekSignature($classId, $weekStartForEntry, (int)$user['id']);
             }
 
             $pdo->commit();
@@ -366,6 +369,10 @@ try {
                 'status' => $status,
             ]
         );
+
+        $weekStartForEntry = (new ReportService())->weekRange($date)[0];
+        $signoffs->invalidatePeriod($classId, $date, $period, (int)$user['id']);
+        $signoffs->invalidateWeekSignature($classId, $weekStartForEntry, (int)$user['id']);
 
         $pdo->commit();
         Response::success(['changed' => true]);
