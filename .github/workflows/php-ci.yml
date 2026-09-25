@@ -41,7 +41,10 @@ jobs:
 
       - name: Install MySQL PDO extension
         shell: sh
-        run: docker-php-ext-install pdo_mysql mbstring
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends libonig-dev
+          docker-php-ext-install pdo_mysql mbstring
 
       - name: Lint PHP sources
         shell: sh
@@ -126,22 +129,35 @@ jobs:
       - name: Install Node dependencies
         run: npm install --no-audit --no-fund
 
-      - name: Start PHP server
-        shell: bash
-        run: |
-          php -S 0.0.0.0:8080 scripts/dev_router.php > /tmp/sams-server.log 2>&1 &
-          for i in $(seq 1 20); do
-            if curl -fsS http://127.0.0.1:8080/public/login.php > /dev/null; then
-              exit 0
-            fi
-            sleep 1
-          done
-          cat /tmp/sams-server.log
-          exit 1
-
       - name: Run Playwright E2E
         env:
           SAMS_BASE_URL: http://127.0.0.1:8080/public/
           SAMS_E2E_USERNAME: admin
           SAMS_E2E_TEACHER_USERNAME: teacher.e2e
-        run: npm run test:e2e
+        shell: bash
+        run: |
+          php -S 0.0.0.0:8080 scripts/dev_router.php > /tmp/sams-server.log 2>&1 &
+          server_pid=$!
+
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8080/public/login.php > /dev/null 2>&1; then
+              break
+            fi
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              echo "PHP server exited before becoming ready."
+              cat /tmp/sams-server.log
+              exit 1
+            fi
+            sleep 1
+          done
+
+          if ! curl -fsS http://127.0.0.1:8080/public/login.php > /dev/null 2>&1; then
+            echo "PHP server did not become ready."
+            cat /tmp/sams-server.log
+            exit 1
+          fi
+
+          npm run test:e2e
+          test_status=$?
+          kill "$server_pid" 2>/dev/null || true
+          exit "$test_status"
