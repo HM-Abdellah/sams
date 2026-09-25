@@ -1207,6 +1207,7 @@ async function loadSignature() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('sams:language', () => renderAll());
     ensureArchiveDynamicUI();
     ensureAdminDynamicUI();
     wire();
