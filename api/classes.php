@@ -152,13 +152,20 @@ try {
             Response::success(['changed' => false]);
         }
 
-        $repo->setActive($classId, $active);
-        $audit->record(
-            (int)$user['id'],
-            $active ? 'class.activate' : 'class.deactivate',
-            'class',
-            $classId
-        );
+        $pdo->beginTransaction();
+        try {
+            $repo->setActive($classId, $active);
+            $audit->record(
+                (int)$user['id'],
+                $active ? 'class.activate' : 'class.deactivate',
+                'class',
+                $classId
+            );
+            $pdo->commit();
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        }
 
         Response::success(['changed' => true]);
     }
