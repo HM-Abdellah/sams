@@ -1,4 +1,13 @@
 export const DAYS = Object.freeze(['Lun','Mar','Mer','Jeu','Ven','Sam']);
+
+export function startOfWeek(dateString) {
+  const date = new Date(`${dateString}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return dateString;
+  const day = date.getUTCDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  date.setUTCDate(date.getUTCDate() + diff);
+  return date.toISOString().slice(0, 10);
+}
 export const PERIODS = Object.freeze([
   '08:00–09:00','09:00–10:00','10:00–11:00','11:00–12:00',
   '14:00–15:00','15:00–16:00','16:00–17:00','17:00–18:00'
