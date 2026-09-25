@@ -158,9 +158,9 @@ try {
     }
 
     Response::error('Unknown action.', 400);
-} catch (\\InvalidArgumentException $e) {
+} catch (InvalidArgumentException $e) {
     Response::error($e->getMessage(), 422);
-} catch (\\Throwable $e) {
-    error_log('[SAMS students]  . $e->getMessage());
+} catch (Throwable $e) {
+    error_log('[SAMS students] ' . $e->getMessage());
     Response::error('Server error.', 500);
 }
