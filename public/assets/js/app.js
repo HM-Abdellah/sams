@@ -97,7 +97,7 @@ async function openArchiveDay(date) {
         const content = document.querySelector('#archiveDayContent');
         if (!dialog || !content) return;
 
-        const rows = Array.isArray(result.daily) ? result.daily : [];
+        const rows = Array.isArray(result.records) ? result.records : [];
         const students = new Map();
         for (const row of rows) {
             const id = Number(row.student_id);
