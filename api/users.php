@@ -157,6 +157,31 @@ try {
         Response::success();
     }
 
+    if ($action === 'unlock') {
+        $userId = (int)($body['id'] ?? 0);
+        if ($userId < 1) Response::error('Invalid user.', 422);
+
+        $existing = $repo->findById($userId);
+        if ($existing === null) Response::error('User not found.', 404);
+
+        $pdo->beginTransaction();
+        try {
+            $repo->unlock($userId);
+            $audit->record(
+                (int)$admin['id'],
+                'user.unlock',
+                'user',
+                $userId
+            );
+            $pdo->commit();
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        }
+
+        Response::success(['id' => $userId]);
+    }
+
     Response::error('Unknown action.', 400);
 } catch (\InvalidArgumentException $e) {
     Response::error($e->getMessage(), 422);
