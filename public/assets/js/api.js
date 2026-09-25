@@ -1,8 +1,43 @@
+import { t } from './i18n.js';
+
 const BASE = '../api/';
 let csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
 export function setCsrf(token) { csrfToken = typeof token === 'string' ? token : ''; }
 export function getCsrf() { return csrfToken; }
+
+function translateApiError(message, status) {
+    const value = String(message || '').trim();
+    const exact = new Map([
+        ['Authentication required.', 'api_auth_required'],
+        ['Forbidden.', 'api_forbidden'],
+        ['Method not allowed.', 'api_method_not_allowed'],
+        ['Server error.', 'api_server_error'],
+        ['Invalid CSRF token.', 'api_csrf'],
+        ['Invalid class.', 'api_invalid_class'],
+        ['Invalid month.', 'api_invalid_month'],
+        ['Invalid credentials.', 'api_credentials'],
+        ['Username or employee ID already exists.', 'api_conflict'],
+        ['This teaching assignment already exists.', 'api_duplicate_assignment'],
+        ['Subject not found or inactive.', 'api_subject_inactive'],
+        ['Invalid employee ID.', 'api_employee_invalid'],
+        ['Invalid phone number.', 'api_phone_invalid'],
+    ]);
+
+    const key = exact.get(value);
+    if (key) return t(key);
+
+    if (status === 401) return t('api_auth_required');
+    if (status === 403) return t('api_forbidden');
+    if (status === 404) return t('api_not_found');
+    if (status === 405) return t('api_method_not_allowed');
+    if (status === 409) return t('api_conflict');
+    if (status === 419) return t('api_csrf');
+    if (status === 422) return value || t('api_validation');
+    if (status >= 500) return t('api_server_error');
+
+    return value || `HTTP ${status}`;
+}
 
 export async function request(endpoint, options = {}) {
     const headers = new Headers(options.headers || {});
@@ -10,12 +45,25 @@ export async function request(endpoint, options = {}) {
     if (options.body && !(options.body instanceof FormData) && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
     if (csrfToken && !headers.has('X-CSRF-Token')) headers.set('X-CSRF-Token', csrfToken);
 
-    const response = await fetch(BASE + endpoint, { ...options, credentials: 'same-origin', headers });
+    let response;
+    try {
+        response = await fetch(BASE + endpoint, { ...options, credentials: 'same-origin', headers });
+    } catch {
+        throw new Error(t('api_server_error'));
+    }
+
     const contentType = response.headers.get('content-type') || '';
     let payload;
-    try { payload = contentType.includes('application/json') ? await response.json() : await response.text(); }
-    catch { throw new Error('Server returned an invalid response.'); }
-    if (!response.ok || payload?.success === false) throw new Error(payload?.error || `HTTP ${response.status}`);
+    try {
+        payload = contentType.includes('application/json') ? await response.json() : await response.text();
+    } catch {
+        throw new Error(t('api_invalid_response'));
+    }
+
+    if (!response.ok || payload?.success === false) {
+        throw new Error(translateApiError(payload?.error, response.status));
+    }
+
     return payload?.data ?? payload;
 }
 
