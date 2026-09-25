@@ -11,7 +11,6 @@ use SAMS\Repositories\AuditLogRepository;
 use SAMS\Repositories\ClassRepository;
 use SAMS\Repositories\SignatureRepository;
 use SAMS\Services\SignatureService;
-use Throwable;
 
 try {
     $user = Auth::requireLogin();
