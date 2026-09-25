@@ -35,9 +35,9 @@ export const API = Object.freeze({
     deleteStudent: (classId, id) => request(`students.php?class_id=${encodeURIComponent(classId)}`, { method:'POST', body:JSON.stringify({action:'delete',id}) }),
 
     attendance: (classId, month) => request(`attendance.php?class_id=${encodeURIComponent(classId)}&month=${encodeURIComponent(month)}`),
-    setAttendance: (data) => request('attendance.php', { method:'POST', body:JSON.stringify(data) }),
-    bulkAttendance: (entries) => request('attendance.php', { method:'POST', body:JSON.stringify({action:'bulk', entries}) }),
-    deleteAttendance: (data) => request('attendance.php', { method:'DELETE', body:JSON.stringify(data) }),
+    setAttendance: (classId, data) => request(`attendance.php?class_id=${encodeURIComponent(classId)}`, { method:'POST', body:JSON.stringify(data) }),
+    bulkAttendance: (classId, entries) => request(`attendance.php?class_id=${encodeURIComponent(classId)}`, { method:'POST', body:JSON.stringify({action:'bulk', entries}) }),
+    deleteAttendance: (classId, data) => request(`attendance.php?class_id=${encodeURIComponent(classId)}`, { method:'DELETE', body:JSON.stringify(data) }),
 
     signature: (classId) => request(`signatures.php?class_id=${encodeURIComponent(classId)}`),
     saveSignature: (classId, signatureData) => request(`signatures.php?class_id=${encodeURIComponent(classId)}`, { method:'POST', body:JSON.stringify({signature_data:signatureData}) }),
