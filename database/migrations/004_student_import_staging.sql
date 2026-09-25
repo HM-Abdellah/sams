@@ -35,7 +35,7 @@ CREATE TABLE student_import_batches (
 CREATE TABLE student_import_rows (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     batch_id BIGINT UNSIGNED NOT NULL,
-    row_number INT UNSIGNED NOT NULL,
+    `row_number` INT UNSIGNED NOT NULL,
     first_name VARCHAR(80) NULL,
     last_name VARCHAR(80) NULL,
     massar_code VARCHAR(32) NULL,
@@ -48,7 +48,7 @@ CREATE TABLE student_import_rows (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    UNIQUE KEY uq_import_rows_batch_row (batch_id, row_number),
+    UNIQUE KEY uq_import_rows_batch_row (batch_id, `row_number`),
     KEY idx_import_rows_batch_status (batch_id, status),
     KEY idx_import_rows_student (student_id),
     CONSTRAINT fk_import_rows_batch
