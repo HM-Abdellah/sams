@@ -22,6 +22,14 @@ function translateApiError(message, status) {
         ['Subject not found or inactive.', 'api_subject_inactive'],
         ['Invalid employee ID.', 'api_employee_invalid'],
         ['Invalid phone number.', 'api_phone_invalid'],
+        ['This lesson is signed. Reopen it before correcting attendance.', 'api_signed_lesson'],
+        ['Save your class signature before signing attendance.', 'api_signature_required'],
+        ['This lesson is already signed by another teacher.', 'api_lesson_already_signed'],
+        ['Only the signing teacher can reopen this lesson.', 'api_reopen_not_allowed'],
+        ['Only teachers can sign attendance.', 'api_teacher_sign_only'],
+        ['Sign at least one lesson before signing the week.', 'api_week_sign_requires_lesson'],
+        ['Correct and re-sign all changed lessons before signing the week.', 'api_week_needs_resign'],
+        ['Unknown attendance sign-off action.', 'api_unknown_action'],
     ]);
 
     const key = exact.get(value);
