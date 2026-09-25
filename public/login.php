@@ -15,7 +15,7 @@ if (Auth::check()) {
 $csrf = Csrf::token();
 ?>
 <!doctype html>
-<html lang="fr" dir="ltr">
+<html lang="fr" dir="ltr" data-page="login">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
