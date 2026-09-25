@@ -28,6 +28,25 @@ final class AcademicYearRepository
         return $row ?: null;
     }
 
+    public function overlaps(string $startsOn, string $endsOn, ?int $excludeId = null): bool
+    {
+        $sql = 'SELECT 1
+                FROM academic_years
+                WHERE starts_on <= ? AND ends_on >= ?';
+        $params = [$endsOn, $startsOn];
+
+        if ($excludeId !== null) {
+            $sql .= ' AND id <> ?';
+            $params[] = $excludeId;
+        }
+
+        $sql .= ' LIMIT 1';
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        return (bool)$stmt->fetchColumn();
+    }
+
     public function create(string $name, string $startsOn, string $endsOn): int
     {
         $stmt = Database::connection()->prepare(
