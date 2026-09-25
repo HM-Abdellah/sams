@@ -21,6 +21,52 @@ final class StudentRepository
         return $stmt->fetchAll();
     }
 
+    public function existingMassarCodes(array $codes): array
+    {
+        $codes = array_values(array_unique(array_filter(
+            array_map(static fn($v) => trim((string)$v), $codes),
+            static fn($v) => $v !== ''
+        )));
+        if ($codes === []) return [];
+
+        $placeholders = implode(',', array_fill(0, count($codes), '?'));
+        $stmt = Database::connection()->prepare(
+            "SELECT id, massar_code FROM students
+             WHERE massar_code IN ({$placeholders})"
+        );
+        $stmt->execute($codes);
+
+        $result = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $result[(string)$row['massar_code']] = (int)$row['id'];
+        }
+        return $result;
+    }
+
+    public function existingNumbersInClass(int $classId, array $numbers): array
+    {
+        $numbers = array_values(array_unique(array_filter(
+            array_map(static fn($v) => trim((string)$v), $numbers),
+            static fn($v) => $v !== ''
+        )));
+        if ($numbers === []) return [];
+
+        $placeholders = implode(',', array_fill(0, count($numbers), '?'));
+        $params = array_merge([$classId], $numbers);
+
+        $stmt = Database::connection()->prepare(
+            "SELECT student_number FROM students
+             WHERE class_id = ? AND student_number IN ({$placeholders})"
+        );
+        $stmt->execute($params);
+
+        $result = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $result[(string)$row['student_number']] = true;
+        }
+        return $result;
+    }
+
     public function findInClass(int $studentId, int $classId): ?array
     {
         $stmt = Database::connection()->prepare(
