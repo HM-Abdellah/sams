@@ -46,28 +46,34 @@ final class AttendanceRepository
      * Compatibility contract: callers identify a record by student/date/period.
      * The repository resolves the correct historical enrollment internally.
      */
-    public function find(int $studentId, string $date, int $period): ?array
+    public function find(int $studentId, string $date, int $period, ?int $classId = null): ?array
     {
-        $stmt = Database::connection()->prepare(
-            'SELECT
-                a.id,
-                a.student_id,
-                a.enrollment_id,
-                a.attendance_date,
-                a.period,
-                a.status,
-                a.recorded_by,
-                a.created_at,
-                a.updated_at
-             FROM attendance a
-             INNER JOIN student_enrollments e ON e.id = a.enrollment_id
-             WHERE a.student_id = ?
-               AND a.attendance_date = ?
-               AND a.period = ?
-             ORDER BY e.starts_on DESC, e.id DESC
-             LIMIT 1'
-        );
-        $stmt->execute([$studentId, $date, $period]);
+        $sql = 'SELECT
+                    a.id,
+                    a.student_id,
+                    a.enrollment_id,
+                    a.attendance_date,
+                    a.period,
+                    a.status,
+                    a.recorded_by,
+                    a.created_at,
+                    a.updated_at
+                FROM attendance a
+                INNER JOIN student_enrollments e ON e.id = a.enrollment_id
+                WHERE a.student_id = ?
+                  AND a.attendance_date = ?
+                  AND a.period = ?';
+        $params = [$studentId, $date, $period];
+
+        if ($classId !== null) {
+            $sql .= ' AND e.class_id = ?';
+            $params[] = $classId;
+        }
+
+        $sql .= ' ORDER BY e.starts_on DESC, e.id DESC LIMIT 1';
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
         $row = $stmt->fetch();
 
         return $row ?: null;
@@ -78,9 +84,10 @@ final class AttendanceRepository
         string $date,
         int $period,
         string $status,
-        int $recordedBy
+        int $recordedBy,
+        ?int $classId = null
     ): void {
-        $enrollmentId = $this->resolveEnrollmentId($studentId, $date);
+        $enrollmentId = $this->resolveEnrollmentId($studentId, $date, $classId);
 
         $stmt = Database::connection()->prepare(
             'INSERT INTO attendance
@@ -131,18 +138,24 @@ final class AttendanceRepository
         return $stmt->fetchAll();
     }
 
-    private function resolveEnrollmentId(int $studentId, string $date): int
+    private function resolveEnrollmentId(int $studentId, string $date, ?int $classId = null): int
     {
-        $stmt = Database::connection()->prepare(
-            'SELECT id
-             FROM student_enrollments
-             WHERE student_id = ?
-               AND starts_on <= ?
-               AND (ends_on IS NULL OR ends_on >= ?)
-             ORDER BY starts_on DESC, id DESC
-             LIMIT 1'
-        );
-        $stmt->execute([$studentId, $date, $date]);
+        $sql = 'SELECT id
+                FROM student_enrollments
+                WHERE student_id = ?
+                  AND starts_on <= ?
+                  AND (ends_on IS NULL OR ends_on >= ?)';
+        $params = [$studentId, $date, $date];
+
+        if ($classId !== null) {
+            $sql .= ' AND class_id = ?';
+            $params[] = $classId;
+        }
+
+        $sql .= ' ORDER BY starts_on DESC, id DESC LIMIT 1';
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
         $id = $stmt->fetchColumn();
 
         if ($id === false) {
