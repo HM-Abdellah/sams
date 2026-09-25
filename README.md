@@ -104,6 +104,22 @@ These credentials are for local/demo testing only. Never use them for a real sch
 
 Using the project root as the built-in server document root is intentional because the application keeps public/ and api/ as sibling directories. The router exposes only public/ and api/ to the built-in server, while keeping application source and configuration outside the web surface. The built-in server is for development/testing; Apache remains the intended school-LAN deployment target.
 
+## Teacher directory and multilingual administration
+
+The administration interface now has a dedicated **Teachers** area. It tracks teacher identity data (employee ID and phone), recent presence, multilingual subjects, and exact teaching assignments to classes. A teaching assignment is tied to one teacher, one subject, and one class, so branches and academic years are not collapsed into one ambiguous label.
+
+For an existing local database, apply:
+
+```sql
+SOURCE database/migrations/002_teacher_management.sql;
+```
+
+Fresh installations receive the same structure automatically through `database/schema.sql`.
+
+The interface language foundation supports French, Arabic, and English. The teacher directory renders subject names from the three stored subject translations and switches document direction for Arabic. The remaining legacy panels are being migrated to the same translation layer incrementally.
+
+The teacher online indicator is based on a short authenticated heartbeat window rather than a permanent connection. It is intended to mean **recently active** and is not a presence history.
+
 ## Local setup — XAMPP on Windows
 
 1. Put the repository at `C:\xampp\htdocs\sams`.
