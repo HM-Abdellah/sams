@@ -37,7 +37,7 @@ Gate:
 Goal: complete the operational admin console.
 
 - Classes: create / update / activate / deactivate.
-- Students: create / update / deactivate.
+- Students: create / update / deactivate / transfer with enrollment history preservation.
 - Users: create / activate / deactivate / unlock / password reset.
 - Teacher-class assignments.
 - Academic-year creation and activation.
