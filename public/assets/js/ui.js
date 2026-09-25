@@ -168,10 +168,18 @@ export const ui = {
         if (weeklySignatures) {
             const teachers = Array.isArray(state.attendanceSignoffs?.teachers) ? state.attendanceSignoffs.teachers : [];
             const weeklyMap = new Map(weeklyRows.map((row) => [Number(row.teacher_id), row]));
-            const signedCount = weeklyRows.filter((row) => row.status === 'signed').length;
+            const signedCount = teachers.filter((teacher) => weeklyMap.get(Number(teacher.id))?.status === 'signed').length;
+            const readyForAdmin = teachers.length > 0 && signedCount === teachers.length;
+            const submission = state.attendanceSignoffs?.submission || null;
+
             weeklySignatures.innerHTML =
                 '<div class="weekly-signatures-head"><div><h2>' + esc(t('weekly_certification')) + '</h2><p>' + esc(t('weekly_certification_hint')) + '</p></div>'
                 + '<strong>' + signedCount + '/' + teachers.length + '</strong></div>'
+                + (submission
+                    ? '<div class="register-receipt received"><strong>' + esc(t('register_received')) + '</strong><span>' + esc(t('received_by')) + ': ' + esc(submission.received_by_name || '—') + ' · ' + esc(submission.received_at || '') + '</span></div>'
+                    : readyForAdmin
+                        ? '<div class="register-receipt ready"><strong>' + esc(t('register_ready')) + '</strong><span>' + esc(t('weekly_certification_hint')) + '</span>' + (state.user?.role === 'admin' ? '<button class="btn success small" type="button" data-receive-week="1">' + esc(t('receive_register')) + '</button>' : '') + '</div>'
+                        : '')
                 + '<div class="weekly-teacher-list">'
                 + (teachers.length ? teachers.map((teacher) => {
                     const row = weeklyMap.get(Number(teacher.id));
@@ -186,6 +194,7 @@ export const ui = {
                 }).join('') : '<p class="empty-state">' + esc(t('no_class_teachers')) + '</p>')
                 + '</div>';
         }
+
         this.stats();
     },
 
