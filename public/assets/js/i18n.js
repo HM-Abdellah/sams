@@ -1,5 +1,6 @@
 const DICTIONARY = {
   fr: {
+    login_title:'SAMS — Connexion',
     signature_saved:'Signature enregistrée.',signature_cleared:'Signature effacée.',
     student_count_zero:'0 élève',
     teachers_load_error:'Erreur de chargement des enseignants.',class_modify_error:'Erreur de modification de classe.',unassign_error:'Erreur de retrait.',import_correction_error:'Erreur pendant la correction.',signature_load_error:'Impossible de charger la signature.',signature_save_error:'Impossible d’enregistrer la signature.',signature_clear_error:'Impossible d’effacer la signature.',
@@ -33,6 +34,7 @@ const DICTIONARY = {
     no_employee_id: 'Aucun matricule', manage: 'Gérer', remove: 'Retirer', duplicate_assignment: 'Cette affectation existe déjà.'
   },
   ar: {
+    login_title:'SAMS — تسجيل الدخول',
     signature_saved:'تم حفظ التوقيع.',signature_cleared:'تم مسح التوقيع.',
     student_count_zero:'0 تلميذ',
     teachers_load_error:'حدث خطأ أثناء تحميل الأساتذة.',class_modify_error:'حدث خطأ أثناء تعديل القسم.',unassign_error:'حدث خطأ أثناء الإزالة.',import_correction_error:'حدث خطأ أثناء التصحيح.',signature_load_error:'تعذر تحميل التوقيع.',signature_save_error:'تعذر حفظ التوقيع.',signature_clear_error:'تعذر مسح التوقيع.',
@@ -66,6 +68,7 @@ const DICTIONARY = {
     no_employee_id: 'لا يوجد رقم مهني', manage: 'إدارة', remove: 'إزالة', duplicate_assignment: 'هذا التكليف موجود بالفعل.'
   },
   en: {
+    login_title:'SAMS — Log in',
     signature_saved:'Signature saved.',signature_cleared:'Signature cleared.',
     student_count_zero:'0 students',
     teachers_load_error:'Error loading teachers.',class_modify_error:'Error modifying class.',unassign_error:'Error removing assignment.',import_correction_error:'Error while correcting.',signature_load_error:'Unable to load signature.',signature_save_error:'Unable to save signature.',signature_clear_error:'Unable to clear signature.',
