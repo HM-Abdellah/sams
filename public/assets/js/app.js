@@ -58,6 +58,7 @@ async function boot() {
         if (currentUser && state.user) currentUser.textContent = `${state.user.full_name} · ${state.user.role}`;
 
         if (state.user?.role !== 'admin') document.querySelectorAll('.admin-only').forEach((el) => el.remove());
+        ensureArchiveDynamicUI();
         renderAll();
         if (state.classId) await loadClass();
         if (state.user?.role === 'admin') await loadAdmin();
@@ -65,6 +66,107 @@ async function boot() {
         ui.toast(error.message || 'Erreur de démarrage.', true);
     } finally {
         loading = false;
+    }
+}
+
+function ensureArchiveDynamicUI() {
+    if (!document.querySelector('#archiveDayDialog')) {
+        const dialog = document.createElement('dialog');
+        dialog.id = 'archiveDayDialog';
+        dialog.innerHTML = '<form><h2>Présences du jour</h2><div id="archiveDayContent"></div><div class="dialog-actions"><button class="btn" type="button" data-close-dialog="archiveDayDialog">Fermer</button></div></form>';
+        document.body.appendChild(dialog);
+    }
+
+    if (!document.querySelector('#studentHistoryDialog')) {
+        const dialog = document.createElement('dialog');
+        dialog.id = 'studentHistoryDialog';
+        dialog.innerHTML = '<form><h2>Historique de l’élève</h2><div id="studentHistoryContent"></div><div class="dialog-actions"><button class="btn" type="button" data-close-dialog="studentHistoryDialog">Fermer</button></div></form>';
+        document.body.appendChild(dialog);
+    }
+}
+
+function displayStudentName(row) {
+    return [row?.first_name, row?.last_name].filter(Boolean).join(' ').trim();
+}
+
+async function openArchiveDay(date) {
+    if (!state.classId || !date) return;
+    try {
+        const result = await API.archiveDay(state.classId, date);
+        const dialog = document.querySelector('#archiveDayDialog');
+        const content = document.querySelector('#archiveDayContent');
+        if (!dialog || !content) return;
+
+        const rows = Array.isArray(result.daily) ? result.daily : [];
+        const students = new Map();
+        for (const row of rows) {
+            const id = Number(row.student_id);
+            if (!students.has(id)) {
+                students.set(id, {
+                    name: displayStudentName(row),
+                    massar: row.massar_code || '—',
+                    periods: new Map()
+                });
+            }
+            if (row.period != null && row.status) {
+                students.get(id).periods.set(Number(row.period), row.status);
+            }
+        }
+
+        const periodLabel = (period) => [
+            '08:00–09:00','09:00–10:00','10:00–11:00','11:00–12:00',
+            '14:00–15:00','15:00–16:00','16:00–17:00','17:00–18:00'
+        ][period - 1] || String(period);
+
+        content.innerHTML = '<p><strong>' + esc(result.class?.name || '') + '</strong> · ' + esc(date) + '</p>'
+            + (students.size
+                ? '<div class="table-scroll"><table><thead><tr><th>Élève</th><th>Massar</th>' +
+                    Array.from({length:8}, (_, i) => '<th>' + (i + 1) + '</th>').join('') +
+                    '</tr></thead><tbody>' +
+                    [...students.values()].map((student) =>
+                        '<tr><td>' + esc(student.name) + '</td><td>' + esc(student.massar) + '</td>' +
+                        Array.from({length:8}, (_, i) => {
+                            const status = student.periods.get(i + 1) || '';
+                            const label = status === 'present' ? '✓'
+                                : status === 'absent' ? '✕'
+                                : status === 'late' ? 'L'
+                                : status === 'excused' ? 'E'
+                                : '·';
+                            return '<td title="' + esc(periodLabel(i + 1)) + '">' + label + '</td>';
+                        }).join('') +
+                        '</tr>'
+                    ).join('') +
+                    '</tbody></table></div>'
+                : '<p class="empty-state">Aucun enregistrement pour cette date.</p>');
+        dialog.showModal();
+    } catch (error) {
+        ui.toast(error.message || 'Impossible de charger la journée.', true);
+    }
+}
+
+async function openStudentHistory(studentId) {
+    if (!state.classId || !studentId) return;
+    try {
+        const result = await API.studentHistory(state.classId, studentId);
+        const dialog = document.querySelector('#studentHistoryDialog');
+        const content = document.querySelector('#studentHistoryContent');
+        if (!dialog || !content) return;
+
+        const rows = Array.isArray(result.history) ? result.history : [];
+        const first = rows[0];
+        const attendanceRows = rows.filter((row) => row.attendance_id != null);
+
+        content.innerHTML = '<p><strong>' + esc([first?.first_name, first?.last_name].filter(Boolean).join(' ')) + '</strong>'
+            + ' · Massar: ' + esc(first?.massar_code || '—')
+            + ' · Classe: ' + esc(result.class?.name || first?.class_name || '—') + '</p>'
+            + '<div class="table-scroll"><table><thead><tr><th>Date</th><th>Période</th><th>Statut</th></tr></thead><tbody>'
+            + (attendanceRows.map((row) =>
+                '<tr><td>' + esc(row.attendance_date) + '</td><td>' + Number(row.period) + '</td><td>' + esc(row.status) + '</td></tr>'
+            ).join('') || '<tr><td colspan="3" class="empty-state">Aucune présence enregistrée.</td></tr>')
+            + '</tbody></table></div>';
+        dialog.showModal();
+    } catch (error) {
+        ui.toast(error.message || 'Impossible de charger l’historique.', true);
     }
 }
 
@@ -514,6 +616,22 @@ function wire() {
         document.querySelectorAll('[data-archive-view]').forEach((item) => item.classList.toggle('active', item === button));
         await loadArchive(button.dataset.archiveView || 'days');
     }));
+    document.querySelector('#archiveTable')?.addEventListener('click', async (event) => {
+        const dayButton = event.target.closest('[data-archive-day]');
+        const historyButton = event.target.closest('[data-student-history]');
+        try {
+            if (dayButton) {
+                await openArchiveDay(dayButton.dataset.archiveDay);
+                return;
+            }
+            if (historyButton) {
+                await openStudentHistory(Number(historyButton.dataset.studentHistory));
+            }
+        } catch (error) {
+            ui.toast(error.message || 'Erreur de chargement archive.', true);
+        }
+    });
+
     const archiveMonth = document.querySelector('#archiveMonth');
     if (archiveMonth) archiveMonth.value = state.month;
 
@@ -698,22 +816,3 @@ function wire() {
 
     setupSignature({
         canvas: document.querySelector('#signatureCanvas'),
-        clearButton: document.querySelector('#clearSignatureBtn'),
-        saveButton: document.querySelector('#saveSignatureBtn'),
-    });
-}
-
-async function loadSignature() {
-    if (!state.classId) return;
-    try {
-        const result = await API.signature(state.classId);
-        window.dispatchEvent(new CustomEvent('sams:signature-load', { detail: result.signature?.signature_data || '' }));
-    } catch (error) {
-        ui.toast(error.message || 'Impossible de charger la signature.', true);
-    }
-}
-
-window.addEventListener('DOMContentLoaded', () => {
-    wire();
-    boot();
-});
