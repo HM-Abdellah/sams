@@ -14,8 +14,8 @@ export const PERIODS = Object.freeze([
 ]);
 
 export function dateFromWeek(weekStart, offset) {
-  const d = new Date(`${weekStart}T00:00:00`);
-  d.setDate(d.getDate() + offset);
+  const d = new Date(`${weekStart}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + offset);
   return d.toISOString().slice(0, 10);
 }
 
