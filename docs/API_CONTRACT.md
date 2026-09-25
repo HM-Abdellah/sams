@@ -173,7 +173,7 @@ Returns enrollment-aware attendance rows for the month.
 
 ### GET `api/attendance.php?class_id=ID&week_start=YYYY-MM-DD`
 
-Returns enrollment-aware attendance records for the six-day school week starting on the supplied Monday. The requested range is clamped to the class academic-year boundaries. The weekly endpoint is the operational attendance view used by teachers.
+Returns enrollment-aware attendance records for the six-day school week starting on the supplied Monday. The supplied date is normalized to the Monday of its school week, the resulting Monday-to-Saturday range is clamped to the class academic-year boundaries, and the weekly endpoint is the operational attendance view used by teachers.
 
 The monthly GET contract remains available for compatibility and reporting, but the operational attendance screen uses the weekly endpoint.
 
