@@ -211,6 +211,40 @@ expect_true(
     'Import staging row was not persisted.'
 );
 
+$pdo->exec(
+    "INSERT INTO classes (academic_year_id, name, level, branch)
+     VALUES (1, '2BAC SP B', '2BAC', 'SP')"
+);
+
+$pdo->exec("INSERT INTO teacher_classes (teacher_id, class_id) VALUES (2, 2)");
+
+$pdo->exec(
+    "UPDATE student_enrollments
+     SET ends_on = '2026-09-30'
+     WHERE id = 1"
+);
+
+$pdo->exec(
+    "INSERT INTO student_enrollments (student_id, class_id, starts_on)
+     VALUES (1, 2, '2026-10-01')"
+);
+
+$pdo->exec("UPDATE students SET class_id = 2 WHERE id = 1");
+
+$historical = $pdo->query(
+    "SELECT COUNT(*)
+     FROM attendance a
+     INNER JOIN student_enrollments e ON e.id = a.enrollment_id
+     WHERE a.student_id = 1
+       AND a.attendance_date = '2026-09-25'
+       AND e.class_id = 1"
+)->fetchColumn();
+
+expect_true((int)$historical === 1, 'Historical attendance must remain attached to the previous class.');
+
+$currentClass = $pdo->query("SELECT class_id FROM students WHERE id = 1")->fetchColumn();
+expect_true((int)$currentClass === 2, 'Student current class transfer should be reflected in students.class_id.');
+
 $before = (int)$pdo->query("SELECT COUNT(*) FROM students")->fetchColumn();
 
 $pdo->beginTransaction();
