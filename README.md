@@ -70,6 +70,11 @@ From the project root:
 cp config/database.example.php config/database.php
 # Edit config/database.php with the local MariaDB credentials.
 
+sudo service mariadb start
+mysql -u root < database/schema.sql
+mysql -u root sams < database/seed.sql
+php scripts/seed_demo.php
+
 php -S 0.0.0.0:8080 scripts/dev_router.php
 ```
 
@@ -78,6 +83,24 @@ Open:
 ```text
 http://localhost:8080/public/
 ```
+
+### Local demo accounts
+
+`scripts/seed_demo.php` creates non-production demo accounts and a small demo school dataset for manual testing.
+
+```text
+Administrator
+Username: admin.demo
+Password: SAMS-Demo-Admin-2026!
+
+Teacher
+Username: teacher.demo
+Password: SAMS-Demo-Teacher-2026!
+```
+
+The teacher is assigned to `DEMO-2BAC-A`, while `DEMO-2BAC-B` is available for administration and transfer tests.
+
+These credentials are for local/demo testing only. Never use them for a real school deployment.
 
 Using the project root as the built-in server document root is intentional because the application keeps public/ and api/ as sibling directories. The router exposes only public/ and api/ to the built-in server, while keeping application source and configuration outside the web surface. The built-in server is for development/testing; Apache remains the intended school-LAN deployment target.
 
@@ -145,4 +168,4 @@ Make sure the project is directly under `C:\xampp\htdocs\sams` and that Apache's
 
 Never commit `config/database.php`, real student records, production passwords, or runtime logs.
 
-Do not add a hard-coded admin password to `seed.sql`: the local administrator is deliberately created separately with a password hash generated on the local machine.
+Do not use `scripts/seed_demo.php` on a real school database. The demo credentials and dataset are intentionally fixed for local testing only.
