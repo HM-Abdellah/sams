@@ -14,10 +14,11 @@ final class ClassRepository
 
         if (in_array($role, ['admin', 'counselor'], true)) {
             return $pdo->query(
-                'SELECT id, name, level, branch, academic_year_id
-                 FROM classes
-                 WHERE is_active = 1
-                 ORDER BY name'
+                'SELECT c.id, c.name, c.level, c.branch, c.academic_year_id
+                 FROM classes c
+                 INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+                 WHERE c.is_active = 1 AND ay.is_active = 1
+                 ORDER BY c.name'
             )->fetchAll();
         }
 
@@ -25,7 +26,8 @@ final class ClassRepository
             'SELECT c.id, c.name, c.level, c.branch, c.academic_year_id
              FROM classes c
              INNER JOIN teacher_classes tc ON tc.class_id = c.id
-             WHERE tc.teacher_id = ? AND c.is_active = 1
+             INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+             WHERE tc.teacher_id = ? AND c.is_active = 1 AND ay.is_active = 1
              ORDER BY c.name'
         );
         $stmt->execute([$userId]);
@@ -85,7 +87,10 @@ final class ClassRepository
     {
         if (in_array($role, ['admin', 'counselor'], true)) {
             $stmt = Database::connection()->prepare(
-                'SELECT 1 FROM classes WHERE id = ? AND is_active = 1'
+                'SELECT 1
+                 FROM classes c
+                 INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+                 WHERE c.id = ? AND c.is_active = 1 AND ay.is_active = 1'
             );
             $stmt->execute([$classId]);
             return (bool)$stmt->fetchColumn();
@@ -95,7 +100,8 @@ final class ClassRepository
             'SELECT 1
              FROM classes c
              INNER JOIN teacher_classes tc ON tc.class_id = c.id
-             WHERE c.id = ? AND c.is_active = 1 AND tc.teacher_id = ?'
+             INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+             WHERE c.id = ? AND c.is_active = 1 AND ay.is_active = 1 AND tc.teacher_id = ?'
         );
         $stmt->execute([$classId, $userId]);
         return (bool)$stmt->fetchColumn();
