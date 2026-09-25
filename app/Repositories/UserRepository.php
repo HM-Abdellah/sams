@@ -19,6 +19,18 @@ final class UserRepository
         return $row ?: null;
     }
 
+    /** Fetch a login row while holding a row lock for atomic failure counting. */
+    public function findByUsernameForUpdate(string $username): ?array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT id, username, full_name, password_hash, role, is_active, failed_login_attempts, locked_until, last_login_at
+             FROM users WHERE username = ? LIMIT 1 FOR UPDATE'
+        );
+        $stmt->execute([$username]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     public function findActiveById(int $userId): ?array
     {
         $stmt = Database::connection()->prepare(
@@ -43,5 +55,13 @@ final class UserRepository
             'UPDATE users SET failed_login_attempts = 0, locked_until = NULL, last_login_at = CURRENT_TIMESTAMP WHERE id = ?'
         );
         $stmt->execute([$userId]);
+    }
+
+    public function updatePasswordHash(int $userId, string $passwordHash): void
+    {
+        $stmt = Database::connection()->prepare(
+            'UPDATE users SET password_hash = ? WHERE id = ?'
+        );
+        $stmt->execute([$passwordHash, $userId]);
     }
 }
