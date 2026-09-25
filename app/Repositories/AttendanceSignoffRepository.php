@@ -171,14 +171,14 @@ final class AttendanceSignoffRepository
         return $stmt->rowCount();
     }
 
-    public function reopenPeriod(int $classId, string $date, int $period): bool
+    public function reopenPeriod(int $classId, string $date, int $period, int $userId): bool
     {
         $stmt = Database::connection()->prepare(
             'UPDATE attendance_signoffs
-             SET status = "needs_resign", invalidated_at = CURRENT_TIMESTAMP
+             SET status = "needs_resign", invalidated_at = CURRENT_TIMESTAMP, invalidated_by = ?
              WHERE class_id = ? AND attendance_date = ? AND period = ? AND status = "signed"'
         );
-        $stmt->execute([$classId, $date, $period]);
+        $stmt->execute([$userId, $classId, $date, $period]);
         return $stmt->rowCount() > 0;
     }
 }
