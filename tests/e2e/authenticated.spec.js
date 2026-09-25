@@ -33,5 +33,52 @@ test.describe('authenticated SAMS smoke', () => {
       await expect(page.locator('#assignmentForm')).toBeVisible();
       await expect(page.locator('#importForm')).toBeVisible();
     }
+
+  test('attendance edits are sent as one bulk request', async ({ page }) => {
+    const batches = [];
+
+    await page.route('**/api/attendance.php*', async (route) => {
+      if (route.request().method() !== 'POST') {
+        await route.continue();
+        return;
+      }
+
+      const body = route.request().postDataJSON();
+      batches.push(body);
+
+      const total = Array.isArray(body?.entries) ? body.entries.length : 0;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          data: { changed: total, unchanged: 0, total }
+        })
+      });
+    });
+
+    await page.goto('/login.php');
+    await page.locator('#username').fill(username);
+    await page.locator('#password').fill(password);
+    await page.locator('#loginForm').evaluate((form) => {
+      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    });
+
+    await page.waitForURL(/index\.php$/);
+    await expect(page.locator('.attendance-cell').first()).toBeVisible();
+
+    await page.evaluate(() => {
+      const cells = [...document.querySelectorAll('.attendance-cell')].slice(0, 3);
+      cells.forEach((cell) => cell.click());
+    });
+
+    await page.waitForTimeout(800);
+
+    expect(batches).toHaveLength(1);
+    expect(batches[0]?.action).toBe('bulk');
+    expect(batches[0]?.entries).toHaveLength(3);
+    expect(batches[0].entries.every((entry) => ['upsert', 'delete'].includes(entry.action))).toBe(true);
+  });
+
   });
 });
