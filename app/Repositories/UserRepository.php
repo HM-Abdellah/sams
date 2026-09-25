@@ -11,7 +11,7 @@ final class UserRepository
     public function findByUsername(string $username): ?array
     {
         $stmt = Database::connection()->prepare(
-            'SELECT id, username, full_name, password_hash, role, is_active, failed_login_attempts, locked_until, last_login_at
+            'SELECT id, username, full_name, password_hash, role, is_active, failed_login_attempts, locked_until, session_version, last_login_at
              FROM users WHERE username = ? LIMIT 1'
         );
         $stmt->execute([$username]);
@@ -46,7 +46,7 @@ final class UserRepository
     public function findById(int $userId): ?array
     {
         $stmt = Database::connection()->prepare(
-            'SELECT id, username, full_name, role, is_active, failed_login_attempts, locked_until, last_login_at, created_at, updated_at
+            'SELECT id, username, full_name, role, is_active, failed_login_attempts, locked_until, session_version, last_login_at, created_at, updated_at
              FROM users
              WHERE id = ?
              LIMIT 1'
@@ -84,7 +84,10 @@ final class UserRepository
     ): void {
         $stmt = Database::connection()->prepare(
             'UPDATE users
-             SET full_name = ?, role = ?, is_active = ?
+             SET full_name = ?,
+                 role = ?,
+                 is_active = ?,
+                 session_version = session_version + 1
              WHERE id = ?'
         );
         $stmt->execute([$fullName, $role, $isActive ? 1 : 0, $userId]);
@@ -94,7 +97,10 @@ final class UserRepository
     {
         $stmt = Database::connection()->prepare(
             'UPDATE users
-             SET password_hash = ?, failed_login_attempts = 0, locked_until = NULL
+             SET password_hash = ?,
+                 failed_login_attempts = 0,
+                 locked_until = NULL,
+                 session_version = session_version + 1
              WHERE id = ?'
         );
         $stmt->execute([$passwordHash, $userId]);
