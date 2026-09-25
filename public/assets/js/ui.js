@@ -542,20 +542,23 @@ export const ui = {
             || '<tr><td colspan="7" class="empty-state">' + esc(t('no_records')) + '</td></tr>';
     },
     stats() {
-        let present = 0;
-        let absent = 0;
-        let other = 0;
-        for (const row of state.attendance) {
-            if (row.status === 'present') present += 1;
-            else if (row.status === 'absent') absent += 1;
-            else other += 1;
-        }
-        const total = present + absent + other;
-        document.querySelector('#statPresent').textContent = String(present);
-        document.querySelector('#statAbsent').textContent = String(absent);
-        document.querySelector('#statOther').textContent = String(other);
-        document.querySelector('#statRate').textContent = `${attendanceRate(present, total)}%`;
+        const absent = state.attendance.filter((row) => row.status === 'absent').length;
+        const periodRows = Array.isArray(state.attendanceSignoffs?.period_signoffs) ? state.attendanceSignoffs.period_signoffs : [];
+        const signed = periodRows.filter((row) => row.status === 'signed').length;
+        const needsResign = periodRows.filter((row) => row.status === 'needs_resign').length;
+        const weeklyRows = Array.isArray(state.attendanceSignoffs?.weekly_signatures) ? state.attendanceSignoffs.weekly_signatures : [];
+        const weeklySigned = weeklyRows.filter((row) => row.status === 'signed').length;
+
+        const absentEl = document.querySelector('#statAbsent');
+        const signedEl = document.querySelector('#statSigned');
+        const needsEl = document.querySelector('#statNeedsResign');
+        const weeklyEl = document.querySelector('#statWeeklySignatures');
+        if (absentEl) absentEl.textContent = String(absent);
+        if (signedEl) signedEl.textContent = String(signed);
+        if (needsEl) needsEl.textContent = String(needsResign);
+        if (weeklyEl) weeklyEl.textContent = String(weeklySigned);
     },
+
 
     statistics() {
         const box = document.querySelector('#statisticsGrid');
