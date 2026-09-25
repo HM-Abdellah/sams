@@ -264,7 +264,7 @@ export const ui = {
         }).join('');
 
         if (!filtered.length) {
-            box.innerHTML = '<div class="empty-state">' + esc(t('no_assignments')) + '</div>';
+            box.innerHTML = '<div class="empty-state">' + esc(t('no_teachers')) + '</div>';
         }
     },
 
