@@ -143,7 +143,8 @@ test.describe('authenticated SAMS smoke', () => {
 
     await login(page, teacherUsername, teacherPassword);
 
-    await page.locator('#weekDays [data-select-day="2026-09-26"]').click();
+    const saturday = await page.locator('#weekDays .week-day-btn').nth(5).getAttribute('data-select-day');
+    await page.locator('#weekDays [data-select-day="' + saturday + '"]').click();
     await page.locator('#periods [data-select-period="8"]').click();
 
     await expect(page.locator('#attendanceWorkflow [data-sign-period]')).toBeVisible();
