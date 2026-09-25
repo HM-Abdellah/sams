@@ -75,6 +75,33 @@ final class StudentEnrollmentRepository
         return (int)Database::connection()->lastInsertId();
     }
 
+    public function hasOverlappingEnrollment(
+        int $studentId,
+        string $startsOn,
+        ?string $endsOn = null,
+        ?int $excludeId = null
+    ): bool
+    {
+        $effectiveEnd = $endsOn ?? '9999-12-31';
+        $sql = 'SELECT 1
+                FROM student_enrollments
+                WHERE student_id = ?
+                  AND starts_on <= ?
+                  AND (ends_on IS NULL OR ends_on >= ?)';
+        $params = [$studentId, $effectiveEnd, $startsOn];
+
+        if ($excludeId !== null) {
+            $sql .= ' AND id <> ?';
+            $params[] = $excludeId;
+        }
+
+        $sql .= ' LIMIT 1';
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        return (bool)$stmt->fetchColumn();
+    }
+
     public function hasAttendanceOnOrAfter(int $enrollmentId, string $date): bool
     {
         $stmt = Database::connection()->prepare(
