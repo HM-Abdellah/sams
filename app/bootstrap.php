@@ -34,13 +34,26 @@ foreach (glob($root . '/app/Repositories/*.php') ?: [] as $file) require_once $f
 foreach (glob($root . '/app/Services/*.php') ?: [] as $file) require_once $file;
 foreach (glob($root . '/app/Controllers/*.php') ?: [] as $file) require_once $file;
 
-/** Return a decoded JSON request body, or an empty array for invalid JSON. */
+/** Return a validated JSON object request body. */
 function sams_json_body(): array
 {
     $raw = file_get_contents('php://input');
-    if (!is_string($raw) || trim($raw) === '') return [];
-    $data = json_decode($raw, true);
-    return is_array($data) ? $data : [];
+
+    if (!is_string($raw) || trim($raw) === '') {
+        return [];
+    }
+
+    try {
+        $data = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+    } catch (\JsonException $e) {
+        throw new \InvalidArgumentException('Invalid JSON payload.', 0, $e);
+    }
+
+    if (!is_array($data) || array_is_list($data)) {
+        throw new \InvalidArgumentException('Invalid JSON payload.');
+    }
+
+    return $data;
 }
 
 /** Return the request method in uppercase. */
