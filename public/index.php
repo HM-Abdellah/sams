@@ -114,7 +114,8 @@ $csrf = Csrf::token();
         <div class="table-scroll"><table id="archiveTable"><thead></thead><tbody></tbody></table></div>
     </section>
 
-    <section class="admin-dashboard">
+    <section class="panel hidden admin-only" data-panel="admin">
+        <section class="admin-dashboard">
             <div class="panel-head">
                 <div>
                     <h1 data-i18n="school_dashboard">Tableau de bord de l’établissement</h1>
@@ -160,8 +161,6 @@ $csrf = Csrf::token();
                 <div class="table-scroll"><table id="dashboardAuditTable"><thead></thead><tbody></tbody></table></div>
             </section>
         </section>
-
-<section class="panel hidden admin-only" data-panel="admin">
         <div class="panel-head">
             <div><h1>Administration</h1><p>Gestion fonctionnelle du périmètre SAMS.</p></div>
         </div>
