@@ -94,6 +94,8 @@ CREATE TABLE students (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     class_id BIGINT UNSIGNED NOT NULL,
     student_number VARCHAR(30) NULL,
+    massar_code VARCHAR(32) NULL,
+    birth_date DATE NULL,
     first_name VARCHAR(80) NOT NULL,
     last_name VARCHAR(80) NOT NULL,
     status ENUM('active', 'inactive', 'transferred', 'graduated') NOT NULL DEFAULT 'active',
@@ -103,6 +105,8 @@ CREATE TABLE students (
     UNIQUE KEY uq_students_class_number (class_id, student_number),
     KEY idx_students_class_status (class_id, status),
     KEY idx_students_name (last_name, first_name),
+    UNIQUE KEY uq_students_massar_code (massar_code),
+    KEY idx_students_birth_date (birth_date),
     CONSTRAINT fk_students_class
         FOREIGN KEY (class_id) REFERENCES classes(id)
         ON UPDATE CASCADE ON DELETE RESTRICT
