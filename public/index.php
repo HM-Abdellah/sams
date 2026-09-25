@@ -30,11 +30,11 @@ $csrf = Csrf::token();
 <header class="topbar">
     <div class="brand">
         <div class="brand-icon" aria-hidden="true">🏫</div>
-        <div><strong>SAMS</strong><small>Student Attendance Management System</small></div>
+        <div><strong>SAMS</strong><small data-i18n="brand_subtitle">Système de gestion des absences scolaires</small></div>
     </div>
     <div class="user-area">
         <span id="currentUser"><?= htmlspecialchars((string)$user['full_name'], ENT_QUOTES, 'UTF-8') ?></span>
-        <div class="language-switcher" role="group" aria-label="Language"><button class="btn ghost language-btn" data-lang="fr" type="button">FR</button><button class="btn ghost language-btn" data-lang="ar" type="button">العربية</button><button class="btn ghost language-btn" data-lang="en" type="button">EN</button></div><button id="themeBtn" class="btn ghost" type="button" aria-label="Changer le thème">🌙</button>
+        <div class="language-switcher" role="group" aria-label="Language" data-i18n-aria="language" data-i18n-aria="language"><button class="btn ghost language-btn" data-lang="fr" type="button">FR</button><button class="btn ghost language-btn" data-lang="ar" type="button">العربية</button><button class="btn ghost language-btn" data-lang="en" type="button">EN</button></div><button id="themeBtn" class="btn ghost" type="button" aria-label="Changer le thème" data-i18n-aria="theme">🌙</button>
         <button id="logoutBtn" class="btn danger" type="button" data-i18n="logout">Déconnexion</button>
     </div>
 </header>
@@ -43,9 +43,9 @@ $csrf = Csrf::token();
     <section class="toolbar" aria-label="Filtres principaux" data-i18n-aria="main_filters">
         <div class="toolbar-left week-toolbar">
             <label><span data-i18n="class">Classe</span><select id="classSelect" aria-label="Classe"></select></label>
-            <button id="prevWeekBtn" class="btn ghost" type="button" data-i18n="previous_week" aria-label="Previous week">‹</button>
+            <button id="prevWeekBtn" class="btn ghost" type="button" data-i18n="previous_week" data-i18n-aria="previous_week">‹</button>
             <label><span data-i18n="week">Semaine</span><input id="weekStart" type="date" aria-label="Semaine"></label>
-            <button id="nextWeekBtn" class="btn ghost" type="button" data-i18n="next_week" aria-label="Next week">›</button>
+            <button id="nextWeekBtn" class="btn ghost" type="button" data-i18n="next_week" data-i18n-aria="next_week">›</button>
             <button id="reloadBtn" class="btn primary" type="button" data-i18n="refresh">Actualiser</button>
         </div>
         <div class="toolbar-right">
@@ -76,7 +76,7 @@ $csrf = Csrf::token();
                 <h1 data-i18n="weekly_attendance">Feuille hebdomadaire de présence</h1>
                 <p data-i18n="weekly_attendance_hint">Choisissez le jour et la période, puis marquez chaque élève avec un grand bouton.</p>
             </div>
-            <input id="studentSearch" type="search" placeholder="Rechercher un élève…" data-i18n-placeholder="search_student" autocomplete="off" aria-label="Rechercher un élève">
+            <input id="studentSearch" type="search" placeholder="Rechercher un élève…" data-i18n-placeholder="search_student" autocomplete="off" aria-label="Rechercher un élève" data-i18n-aria="search_student">
         </div>
 
         <div class="week-day-strip" id="weekDays" role="tablist" aria-label="Jours de la semaine" data-i18n-aria="weekdays"></div>
@@ -114,7 +114,7 @@ $csrf = Csrf::token();
         <div class="panel-head">
             <div><h1 data-i18n="archive_title">Archive historique</h1><p data-i18n="archive_desc">Lecture des classes et présences historiques.</p></div>
             <div class="toolbar-left">
-                <label><span data-i18n="month">Mois</span><input id="archiveMonth" type="month" aria-label="Mois archive"></label>
+                <label><span data-i18n="month">Mois</span><input id="archiveMonth" type="month" aria-label="Mois archive" data-i18n-aria="archive_month"></label>
                 <button class="btn primary" id="loadArchiveBtn" type="button" data-i18n="load">Charger</button>
             </div>
         </div>
@@ -130,7 +130,7 @@ $csrf = Csrf::token();
             <div class="panel-head">
                 <div>
                     <h1 data-i18n="school_dashboard">Tableau de bord de l’établissement</h1>
-                    <p><span data-i18n="dashboard_as_of">الوضع الحالي لليوم</span> <strong id="dashboardDate">—</strong></p>
+                    <p><span data-i18n="dashboard_as_of">Situation du jour :</span> <strong id="dashboardDate">—</strong></p>
                 </div>
                 <button class="btn primary" id="refreshDashboardBtn" type="button" data-i18n="refresh">Actualiser</button>
             </div>
@@ -173,7 +173,7 @@ $csrf = Csrf::token();
             </section>
         </section>
         <div class="panel-head">
-            <div><h1>Administration</h1><p>Gestion fonctionnelle du périmètre SAMS.</p></div>
+            <div><h1 data-i18n="administration">Administration</h1><p data-i18n="admin_desc">Gestion fonctionnelle du périmètre SAMS.</p></div>
         </div>
 
         <div class="students-list">
@@ -186,7 +186,7 @@ $csrf = Csrf::token();
             <form id="userForm">
                 <label><span data-i18n="username">Nom utilisateur</span><input id="userUsernameInput" required maxlength="50"></label>
                 <label><span data-i18n="full_name">Nom complet</span><input id="userFullNameInput" required maxlength="120"></label>
-                <label><span data-i18n="role">Rôle</span><select id="userRoleInput"><option value="teacher">teacher</option><option value="counselor">counselor</option><option value="admin">admin</option></select></label>
+                <label><span data-i18n="role">Rôle</span><select id="userRoleInput"><option value="teacher" data-i18n="role_teacher">Enseignant</option><option value="counselor" data-i18n="role_counselor">Conseiller</option><option value="admin" data-i18n="role_admin">Administrateur</option></select></label>
                 <label><span data-i18n="password">Mot de passe</span><input id="userPasswordInput" type="password" required></label>
                 <button class="btn success" type="submit" data-i18n="create">Créer</button>
             </form>
@@ -249,7 +249,7 @@ $csrf = Csrf::token();
     </section>
 
     <section class="panel hidden" data-panel="signature">
-        <div class="panel-head"><div><h1>Signature de l'enseignant</h1><p>La signature est conservée pour la classe active.</p></div></div>
+        <div class="panel-head"><div><h1 data-i18n="teacher_signature_title">Signature de l'enseignant</h1><p data-i18n="teacher_signature_desc">La signature est conservée pour la classe active.</p></div></div>
         <div class="signature-panel">
             <canvas id="signatureCanvas" width="900" height="320" aria-label="Zone de signature" data-i18n-aria="signature_area"></canvas>
             <div class="signature-actions">
