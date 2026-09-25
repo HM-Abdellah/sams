@@ -22,7 +22,8 @@ final class UserRepository
     public function findByUsernameForUpdate(string $username): ?array
     {
         $stmt = Database::connection()->prepare(
-            'SELECT id, username, full_name, password_hash, role, is_active, failed_login_attempts, locked_until, last_login_at
+            'SELECT id, username, full_name, password_hash, role, is_active,
+                    failed_login_attempts, locked_until, session_version, last_login_at
              FROM users WHERE username = ? LIMIT 1 FOR UPDATE'
         );
         $stmt->execute([$username]);
@@ -33,7 +34,7 @@ final class UserRepository
     public function findActiveById(int $userId): ?array
     {
         $stmt = Database::connection()->prepare(
-            'SELECT id, username, full_name, role, is_active
+            'SELECT id, username, full_name, role, is_active, session_version
              FROM users
              WHERE id = ? AND is_active = 1
              LIMIT 1'
