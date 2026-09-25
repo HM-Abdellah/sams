@@ -52,6 +52,21 @@ JSON actions:
 - `activate`: `id`
 - `deactivate`: `id`
 
+## Administration dashboard
+
+### GET `api/admin-dashboard.php`
+
+Admin only. Returns the current school operational dashboard for the active academic year, including:
+
+- school-wide summary
+- statistics grouped by branch
+- statistics for each active class
+- students above the configured absence threshold
+- active classes with no attendance records today
+- recent audit activity
+
+Branch statistics are derived from the separate class rows and are never used to grant access or merge historical classes.
+
 ## Teachers
 
 ### GET `api/teachers.php`
