@@ -14,6 +14,17 @@ function currentMonth() {
     return state.month || new Date().toISOString().slice(0, 7);
 }
 
+function setOperationalClasses(classes) {
+    const list = Array.isArray(classes) ? classes : [];
+    const currentId = Number(state.classId || 0);
+    const currentStillAvailable = list.some((item) => Number(item.id) === currentId);
+
+    setState({
+        classes: list,
+        classId: currentStillAvailable ? state.classId : (list[0]?.id ?? null),
+    });
+}
+
 async function loadClass() {
     if (!state.classId) return;
     if (!await flushAttendanceQueue()) return;
@@ -49,7 +60,7 @@ async function boot() {
 
         const classes = await API.classes();
         const list = Array.isArray(classes.classes) ? classes.classes : [];
-        setState({ classes: list, classId: list[0]?.id ?? null });
+        setOperationalClasses(list);
 
         const monthInput = document.querySelector('#monthSelect');
         if (monthInput) monthInput.value = month;
@@ -561,6 +572,7 @@ function wire() {
     }));
 
     document.querySelectorAll('.tab').forEach((button) => button.addEventListener('click', async () => {
+        if (!await flushAttendanceQueue()) return;
         document.querySelectorAll('.tab').forEach((item) => item.classList.toggle('active', item === button));
         document.querySelectorAll('[data-panel]').forEach((panel) => panel.classList.toggle('hidden', panel.dataset.panel !== button.dataset.tab));
         setState({ tab: button.dataset.tab });
@@ -695,7 +707,7 @@ function wire() {
             event.currentTarget.closest('dialog')?.close();
             event.currentTarget.reset();
             const classes = await API.classes();
-            setState({ classes: classes.classes || [] });
+            setOperationalClasses(classes.classes || []);
             ui.classes();
             ui.toast('Classe créée.');
         } catch (error) { ui.toast(error.message || 'Erreur.', true); }
@@ -740,9 +752,10 @@ function wire() {
             });
             document.querySelector('#editClassDialog')?.close();
             const classes = await API.classes();
-            setState({ classes: classes.classes || [] });
+            setOperationalClasses(classes.classes || []);
             await loadAdmin();
             renderAll();
+            if (state.classId) await loadClass();
             ui.toast('Classe modifiée.');
         } catch (error) {
             ui.toast(error.message || 'Erreur de modification de classe.', true);
@@ -810,8 +823,9 @@ function wire() {
             event.currentTarget.reset();
             await loadAdmin();
             const classes = await API.classes();
-            setState({ classes: classes.classes || [] });
+            setOperationalClasses(classes.classes || []);
             renderAll();
+            if (state.classId) await loadClass();
             ui.toast('Année scolaire créée.');
         } catch (error) {
             ui.toast(error.message || 'Erreur année scolaire.', true);
@@ -889,9 +903,10 @@ function wire() {
                 if (!window.confirm(active ? 'Activer cette classe ?' : 'Désactiver cette classe ?')) return;
                 await API.setClassActive(id, active);
                 const classes = await API.classes();
-                setState({ classes: classes.classes || [] });
+                setOperationalClasses(classes.classes || []);
                 await loadAdmin();
                 renderAll();
+                if (state.classId) await loadClass();
                 ui.toast(active ? 'Classe activée.' : 'Classe désactivée.');
             }
         } catch (error) {
@@ -961,9 +976,10 @@ function wire() {
         try {
             await API.activateAcademicYear(Number(button.dataset.activateYear));
             const classes = await API.classes();
-            setState({ classes: classes.classes || [] });
+            setOperationalClasses(classes.classes || []);
             await loadAdmin();
             renderAll();
+            if (state.classId) await loadClass();
             ui.toast('Année scolaire activée.');
         } catch (error) {
             ui.toast(error.message || 'Impossible d’activer cette année.', true);
