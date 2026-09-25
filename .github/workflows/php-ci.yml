@@ -1,5 +1,9 @@
 name: SAMS PHP CI
 
+concurrency:
+  group: sams-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [main]
