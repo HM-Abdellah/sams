@@ -44,6 +44,10 @@ try {
             (string)($body['ends_on'] ?? '')
         );
 
+        if ($repo->overlaps($startsOn, $endsOn)) {
+            Response::error('Academic year dates overlap an existing academic year.', 409);
+        }
+
         $pdo->beginTransaction();
         try {
             $id = $repo->create($name, $startsOn, $endsOn);
@@ -77,7 +81,15 @@ try {
     if ($action === 'activate') {
         $id = (int)($body['id'] ?? 0);
         if ($id < 1) Response::error('Invalid academic year.', 422);
-        if ($repo->find($id) === null) Response::error('Academic year not found.', 404);
+
+        $target = $repo->find($id);
+        if ($target === null) Response::error('Academic year not found.', 404);
+
+        if (
+            $repo->overlaps((string)$target['starts_on'], (string)$target['ends_on'], $id)
+        ) {
+            Response::error('Academic year dates overlap an existing academic year.', 409);
+        }
 
         $pdo->beginTransaction();
         try {
