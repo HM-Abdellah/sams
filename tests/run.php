@@ -7,6 +7,7 @@ require_once __DIR__ . '/../app/Services/ClassService.php';
 require_once __DIR__ . '/../app/Services/StudentService.php';
 require_once __DIR__ . '/../app/Services/UserService.php';
 require_once __DIR__ . '/../app/Services/AcademicYearService.php';
+require_once __DIR__ . '/../app/Services/StudentImportService.php';
 require_once __DIR__ . '/../app/Helpers/Security.php';
 require_once __DIR__ . '/../app/Helpers/Csrf.php';
 require_once __DIR__ . '/../app/Helpers/Auth.php';
@@ -114,6 +115,77 @@ $tests = [
         expect_throws(
             static fn() => $service->validateRange('2027-07-31', '2026-09-01'),
             'reversed academic year range should be rejected'
+        );
+    },
+
+    'student import parses and validates a clean CSV' => static function (): void {
+        $service = new SAMS\Services\StudentImportService();
+        $parsed = $service->parseCsv(
+            "first_name,last_name,massar_code,birth_date,student_number\n"
+            . "Jean,Dupont,MC001,2010-05-12,ST001\n"
+            . "Marie,Martin,MC002,2010-06-20,"
+        );
+
+        $rows = $service->validateRows($parsed);
+        $summary = $service->summarize($rows);
+
+        expect_true(count($rows) === 2, 'CSV row count should be 2');
+        expect_true($summary === [
+            'total_rows' => 2,
+            'valid_rows' => 2,
+            'warning_rows' => 0,
+            'error_rows' => 0,
+        ], 'clean CSV should validate all rows');
+        expect_true($rows[0]['massar_code'] === 'MC001', 'Massar code should be normalized');
+    },
+
+    'student import blocks duplicates and missing required values' => static function (): void {
+        $service = new SAMS\Services\StudentImportService();
+        $parsed = $service->parseCsv(
+            "first_name,last_name,massar_code,birth_date,student_number\n"
+            . "Jean,Dupont,MC001,2010-05-12,ST001\n"
+            . "Marie,Martin,MC001,,ST001"
+        );
+
+        $rows = $service->validateRows($parsed, ['MC999' => 9], ['ST999' => true]);
+        $summary = $service->summarize($rows);
+
+        expect_true($summary['error_rows'] === 1, 'Invalid import row should be marked as error');
+        expect_true(in_array(
+            'Duplicate Massar code in the import file.',
+            $rows[1]['issues'],
+            true
+        ), 'Duplicate Massar should be reported');
+        expect_true(in_array(
+            'Birth date is required.',
+            $rows[1]['issues'],
+            true
+        ), 'Missing birth date should be reported');
+
+        $parsedExisting = $service->parseCsv(
+            "first_name,last_name,massar_code,birth_date,student_number\n"
+            . "Existing,Student,MC999,2010-05-12,ST999"
+        );
+        $existing = $service->validateRows($parsedExisting, ['MC999' => 9], ['ST999' => true]);
+
+        expect_true(in_array(
+            'Massar code already exists in SAMS.',
+            $existing[0]['issues'],
+            true
+        ), 'Existing Massar should be reported');
+
+        expect_true(in_array(
+            'Student number already exists in the target class.',
+            $existing[0]['issues'],
+            true
+        ), 'Existing student number should be reported');
+    },
+
+    'student import rejects missing required CSV columns' => static function (): void {
+        $service = new SAMS\Services\StudentImportService();
+        expect_throws(
+            static fn() => $service->parseCsv("first_name,last_name,birth_date\nJean,Dupont,2010-05-12"),
+            'missing Massar column should be rejected'
         );
     },
 
