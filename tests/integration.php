@@ -201,7 +201,7 @@ $pdo->exec(
 
 $pdo->exec(
     "INSERT INTO student_import_rows
-        (batch_id, row_number, first_name, last_name, massar_code, birth_date, status, raw_data)
+        (batch_id, `row_number`, first_name, last_name, massar_code, birth_date, status, raw_data)
      VALUES
         (1, 1, 'Imported', 'Student', 'MC002', '2010-01-01', 'valid', JSON_OBJECT('source', 'integration'))"
 );
