@@ -83,11 +83,14 @@ final class UserRepository
         string $role,
         bool $isActive,
         ?string $employeeId = null,
-        ?string $phone = null
+        ?string $phone = null,
+        ?string $username = null
     ): void {
+        $username = $username ?? $employeeId;
         $stmt = Database::connection()->prepare(
             'UPDATE users
-             SET employee_id = ?,
+             SET username = ?,
+                 employee_id = ?,
                  full_name = ?,
                  phone = ?,
                  role = ?,
@@ -95,7 +98,7 @@ final class UserRepository
                  session_version = session_version + 1
              WHERE id = ?'
         );
-        $stmt->execute([$employeeId, $fullName, $phone, $role, $isActive ? 1 : 0, $userId]);
+        $stmt->execute([$username, $employeeId, $fullName, $phone, $role, $isActive ? 1 : 0, $userId]);
     }
 
     public function updatePasswordHash(int $userId, string $passwordHash): void
