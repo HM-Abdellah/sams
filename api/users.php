@@ -12,6 +12,7 @@ use SAMS\Helpers\Security;
 use SAMS\Repositories\AuditLogRepository;
 use SAMS\Repositories\UserRepository;
 use SAMS\Services\UserService;
+use SAMS\Services\TeacherService;
 
 try {
     $admin = Auth::requireRole('admin');
@@ -34,6 +35,7 @@ try {
     $body = sams_json_body();
     $action = (string)($body['action'] ?? '');
     $service = new UserService();
+    $teacherService = new TeacherService();
     $pdo = Database::connection();
 
     if ($action === 'create') {
@@ -41,6 +43,12 @@ try {
         $fullName = $service->validateFullName((string)($body['full_name'] ?? ''));
         $role = $service->validateRole((string)($body['role'] ?? ''));
         $password = $service->validatePassword((string)($body['password'] ?? ''));
+        $employeeId = null;
+        $phone = null;
+        if ($role === 'teacher') {
+            $employeeId = $teacherService->validateEmployeeId((string)($body['employee_id'] ?? $username));
+            $phone = $teacherService->validatePhone(isset($body['phone']) ? (string)$body['phone'] : null);
+        }
 
         $pdo->beginTransaction();
         try {
@@ -48,7 +56,9 @@ try {
                 $username,
                 $fullName,
                 Security::hashPassword($password),
-                $role
+                $role,
+                $employeeId,
+                $phone
             );
 
             $audit->record(
@@ -89,6 +99,14 @@ try {
         $isActive = array_key_exists('is_active', $body)
             ? (bool)$body['is_active']
             : (bool)$existing['is_active'];
+        $employeeId = (string)$existing['employee_id'] !== '' ? (string)$existing['employee_id'] : null;
+        $phone = (string)$existing['phone'] !== '' ? (string)$existing['phone'] : null;
+        if ($role === 'teacher') {
+            $employeeId = $teacherService->validateEmployeeId((string)($body['employee_id'] ?? $employeeId ?? $existing['username']));
+            $phone = $teacherService->validatePhone(array_key_exists('phone', $body) ? (string)$body['phone'] : $phone);
+        } elseif (array_key_exists('employee_id', $body)) {
+            $employeeId = $teacherService->validateEmployeeId((string)$body['employee_id']);
+        }
 
         $removingAdminAccess =
             (string)$existing['role'] === 'admin' && $role !== 'admin';
@@ -110,7 +128,7 @@ try {
 
         $pdo->beginTransaction();
         try {
-            $repo->updateProfile($userId, $fullName, $role, $isActive);
+            $repo->updateProfile($userId, $fullName, $role, $isActive, $employeeId, $phone);
             $audit->record(
                 (int)$admin['id'],
                 'user.update',
