@@ -78,6 +78,22 @@ final class StudentImportRepository
         return (int)Database::connection()->lastInsertId();
     }
 
+    public function forClass(int $classId): array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT
+                id, class_id, created_by, original_filename, file_sha256, file_size,
+                status, total_rows, valid_rows, warning_rows, error_rows,
+                imported_at, created_at, updated_at
+             FROM student_import_batches
+             WHERE class_id = ?
+             ORDER BY id DESC'
+        );
+        $stmt->execute([$classId]);
+
+        return $stmt->fetchAll();
+    }
+
     public function findBatch(int $batchId): ?array
     {
         $stmt = Database::connection()->prepare(
@@ -194,7 +210,7 @@ final class StudentImportRepository
                  valid_rows = ?,
                  warning_rows = ?,
                  error_rows = ?,
-                 imported_at = CASE WHEN ? = "imported" THEN CURRENT_TIMESTAMP ELSE imported_at END
+                 imported_at = CASE WHEN ? = 'imported' THEN CURRENT_TIMESTAMP ELSE imported_at END
              WHERE id = ?'
         );
 
