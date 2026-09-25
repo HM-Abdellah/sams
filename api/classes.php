@@ -111,7 +111,7 @@ try {
         try {
             $repo->update($classId, $name, $level, $branch);
             $audit->record(
-                (int)$admin['id'],
+                (int)$user['id'],
                 'class.update',
                 'class',
                 $classId
