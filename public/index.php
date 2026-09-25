@@ -114,7 +114,54 @@ $csrf = Csrf::token();
         <div class="table-scroll"><table id="archiveTable"><thead></thead><tbody></tbody></table></div>
     </section>
 
-    <section class="panel hidden admin-only" data-panel="admin">
+    <section class="admin-dashboard">
+            <div class="panel-head">
+                <div>
+                    <h1 data-i18n="school_dashboard">لوحة قيادة المدرسة</h1>
+                    <p><span data-i18n="dashboard_as_of">الوضع الحالي لليوم</span> <strong id="dashboardDate">—</strong></p>
+                </div>
+                <button class="btn primary" id="refreshDashboardBtn" type="button" data-i18n="refresh">Actualiser</button>
+            </div>
+
+            <div class="dashboard-pulse-grid" id="dashboardPulse"></div>
+
+            <div class="dashboard-two-column">
+                <section class="dashboard-card">
+                    <div class="dashboard-card-head"><h2 data-i18n="attention">À surveiller</h2><span id="dashboardAlertCount" class="dashboard-count">0</span></div>
+                    <div id="dashboardAlerts" class="dashboard-list"></div>
+                </section>
+                <section class="dashboard-card">
+                    <div class="dashboard-card-head"><h2 data-i18n="teacher_status">État des enseignants</h2><span data-i18n="recent">Temps réel</span></div>
+                    <div id="dashboardTeachers" class="dashboard-list"></div>
+                </section>
+            </div>
+
+            <section class="dashboard-card">
+                <div class="dashboard-card-head">
+                    <div><h2 data-i18n="branch_statistics">Statistiques par branche</h2><p data-i18n="branch_statistics_desc">Chaque branche reste séparée pour éviter de mélanger les filières.</p></div>
+                </div>
+                <div class="table-scroll"><table id="dashboardBranchTable"><thead></thead><tbody></tbody></table></div>
+            </section>
+
+            <section class="dashboard-card">
+                <div class="dashboard-card-head">
+                    <div><h2 data-i18n="class_statistics">Statistiques par classe</h2><p data-i18n="class_statistics_desc">Une ligne correspond à une classe précise dans l’année scolaire active.</p></div>
+                </div>
+                <div class="table-scroll"><table id="dashboardClassTable"><thead></thead><tbody></tbody></table></div>
+            </section>
+
+            <section class="dashboard-card">
+                <div class="dashboard-card-head"><h2 data-i18n="attention_students">Élèves à surveiller</h2><span data-i18n="absence_threshold">Seuil d'absence configurable</span></div>
+                <div class="table-scroll"><table id="dashboardStudentTable"><thead></thead><tbody></tbody></table></div>
+            </section>
+
+            <section class="dashboard-card">
+                <div class="dashboard-card-head"><h2 data-i18n="recent_activity">Activité récente</h2></div>
+                <div class="table-scroll"><table id="dashboardAuditTable"><thead></thead><tbody></tbody></table></div>
+            </section>
+        </section>
+
+<section class="panel hidden admin-only" data-panel="admin">
         <div class="panel-head">
             <div><h1>Administration</h1><p>Gestion fonctionnelle du périmètre SAMS.</p></div>
         </div>
