@@ -27,7 +27,7 @@ final class TeacherRepository
                 u.last_seen_at,
                 CASE
                     WHEN u.last_seen_at IS NOT NULL
-                     AND u.last_seen_at >= UTC_TIMESTAMP() - INTERVAL 90 SECOND
+                     AND u.last_seen_at >= CURRENT_TIMESTAMP - INTERVAL 90 SECOND
                     THEN 1 ELSE 0
                 END AS is_online
              FROM users u
