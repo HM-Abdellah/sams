@@ -52,6 +52,29 @@ JSON actions:
 - `activate`: `id`
 - `deactivate`: `id`
 
+## Teachers
+
+### GET `api/teachers.php`
+
+Admin only. Returns the teacher directory, active subjects, exact teacher/subject/class teaching assignments, and the configured recent-presence window.
+
+### POST `api/teachers.php`
+
+Admin only.
+
+JSON actions:
+
+- `assign`: `teacher_id`, `subject_id`, `class_id`
+- `unassign`: `id`
+- `create_subject`: `code`, `name_fr`, `name_ar`, `name_en`
+- `update_subject`: `id`, `code`, `name_fr`, `name_ar`, `name_en`, optional `is_active`
+
+A teaching assignment is unique per teacher + subject + class. Creating one also ensures the teacher has class-level access through `teacher_classes`.
+
+### POST `api/presence.php`
+
+Authenticated users only. Requires CSRF. Updates the user's `last_seen_at` timestamp. The admin teacher directory treats a teacher as recently active when the timestamp is within its returned presence window.
+
 ## Users
 
 ### GET `api/users.php`
@@ -64,8 +87,8 @@ Admin only.
 
 JSON actions:
 
-- `create`: `username`, `full_name`, `role`, `password`
-- `update`: `id`, `full_name`, `role`, `is_active`
+- `create`: `username`, `full_name`, `role`, `password`; teacher accounts may also provide `employee_id` and `phone`
+- `update`: `id`, `full_name`, `role`, `is_active`; teacher accounts may also provide `employee_id` and `phone`
 - `reset_password`: `id`, `password`
 - `unlock`: `id`
 
