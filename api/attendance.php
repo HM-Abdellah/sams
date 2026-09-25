@@ -166,7 +166,8 @@ try {
                     $repo->delete(
                         $entry['student_id'],
                         $entry['attendance_date'],
-                        $entry['period']
+                        $entry['period'],
+                        $classId
                     );
 
                     $audit->record(
@@ -198,7 +199,8 @@ try {
                     $entry['attendance_date'],
                     $entry['period'],
                     $entry['status'],
-                    (int)$user['id']
+                    (int)$user['id'],
+                    $classId
                 );
 
                 $audit->record(
@@ -268,11 +270,11 @@ try {
     $pdo->beginTransaction();
 
     try {
-        $existing = $repo->find($studentId, $date, $period);
+        $existing = $repo->find($studentId, $date, $period, $classId);
 
         if ($action === 'delete' || $method === 'DELETE') {
             if ($existing !== null) {
-                $repo->delete($studentId, $date, $period);
+                $repo->delete($studentId, $date, $period, $classId);
                 $audit->record(
                     (int)$user['id'],
                     'attendance.delete',
