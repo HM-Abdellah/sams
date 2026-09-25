@@ -61,11 +61,14 @@ final class AuthService
                 throw new RuntimeException('Invalid credentials.');
             }
 
+            $sessionVersion = (int)$user['session_version'];
+
             if (Security::shouldRehashPassword((string)$user['password_hash'])) {
                 $this->users->updatePasswordHash(
                     (int)$user['id'],
                     Security::hashPassword($password)
                 );
+                ++$sessionVersion;
             }
 
             $this->users->recordLoginSuccess((int)$user['id']);
@@ -75,7 +78,7 @@ final class AuthService
                 'id' => (int)$user['id'],
                 'full_name' => (string)$user['full_name'],
                 'role' => (string)$user['role'],
-                'session_version' => (int)$user['session_version'],
+                'session_version' => $sessionVersion,
             ];
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) {
