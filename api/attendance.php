@@ -174,9 +174,16 @@ try {
             $existing[$key] = $row;
         }
 
+        $signoffs = new AttendanceSignoffRepository();
+        foreach ($normalized as $entry) {
+            $periodSignoff = $signoffs->findPeriod($classId, $entry['attendance_date'], $entry['period']);
+            if ($periodSignoff !== null && (string)$periodSignoff['status'] === 'signed') {
+                Response::error('This lesson is signed. Reopen it before correcting attendance.', 409);
+            }
+        }
+
         $pdo = Database::connection();
         $audit = new AuditLogRepository();
-        $signoffs = new AttendanceSignoffRepository();
         $pdo->beginTransaction();
 
         try {
@@ -186,11 +193,6 @@ try {
             foreach ($normalized as $entry) {
                 $key = $entry['student_id'] . ':' . $entry['attendance_date'] . ':' . $entry['period'];
                 $previous = $existing[$key] ?? null;
-
-                $periodSignoff = $signoffs->findPeriod($classId, $entry['attendance_date'], $entry['period']);
-                if ($periodSignoff !== null && (string)$periodSignoff['status'] === 'signed') {
-                    Response::error('This lesson is signed. Reopen it before correcting attendance.', 409);
-                }
 
                 if ($entry['action'] === 'delete') {
                     if ($previous === null) {
@@ -308,17 +310,18 @@ try {
         Response::error('Attendance date is outside the academic year.', 422);
     }
 
+    $existing = $repo->find($studentId, $date, $period, $classId);
+    $signoffs = new AttendanceSignoffRepository();
+    $periodSignoff = $signoffs->findPeriod($classId, $date, $period);
+    if ($periodSignoff !== null && (string)$periodSignoff['status'] === 'signed') {
+        Response::error('This lesson is signed. Reopen it before correcting attendance.', 409);
+    }
+
     $pdo = Database::connection();
     $audit = new AuditLogRepository();
     $pdo->beginTransaction();
 
     try {
-        $existing = $repo->find($studentId, $date, $period, $classId);
-        $signoffs = new AttendanceSignoffRepository();
-        $periodSignoff = $signoffs->findPeriod($classId, $date, $period);
-        if ($periodSignoff !== null && (string)$periodSignoff['status'] === 'signed') {
-            Response::error('This lesson is signed. Reopen it before correcting attendance.', 409);
-        }
 
         if ($action === 'delete' || $method === 'DELETE') {
             if ($existing !== null) {
