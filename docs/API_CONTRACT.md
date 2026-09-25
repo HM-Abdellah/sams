@@ -177,6 +177,24 @@ Returns enrollment-aware attendance records for the six-day school week starting
 
 The monthly GET contract remains available for compatibility and reporting, but the operational attendance screen uses the weekly endpoint.
 
+### Attendance register sign-offs
+
+### GET `api/attendance-signoffs.php?class_id=ID&week_start=YYYY-MM-DD`
+
+Returns the selected Monday-to-Saturday register workflow:
+- active teachers assigned to the class;
+- per-lesson sign-off state (`signed` / `needs_resign`);
+- weekly signature state for each teacher.
+
+### POST `api/attendance-signoffs.php?class_id=ID`
+
+Supported actions:
+- `sign_period`: the teacher certifies the selected lesson. The saved class signature is snapshotted with the sign-off.
+- `reopen_period`: the signing teacher or an administrator reopens a signed lesson for correction. The event is audited.
+- `sign_week`: the teacher certifies the weekly register after their lesson sign-offs have no pending re-sign state.
+
+A signed lesson is read-only through the attendance API. Any correction requires reopening first. A successful correction invalidates the lesson sign-off and the weekly teacher signatures for that class/week, so the register must be certified again.
+
 ### POST `api/attendance.php`
 
 Admin and teacher.
