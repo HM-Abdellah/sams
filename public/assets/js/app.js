@@ -505,6 +505,44 @@ function queueAttendanceChange(td, status) {
     scheduleAttendanceFlush();
 }
 
+function invalidateLocalSignoffs(entries) {
+    const current = state.attendanceSignoffs || {};
+    const periodRows = Array.isArray(current.period_signoffs) ? current.period_signoffs.slice() : [];
+    const weekRows = Array.isArray(current.weekly_signatures) ? current.weekly_signatures.slice() : [];
+    let periodChanged = false;
+    let weekChanged = false;
+
+    for (const entry of entries) {
+        const periodRow = periodRows.find((row) =>
+            String(row.attendance_date) === String(entry.attendance_date) && Number(row.period) === Number(entry.period)
+        );
+        if (periodRow && periodRow.status === 'signed') {
+            periodRow.status = 'needs_resign';
+            periodRow.invalidated_at = new Date().toISOString();
+            periodChanged = true;
+        }
+
+        const weekStart = startOfWeek(entry.attendance_date);
+        for (const row of weekRows) {
+            if (String(row.week_start) === String(weekStart) && row.status === 'signed') {
+                row.status = 'needs_resign';
+                row.invalidated_at = new Date().toISOString();
+                weekChanged = true;
+            }
+        }
+    }
+
+    if (periodChanged || weekChanged) {
+        setState({
+            attendanceSignoffs: {
+                ...current,
+                period_signoffs: periodRows,
+                weekly_signatures: weekRows,
+            },
+        });
+    }
+}
+
 async function flushAttendanceQueue() {
     if (!state.classId || pendingAttendance.size === 0) return true;
     if (attendanceFlushPromise) return attendanceFlushPromise;
@@ -525,6 +563,9 @@ async function flushAttendanceQueue() {
 
                 try {
                     await API.bulkAttendance(state.classId, entries);
+                    invalidateLocalSignoffs(entries);
+                    ui.attendance();
+                    ui.stats();
                 } catch (error) {
                     for (const [key, entry] of batch) {
                         const current = pendingAttendance.get(key);
@@ -672,44 +713,90 @@ function stateLanguageLocale() {
 function buildWeeklyPrintSheet() {
     const sheet = document.querySelector('#weeklyPrintSheet');
     if (!sheet || !state.weekStart) return;
+
     const currentClass = state.classes.find((item) => Number(item.id) === Number(state.classId)) || {};
-    const teacherName = state.user?.role === 'teacher' ? String(state.user.full_name || '') : '';
     const start = state.weekStart;
     const end = dateFromWeek(start, 5);
-    const map = new Map(state.attendance.map((row) => [attendanceKey(row.student_id, row.attendance_date, Number(row.period)), row.status]));
-    const mark = (status) => ({ present:'P', absent:'A', late:'R', excused:'E' }[status] || '·');
+    const attendanceMap = new Map(state.attendance.map((row) => [
+        attendanceKey(row.student_id, row.attendance_date, Number(row.period)), row.status
+    ]));
+    const signoffRows = Array.isArray(state.attendanceSignoffs?.period_signoffs) ? state.attendanceSignoffs.period_signoffs : [];
+    const signoffMap = new Map(signoffRows.map((row) => [
+        String(row.attendance_date) + '|' + Number(row.period), row
+    ]));
+    const weeklyRows = Array.isArray(state.attendanceSignoffs?.weekly_signatures) ? state.attendanceSignoffs.weekly_signatures : [];
+    const teacherName = state.user?.role === 'teacher' ? String(state.user.full_name || '') : '';
+
     const dayHeaders = DAYS.map((_, dayIndex) => {
         const date = dateFromWeek(start, dayIndex);
         const value = new Date(date + 'T00:00:00Z');
-        const label = value.toLocaleDateString(stateLanguageLocale(), { weekday:'short', day:'2-digit', month:'2-digit', timeZone:'UTC' });
+        const label = value.toLocaleDateString(stateLanguageLocale(), {
+            weekday: 'short', day: '2-digit', month: '2-digit', timeZone: 'UTC'
+        });
         return '<th class="print-day" colspan="8"><strong>' + esc(label) + '</strong><small>1 · 2 · 3 · 4 · 5 · 6 · 7 · 8</small></th>';
     }).join('');
+
     const rows = state.students.map((student, index) => {
-        let absent = 0; let late = 0; let excused = 0;
+        let absent = 0;
         const dayCells = DAYS.map((_, dayIndex) => {
             const date = dateFromWeek(start, dayIndex);
             const marks = PERIODS.map((_, periodIndex) => {
-                const status = map.get(attendanceKey(student.id, date, periodIndex + 1)) || '';
-                if (status === 'absent') absent += 1;
-                if (status === 'late') late += 1;
-                if (status === 'excused') excused += 1;
-                return '<span>' + mark(status) + '</span>';
+                const period = periodIndex + 1;
+                const status = attendanceMap.get(attendanceKey(student.id, date, period)) || '';
+                const signoff = signoffMap.get(date + '|' + period);
+                if (status === 'absent') {
+                    absent += 1;
+                    return '<span class="print-mark">X</span>';
+                }
+                return signoff?.status === 'signed'
+                    ? '<span class="print-mark print-blank">&nbsp;</span>'
+                    : '<span class="print-mark">·</span>';
             }).join('');
             return '<td class="print-day-cell">' + marks + '</td>';
         }).join('');
-        return '<tr><td>' + (index + 1) + '</td><td class="print-name">' + esc(displayName(student)) + '</td><td>' + esc(student.student_number || '') + '</td>' + dayCells + '<td>' + absent + '</td><td>' + late + '</td><td>' + excused + '</td></tr>';
+        return '<tr><td>' + (index + 1) + '</td><td class="print-name">' + esc(displayName(student)) + '</td><td>' + esc(student.student_number || '') + '</td>' + dayCells + '<td>' + absent + '</td></tr>';
     }).join('');
-    sheet.innerHTML = '<div class="print-header"><div><h1>' + esc(t('weekly_attendance')) + '</h1><p>' + esc(t('official_school_record')) + '</p></div>'
+
+    const signoffDayHeaders = DAYS.map((_, dayIndex) => {
+        const date = dateFromWeek(start, dayIndex);
+        const label = new Date(date + 'T00:00:00Z').toLocaleDateString(stateLanguageLocale(), { weekday:'short', day:'2-digit', timeZone:'UTC' });
+        return '<th>' + esc(label) + '</th>';
+    }).join('');
+    const signoffRowsHtml = PERIODS.map((_, periodIndex) => {
+        const period = periodIndex + 1;
+        const cells = DAYS.map((_, dayIndex) => {
+            const row = signoffMap.get(dateFromWeek(start, dayIndex) + '|' + period);
+            const mark = row?.status === 'signed' ? '✓' : row?.status === 'needs_resign' ? '!' : '·';
+            return '<td>' + mark + (row?.teacher_name ? '<small>' + esc(row.teacher_name) + '</small>' : '') + '</td>';
+        }).join('');
+        return '<tr><th>' + period + '</th>' + cells + '</tr>';
+    }).join('');
+
+    const weeklyTeacherRows = weeklyRows.map((row) =>
+        '<tr><td>' + esc(row.teacher_name || '') + '</td><td>' + esc(row.status === 'signed' ? t('week_signed') : t('week_needs_resign')) + '</td><td>' + esc(row.signed_at || '') + '</td><td>'
+        + (row.signature_data ? '<img class="print-signature-image" src="' + esc(row.signature_data) + '" alt="' + esc(t('teacher_signature')) + '">' : '')
+        + '</td></tr>'
+    ).join('');
+    const teachers = Array.isArray(state.attendanceSignoffs?.teachers) ? state.attendanceSignoffs.teachers : [];
+    const missingWeekly = teachers.filter((teacher) => !weeklyRows.some((row) => Number(row.teacher_id) === Number(teacher.id)));
+
+    sheet.innerHTML =
+        '<div class="print-header"><div><h1>' + esc(t('official_weekly_register')) + '</h1><p>' + esc(t('official_school_record')) + '</p></div>'
         + '<div class="print-meta"><div><strong>' + esc(t('class')) + ':</strong> ' + esc(currentClass.name || '—') + '</div>'
         + '<div><strong>' + esc(t('branch')) + ':</strong> ' + esc(currentClass.branch || '—') + '</div>'
         + '<div><strong>' + esc(t('level')) + ':</strong> ' + esc(currentClass.level || '—') + '</div>'
         + '<div><strong>' + esc(t('academic_year')) + ':</strong> ' + esc(currentClass.academic_year_name || '—') + '</div>'
         + '<div><strong>' + esc(t('week')) + ':</strong> ' + esc(start) + ' → ' + esc(end) + '</div>'
         + '<div><strong>' + esc(t('teacher')) + ':</strong> ' + esc(teacherName || '________________') + '</div></div></div>'
-        + '<table class="print-attendance-table"><thead><tr><th rowspan="2">#</th><th rowspan="2">' + esc(t('student')) + '</th><th rowspan="2">' + esc(t('student_number_short')) + '</th>' + dayHeaders
-        + '<th rowspan="2">' + esc(t('absence_short')) + '</th><th rowspan="2">' + esc(t('late_short')) + '</th><th rowspan="2">' + esc(t('excused_short')) + '</th></tr></thead><tbody>' + rows + '</tbody></table>'
-        + '<div class="print-legend"><span><strong>P</strong> ' + esc(t('present')) + '</span><span><strong>A</strong> ' + esc(t('absent')) + '</span><span><strong>R</strong> ' + esc(t('late')) + '</span><span><strong>E</strong> ' + esc(t('excused')) + '</span><span>· ' + esc(t('not_marked')) + '</span></div>'
-        + '<div class="print-signatures"><div>' + esc(t('teacher_signature')) + '<span></span></div><div>' + esc(t('administration_signature')) + '<span></span></div></div>';
+        + '<table class="print-attendance-table"><thead><tr><th rowspan="2">#</th><th rowspan="2">' + esc(t('student')) + '</th><th rowspan="2">' + esc(t('student_number_short')) + '</th>' + dayHeaders + '<th rowspan="2">' + esc(t('absence_short')) + '</th></tr></thead><tbody>' + rows + '</tbody></table>'
+        + '<div class="print-legend"><span><strong>X</strong> ' + esc(t('absent_mark')) + '</span><span><strong>□</strong> ' + esc(t('present_blank')) + '</span><span><strong>·</strong> ' + esc(t('not_certified')) + '</span></div>'
+        + '<h2 class="print-section-title">' + esc(t('lesson_signoffs')) + '</h2>'
+        + '<table class="print-signoff-table"><thead><tr><th>' + esc(t('period')) + '</th>' + signoffDayHeaders + '</tr></thead><tbody>' + signoffRowsHtml + '</tbody></table>'
+        + '<h2 class="print-section-title">' + esc(t('weekly_certification')) + '</h2>'
+        + '<table class="print-weekly-signatures"><thead><tr><th>' + esc(t('teacher')) + '</th><th>' + esc(t('status')) + '</th><th>' + esc(t('date')) + '</th><th>' + esc(t('signature')) + '</th></tr></thead><tbody>'
+        + weeklyTeacherRows
+        + missingWeekly.map((teacher) => '<tr><td>' + esc(teacher.full_name) + '</td><td>' + esc(t('week_pending')) + '</td><td></td><td></td></tr>').join('')
+        + '</tbody></table>';
 }
 
 async function printWeeklyAttendance() {
