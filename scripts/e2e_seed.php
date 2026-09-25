@@ -72,7 +72,9 @@ try {
 
     $userStmt->execute([
         'teacher.e2e',
+        'teacher.e2e',
         'E2E Teacher',
+        null,
         password_hash($teacherPassword, PASSWORD_DEFAULT),
         'teacher',
     ]);
@@ -89,10 +91,20 @@ try {
     $classStmt->execute([$academicYearId, 'E2E-2BAC-B', '2BAC', 'SP']);
     $classB = (int)$pdo->lastInsertId();
 
+    $subjectStmt = $pdo->prepare(
+        'INSERT INTO subjects (code, name_fr, name_ar, name_en) VALUES (?, ?, ?, ?)'
+    );
+    $subjectStmt->execute(['MATH', 'Mathématiques', 'الرياضيات', 'Mathematics']);
+    $mathSubjectId = (int)$pdo->lastInsertId();
+
     $assignmentStmt = $pdo->prepare(
         'INSERT INTO teacher_classes (teacher_id, class_id) VALUES (?, ?)'
     );
     $assignmentStmt->execute([$teacherId, $classA]);
+    $teachingStmt = $pdo->prepare(
+        'INSERT INTO teacher_teachings (teacher_id, subject_id, class_id) VALUES (?, ?, ?)'
+    );
+    $teachingStmt->execute([$teacherId, $mathSubjectId, $classA]);
 
     $studentStmt = $pdo->prepare(
         'INSERT INTO students
