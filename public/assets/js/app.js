@@ -243,14 +243,49 @@ function wire() {
     });
 
     document.querySelector('#studentsList')?.addEventListener('click', async (event) => {
-        const button = event.target.closest('[data-delete-student]');
-        if (!button || !state.classId) return;
+        const editButton = event.target.closest('[data-edit-student]');
+        const deleteButton = event.target.closest('[data-delete-student]');
+        if (!state.classId) return;
+
+        if (editButton) {
+            const student = state.students.find((item) => Number(item.id) === Number(editButton.dataset.editStudent));
+            if (!student) return;
+            document.querySelector('#editStudentId').value = String(student.id);
+            document.querySelector('#editFirstNameInput').value = student.first_name || '';
+            document.querySelector('#editLastNameInput').value = student.last_name || '';
+            document.querySelector('#editMassarInput').value = student.massar_code || '';
+            document.querySelector('#editBirthDateInput').value = student.birth_date || '';
+            document.querySelector('#editStudentNumberInput').value = student.student_number || '';
+            document.querySelector('#editStudentDialog')?.showModal();
+            return;
+        }
+
+        if (!deleteButton) return;
         if (!window.confirm('Désactiver cet élève ?')) return;
         try {
-            await API.deleteStudent(state.classId, Number(button.dataset.deleteStudent));
+            await API.deleteStudent(state.classId, Number(deleteButton.dataset.deleteStudent));
             await loadClass();
             ui.toast('Élève désactivé.');
         } catch (error) { ui.toast(error.message || 'Erreur.', true); }
+    });
+
+    document.querySelector('#editStudentForm')?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!state.classId) return;
+        try {
+            await API.updateStudent(state.classId, Number(document.querySelector('#editStudentId').value), {
+                first_name: document.querySelector('#editFirstNameInput').value.trim(),
+                last_name: document.querySelector('#editLastNameInput').value.trim(),
+                massar_code: document.querySelector('#editMassarInput').value.trim() || null,
+                birth_date: document.querySelector('#editBirthDateInput').value || null,
+                student_number: document.querySelector('#editStudentNumberInput').value.trim() || null,
+            });
+            event.currentTarget.closest('dialog')?.close();
+            await loadClass();
+            ui.toast('Élève modifié.');
+        } catch (error) {
+            ui.toast(error.message || 'Erreur de modification.', true);
+        }
     });
 
     document.querySelector('#addClassBtn')?.addEventListener('click', () => document.querySelector('#classDialog')?.showModal());
