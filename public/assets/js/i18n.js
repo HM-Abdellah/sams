@@ -11,7 +11,7 @@ const DICTIONARY = {
     yes: 'Oui', no: 'Non', cancel: 'Annuler', save: 'Enregistrer', assign: 'Affecter',
     teacher: 'Enseignant', subject: 'Matière', class: 'Classe', subject_code: 'Code',
     name_french: 'Nom français', name_arabic: 'Nom arabe', name_english: 'Nom anglais', create: 'Créer',
-    verified: 'Vérifié', no_assignments: 'Aucune affectation pédagogique', subjects: 'Matières',
+    verified: 'Vérifié', no_assignments: 'Aucune affectation pédagogique', no_teachers: 'Aucun enseignant ne correspond aux filtres.', subjects: 'Matières',
     classes: 'Classes', last_activity: 'Dernière activité', no_phone: 'Aucun téléphone enregistré',
     no_employee_id: 'Aucun matricule', manage: 'Gérer', remove: 'Retirer', duplicate_assignment: 'Cette affectation existe déjà.'
   },
@@ -27,7 +27,7 @@ const DICTIONARY = {
     yes: 'نعم', no: 'لا', cancel: 'إلغاء', save: 'حفظ', assign: 'إضافة',
     teacher: 'الأستاذ', subject: 'المادة', class: 'القسم', subject_code: 'الرمز',
     name_french: 'الاسم بالفرنسية', name_arabic: 'الاسم بالعربية', name_english: 'الاسم بالإنجليزية', create: 'إنشاء',
-    verified: 'موثّق', no_assignments: 'لا توجد تكليفات تدريسية', subjects: 'المواد',
+    verified: 'موثّق', no_assignments: 'لا توجد تكليفات تدريسية', no_teachers: 'لا يوجد أستاذ يطابق عوامل التصفية.', subjects: 'المواد',
     classes: 'الأقسام', last_activity: 'آخر نشاط', no_phone: 'لا يوجد رقم هاتف مسجل',
     no_employee_id: 'لا يوجد رقم مهني', manage: 'إدارة', remove: 'إزالة', duplicate_assignment: 'هذا التكليف موجود بالفعل.'
   },
@@ -43,7 +43,7 @@ const DICTIONARY = {
     yes: 'Yes', no: 'No', cancel: 'Cancel', save: 'Save', assign: 'Assign',
     teacher: 'Teacher', subject: 'Subject', class: 'Class', subject_code: 'Code',
     name_french: 'French name', name_arabic: 'Arabic name', name_english: 'English name', create: 'Create',
-    verified: 'Verified', no_assignments: 'No teaching assignments', subjects: 'Subjects',
+    verified: 'Verified', no_assignments: 'No teaching assignments', no_teachers: 'No teacher matches the selected filters.', subjects: 'Subjects',
     classes: 'Classes', last_activity: 'Last activity', no_phone: 'No phone registered',
     no_employee_id: 'No employee ID', manage: 'Manage', remove: 'Remove', duplicate_assignment: 'This teaching assignment already exists.'
   }
