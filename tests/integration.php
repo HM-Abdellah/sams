@@ -80,6 +80,8 @@ $expectedTables = [
     'students',
     'student_enrollments',
     'attendance',
+    'attendance_signoffs',
+    'attendance_week_signatures',
     'signatures',
     'audit_logs',
     'student_import_batches',
@@ -190,6 +192,47 @@ expect_db_reject(
             (1, 1, '2026-09-25', 9, 'present', 2)"
     ),
     'Invalid attendance period was accepted.'
+);
+
+$pdo->exec(
+    "INSERT INTO signatures (teacher_id, class_id, signature_data, mime_type)
+     VALUES (2, 1, 'data:image/png;base64,TEST', 'image/png')"
+);
+
+$pdo->exec(
+    "INSERT INTO attendance_signoffs
+        (class_id, teacher_id, attendance_date, period, signature_data)
+     VALUES
+        (1, 2, '2026-09-25', 1, 'data:image/png;base64,TEST')"
+);
+
+expect_db_reject(
+    $pdo,
+    static fn() => $pdo->exec(
+        "INSERT INTO attendance_signoffs
+            (class_id, teacher_id, attendance_date, period, signature_data)
+         VALUES
+            (1, 2, '2026-09-25', 1, 'data:image/png;base64,TEST2')"
+    ),
+    'Duplicate lesson sign-off was accepted.'
+);
+
+$pdo->exec(
+    "INSERT INTO attendance_week_signatures
+        (class_id, teacher_id, week_start, signature_data)
+     VALUES
+        (1, 2, '2026-09-21', 'data:image/png;base64,TEST')"
+);
+
+expect_db_reject(
+    $pdo,
+    static fn() => $pdo->exec(
+        "INSERT INTO attendance_week_signatures
+            (class_id, teacher_id, week_start, signature_data)
+         VALUES
+            (1, 2, '2026-09-21', 'data:image/png;base64,TEST2')"
+    ),
+    'Duplicate weekly signature was accepted.'
 );
 
 expect_db_reject(
