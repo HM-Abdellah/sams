@@ -140,7 +140,7 @@ $csrf = Csrf::token();
                 <div class="dashboard-card-head">
                     <div><h2 data-i18n="branch_statistics">Statistiques par branche</h2><p data-i18n="branch_statistics_desc">Chaque branche reste séparée pour éviter de mélanger les filières.</p></div>
                 </div>
-                <div class="table-scroll"><table id="dashboardBranchTable"><thead></thead><tbody></tbody></table></div>
+                <div class="dashboard-branch-grid" id="dashboardBranchGrid"></div>
             </section>
 
             <section class="dashboard-card">
