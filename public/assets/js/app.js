@@ -91,6 +91,54 @@ function ensureAdminDynamicUI() {
     }
 }
 
+async function openImportCorrection(batchId) {
+    try {
+        const result = await API.importBatch(batchId);
+        const dialog = document.querySelector('#importCorrectionDialog');
+        const container = document.querySelector('#importCorrectionRows');
+        if (!dialog || !container) return;
+
+        const rows = (result.rows || []).filter((row) => row.status !== 'valid');
+        if (!rows.length) {
+            ui.toast('Aucune ligne à corriger.');
+            return;
+        }
+
+        container.innerHTML = '';
+        for (const row of rows) {
+            const fieldset = document.createElement('fieldset');
+            fieldset.className = 'import-correction-row';
+            fieldset.dataset.rowId = String(row.id);
+            fieldset.innerHTML = '<legend>Ligne ' + String(row.row_number) + '</legend>'
+                + '<small>' + uiEscapeIssues(row.issues) + '</small>'
+                + '<label>Prénom<input name="first_name" required maxlength="80" value="' + uiEscapeValue(row.first_name) + '"></label>'
+                + '<label>Nom<input name="last_name" required maxlength="80" value="' + uiEscapeValue(row.last_name) + '"></label>'
+                + '<label>Massar<input name="massar_code" required maxlength="32" value="' + uiEscapeValue(row.massar_code) + '"></label>'
+                + '<label>Date de naissance<input name="birth_date" type="date" required value="' + uiEscapeValue(row.birth_date) + '"></label>'
+                + '<label>N° élève<input name="student_number" maxlength="30" value="' + uiEscapeValue(row.student_number) + '"></label>';
+            container.appendChild(fieldset);
+        }
+
+        dialog.dataset.batchId = String(batchId);
+        dialog.showModal();
+    } catch (error) {
+        ui.toast(error.message || 'Impossible de charger les lignes à corriger.', true);
+    }
+}
+
+function uiEscapeValue(value) {
+    const div = document.createElement('div');
+    div.textContent = String(value ?? '');
+    return div.innerHTML.replaceAll('"', '&quot;');
+}
+
+function uiEscapeIssues(value) {
+    const div = document.createElement('div');
+    const items = Array.isArray(value) ? value : [];
+    div.textContent = items.join(' · ');
+    return div.innerHTML;
+}
+
 async function loadAdmin() {
     if (state.user?.role !== 'admin') return;
     try {
@@ -444,10 +492,42 @@ function wire() {
         }
     });
 
+    document.querySelector('#assignmentsTable')?.addEventListener('click', async (event) => {
+        const button = event.target.closest('[data-unassign-teacher]');
+        if (!button || !state.classId) return;
+        try {
+            await API.unassignTeacher(Number(button.dataset.unassignTeacher), state.classId);
+            await loadAdmin();
+            ui.toast('Affectation retirée.');
+        } catch (error) {
+            ui.toast(error.message || 'Erreur de retrait.', true);
+        }
+    });
+
+    document.querySelector('#academicYearsTable')?.addEventListener('click', async (event) => {
+        const button = event.target.closest('[data-activate-year]');
+        if (!button) return;
+        try {
+            await API.activateAcademicYear(Number(button.dataset.activateYear));
+            const classes = await API.classes();
+            setState({ classes: classes.classes || [] });
+            await loadAdmin();
+            renderAll();
+            ui.toast('Année scolaire activée.');
+        } catch (error) {
+            ui.toast(error.message || 'Impossible d’activer cette année.', true);
+        }
+    });
+
     document.querySelector('#importsTable')?.addEventListener('click', async (event) => {
+        const edit = event.target.closest('[data-edit-import]');
         const revalidate = event.target.closest('[data-revalidate-import]');
         const runImport = event.target.closest('[data-run-import]');
         try {
+            if (edit) {
+                await openImportCorrection(Number(edit.dataset.editImport));
+                return;
+            }
             if (revalidate) {
                 await API.revalidateImport(Number(revalidate.dataset.revalidateImport));
                 await loadAdmin();
@@ -463,6 +543,36 @@ function wire() {
             }
         } catch (error) {
             ui.toast(error.message || 'Erreur d’import.', true);
+        }
+    });
+
+    document.addEventListener('click', (event) => {
+        const close = event.target.closest('[data-close-dialog]');
+        if (!close) return;
+        document.querySelector('#' + close.dataset.closeDialog)?.close();
+    });
+
+    document.querySelector('#importCorrectionForm')?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const dialog = document.querySelector('#importCorrectionDialog');
+        const batchId = Number(dialog?.dataset.batchId || 0);
+        if (!batchId) return;
+
+        try {
+            const rows = [...document.querySelectorAll('#importCorrectionRows .import-correction-row')];
+            for (const row of rows) {
+                const data = {};
+                row.querySelectorAll('input[name]').forEach((input) => {
+                    data[input.name] = input.value.trim();
+                });
+                await API.correctImportRow(batchId, Number(row.dataset.rowId), data);
+            }
+            dialog?.close();
+            await API.revalidateImport(batchId);
+            await loadAdmin();
+            ui.toast('Corrections enregistrées et import revalidé.');
+        } catch (error) {
+            ui.toast(error.message || 'Erreur pendant la correction.', true);
         }
     });
 
