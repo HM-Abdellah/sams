@@ -115,6 +115,8 @@ try {
         'user' => Auth::user(),
         'csrf' => Csrf::token(),
     ]);
+} catch (InvalidArgumentException $e) {
+    Response::error($e->getMessage(), 422);
 } catch (Throwable $e) {
     error_log('[SAMS auth] ' . $e->getMessage());
     Response::error('Server error.', 500);
