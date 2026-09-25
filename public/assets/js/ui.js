@@ -107,7 +107,7 @@ export const ui = {
             const currentStatus = map.get(attendanceKey(student.id, selectedDay, selectedPeriod)) || '';
             const counts = countsForStudent(student.id, state.attendance);
             return '<article class="attendance-student-card">'
-                + '<div class="attendance-student-head"><div><strong>' + (index + 1) + '. ' + esc(displayName(student)) + '</strong><small>' + esc(student.student_number || student.massar_code || t('no_student_number')) + '</small></div><div class="week-counts"><span>A ' + counts.absent + '</span><span>L ' + counts.other + '</span></div></div>'
+                + '<div class="attendance-student-head"><div><strong>' + (index + 1) + '. ' + esc(displayName(student)) + '</strong><small>' + esc(student.student_number || student.massar_code || t('no_student_number')) + '</small></div><div class="week-counts"><span>A ' + counts.absent + '</span><span>R ' + counts.late + '</span><span>E ' + counts.excused + '</span></div></div>'
                 + '<div class="attendance-student-actions">'
                 + statusButton(student.id, 'present', '✓', currentStatus)
                 + statusButton(student.id, 'absent', 'A', currentStatus)
