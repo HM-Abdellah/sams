@@ -82,6 +82,7 @@ $expectedTables = [
     'attendance',
     'attendance_signoffs',
     'attendance_week_signatures',
+    'attendance_week_submissions',
     'signatures',
     'audit_logs',
     'student_import_batches',
@@ -233,6 +234,24 @@ expect_db_reject(
             (1, 2, '2026-09-21', 'data:image/png;base64,TEST2')"
     ),
     'Duplicate weekly signature was accepted.'
+);
+
+$pdo->exec(
+    "INSERT INTO attendance_week_submissions
+        (class_id, week_start, received_by)
+     VALUES
+        (1, '2026-09-21', 1)"
+);
+
+expect_db_reject(
+    $pdo,
+    static fn() => $pdo->exec(
+        "INSERT INTO attendance_week_submissions
+            (class_id, week_start, received_by)
+         VALUES
+            (1, '2026-09-21', 1)"
+    ),
+    'Duplicate weekly administration receipt was accepted.'
 );
 
 expect_db_reject(
