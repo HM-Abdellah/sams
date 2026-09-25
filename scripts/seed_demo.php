@@ -149,6 +149,32 @@ try {
         );
     }
 
+    $nonDemoUsers = (int)$pdo->query(
+        "SELECT COUNT(*) FROM users
+         WHERE username NOT IN ('" . DEMO_ADMIN_USERNAME . "', '" . DEMO_TEACHER_USERNAME . "')"
+    )->fetchColumn();
+
+    $nonDemoStudents = (int)$pdo->query(
+        "SELECT COUNT(*) FROM students
+         WHERE massar_code IS NULL OR massar_code NOT LIKE 'DEMO%'"
+    )->fetchColumn();
+
+    $nonDemoClasses = (int)$pdo->query(
+        "SELECT COUNT(*) FROM classes
+         WHERE name NOT IN ('2BACSPF-A', 'DEMO-2BAC-A', 'DEMO-2BAC-B')"
+    )->fetchColumn();
+
+    $nonDemoYears = (int)$pdo->query(
+        "SELECT COUNT(*) FROM academic_years
+         WHERE name <> '2026/2027'"
+    )->fetchColumn();
+
+    if ($nonDemoUsers > 0 || $nonDemoStudents > 0 || $nonDemoClasses > 0 || $nonDemoYears > 0) {
+        throw new RuntimeException(
+            'Demo seed refused: the database contains non-demo data. Use a clean local database only.'
+        );
+    }
+
     $pdo->beginTransaction();
 
     $yearStmt = $pdo->prepare(
@@ -240,12 +266,8 @@ try {
         ]],
     ];
 
-    $firstStudentId = null;
     foreach ($students as [$classId, $student]) {
-        $studentId = ensure_student($pdo, $classId, $student, '2026-09-01');
-        if ($firstStudentId === null && $classId === $classA) {
-            $firstStudentId = $studentId;
-        }
+        ensure_student($pdo, $classId, $student, '2026-09-01');
     }
 
     $pdo->commit();
