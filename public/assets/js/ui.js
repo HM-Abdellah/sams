@@ -147,7 +147,7 @@ export const ui = {
         const currentClass = classFilter?.value || 'all';
 
         if (subjectFilter) {
-            subjectFilter.innerHTML = '<option value="all" data-i18n="all_subjects"></option>'
+            subjectFilter.innerHTML = '<option value="all">' + esc(t('all_subjects')) + '</option>'
                 + state.subjects.map((subject) =>
                     '<option value="' + esc(subject.id) + '">' + esc(subjectLabel(subject)) + '</option>'
                 ).join('');
@@ -159,11 +159,34 @@ export const ui = {
                 .filter((item) => Number(item.is_active) === 1)
                 .slice()
                 .sort((a, b) => String(a.academic_year_name || '').localeCompare(String(b.academic_year_name || '')) || String(a.name).localeCompare(String(b.name)));
-            classFilter.innerHTML = '<option value="all" data-i18n="all_classes"></option>'
+            classFilter.innerHTML = '<option value="all">' + esc(t('all_classes')) + '</option>'
                 + classes.map((cls) =>
                     '<option value="' + esc(cls.id) + '">' + esc(classLabel(cls)) + '</option>'
                 ).join('');
             classFilter.value = classes.some((item) => String(item.id) === currentClass) ? currentClass : 'all';
+        }
+
+        const teacherSelect = document.querySelector('#teachingTeacherId');
+        if (teacherSelect) {
+            teacherSelect.innerHTML = '<option value="">—</option>' + state.teachers.map((teacher) =>
+                '<option value="' + esc(teacher.id) + '">' + esc(teacher.full_name) + ' · ' + esc(teacher.employee_id || teacher.username || '') + '</option>'
+            ).join('');
+        }
+
+        const subjectSelect = document.querySelector('#teachingSubjectId');
+        if (subjectSelect) {
+            const activeSubjects = state.subjects.filter((subject) => Number(subject.is_active) === 1);
+            subjectSelect.innerHTML = '<option value="">—</option>' + activeSubjects.map((subject) =>
+                '<option value="' + esc(subject.id) + '">' + esc(subjectLabel(subject)) + ' · ' + esc(subject.code) + '</option>'
+            ).join('');
+        }
+
+        const teachingClassSelect = document.querySelector('#teachingClassId');
+        if (teachingClassSelect) {
+            const activeClasses = state.adminClasses.filter((item) => Number(item.is_active) === 1);
+            teachingClassSelect.innerHTML = '<option value="">—</option>' + activeClasses.map((cls) =>
+                '<option value="' + esc(cls.id) + '">' + esc(classLabel(cls)) + '</option>'
+            ).join('');
         }
 
         const allTeachers = Array.isArray(state.teachers) ? state.teachers : [];
