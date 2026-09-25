@@ -147,7 +147,7 @@ try {
 
         $repo->setActive($classId, $active);
         $audit->record(
-            (int)$admin['id'],
+            (int)$user['id'],
             $active ? 'class.activate' : 'class.deactivate',
             'class',
             $classId
