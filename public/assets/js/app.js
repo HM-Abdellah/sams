@@ -8,7 +8,7 @@ let loading = false;
 let clickTimer = null;
 let attendanceFlushTimer = null;
 let attendanceFlushPromise = null;
-let teacherRefreshTimer = null;
+let adminRefreshTimer = null;
 let presenceTimer = null;
 let attendanceVersion = 0;
 const pendingAttendance = new Map();
@@ -376,11 +376,16 @@ async function loadTeachers() {
     }
 }
 
-function restartTeacherRefresh() {
-    clearInterval(teacherRefreshTimer);
-    teacherRefreshTimer = null;
-    if (state.user?.role !== 'admin' || state.tab !== 'teachers') return;
-    teacherRefreshTimer = setInterval(() => loadTeachers(), 15000);
+function restartAdminRefresh() {
+    clearInterval(adminRefreshTimer);
+    adminRefreshTimer = null;
+    if (state.user?.role !== 'admin') return;
+
+    if (state.tab === 'teachers') {
+        adminRefreshTimer = setInterval(() => loadTeachers(), 15000);
+    } else if (state.tab === 'admin') {
+        adminRefreshTimer = setInterval(() => loadAdmin(), 30000);
+    }
 }
 
 async function startPresenceHeartbeat() {
@@ -624,7 +629,7 @@ function wire() {
         if (button.dataset.tab === 'archive') await loadArchive('days');
         if (button.dataset.tab === 'teachers') await loadTeachers();
         if (button.dataset.tab === 'admin') await loadAdmin();
-        restartTeacherRefresh();
+        restartAdminRefresh();
     }));
 
     document.querySelector('#refreshDashboardBtn')?.addEventListener('click', async () => {
