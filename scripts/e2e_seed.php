@@ -58,13 +58,15 @@ try {
 
     $userStmt = $pdo->prepare(
         'INSERT INTO users
-            (username, full_name, password_hash, role, is_active)
-         VALUES (?, ?, ?, ?, 1)'
+            (username, employee_id, full_name, phone, password_hash, role, is_active)
+         VALUES (?, ?, ?, ?, ?, ?, 1)'
     );
 
     $userStmt->execute([
         'admin',
+        null,
         'E2E Admin',
+        null,
         password_hash($adminPassword, PASSWORD_DEFAULT),
         'admin',
     ]);
