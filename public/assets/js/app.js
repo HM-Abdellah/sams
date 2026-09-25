@@ -3,7 +3,7 @@ import { state, setState } from './state.js';
 import { ui, renderAll } from './ui.js';
 import { setupSignature } from './signature.js';
 import { DAYS, PERIODS, dateFromWeek, startOfWeek, attendanceKey, displayName } from './logic.js';
-import { initLanguage, t } from './i18n.js';
+import { initLanguage, setLanguage, t } from './i18n.js';
 
 let loading = false;
 let clickTimer = null;
@@ -73,6 +73,8 @@ async function boot() {
             selectedDay: state.selectedDay || defaultWeekStart,
             selectedPeriod: state.selectedPeriod || 1,
         });
+        ensureArchiveDynamicUI();
+        ensureAdminDynamicUI();
         initLanguage();
         await startPresenceHeartbeat();
 
@@ -87,7 +89,6 @@ async function boot() {
         if (currentUser && state.user) currentUser.textContent = `${state.user.full_name} · ${state.user.role}`;
 
         if (state.user?.role !== 'admin') document.querySelectorAll('.admin-only').forEach((el) => el.remove());
-        ensureArchiveDynamicUI();
         renderAll();
         if (state.classId) await loadClass();
         if (state.user?.role === 'admin') {
