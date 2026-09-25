@@ -191,6 +191,17 @@ $tests = [
         );
     },
 
+    'student import rejects unsupported CSV columns' => static function (): void {
+        $service = new SAMS\Services\StudentImportService();
+        expect_throws(
+            static fn() => $service->parseCsv(
+                "first_name,last_name,massar_code,birth_date,email\n"
+                . "Jean,Dupont,MC001,2010-05-12,jean@example.com"
+            ),
+            'unsupported CSV columns should be rejected'
+        );
+    },
+
     'auth login stores a valid session identity' => static function (): void {
         if (session_status() !== PHP_SESSION_ACTIVE) {
             session_start();
