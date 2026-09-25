@@ -75,6 +75,8 @@ $expectedTables = [
     'users',
     'classes',
     'teacher_classes',
+    'subjects',
+    'teacher_teachings',
     'students',
     'student_enrollments',
     'attendance',
@@ -108,6 +110,13 @@ $pdo->exec(
 );
 
 $pdo->exec("INSERT INTO teacher_classes (teacher_id, class_id) VALUES (2, 1)");
+$pdo->exec("INSERT INTO subjects (code, name_fr, name_ar, name_en) VALUES ('MATH', 'Mathématiques', 'الرياضيات', 'Mathematics')");
+$pdo->exec("INSERT INTO teacher_teachings (teacher_id, subject_id, class_id) VALUES (2, 1, 1)");
+expect_db_reject(
+    $pdo,
+    static fn() => $pdo->exec("INSERT INTO teacher_teachings (teacher_id, subject_id, class_id) VALUES (2, 1, 1)"),
+    'Duplicate teacher teaching assignment was accepted.'
+);
 
 $pdo->exec(
     "INSERT INTO students
