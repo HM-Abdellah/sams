@@ -12,20 +12,36 @@ final class StudentRepository
     {
         $stmt = Database::connection()->prepare(
             'SELECT id, student_number, massar_code, birth_date, first_name, last_name, status, created_at, updated_at
-             FROM students WHERE class_id = ? ORDER BY last_name, first_name, id'
+             FROM students
+             WHERE class_id = ?
+             ORDER BY last_name, first_name, id'
         );
         $stmt->execute([$classId]);
+
         return $stmt->fetchAll();
     }
 
     public function findInClass(int $studentId, int $classId): ?array
     {
         $stmt = Database::connection()->prepare(
-            'SELECT id, class_id, student_number, massar_code, birth_date, first_name, last_name, status, created_at, updated_at
-             FROM students WHERE id = ? AND class_id = ? LIMIT 1'
+            'SELECT
+                id,
+                class_id,
+                student_number,
+                massar_code,
+                birth_date,
+                first_name,
+                last_name,
+                status,
+                created_at,
+                updated_at
+             FROM students
+             WHERE id = ? AND class_id = ?
+             LIMIT 1'
         );
         $stmt->execute([$studentId, $classId]);
         $row = $stmt->fetch();
+
         return $row ?: null;
     }
 
@@ -37,12 +53,52 @@ final class StudentRepository
         string $firstName,
         string $lastName
     ): int {
-        $stmt = Database::connection()->prepare(
-            'INSERT INTO students (class_id, student_number, massar_code, birth_date, first_name, last_name)
+        $pdo = Database::connection();
+
+        $stmt = $pdo->prepare(
+            'INSERT INTO students
+                (class_id, student_number, massar_code, birth_date, first_name, last_name)
              VALUES (?, ?, ?, ?, ?, ?)'
         );
-        $stmt->execute([$classId, $number, $massarCode, $birthDate, $firstName, $lastName]);
-        return (int)Database::connection()->lastInsertId();
+        $stmt->execute([
+            $classId,
+            $number,
+            $massarCode,
+            $birthDate,
+            $firstName,
+            $lastName,
+        ]);
+
+        $studentId = (int)$pdo->lastInsertId();
+
+        // A student record is not valid for attendance until an enrollment exists.
+        // Derive its initial enrollment boundary from the class academic year.
+        $startStmt = $pdo->prepare(
+            'SELECT ay.starts_on
+             FROM classes c
+             INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+             WHERE c.id = ?
+             LIMIT 1'
+        );
+        $startStmt->execute([$classId]);
+        $startsOn = $startStmt->fetchColumn();
+
+        if (!is_string($startsOn) || $startsOn === '') {
+            throw new \RuntimeException('Unable to determine student enrollment start date.');
+        }
+
+        $enrollmentStmt = $pdo->prepare(
+            'INSERT INTO student_enrollments
+                (student_id, class_id, starts_on, ends_on)
+             VALUES (?, ?, ?, NULL)'
+        );
+        $enrollmentStmt->execute([
+            $studentId,
+            $classId,
+            $startsOn,
+        ]);
+
+        return $studentId;
     }
 
     public function update(
@@ -56,7 +112,11 @@ final class StudentRepository
     ): void {
         $stmt = Database::connection()->prepare(
             'UPDATE students
-             SET student_number = ?, massar_code = ?, birth_date = ?, first_name = ?, last_name = ?
+             SET student_number = ?,
+                 massar_code = ?,
+                 birth_date = ?,
+                 first_name = ?,
+                 last_name = ?
              WHERE id = ? AND class_id = ?'
         );
         $stmt->execute([
@@ -73,7 +133,9 @@ final class StudentRepository
     public function deactivate(int $studentId, int $classId): void
     {
         $stmt = Database::connection()->prepare(
-            'UPDATE students SET status = \'inactive\' WHERE id = ? AND class_id = ?'
+            'UPDATE students
+             SET status = \'inactive\'
+             WHERE id = ? AND class_id = ?'
         );
         $stmt->execute([$studentId, $classId]);
     }
