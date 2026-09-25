@@ -89,6 +89,8 @@ export const API = Object.freeze({
     setAttendance: (classId, data) => request(`attendance.php?class_id=${encodeURIComponent(classId)}`, { method:'POST', body:JSON.stringify(data) }),
     bulkAttendance: (classId, entries) => request(`attendance.php?class_id=${encodeURIComponent(classId)}`, { method:'POST', body:JSON.stringify({action:'bulk', entries}) }),
     deleteAttendance: (classId, data) => request(`attendance.php?class_id=${encodeURIComponent(classId)}`, { method:'DELETE', body:JSON.stringify(data) }),
+    attendanceSignoffs: (classId, weekStart) => request(`attendance-signoffs.php?class_id=${encodeURIComponent(classId)}&week_start=${encodeURIComponent(weekStart)}`),
+    attendanceSignoffAction: (classId, data) => request(`attendance-signoffs.php?class_id=${encodeURIComponent(classId)}`, { method:'POST', body:JSON.stringify(data) }),
 
     signature: (classId) => request(`signatures.php?class_id=${encodeURIComponent(classId)}`),
     saveSignature: (classId, signatureData) => request(`signatures.php?class_id=${encodeURIComponent(classId)}`, { method:'POST', body:JSON.stringify({signature_data:signatureData}) }),
