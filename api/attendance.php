@@ -10,6 +10,7 @@ use SAMS\Helpers\Database;
 use SAMS\Helpers\Response;
 use SAMS\Repositories\AttendanceRepository;
 use SAMS\Repositories\AcademicYearRepository;
+use SAMS\Repositories\AttendanceSignoffRepository;
 use SAMS\Repositories\AuditLogRepository;
 use SAMS\Repositories\ClassRepository;
 use SAMS\Repositories\StudentRepository;
@@ -175,6 +176,7 @@ try {
 
         $pdo = Database::connection();
         $audit = new AuditLogRepository();
+        $signoffs = new AttendanceSignoffRepository();
         $pdo->beginTransaction();
 
         try {
@@ -184,6 +186,11 @@ try {
             foreach ($normalized as $entry) {
                 $key = $entry['student_id'] . ':' . $entry['attendance_date'] . ':' . $entry['period'];
                 $previous = $existing[$key] ?? null;
+
+                $periodSignoff = $signoffs->findPeriod($classId, $entry['attendance_date'], $entry['period']);
+                if ($periodSignoff !== null && (string)$periodSignoff['status'] === 'signed') {
+                    Response::error('This lesson is signed. Reopen it before correcting attendance.', 409);
+                }
 
                 if ($entry['action'] === 'delete') {
                     if ($previous === null) {
@@ -299,6 +306,11 @@ try {
 
     try {
         $existing = $repo->find($studentId, $date, $period, $classId);
+        $signoffs = new AttendanceSignoffRepository();
+        $periodSignoff = $signoffs->findPeriod($classId, $date, $period);
+        if ($periodSignoff !== null && (string)$periodSignoff['status'] === 'signed') {
+            Response::error('This lesson is signed. Reopen it before correcting attendance.', 409);
+        }
 
         if ($action === 'delete' || $method === 'DELETE') {
             if ($existing !== null) {
