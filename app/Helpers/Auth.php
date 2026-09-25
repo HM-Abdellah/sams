@@ -45,6 +45,15 @@ final class Auth
     {
         if (session_status() !== PHP_SESSION_ACTIVE) return;
 
+        try {
+            $userId = isset($_SESSION[self::SESSION_USER]['id']) ? (int)$_SESSION[self::SESSION_USER]['id'] : 0;
+            if ($userId > 0) {
+                (new UserRepository())->clearPresence($userId);
+            }
+        } catch (\Throwable) {
+            // Logout must still destroy the session if presence cleanup fails.
+        }
+
         $_SESSION = [];
         $params = session_get_cookie_params();
         setcookie(session_name(), '', [
@@ -95,6 +104,7 @@ final class Auth
 
         return [
             'id' => (int)$user['id'],
+            'employee_id' => (string)($user['employee_id'] ?? $user['username'] ?? ''),
             'full_name' => (string)$user['full_name'],
             'role' => (string)$user['role'],
         ];
