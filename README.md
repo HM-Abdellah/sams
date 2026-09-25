@@ -70,7 +70,7 @@ From the project root:
 cp config/database.example.php config/database.php
 # Edit config/database.php with the local MariaDB credentials.
 
-php -S 0.0.0.0:8080 -t .
+php -S 0.0.0.0:8080 scripts/dev_router.php
 ```
 
 Open:
@@ -79,7 +79,7 @@ Open:
 http://localhost:8080/public/
 ```
 
-Using the project root as the built-in server document root is intentional because the application keeps public/ and api/ as sibling directories. The built-in server is for development/testing; Apache remains the intended school-LAN deployment target.
+Using the project root as the built-in server document root is intentional because the application keeps public/ and api/ as sibling directories. The router exposes only public/ and api/ to the built-in server, while keeping application source and configuration outside the web surface. The built-in server is for development/testing; Apache remains the intended school-LAN deployment target.
 
 ## Local setup — XAMPP on Windows
 
