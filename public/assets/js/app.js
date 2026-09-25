@@ -214,12 +214,12 @@ function ensureAdminDynamicUI() {
         const dialog = document.createElement('dialog');
         dialog.id = 'editClassDialog';
         dialog.innerHTML = '<form id="editClassForm">'
-            + '<h2>Modifier une classe</h2>'
+            + '<h2 data-i18n="edit_class">Modifier une classe</h2>'
             + '<input id="editClassId" type="hidden">'
-            + '<label>Nom<input id="editClassNameInput" required maxlength="100"></label>'
-            + '<label>Niveau<input id="editClassLevelInput" maxlength="50"></label>'
-            + '<label>Branche<input id="editClassBranchInput" maxlength="100"></label>'
-            + '<div class="dialog-actions"><button class="btn" type="button" data-close-dialog="editClassDialog">Annuler</button><button class="btn primary" type="submit">Enregistrer</button></div>'
+            + '<label><span data-i18n="name">Nom</span><input id="editClassNameInput" required maxlength="100"></label>'
+            + '<label><span data-i18n="level">Niveau</span><input id="editClassLevelInput" maxlength="50"></label>'
+            + '<label><span data-i18n="branch">Branche</span><input id="editClassBranchInput" maxlength="100"></label>'
+            + '<div class="dialog-actions"><button class="btn" type="button" data-close-dialog="editClassDialog" data-i18n="cancel">Annuler</button><button class="btn primary" type="submit" data-i18n="save">Enregistrer</button></div>'
             + '</form>';
         document.body.appendChild(dialog);
     }
@@ -228,11 +228,11 @@ function ensureAdminDynamicUI() {
         const dialog = document.createElement('dialog');
         dialog.id = 'editUserDialog';
         dialog.innerHTML = '<form id="editUserForm">'
-            + '<h2>Modifier un utilisateur</h2>'
+            + '<h2 data-i18n="edit_user">Modifier un utilisateur</h2>'
             + '<input id="editUserId" type="hidden">'
-            + '<label>Nom complet<input id="editUserFullNameInput" required maxlength="120"></label>'
-            + '<label>Rôle<select id="editUserRoleInput"><option value="teacher">teacher</option><option value="counselor">counselor</option><option value="admin">admin</option></select></label>'
-            + '<label>Actif<select id="editUserActiveInput"><option value="1">Oui</option><option value="0">Non</option></select></label>'
+            + '<label><span data-i18n="full_name">Nom complet</span><input id="editUserFullNameInput" required maxlength="120"></label>'
+            + '<label><span data-i18n="role">Rôle</span><select id="editUserRoleInput"><option value="teacher">teacher</option><option value="counselor">counselor</option><option value="admin">admin</option></select></label>'
+            + '<label><span data-i18n="active">Actif</span><select id="editUserActiveInput"><option value="1">Oui</option><option value="0">Non</option></select></label>'
             + '<div class="dialog-actions"><button class="btn" type="button" data-close-dialog="editUserDialog">Annuler</button><button class="btn primary" type="submit">Enregistrer</button></div>'
             + '</form>';
         document.body.appendChild(dialog);
@@ -242,11 +242,11 @@ function ensureAdminDynamicUI() {
         const dialog = document.createElement('dialog');
         dialog.id = 'transferStudentDialog';
         dialog.innerHTML = '<form id="transferStudentForm">'
-            + '<h2>Transférer un élève</h2>'
+            + '<h2 data-i18n="transfer">Transférer un élève</h2>'
             + '<input id="transferStudentId" type="hidden">'
-            + '<label>Classe cible<select id="transferTargetClassInput" required></select></label>'
-            + '<label>Date d’effet<input id="transferEffectiveDateInput" type="date" required></label>'
-            + '<div class="dialog-actions"><button class="btn" type="button" data-close-dialog="transferStudentDialog">Annuler</button><button class="btn primary" type="submit">Transférer</button></div>'
+            + '<label><span data-i18n="target_class">Classe cible</span><select id="transferTargetClassInput" required></select></label>'
+            + '<label><span data-i18n="effective_date">Date d’effet</span><input id="transferEffectiveDateInput" type="date" required></label>'
+            + '<div class="dialog-actions"><button class="btn" type="button" data-close-dialog="transferStudentDialog" data-i18n="cancel">Annuler</button><button class="btn primary" type="submit">Transférer</button></div>'
             + '</form>';
         document.body.appendChild(dialog);
     }
@@ -255,10 +255,10 @@ function ensureAdminDynamicUI() {
         const dialog = document.createElement('dialog');
         dialog.id = 'resetUserPasswordDialog';
         dialog.innerHTML = '<form id="resetUserPasswordForm">'
-            + '<h2>Réinitialiser le mot de passe</h2>'
+            + '<h2 data-i18n="reset_password">Réinitialiser le mot de passe</h2>'
             + '<input id="resetUserId" type="hidden">'
-            + '<label>Nouveau mot de passe<input id="resetUserPasswordInput" type="password" minlength="10" maxlength="255" required></label>'
-            + '<div class="dialog-actions"><button class="btn" type="button" data-close-dialog="resetUserPasswordDialog">Annuler</button><button class="btn primary" type="submit">Réinitialiser</button></div>'
+            + '<label><span data-i18n="new_password">Nouveau mot de passe</span><input id="resetUserPasswordInput" type="password" minlength="10" maxlength="255" required></label>'
+            + '<div class="dialog-actions"><button class="btn" type="button" data-close-dialog="resetUserPasswordDialog" data-i18n="cancel">Annuler</button><button class="btn primary" type="submit" data-i18n="reset">Réinitialiser</button></div>'
             + '</form>';
         document.body.appendChild(dialog);
     }
@@ -292,7 +292,7 @@ function ensureAdminDynamicUI() {
     if (!document.querySelector('#importCorrectionDialog')) {
         const dialog = document.createElement('dialog');
         dialog.id = 'importCorrectionDialog';
-        dialog.innerHTML = '<form id="importCorrectionForm"><h2>Corriger les lignes invalides</h2><div id="importCorrectionRows"></div><div class="dialog-actions"><button class="btn" type="button" data-close-dialog="importCorrectionDialog">Annuler</button><button class="btn primary" type="submit">Corriger et revalider</button></div></form>';
+        dialog.innerHTML = '<form id="importCorrectionForm"><h2 data-i18n="correct_invalid_rows">Corriger les lignes invalides</h2><div id="importCorrectionRows"></div><div class="dialog-actions"><button class="btn" type="button" data-close-dialog="importCorrectionDialog" data-i18n="cancel">Annuler</button><button class="btn primary" type="submit" data-i18n="correct_and_revalidate">Corriger et revalider</button></div></form>';
         document.body.appendChild(dialog);
     }
 }
@@ -315,13 +315,13 @@ async function openImportCorrection(batchId) {
             const fieldset = document.createElement('fieldset');
             fieldset.className = 'import-correction-row';
             fieldset.dataset.rowId = String(row.id);
-            fieldset.innerHTML = '<legend>Ligne ' + String(row.row_number) + '</legend>'
+            fieldset.innerHTML = '<legend>' + String(row.row_number) + '</legend>'
                 + '<small>' + uiEscapeIssues(row.issues) + '</small>'
-                + '<label>Prénom<input name="first_name" required maxlength="80" value="' + uiEscapeValue(row.first_name) + '"></label>'
-                + '<label>Nom<input name="last_name" required maxlength="80" value="' + uiEscapeValue(row.last_name) + '"></label>'
-                + '<label>Massar<input name="massar_code" required maxlength="32" value="' + uiEscapeValue(row.massar_code) + '"></label>'
-                + '<label>Date de naissance<input name="birth_date" type="date" required value="' + uiEscapeValue(row.birth_date) + '"></label>'
-                + '<label>N° élève<input name="student_number" maxlength="30" value="' + uiEscapeValue(row.student_number) + '"></label>';
+                + '<label><span data-i18n="first_name">Prénom</span><input name="first_name" required maxlength="80" value="' + uiEscapeValue(row.first_name) + '"></label>'
+                + '<label><span data-i18n="last_name">Nom</span><input name="last_name" required maxlength="80" value="' + uiEscapeValue(row.last_name) + '"></label>'
+                + '<label><span data-i18n="massar">Massar</span><input name="massar_code" required maxlength="32" value="' + uiEscapeValue(row.massar_code) + '"></label>'
+                + '<label><span data-i18n="birth_date">Date de naissance</span><input name="birth_date" type="date" required value="' + uiEscapeValue(row.birth_date) + '"></label>'
+                + '<label><span data-i18n="student_number">N° élève</span><input name="student_number" maxlength="30" value="' + uiEscapeValue(row.student_number) + '"></label>';
             container.appendChild(fieldset);
         }
 
