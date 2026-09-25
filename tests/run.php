@@ -7,6 +7,7 @@ require_once __DIR__ . '/../app/Services/ClassService.php';
 require_once __DIR__ . '/../app/Services/StudentService.php';
 require_once __DIR__ . '/../app/Services/UserService.php';
 require_once __DIR__ . '/../app/Services/AcademicYearService.php';
+require_once __DIR__ . '/../app/Services/ReportService.php';
 require_once __DIR__ . '/../app/Services/StudentImportService.php';
 require_once __DIR__ . '/../app/Helpers/Security.php';
 require_once __DIR__ . '/../app/Helpers/Csrf.php';
@@ -105,6 +106,20 @@ $tests = [
         expect_throws(
             static fn() => $service->validatePassword('short'),
             'short password should be rejected'
+        );
+    },
+
+    'weekly range always starts Monday and spans six days' => static function (): void {
+        $service = new SAMS\Services\ReportService();
+
+        expect_true(
+            $service->weekRange('2026-09-23') === ['2026-09-21', '2026-09-26'],
+            'Wednesday input should normalize to Monday-Saturday'
+        );
+
+        expect_true(
+            $service->weekRange('2026-09-21') === ['2026-09-21', '2026-09-26'],
+            'Monday input should remain unchanged'
         );
     },
 
