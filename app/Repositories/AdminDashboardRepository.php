@@ -29,7 +29,7 @@ final class AdminDashboardRepository
                    AND e.starts_on <= CURDATE()
                    AND (e.ends_on IS NULL OR e.ends_on >= CURDATE())) AS active_students,
                 (SELECT COUNT(*) FROM users WHERE role = 'teacher' AND is_active = 1) AS active_teachers,
-                (SELECT COUNT(*) FROM users WHERE role = 'teacher' AND is_active = 1 AND last_seen_at >= UTC_TIMESTAMP() - INTERVAL 90 SECOND) AS online_teachers,
+                (SELECT COUNT(*) FROM users WHERE role = 'teacher' AND is_active = 1 AND last_seen_at >= CURRENT_TIMESTAMP - INTERVAL 90 SECOND) AS online_teachers,
                 (SELECT COUNT(*) FROM users WHERE role = 'teacher' AND is_active = 1 AND phone_verified = 0) AS unverified_teachers,
                 (SELECT COUNT(*) FROM users WHERE role = 'teacher' AND is_active = 1 AND locked_until IS NOT NULL AND locked_until > CURRENT_TIMESTAMP) AS locked_teachers,
                 (SELECT COUNT(*)
