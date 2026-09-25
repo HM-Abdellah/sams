@@ -173,6 +173,27 @@ test.describe('authenticated SAMS smoke', () => {
     await expect(page.locator('#archiveDayDialog')).toContainText('E2E001');
   });
 
+  test('admin can view teachers, subjects and teaching assignments', async ({ page }) => {
+    await login(page, username, password);
+    await page.locator('.tab[data-tab="teachers"]').click();
+
+    await expect(page.locator('#teachersList .teacher-card').filter({ hasText: 'E2E Teacher' })).toBeVisible();
+    const teacherCard = page.locator('#teachersList .teacher-card').filter({ hasText: 'E2E Teacher' }).first();
+    await expect(teacherCard).toContainText('teacher.e2e');
+    await expect(teacherCard).toContainText('Mathématiques');
+    await expect(teacherCard).toContainText('E2E-2BAC-A');
+    await expect(page.locator('#teacherTotal')).toHaveText('1');
+
+    await page.locator('#assignTeachingBtn').click();
+    await page.locator('#teachingTeacherId').selectOption({ label: /E2E Teacher/ });
+    await page.locator('#teachingSubjectId').selectOption({ label: /Mathématiques/ });
+    await page.locator('#teachingClassId').selectOption({ label: /E2E-2BAC-B/ });
+    await page.locator('#teachingForm button[type="submit"]').click();
+
+    await expect(page.locator('#teachersList .teacher-card').filter({ hasText: 'E2E Teacher' })).toContainText('E2BAC-B');
+    await expect(page.locator('#teachersList .teacher-card').filter({ hasText: 'E2E Teacher' })).toContainText('E2E-2BAC-B');
+  });
+
   test('admin can manage a class and a user through the UI', async ({ page }) => {
     await login(page, username, password);
     await page.locator('.tab[data-tab="admin"]').click();
