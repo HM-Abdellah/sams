@@ -231,6 +231,8 @@ function wire() {
             await API.createStudent(state.classId, {
                 first_name: document.querySelector('#firstNameInput').value.trim(),
                 last_name: document.querySelector('#lastNameInput').value.trim(),
+                massar_code: document.querySelector('#massarInput').value.trim() || null,
+                birth_date: document.querySelector('#birthDateInput').value || null,
                 student_number: document.querySelector('#studentNumberInput').value.trim() || null,
             });
             form.closest('dialog')?.close();
