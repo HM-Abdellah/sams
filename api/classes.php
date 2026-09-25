@@ -19,6 +19,13 @@ try {
     $method = sams_method();
 
     if ($method === 'GET') {
+        if ((string)($_GET['scope'] ?? '') === 'all') {
+            Auth::requireRole('admin');
+            Response::success([
+                'classes' => $repo->allForAdmin()
+            ]);
+        }
+
         Response::success([
             'classes' => $repo->forUser((int)$user['id'], (string)$user['role'])
         ]);
