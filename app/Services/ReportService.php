@@ -20,6 +20,7 @@ final class ReportService
     {
         $date = DateTimeImmutable::createFromFormat('!Y-m-d', $start);
         if (!$date || $date->format('Y-m-d') !== $start) throw new InvalidArgumentException('Invalid date.');
-        return [$start, $date->modify('+5 days')->format('Y-m-d')];
+        $monday = $date->modify('-' . ((int)$date->format('N') - 1) . ' days');
+        return [$monday->format('Y-m-d'), $monday->modify('+5 days')->format('Y-m-d')];
     }
 }
