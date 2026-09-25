@@ -71,13 +71,13 @@ cp config/database.example.php config/database.php
 # Edit config/database.php with the local MariaDB credentials.
 
 php -S 0.0.0.0:8080 -t .
-:::
+```
 
 Open:
 
 ```text
 http://localhost:8080/public/
-:::
+```
 
 Using the project root as the built-in server document root is intentional because the application keeps public/ and api/ as sibling directories. The built-in server is for development/testing; Apache remains the intended school-LAN deployment target.
 
