@@ -117,6 +117,8 @@ try {
     }
 
     Response::error('Method not allowed.', 405);
+} catch (InvalidArgumentException $e) {
+    Response::error($e->getMessage(), 422);
 } catch (Throwable $e) {
     error_log('[SAMS assignments] ' . $e->getMessage());
     Response::error('Server error.', 500);
