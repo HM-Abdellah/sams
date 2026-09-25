@@ -50,6 +50,8 @@ try {
     $body = sams_json_body();
     if ($method === 'POST' && (string)($body['action'] ?? '') === 'bulk') {
         $entries = $body['entries'] ?? null;
+        $studentRepo = new StudentRepository();
+        $service = new AttendanceService();
 
         if (!is_array($entries) || $entries === [] || count($entries) > 500) {
             Response::error('Invalid attendance batch.', 422);
@@ -116,12 +118,14 @@ try {
             }
             $seen[$key] = true;
 
+            if (!in_array($entryAction, ['upsert', 'delete'], true)) {
+                Response::error('Invalid attendance action.', 422, ['index' => $index]);
+            }
+
             $status = null;
-            if ($entryAction !== 'delete') {
+            if ($entryAction === 'upsert') {
                 $status = (string)($entry['status'] ?? '');
                 $service->validate($entryStudentId, $entryDate, $entryPeriod, $status);
-            } elseif (!in_array($entryAction, ['delete'], true)) {
-                Response::error('Invalid attendance action.', 422, ['index' => $index]);
             }
 
             $minDate = $minDate === null || $entryDate < $minDate ? $entryDate : $minDate;
