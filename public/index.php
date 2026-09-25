@@ -55,10 +55,10 @@ $csrf = Csrf::token();
     </section>
 
     <section class="stats" aria-label="Statistiques">
-        <article><span data-i18n="present_count">Présences</span><strong id="statPresent">0</strong></article>
-        <article><span data-i18n="absent_count_label">Absences</span><strong id="statAbsent">0</strong></article>
-        <article><span data-i18n="late_excused">Retards / excusés</span><strong id="statOther">0</strong></article>
-        <article><span data-i18n="presence_rate">Taux de présence</span><strong id="statRate">0%</strong></article>
+        <article><span data-i18n="week_absences_label">Absences de la semaine</span><strong id="statAbsent">0</strong></article>
+        <article><span data-i18n="signed_lessons_label">Leçons signées</span><strong id="statSigned">0</strong></article>
+        <article><span data-i18n="needs_resign_label">À re-signer</span><strong id="statNeedsResign">0</strong></article>
+        <article><span data-i18n="weekly_signatures_label">Signatures semaine</span><strong id="statWeeklySignatures">0</strong></article>
     </section>
 
     <nav class="tabs" aria-label="Navigation principale">
@@ -88,6 +88,9 @@ $csrf = Csrf::token();
             <button class="filter" data-filter="risk" type="button" data-i18n="at_risk">À risque</button>
             <button class="filter" data-filter="committed" type="button" data-i18n="regular">Assidus</button>
         </div>
+
+        <section id="attendanceWorkflow" class="attendance-workflow" aria-live="polite"></section>
+        <section id="weeklyTeacherSignatures" class="weekly-signatures-panel"></section>
 
         <div class="attendance-mobile-list" id="attendanceMobileList"></div>
 
@@ -251,6 +254,7 @@ $csrf = Csrf::token();
     <section class="panel hidden" data-panel="signature">
         <div class="panel-head"><div><h1 data-i18n="teacher_signature_title">Signature de l'enseignant</h1><p data-i18n="teacher_signature_desc">La signature est conservée pour la classe active.</p></div></div>
         <div class="signature-panel">
+            <p class="signature-profile-note" data-i18n="signature_profile_note">Enregistrez votre signature une fois. Elle sera utilisée comme preuve de validation pour les leçons et la feuille hebdomadaire.</p>
             <canvas id="signatureCanvas" width="900" height="320" aria-label="Zone de signature" data-i18n-aria="signature_area"></canvas>
             <div class="signature-actions">
                 <button class="btn" id="clearSignatureBtn" type="button" data-i18n="clear">Effacer</button>
