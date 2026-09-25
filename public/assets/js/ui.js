@@ -1,5 +1,5 @@
 import { state } from './state.js';
-import { PERIODS, attendanceKey, countsForStudent, attendanceRate, isRisk, displayName } from './logic.js';
+import { DAYS, PERIODS, dateFromWeek, attendanceKey, countsForStudent, attendanceRate, isRisk, displayName } from './logic.js';
 import { t, currentLanguage } from './i18n.js';
 
 const esc = (value) => {
@@ -8,15 +8,20 @@ const esc = (value) => {
     return div.innerHTML;
 };
 
+function localeForLanguage() { return currentLanguage() === 'ar' ? 'ar-MA' : currentLanguage() === 'en' ? 'en-GB' : 'fr-FR'; }
+
+function formatWeekDay(date) {
+    const value = new Date(`${date}T00:00:00Z`);
+    return { weekday: value.toLocaleDateString(localeForLanguage(), { weekday: 'short', timeZone: 'UTC' }), date: value.toLocaleDateString(localeForLanguage(), { day: '2-digit', month: '2-digit', timeZone: 'UTC' }) };
+}
+
 function monthDays(month) {
     const [year, monthNumber] = String(month).split('-').map(Number);
     return new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
 }
 
 function dayLabel(date) {
-    return new Date(`${date}T00:00:00Z`).toLocaleDateString('fr-FR', {
-        weekday: 'short', day: '2-digit', timeZone: 'UTC'
-    });
+    return new Date(`${date}T00:00:00Z`).toLocaleDateString(localeForLanguage(), { weekday: 'short', day: '2-digit', timeZone: 'UTC' });
 }
 
 export const ui = {
@@ -58,22 +63,34 @@ export const ui = {
     },
 
     attendance() {
-        const head = document.querySelector('#attendanceHead');
-        const body = document.querySelector('#attendanceBody');
-        if (!head || !body) return;
+        const mobile = document.querySelector('#attendanceMobileList');
+        const table = document.querySelector('#attendanceTable');
+        const weekDays = document.querySelector('#weekDays');
+        const periods = document.querySelector('#periods');
+        if (!mobile || !weekDays || !periods || !table) return;
 
-        const days = Array.from({ length: monthDays(state.month) }, (_, index) => {
-            const day = String(index + 1).padStart(2, '0');
-            const date = `${state.month}-${day}`;
-            return { date, label: dayLabel(date) };
-        });
+        const weekStart = state.weekStart;
+        const selectedDay = state.selectedDay || dateFromWeek(weekStart, 0);
+        const selectedPeriod = Number(state.selectedPeriod || 1);
+        const days = DAYS.map((shortName, index) => ({
+            shortName,
+            date: dateFromWeek(weekStart, index),
+            label: formatWeekDay(dateFromWeek(weekStart, index)),
+        }));
+
+        weekDays.innerHTML = days.map((day) =>
+            '<button class="week-day-btn ' + (day.date === selectedDay ? 'active' : '') + '" type="button" data-select-day="' + esc(day.date) + '" role="tab" aria-selected="' + (day.date === selectedDay ? 'true' : 'false') + '">'
+            + '<strong>' + esc(day.label.weekday) + '</strong><small>' + esc(day.label.date) + '</small></button>'
+        ).join('');
+
+        periods.innerHTML = PERIODS.map((period, index) =>
+            '<button class="period-btn ' + (index + 1 === selectedPeriod ? 'active' : '') + '" type="button" data-select-period="' + (index + 1) + '"><strong>'
+            + (index + 1) + '</strong><small>' + esc(period) + '</small></button>'
+        ).join('');
+
         const map = new Map(state.attendance.map((row) => [
             attendanceKey(row.student_id, row.attendance_date, Number(row.period)), row.status
         ]));
-
-        head.innerHTML = `<tr><th class="sticky student-col" rowspan="2">Élève</th>${days.map((day) => `<th colspan="8" class="day-group">${esc(day.label)}<small>${esc(day.date)}</small></th>`).join('')}</tr><tr>${days.map(() => PERIODS.map((period) => `<th class="period-head"><span>${esc(period)}</span></th>`).join('')).join('')}</tr>`;
-        body.innerHTML = '';
-
         const search = state.search.trim().toLowerCase();
         const filtered = state.students.filter((student) => {
             const name = displayName(student).toLowerCase();
@@ -83,40 +100,35 @@ export const ui = {
             return true;
         });
 
-        for (const [index, student] of filtered.entries()) {
-            const row = document.createElement('tr');
+        const statusButton = (studentId, status, label, currentStatus) =>
+            '<button class="attendance-status-btn status-' + status + ' ' + (currentStatus === status ? 'selected' : '') + '" type="button" data-attendance-status="' + status + '" data-student="' + esc(studentId) + '" aria-pressed="' + (currentStatus === status ? 'true' : 'false') + '">' + esc(label) + '</button>';
+
+        mobile.innerHTML = filtered.map((student, index) => {
+            const currentStatus = map.get(attendanceKey(student.id, selectedDay, selectedPeriod)) || '';
             const counts = countsForStudent(student.id, state.attendance);
-            const name = document.createElement('th');
-            name.className = 'sticky student-col';
-            name.innerHTML = `<span>${index + 1}. ${esc(displayName(student))}</span><small>${counts.absent} absence(s)</small>`;
-            row.appendChild(name);
+            return '<article class="attendance-student-card">'
+                + '<div class="attendance-student-head"><div><strong>' + (index + 1) + '. ' + esc(displayName(student)) + '</strong><small>' + esc(student.student_number || student.massar_code || t('no_student_number')) + '</small></div><div class="week-counts"><span>A ' + counts.absent + '</span><span>L ' + counts.other + '</span></div></div>'
+                + '<div class="attendance-student-actions">'
+                + statusButton(student.id, 'present', '✓', currentStatus)
+                + statusButton(student.id, 'absent', 'A', currentStatus)
+                + statusButton(student.id, 'late', 'R', currentStatus)
+                + statusButton(student.id, 'excused', 'E', currentStatus)
+                + '<button class="attendance-status-btn status-clear" type="button" data-attendance-status="" data-student="' + esc(student.id) + '" aria-label="' + esc(t('clear')) + '">×</button>'
+                + '</div></article>';
+        }).join('');
 
-            for (const day of days) {
-                for (let period = 1; period <= 8; period += 1) {
-                    const cell = document.createElement('td');
-                    const status = map.get(attendanceKey(student.id, day.date, period)) || '';
-                    cell.className = `attendance-cell ${status}`;
-                    cell.dataset.student = String(student.id);
-                    cell.dataset.date = day.date;
-                    cell.dataset.period = String(period);
-                    cell.dataset.status = status;
-                    cell.textContent = status === 'present' ? '✓' : status === 'absent' ? '✕' : status === 'late' ? 'L' : status === 'excused' ? 'E' : '·';
-                    cell.title = `${displayName(student)} · ${day.date} · ${PERIODS[period - 1]} · ${status || 'non marqué'}`;
-                    row.appendChild(cell);
-                }
-            }
-            body.appendChild(row);
-        }
+        if (!filtered.length) mobile.innerHTML = '<div class="empty-state">' + esc(t('no_students_filter')) + '</div>';
 
-        if (!filtered.length) {
-            const tr = document.createElement('tr');
-            const td = document.createElement('td');
-            td.colSpan = 1 + days.length * 8;
-            td.className = 'empty-state';
-            td.textContent = 'Aucun élève ne correspond aux filtres.';
-            tr.appendChild(td);
-            body.appendChild(tr);
-        }
+        const head = table.querySelector('thead');
+        const body = table.querySelector('tbody');
+        head.innerHTML = '<tr><th class="sticky student-col">#</th><th class="sticky second-student-col">' + esc(t('student')) + '</th><th>' + esc(t('current_period')) + '</th><th>' + esc(t('week_absences')) + '</th><th>' + esc(t('week_late')) + '</th><th>' + esc(t('week_excused')) + '</th></tr>';
+        body.innerHTML = filtered.map((student, index) => {
+            const currentStatus = map.get(attendanceKey(student.id, selectedDay, selectedPeriod)) || '';
+            const counts = countsForStudent(student.id, state.attendance);
+            return '<tr><td class="sticky student-col">' + (index + 1) + '</td><td class="sticky second-student-col"><strong>' + esc(displayName(student)) + '</strong><small>' + esc(student.student_number || student.massar_code || t('no_student_number')) + '</small></td><td>'
+                + '<div class="desktop-status-buttons">' + statusButton(student.id, 'present', '✓', currentStatus) + statusButton(student.id, 'absent', 'A', currentStatus) + statusButton(student.id, 'late', 'R', currentStatus) + statusButton(student.id, 'excused', 'E', currentStatus) + statusButton(student.id, '', '×', currentStatus) + '</div>'
+                + '</td><td>' + counts.absent + '</td><td>' + counts.other + '</td><td>' + counts.other + '</td></tr>';
+        }).join('');
         this.stats();
     },
 
