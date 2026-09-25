@@ -89,12 +89,13 @@ test.describe('authenticated SAMS smoke', () => {
     });
 
     await login(page, username, password);
-    await expect(page.locator('.attendance-cell').first()).toBeVisible();
-
-    await page.evaluate(() => {
-      const cells = [...document.querySelectorAll('.attendance-cell')].slice(0, 3);
-      cells.forEach((cell) => cell.click());
-    });
+    await expect(page.locator('#attendanceMobileList .attendance-student-card').first()).toBeVisible();
+    await page.locator('#periods [data-select-period="1"]').click();
+    const statusButtons = page.locator('#attendanceMobileList [data-attendance-status="present"]');
+    await expect(statusButtons).toHaveCount(4);
+    await statusButtons.nth(0).click();
+    await statusButtons.nth(1).click();
+    await statusButtons.nth(2).click();
 
     await page.waitForTimeout(800);
 
@@ -109,8 +110,28 @@ test.describe('authenticated SAMS smoke', () => {
 
     await login(page, teacherUsername, teacherPassword);
     await expect(page.locator('#attendanceBody')).toBeVisible();
-    await expect(page.locator('#classSelect option:not([disabled])')).toHaveCount(1);
+    await expect(page.locator('#weekDays .week-day-btn')).toHaveCount(6);
+    await expect(page.locator('#periods .period-btn')).toHaveCount(8);
+    await expect(page.locator('#attendanceMobileList .attendance-student-card')).toHaveCount(4);
     await expect(page.locator('.tab[data-tab="admin"]')).toHaveCount(0);
+    await expect(page.locator('.tab[data-tab="archive"]')).toHaveCount(0);
+  });
+
+  test('teacher weekly attendance is touch-friendly and weekly print is populated', async ({ page }) => {
+    test.skip(!teacherUsername || !teacherPassword, 'Set teacher E2E credentials to run teacher isolation tests.');
+
+    await login(page, teacherUsername, teacherPassword);
+
+    await expect(page.locator('#weekDays .week-day-btn')).toHaveCount(6);
+    await expect(page.locator('#periods .period-btn')).toHaveCount(8);
+    await expect(page.locator('#attendanceMobileList .attendance-student-card')).toHaveCount(3);
+
+    await page.evaluate(() => {
+      window.print = () => {};
+    });
+    await page.locator('#reportBtn').click();
+    await expect(page.locator('#weeklyPrintSheet')).toContainText('Weekly attendance sheet');
+    await expect(page.locator('#weeklyPrintSheet .print-attendance-table tbody tr')).toHaveCount(3);
   });
 
   test('admin can complete a CSV import after correcting staged data', async ({ page }) => {
