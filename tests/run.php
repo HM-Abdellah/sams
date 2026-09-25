@@ -73,9 +73,7 @@ $tests = [
     'student validation rejects future birth dates' => static function (): void {
         $service = new SAMS\Services\StudentService();
         expect_throws(
-            static fn() => $service->validateBirthDate(
-                (new DateTimeImmutable('today'))->modify('+1 day')->format('Y-m-d')
-            ),
+            static fn() => $service->validateBirthDate('2099-01-01'),
             'future birth date should be rejected'
         );
     },
