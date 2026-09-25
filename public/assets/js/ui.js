@@ -198,7 +198,7 @@ export const ui = {
         const auditTable = document.querySelector('#dashboardAuditTable');
         if (auditTable) {
             const audit = Array.isArray(data.recent_audit) ? data.recent_audit : [];
-            auditTable.querySelector('thead').innerHTML = '<tr><th>' + esc(t('dashboard_as_of')) + '</th><th>' + esc(t('activity')) + '</th><th>' + esc(t('user')) + '</th><th>' + esc(t('entity')) + '</th></tr>';
+            auditTable.querySelector('thead').innerHTML = '<tr><th>' + esc(t('date')) + '</th><th>' + esc(t('activity')) + '</th><th>' + esc(t('user')) + '</th><th>' + esc(t('entity')) + '</th></tr>';
             auditTable.querySelector('tbody').innerHTML = audit.map((row) => '<tr><td>' + esc(row.created_at || '—') + '</td><td>' + esc(row.action || '—') + '</td><td>' + esc(row.full_name || row.username || '—') + '</td><td>' + esc(row.entity_type || '—') + ' #' + esc(row.entity_id ?? '—') + '</td></tr>').join('') || '<tr><td colspan="4" class="empty-state">' + esc(t('no_alerts')) + '</td></tr>';
         }
     },
