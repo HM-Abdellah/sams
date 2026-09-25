@@ -1,3 +1,13 @@
+function localDateString() {
+  const now = new Date();
+  const pad = (value) => String(value).padStart(2, '0');
+  return now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate());
+}
+
+function localMonthString() {
+  return localDateString().slice(0, 7);
+}
+
 export const state = {
   user: null,
   csrf: '',
@@ -16,7 +26,7 @@ export const state = {
   auditItems: [],
   archive: null,
   classId: null,
-  month: new Date().toISOString().slice(0, 7),
+  month: localMonthString(),
   weekStart: '',
   selectedDay: '',
   selectedPeriod: 1,
@@ -50,7 +60,7 @@ export function resetState() {
     auditItems: [],
     archive: null,
     classId: null,
-    month: new Date().toISOString().slice(0, 7),
+    month: localMonthString(),
     weekStart: '',
     selectedDay: '',
     selectedPeriod: 1,
