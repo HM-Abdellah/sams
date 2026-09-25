@@ -26,7 +26,7 @@ export function setupSignature({ canvas, clearButton, saveButton }) {
         dirty = false;
         try {
             await API.saveSignature(state.classId, canvas.toDataURL('image/png'));
-            ui.toast('Signature enregistrée.');
+            ui.toast(t('signature_saved'));
         } catch (error) {
             dirty = true;
             ui.toast(error.message || t('signature_save_error'), true);
@@ -74,7 +74,7 @@ export function setupSignature({ canvas, clearButton, saveButton }) {
         try {
             await API.deleteSignature(state.classId);
             dirty = false;
-            ui.toast('Signature effacée.');
+            ui.toast(t('signature_cleared'));
         } catch (error) {
             ui.toast(error.message || t('signature_clear_error'), true);
         }
