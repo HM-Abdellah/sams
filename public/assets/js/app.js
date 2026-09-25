@@ -538,6 +538,7 @@ function invalidateLocalSignoffs(entries) {
                 ...current,
                 period_signoffs: periodRows,
                 weekly_signatures: weekRows,
+                submission: null,
             },
         });
     }
@@ -737,7 +738,6 @@ function buildWeeklyPrintSheet() {
         String(row.attendance_date) + '|' + Number(row.period), row
     ]));
     const weeklyRows = Array.isArray(state.attendanceSignoffs?.weekly_signatures) ? state.attendanceSignoffs.weekly_signatures : [];
-    const teacherName = state.user?.role === 'teacher' ? String(state.user.full_name || '') : '';
 
     const dayHeaders = DAYS.map((_, dayIndex) => {
         const date = dateFromWeek(start, dayIndex);
@@ -784,17 +784,22 @@ function buildWeeklyPrintSheet() {
         return '<tr><th>' + period + '</th>' + cells + '</tr>';
     }).join('');
 
-    const weeklyTeacherRows = weeklyRows.map((row) =>
-        '<tr><td>' + esc(row.teacher_name || '') + '</td><td>' + esc(row.status === 'signed' ? t('week_signed') : t('week_needs_resign')) + '</td><td>' + esc(row.signed_at || '') + '</td><td>'
-        + (row.signature_data ? '<img class="print-signature-image" src="' + esc(row.signature_data) + '" alt="' + esc(t('teacher_signature')) + '">' : '')
-        + '</td></tr>'
-    ).join('');
     const teachers = Array.isArray(state.attendanceSignoffs?.teachers) ? state.attendanceSignoffs.teachers : [];
+    const teacherById = new Map(teachers.map((teacher) => [Number(teacher.id), teacher]));
+    const weeklyTeacherRows = weeklyRows.map((row) => {
+        const teacher = teacherById.get(Number(row.teacher_id));
+        const subjects = Array.isArray(teacher?.subjects)
+            ? teacher.subjects.map(subjectLabel).filter(Boolean).join(', ')
+            : '';
+        return '<tr><td>' + esc(teacher?.full_name || row.teacher_name || '') + '</td><td>' + esc(subjects || '—') + '</td><td>'
+            + esc(row.status === 'signed' ? t('week_signed') : t('week_needs_resign')) + '</td><td>' + esc(row.signed_at || '') + '</td><td>'
+            + (row.signature_data ? '<img class="print-signature-image" src="' + esc(row.signature_data) + '" alt="' + esc(t('teacher_signature')) + '">' : '________________')
+            + '</td></tr>';
+    }).join('');
     const missingWeekly = teachers.filter((teacher) => !weeklyRows.some((row) => Number(row.teacher_id) === Number(teacher.id)));
     const submission = state.attendanceSignoffs?.submission || null;
-    const printTeachers = Array.isArray(state.attendanceSignoffs?.teachers) ? state.attendanceSignoffs.teachers : [];
     const printWeeklyMap = new Map(weeklyRows.map((row) => [Number(row.teacher_id), row]));
-    const readyForPrint = printTeachers.length > 0 && printTeachers.every((teacher) => printWeeklyMap.get(Number(teacher.id))?.status === 'signed');
+    const readyForPrint = teachers.length > 0 && teachers.every((teacher) => printWeeklyMap.get(Number(teacher.id))?.status === 'signed');
     const receiptHtml = submission
         ? '<div class="print-receipt"><strong>' + esc(t('register_received')) + '</strong><span>' + esc(t('received_by')) + ': ' + esc(submission.received_by_name || '—') + ' · ' + esc(submission.received_at || '') + '</span></div>'
         : readyForPrint ? '<div class="print-receipt"><strong>' + esc(t('register_ready')) + '</strong></div>' : '';
@@ -805,16 +810,15 @@ function buildWeeklyPrintSheet() {
         + '<div><strong>' + esc(t('branch')) + ':</strong> ' + esc(currentClass.branch || '—') + '</div>'
         + '<div><strong>' + esc(t('level')) + ':</strong> ' + esc(currentClass.level || '—') + '</div>'
         + '<div><strong>' + esc(t('academic_year')) + ':</strong> ' + esc(currentClass.academic_year_name || '—') + '</div>'
-        + '<div><strong>' + esc(t('week')) + ':</strong> ' + esc(start) + ' → ' + esc(end) + '</div>'
-        + '<div><strong>' + esc(t('teacher')) + ':</strong> ' + esc(teacherName || '________________') + '</div></div></div>'
+        + '<div><strong>' + esc(t('week')) + ':</strong> ' + esc(start) + ' → ' + esc(end) + '</div></div></div>'
         + '<table class="print-attendance-table"><thead><tr><th rowspan="2">#</th><th rowspan="2">' + esc(t('student')) + '</th><th rowspan="2">' + esc(t('student_number_short')) + '</th>' + dayHeaders + '<th rowspan="2">' + esc(t('absence_short')) + '</th></tr></thead><tbody>' + rows + '</tbody></table>'
         + '<div class="print-legend"><span><strong>X</strong> ' + esc(t('absent_mark')) + '</span><span><strong>□</strong> ' + esc(t('present_blank')) + '</span><span><strong>·</strong> ' + esc(t('not_certified')) + '</span></div>' + receiptHtml
         + '<h2 class="print-section-title">' + esc(t('lesson_signoffs')) + '</h2>'
         + '<table class="print-signoff-table"><thead><tr><th>' + esc(t('period')) + '</th>' + signoffDayHeaders + '</tr></thead><tbody>' + signoffRowsHtml + '</tbody></table>'
         + '<h2 class="print-section-title">' + esc(t('weekly_certification')) + '</h2>'
-        + '<table class="print-weekly-signatures"><thead><tr><th>' + esc(t('teacher')) + '</th><th>' + esc(t('status')) + '</th><th>' + esc(t('date')) + '</th><th>' + esc(t('signature')) + '</th></tr></thead><tbody>'
+        + '<table class="print-weekly-signatures"><thead><tr><th>' + esc(t('teacher')) + '</th><th>' + esc(t('subject')) + '</th><th>' + esc(t('status')) + '</th><th>' + esc(t('date')) + '</th><th>' + esc(t('signature')) + '</th></tr></thead><tbody>'
         + weeklyTeacherRows
-        + missingWeekly.map((teacher) => '<tr><td>' + esc(teacher.full_name) + '</td><td>' + esc(t('week_pending')) + '</td><td></td><td></td></tr>').join('')
+        + missingWeekly.map((teacher) => '<tr><td>' + esc(teacher.full_name) + '</td><td>' + esc(Array.isArray(teacher.subjects) ? teacher.subjects.map(subjectLabel).filter(Boolean).join(', ') : '' || '—') + '</td><td>' + esc(t('week_pending')) + '</td><td></td><td>________________</td></tr>').join('')
         + '</tbody></table>';
 }
 
