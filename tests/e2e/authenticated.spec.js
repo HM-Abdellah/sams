@@ -190,8 +190,9 @@ test.describe('authenticated SAMS smoke', () => {
     await page.locator('#teachingClassId').selectOption({ label: /E2E-2BAC-B/ });
     await page.locator('#teachingForm button[type="submit"]').click();
 
-    await expect(page.locator('#teachersList .teacher-card').filter({ hasText: 'E2E Teacher' })).toContainText('E2E-2BAC-B');
-    await expect(page.locator('#teachersList .teacher-card').filter({ hasText: 'E2E Teacher' })).toContainText('E2E-2BAC-B');
+    const teacherCardAfterAssignment = page.locator('#teachersList .teacher-card').filter({ hasText: 'E2E Teacher' }).first();
+    await expect(teacherCardAfterAssignment.locator('.teaching-chip')).toHaveCount(2);
+    await expect(teacherCardAfterAssignment).toContainText('E2E-2BAC-B');
   });
 
   test('admin dashboard separates school, branch and class statistics and supports languages', async ({ page }) => {
