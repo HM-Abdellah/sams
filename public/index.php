@@ -117,7 +117,7 @@ $csrf = Csrf::token();
     <section class="admin-dashboard">
             <div class="panel-head">
                 <div>
-                    <h1 data-i18n="school_dashboard">لوحة قيادة المدرسة</h1>
+                    <h1 data-i18n="school_dashboard">Tableau de bord de l’établissement</h1>
                     <p><span data-i18n="dashboard_as_of">الوضع الحالي لليوم</span> <strong id="dashboardDate">—</strong></p>
                 </div>
                 <button class="btn primary" id="refreshDashboardBtn" type="button" data-i18n="refresh">Actualiser</button>
