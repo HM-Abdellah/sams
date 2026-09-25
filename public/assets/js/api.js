@@ -25,6 +25,7 @@ export const API = Object.freeze({
     logout: () => request('auth.php?action=logout', { method:'POST' }),
 
     classes: () => request('classes.php'),
+    adminClasses: () => request('classes.php?scope=all'),
     createClass: (data) => request('classes.php', { method:'POST', body:JSON.stringify(data) }),
     updateClass: (id, data) => request('classes.php', { method:'POST', body:JSON.stringify({action:'update', id, ...data}) }),
     setClassActive: (id, active) => request('classes.php', { method:'POST', body:JSON.stringify({action:active ? 'activate' : 'deactivate', id}) }),
