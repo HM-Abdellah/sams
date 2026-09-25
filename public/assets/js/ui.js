@@ -128,7 +128,7 @@ export const ui = {
         for (const student of state.students) {
             const item = document.createElement('article');
             item.className = 'student-card';
-            item.innerHTML = `<div><strong>${esc(displayName(student))}</strong><small>${esc(student.student_number || 'Sans numéro')}</small></div><button class="btn danger small" data-delete-student="${student.id}" type="button">Désactiver</button>`;
+            item.innerHTML = `<div><strong>${esc(displayName(student))}</strong><small>${esc(student.massar_code || 'Sans Massar')} · ${esc(student.student_number || 'Sans numéro')}</small></div><div class="dialog-actions"><button class="btn small" data-edit-student="${student.id}" type="button">Modifier</button><button class="btn danger small" data-delete-student="${student.id}" type="button">Désactiver</button></div>`;
             box.appendChild(item);
         }
     },
