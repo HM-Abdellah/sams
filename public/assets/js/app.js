@@ -791,6 +791,13 @@ function buildWeeklyPrintSheet() {
     ).join('');
     const teachers = Array.isArray(state.attendanceSignoffs?.teachers) ? state.attendanceSignoffs.teachers : [];
     const missingWeekly = teachers.filter((teacher) => !weeklyRows.some((row) => Number(row.teacher_id) === Number(teacher.id)));
+    const submission = state.attendanceSignoffs?.submission || null;
+    const printTeachers = Array.isArray(state.attendanceSignoffs?.teachers) ? state.attendanceSignoffs.teachers : [];
+    const printWeeklyMap = new Map(weeklyRows.map((row) => [Number(row.teacher_id), row]));
+    const readyForPrint = printTeachers.length > 0 && printTeachers.every((teacher) => printWeeklyMap.get(Number(teacher.id))?.status === 'signed');
+    const receiptHtml = submission
+        ? '<div class="print-receipt"><strong>' + esc(t('register_received')) + '</strong><span>' + esc(t('received_by')) + ': ' + esc(submission.received_by_name || '—') + ' · ' + esc(submission.received_at || '') + '</span></div>'
+        : readyForPrint ? '<div class="print-receipt"><strong>' + esc(t('register_ready')) + '</strong></div>' : '';
 
     sheet.innerHTML =
         '<div class="print-header"><div><h1>' + esc(t('official_weekly_register')) + '</h1><p>' + esc(t('official_school_record')) + '</p></div>'
@@ -801,7 +808,7 @@ function buildWeeklyPrintSheet() {
         + '<div><strong>' + esc(t('week')) + ':</strong> ' + esc(start) + ' → ' + esc(end) + '</div>'
         + '<div><strong>' + esc(t('teacher')) + ':</strong> ' + esc(teacherName || '________________') + '</div></div></div>'
         + '<table class="print-attendance-table"><thead><tr><th rowspan="2">#</th><th rowspan="2">' + esc(t('student')) + '</th><th rowspan="2">' + esc(t('student_number_short')) + '</th>' + dayHeaders + '<th rowspan="2">' + esc(t('absence_short')) + '</th></tr></thead><tbody>' + rows + '</tbody></table>'
-        + '<div class="print-legend"><span><strong>X</strong> ' + esc(t('absent_mark')) + '</span><span><strong>□</strong> ' + esc(t('present_blank')) + '</span><span><strong>·</strong> ' + esc(t('not_certified')) + '</span></div>'
+        + '<div class="print-legend"><span><strong>X</strong> ' + esc(t('absent_mark')) + '</span><span><strong>□</strong> ' + esc(t('present_blank')) + '</span><span><strong>·</strong> ' + esc(t('not_certified')) + '</span></div>' + receiptHtml
         + '<h2 class="print-section-title">' + esc(t('lesson_signoffs')) + '</h2>'
         + '<table class="print-signoff-table"><thead><tr><th>' + esc(t('period')) + '</th>' + signoffDayHeaders + '</tr></thead><tbody>' + signoffRowsHtml + '</tbody></table>'
         + '<h2 class="print-section-title">' + esc(t('weekly_certification')) + '</h2>'
