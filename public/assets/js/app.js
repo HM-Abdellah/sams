@@ -5,6 +5,10 @@ import { setupSignature } from './signature.js';
 
 let loading = false;
 let clickTimer = null;
+let attendanceFlushTimer = null;
+let attendanceFlushPromise = null;
+let attendanceVersion = 0;
+const pendingAttendance = new Map();
 
 function currentMonth() {
     return state.month || new Date().toISOString().slice(0, 7);
@@ -12,6 +16,7 @@ function currentMonth() {
 
 async function loadClass() {
     if (!state.classId) return;
+    await flushAttendanceQueue();
     try {
         ui.setLoading?.(true);
         const [students, attendance] = await Promise.all([
@@ -178,20 +183,133 @@ async function loadArchive(view = 'days') {
     }
 }
 
-async function saveCell(td, status) {
+function attendanceEntryKey(payload) {
+    return String(payload.student_id) + '|' + payload.attendance_date + '|' + payload.period;
+}
+
+function localAttendanceStatus(payload) {
+    const row = state.attendance.find((item) =>
+        Number(item.student_id) === payload.student_id
+        && String(item.attendance_date) === payload.attendance_date
+        && Number(item.period) === payload.period
+    );
+    return row?.status || '';
+}
+
+function setLocalAttendanceStatus(payload, status) {
+    const index = state.attendance.findIndex((item) =>
+        Number(item.student_id) === payload.student_id
+        && String(item.attendance_date) === payload.attendance_date
+        && Number(item.period) === payload.period
+    );
+
+    if (status === '') {
+        if (index >= 0) state.attendance.splice(index, 1);
+        return;
+    }
+
+    if (index >= 0) {
+        state.attendance[index].status = status;
+        return;
+    }
+
+    state.attendance.push({
+        id: null,
+        student_id: payload.student_id,
+        attendance_date: payload.attendance_date,
+        period: payload.period,
+        status,
+    });
+}
+
+function paintAttendanceCell(td, status) {
+    if (!td) return;
+    td.className = ['attendance-cell', status].filter(Boolean).join(' ');
+    td.dataset.status = status;
+    td.textContent = status === 'present' ? '✓'
+        : status === 'absent' ? '✕'
+        : status === 'late' ? 'L'
+        : status === 'excused' ? 'E'
+        : '·';
+}
+
+function scheduleAttendanceFlush() {
+    clearTimeout(attendanceFlushTimer);
+    attendanceFlushTimer = setTimeout(() => {
+        flushAttendanceQueue();
+    }, 500);
+}
+
+function queueAttendanceChange(td, status) {
     if (!state.classId || !td) return;
+
     const payload = {
         student_id: Number(td.dataset.student),
         attendance_date: td.dataset.date,
         period: Number(td.dataset.period),
     };
-    try {
-        if (status === '') await API.deleteAttendance(state.classId, payload);
-        else await API.setAttendance(state.classId, { ...payload, status });
-        await loadClass();
-    } catch (error) {
-        ui.toast(error.message || 'Échec de sauvegarde.', true);
-    }
+    const key = attendanceEntryKey(payload);
+    const currentStatus = localAttendanceStatus(payload);
+    const pending = pendingAttendance.get(key);
+
+    pendingAttendance.set(key, {
+        ...payload,
+        action: status === '' ? 'delete' : 'upsert',
+        status: status || null,
+        previousStatus: pending?.previousStatus ?? currentStatus,
+        version: ++attendanceVersion,
+    });
+
+    setLocalAttendanceStatus(payload, status);
+    paintAttendanceCell(td, status);
+    ui.stats();
+    ui.statistics();
+    scheduleAttendanceFlush();
+}
+
+async function flushAttendanceQueue() {
+    if (!state.classId || pendingAttendance.size === 0) return true;
+    if (attendanceFlushPromise) return attendanceFlushPromise;
+
+    attendanceFlushPromise = (async () => {
+        try {
+            while (pendingAttendance.size > 0) {
+                const batch = [...pendingAttendance.entries()].slice(0, 500);
+                for (const [key] of batch) pendingAttendance.delete(key);
+
+                const entries = batch.map(([, entry]) => ({
+                    student_id: entry.student_id,
+                    attendance_date: entry.attendance_date,
+                    period: entry.period,
+                    action: entry.action,
+                    ...(entry.action === 'upsert' ? { status: entry.status } : {}),
+                }));
+
+                try {
+                    await API.bulkAttendance(state.classId, entries);
+                } catch (error) {
+                    for (const [key, entry] of batch) {
+                        const current = pendingAttendance.get(key);
+                        if (current && current.version !== entry.version) continue;
+
+                        setLocalAttendanceStatus(entry, entry.previousStatus || '');
+                    }
+
+                    ui.attendance();
+                    ui.stats();
+                    ui.statistics();
+                    ui.toast(error.message || 'Échec de sauvegarde.', true);
+                    return false;
+                }
+            }
+
+            return true;
+        } finally {
+            attendanceFlushPromise = null;
+        }
+    })();
+
+    return attendanceFlushPromise;
 }
 
 function nextStatus(current) {
@@ -230,6 +348,7 @@ function wire() {
     document.querySelector('#reloadBtn')?.addEventListener('click', loadClass);
     document.querySelector('#logoutBtn')?.addEventListener('click', async () => {
         try {
+            if (!await flushAttendanceQueue()) return;
             await API.logout();
             window.location.href = 'login.php';
         } catch (error) {
@@ -244,6 +363,7 @@ function wire() {
     if (localStorage.getItem('sams-theme') === 'light') document.body.classList.add('light');
 
     document.querySelector('#classSelect')?.addEventListener('change', async (event) => {
+        if (!await flushAttendanceQueue()) return;
         setState({ classId: Number(event.target.value) });
         await loadClass();
         if (state.user?.role === 'admin') await loadAdmin();
@@ -282,20 +402,20 @@ function wire() {
         const td = event.target.closest('.attendance-cell');
         if (!td) return;
         clearTimeout(clickTimer);
-        clickTimer = setTimeout(() => saveCell(td, nextStatus(td.dataset.status || '')), 220);
+        clickTimer = setTimeout(() => queueAttendanceChange(td, nextStatus(td.dataset.status || '')), 220);
     });
     attendanceBody?.addEventListener('dblclick', (event) => {
         const td = event.target.closest('.attendance-cell');
         if (!td) return;
         clearTimeout(clickTimer);
-        saveCell(td, 'absent');
+        queueAttendanceChange(td, 'absent');
     });
     attendanceBody?.addEventListener('contextmenu', (event) => {
         const td = event.target.closest('.attendance-cell');
         if (!td) return;
         event.preventDefault();
         clearTimeout(clickTimer);
-        saveCell(td, '');
+        queueAttendanceChange(td, '');
     });
 
     document.querySelectorAll('[data-close-dialog]').forEach((button) => button.addEventListener('click', () => {
