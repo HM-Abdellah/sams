@@ -68,7 +68,7 @@ try {
         Response::success([
             'week_start' => $weekStart,
             'week_end' => $weekEnd,
-            'teachers' => $signoffs->teachersForClass($classId),
+            'teachers' => $teachers,
             'period_signoffs' => $signoffs->forWeek($classId, $weekStart, $weekEnd),
             'weekly_signatures' => $signoffs->weekSignatures($classId, $weekStart),
             'submission' => $signoffs->findSubmission($classId, $weekStart),
