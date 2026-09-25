@@ -14,20 +14,22 @@ use SAMS\Repositories\ClassRepository;
 use SAMS\Services\ClassService;
 
 try {
-    $admin = Auth::requireRole('admin');
+    $user = Auth::requireLogin();
     $repo = new ClassRepository();
     $audit = new AuditLogRepository();
     $method = sams_method();
 
     if ($method === 'GET') {
         Response::success([
-            'classes' => $repo->forUser((int)$admin['id'], 'admin')
+            'classes' => $repo->forUser((int)$user['id'], (string)$user['role'])
         ]);
     }
 
     if ($method !== 'POST') {
         Response::error('Method not allowed.', 405);
     }
+
+    Auth::requireRole('admin');
 
     if (!Csrf::verify((string)($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''))) {
         Response::error('Invalid CSRF token.', 419);
@@ -64,7 +66,7 @@ try {
         try {
             $id = $repo->create($yearId, $name, $level, $branch);
             $audit->record(
-                (int)$admin['id'],
+                (int)$user['id'],
                 'class.create',
                 'class',
                 $id,
