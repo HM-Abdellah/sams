@@ -44,7 +44,9 @@ try {
     );
 
     Response::success($result);
-} catch (Throwable $e) {
+} catch (\InvalidArgumentException $e) {
+    Response::error($e->getMessage(), 422);
+} catch (\Throwable $e) {
     error_log('[SAMS audit] ' . $e->getMessage());
     Response::error('Server error.', 500);
 }
