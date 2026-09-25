@@ -557,6 +557,90 @@ async function flushAttendanceQueue() {
     return attendanceFlushPromise;
 }
 
+function queueAttendanceStatus(studentId, status) {
+    const date = state.selectedDay || state.weekStart;
+    const period = Number(state.selectedPeriod || 1);
+    if (!state.classId || !date || !studentId) return;
+    const payload = { student_id: Number(studentId), attendance_date: date, period };
+    const key = attendanceEntryKey(payload);
+    const currentStatus = localAttendanceStatus(payload);
+    const pending = pendingAttendance.get(key);
+    pendingAttendance.set(key, {
+        ...payload,
+        action: status === '' ? 'delete' : 'upsert',
+        status: status || null,
+        previousStatus: pending?.previousStatus ?? currentStatus,
+        version: ++attendanceVersion,
+    });
+    setLocalAttendanceStatus(payload, status);
+    ui.attendance();
+    ui.stats();
+    ui.statistics();
+    scheduleAttendanceFlush();
+}
+
+function shiftWeek(delta) {
+    const start = new Date(state.weekStart + 'T00:00:00Z');
+    start.setUTCDate(start.getUTCDate() + delta * 7);
+    const next = start.toISOString().slice(0, 10);
+    setState({ weekStart: next, selectedDay: next });
+    const input = document.querySelector('#weekStart');
+    if (input) input.value = next;
+    loadClass();
+}
+
+function stateLanguageLocale() {
+    const lang = document.documentElement.lang || 'fr';
+    return lang === 'ar' ? 'ar-MA' : lang === 'en' ? 'en-GB' : 'fr-FR';
+}
+
+function buildWeeklyPrintSheet() {
+    const sheet = document.querySelector('#weeklyPrintSheet');
+    if (!sheet || !state.weekStart) return;
+    const currentClass = state.classes.find((item) => Number(item.id) === Number(state.classId)) || {};
+    const start = state.weekStart;
+    const end = dateFromWeek(start, 5);
+    const map = new Map(state.attendance.map((row) => [attendanceKey(row.student_id, row.attendance_date, Number(row.period)), row.status]));
+    const mark = (status) => ({ present:'P', absent:'A', late:'R', excused:'E' }[status] || '·');
+    const dayHeaders = DAYS.map((_, dayIndex) => {
+        const date = dateFromWeek(start, dayIndex);
+        const value = new Date(date + 'T00:00:00Z');
+        const label = value.toLocaleDateString(stateLanguageLocale(), { weekday:'short', day:'2-digit', month:'2-digit', timeZone:'UTC' });
+        return '<th class="print-day" colspan="8"><strong>' + esc(label) + '</strong><small>1 · 2 · 3 · 4 · 5 · 6 · 7 · 8</small></th>';
+    }).join('');
+    const rows = state.students.map((student, index) => {
+        let absent = 0; let late = 0; let excused = 0;
+        const dayCells = DAYS.map((_, dayIndex) => {
+            const date = dateFromWeek(start, dayIndex);
+            const marks = PERIODS.map((_, periodIndex) => {
+                const status = map.get(attendanceKey(student.id, date, periodIndex + 1)) || '';
+                if (status === 'absent') absent += 1;
+                if (status === 'late') late += 1;
+                if (status === 'excused') excused += 1;
+                return '<span>' + mark(status) + '</span>';
+            }).join('');
+            return '<td class="print-day-cell">' + marks + '</td>';
+        }).join('');
+        return '<tr><td>' + (index + 1) + '</td><td class="print-name">' + esc(displayName(student)) + '</td><td>' + esc(student.student_number || '') + '</td>' + dayCells + '<td>' + absent + '</td><td>' + late + '</td><td>' + excused + '</td></tr>';
+    }).join('');
+    sheet.innerHTML = '<div class="print-header"><div><h1>' + esc(t('weekly_attendance')) + '</h1><p>' + esc(t('official_school_record')) + '</p></div>'
+        + '<div class="print-meta"><div><strong>' + esc(t('class')) + ':</strong> ' + esc(currentClass.name || '—') + '</div>'
+        + '<div><strong>' + esc(t('branch')) + ':</strong> ' + esc(currentClass.branch || '—') + '</div>'
+        + '<div><strong>' + esc(t('level')) + ':</strong> ' + esc(currentClass.level || '—') + '</div>'
+        + '<div><strong>' + esc(t('academic_year')) + ':</strong> ' + esc(currentClass.academic_year_name || '—') + '</div>'
+        + '<div><strong>' + esc(t('week')) + ':</strong> ' + esc(start) + ' → ' + esc(end) + '</div></div></div>'
+        + '<table class="print-attendance-table"><thead><tr><th rowspan="2">#</th><th rowspan="2">' + esc(t('student')) + '</th><th rowspan="2">' + esc(t('student_number_short')) + '</th>' + dayHeaders
+        + '<th rowspan="2">' + esc(t('absence_short')) + '</th><th rowspan="2">' + esc(t('late_short')) + '</th><th rowspan="2">' + esc(t('excused_short')) + '</th></tr></thead><tbody>' + rows + '</tbody></table>'
+        + '<div class="print-legend"><span><strong>P</strong> ' + esc(t('present')) + '</span><span><strong>A</strong> ' + esc(t('absent')) + '</span><span><strong>R</strong> ' + esc(t('late')) + '</span><span><strong>E</strong> ' + esc(t('excused')) + '</span><span>· ' + esc(t('not_marked')) + '</span></div>'
+        + '<div class="print-signatures"><div>' + esc(t('teacher_signature')) + '<span></span></div><div>' + esc(t('administration_signature')) + '<span></span></div></div>';
+}
+
+async function printWeeklyAttendance() {
+    if (!state.classId) return ui.toast(t('select_class'), true);
+    if (!await flushAttendanceQueue()) return;
+    buildWeeklyPrintSheet();
+    window.print();
+}
 function nextStatus(current) {
     const order = ['', 'present', 'absent', 'late', 'excused'];
     const index = Math.max(0, order.indexOf(current));
@@ -752,25 +836,38 @@ function wire() {
         }
     });
 
-    const attendanceBody = document.querySelector('#attendanceBody');
-    attendanceBody?.addEventListener('click', (event) => {
-        const td = event.target.closest('.attendance-cell');
-        if (!td) return;
-        clearTimeout(clickTimer);
-        clickTimer = setTimeout(() => queueAttendanceChange(td, nextStatus(td.dataset.status || '')), 220);
+    const handleAttendanceAction = (event) => {
+        const button = event.target.closest('[data-attendance-status]');
+        if (!button) return;
+        queueAttendanceStatus(Number(button.dataset.student), button.dataset.attendanceStatus || '');
+    };
+
+    document.querySelector('#attendanceMobileList')?.addEventListener('click', handleAttendanceAction);
+    document.querySelector('#attendanceBody')?.addEventListener('click', handleAttendanceAction);
+
+    document.querySelector('#weekDays')?.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-select-day]');
+        if (!button) return;
+        setState({ selectedDay: button.dataset.selectDay });
+        ui.attendance();
     });
-    attendanceBody?.addEventListener('dblclick', (event) => {
-        const td = event.target.closest('.attendance-cell');
-        if (!td) return;
-        clearTimeout(clickTimer);
-        queueAttendanceChange(td, 'absent');
+
+    document.querySelector('#periods')?.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-select-period]');
+        if (!button) return;
+        setState({ selectedPeriod: Number(button.dataset.selectPeriod) });
+        ui.attendance();
     });
-    attendanceBody?.addEventListener('contextmenu', (event) => {
-        const td = event.target.closest('.attendance-cell');
-        if (!td) return;
-        event.preventDefault();
-        clearTimeout(clickTimer);
-        queueAttendanceChange(td, '');
+
+    document.querySelector('#prevWeekBtn')?.addEventListener('click', () => shiftWeek(-1));
+    document.querySelector('#nextWeekBtn')?.addEventListener('click', () => shiftWeek(1));
+    document.querySelector('#weekStart')?.addEventListener('change', () => {
+        const value = document.querySelector('#weekStart')?.value || '';
+        if (!value) return;
+        const normalized = startOfWeek(value);
+        setState({ weekStart: normalized, selectedDay: normalized });
+        document.querySelector('#weekStart').value = normalized;
+        loadClass();
     });
 
     document.querySelectorAll('[data-close-dialog]').forEach((button) => button.addEventListener('click', () => {
@@ -884,8 +981,7 @@ function wire() {
         } catch (error) { ui.toast(error.message || 'Erreur.', true); }
     });
 
-    document.querySelector('#reportBtn')?.addEventListener('click', () => document.querySelector('#reportDialog')?.showModal());
-    document.querySelector('#officialReportBtn')?.addEventListener('click', () => { document.querySelector('#reportDialog')?.close(); window.print(); });
+    document.querySelector('#reportBtn')?.addEventListener('click', printWeeklyAttendance);
     document.querySelector('#annualReportBtn')?.addEventListener('click', () => { document.querySelector('#reportDialog')?.close(); openAnnualReport(); });
 
     document.querySelector('#loadArchiveBtn')?.addEventListener('click', () => loadArchive(state.archiveView || 'days'));
