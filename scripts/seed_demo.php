@@ -235,6 +235,34 @@ try {
     );
     $assign->execute([$teacherId, $classA]);
 
+    $subjectStmt = $pdo->prepare(
+        'INSERT INTO subjects (code, name_fr, name_ar, name_en)
+         VALUES (?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE
+            name_fr = VALUES(name_fr),
+            name_ar = VALUES(name_ar),
+            name_en = VALUES(name_en),
+            is_active = 1'
+    );
+    $subjectStmt->execute([
+        'MATH',
+        'Mathématiques',
+        'الرياضيات',
+        'Mathematics'
+    ]);
+
+    $subjectIdStmt = $pdo->prepare(
+        'SELECT id FROM subjects WHERE code = ? LIMIT 1'
+    );
+    $subjectIdStmt->execute(['MATH']);
+    $subjectId = (int)$subjectIdStmt->fetchColumn();
+
+    $teaching = $pdo->prepare(
+        'INSERT IGNORE INTO teacher_teachings (teacher_id, subject_id, class_id)
+         VALUES (?, ?, ?)'
+    );
+    $teaching->execute([$teacherId, $subjectId, $classA]);
+
     $students = [
         [$classA, [
             'student_number' => 'D001',
@@ -276,7 +304,7 @@ try {
     echo "Admin:   " . DEMO_ADMIN_USERNAME . " / " . DEMO_ADMIN_PASSWORD . PHP_EOL;
     echo "Teacher: " . DEMO_TEACHER_USERNAME . " / " . DEMO_TEACHER_PASSWORD . PHP_EOL;
     echo "Classes: DEMO-2BAC-A, DEMO-2BAC-B" . PHP_EOL;
-    echo "Teacher assignment: DEMO-2BAC-A" . PHP_EOL;
+    echo "Teacher teaching: Mathematics → DEMO-2BAC-A" . PHP_EOL;
     echo "Demo students: 4" . PHP_EOL;
     echo "Use these credentials only for local/demo testing." . PHP_EOL;
 } catch (Throwable $e) {
