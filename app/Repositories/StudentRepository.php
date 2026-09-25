@@ -176,6 +176,20 @@ final class StudentRepository
         ]);
     }
 
+    public function transfer(int $studentId, int $fromClassId, int $toClassId): void
+    {
+        $stmt = Database::connection()->prepare(
+            'UPDATE students
+             SET class_id = ?, status = 'active'
+             WHERE id = ? AND class_id = ?'
+        );
+        $stmt->execute([$toClassId, $studentId, $fromClassId]);
+
+        if ($stmt->rowCount() !== 1) {
+            throw new \RuntimeException('Student transfer could not be completed.');
+        }
+    }
+
     public function deactivate(int $studentId, int $classId): void
     {
         $stmt = Database::connection()->prepare(
