@@ -128,52 +128,36 @@ async function openArchiveDay(date) {
         const dialog = document.querySelector('#archiveDayDialog');
         const content = document.querySelector('#archiveDayContent');
         if (!dialog || !content) return;
-
         const rows = Array.isArray(result.records) ? result.records : [];
         const students = new Map();
         for (const row of rows) {
             const id = Number(row.student_id);
-            if (!students.has(id)) {
-                students.set(id, {
-                    name: displayStudentName(row),
-                    massar: row.massar_code || '—',
-                    periods: new Map()
-                });
-            }
-            if (row.period != null && row.status) {
-                students.get(id).periods.set(Number(row.period), row.status);
-            }
+            if (!students.has(id)) students.set(id, { name: displayStudentName(row), massar: row.massar_code || '—', periods: new Map() });
+            if (row.period != null && row.status) students.get(id).periods.set(Number(row.period), row.status);
         }
-
-        const periodLabel = (period) => [
-            '08:00–09:00','09:00–10:00','10:00–11:00','11:00–12:00',
-            '14:00–15:00','15:00–16:00','16:00–17:00','17:00–18:00'
-        ][period - 1] || String(period);
-
+        const periodLabel = (period) => PERIODS[period - 1] || String(period);
         content.innerHTML = '<p><strong>' + esc(result.class?.name || '') + '</strong> · ' + esc(date) + '</p>'
             + (students.size
-                ? '<div class="table-scroll"><table><thead><tr><th>' + esc(t('student')) + '</th><th>' + esc(t('massar')) + '</th>' +
-                    Array.from({length:8}, (_, i) => '<th>' + (i + 1) + '</th>').join('') +
-                    '</tr></thead><tbody>' +
-                    [...students.values()].map((student) =>
-                        '<tr><td>' + esc(student.name) + '</td><td>' + esc(student.massar) + '</td>' +
-                        Array.from({length:8}, (_, i) => {
-                            const status = student.periods.get(i + 1) || '';
-                            const label = status === 'present' ? '✓'
-                                : status === 'absent' ? '✕'
-                                : status === 'late' ? 'L'
-                                : status === 'excused' ? 'E'
-                                : '·';
-                            return '<td title="' + esc(periodLabel(i + 1)) + '">' + label + '</td>';
-                        }).join('') +
-                        '</tr>'
-                    ).join('') +
-                    '</tbody></table></div>'
-                : '<p class="empty-state">Aucun enregistrement pour cette date.</p>');
+                ? '<div class="table-scroll"><table><thead><tr><th>' + esc(t('student')) + '</th><th>' + esc(t('massar')) + '</th>' + Array.from({length:8}, (_, i) => '<th>' + (i + 1) + '</th>').join('') + '</tr></thead><tbody>'
+                    + [...students.values()].map((student) => '<tr><td>' + esc(student.name) + '</td><td>' + esc(student.massar) + '</td>'
+                        + Array.from({length:8}, (_, i) => { const status = student.periods.get(i + 1) || ''; return '<td title="' + esc(periodLabel(i + 1)) + '">' + statusMark(status) + '</td>'; }).join('')
+                        + '</tr>').join('')
+                    + '</tbody></table></div>'
+                : '<p class="empty-state">' + esc(t('no_student_attendance')) + '</p>');
+        setLanguage(currentLanguage());
         dialog.showModal();
     } catch (error) {
         ui.toast(error.message || t('archive_day_error'), true);
     }
+}
+
+function statusMark(status) {
+    return status === 'present' ? '✓' : status === 'absent' ? '✕' : status === 'late' ? 'L' : status === 'excused' ? 'E' : '·';
+}
+
+function attendanceStatusLabel(status) {
+    const key = status === 'present' ? 'status_present' : status === 'absent' ? 'status_absent' : status === 'late' ? 'status_late' : status === 'excused' ? 'status_excused' : 'status_not_marked';
+    return t(key);
 }
 
 async function openStudentHistory(studentId) {
@@ -183,25 +167,21 @@ async function openStudentHistory(studentId) {
         const dialog = document.querySelector('#studentHistoryDialog');
         const content = document.querySelector('#studentHistoryContent');
         if (!dialog || !content) return;
-
         const rows = Array.isArray(result.history) ? result.history : [];
         const first = rows[0];
         const attendanceRows = rows.filter((row) => row.attendance_id != null);
-
         content.innerHTML = '<p><strong>' + esc([first?.first_name, first?.last_name].filter(Boolean).join(' ')) + '</strong>'
-            + ' · Massar: ' + esc(first?.massar_code || '—')
-            + ' · Classe: ' + esc(result.class?.name || first?.class_name || '—') + '</p>'
+            + ' · ' + esc(t('massar')) + ': ' + esc(first?.massar_code || '—')
+            + ' · ' + esc(t('class')) + ': ' + esc(result.class?.name || first?.class_name || '—') + '</p>'
             + '<div class="table-scroll"><table><thead><tr><th>' + esc(t('date')) + '</th><th>' + esc(t('period')) + '</th><th>' + esc(t('status')) + '</th></tr></thead><tbody>'
-            + (attendanceRows.map((row) =>
-                '<tr><td>' + esc(row.attendance_date) + '</td><td>' + Number(row.period) + '</td><td>' + esc(row.status) + '</td></tr>'
-            ).join('') || '<tr><td colspan="3" class="empty-state">' + esc(t('no_student_history')) + '</td></tr>')
+            + (attendanceRows.map((row) => '<tr><td>' + esc(row.attendance_date) + '</td><td>' + Number(row.period) + '</td><td>' + esc(attendanceStatusLabel(row.status)) + '</td></tr>').join('')
+                || '<tr><td colspan="3" class="empty-state">' + esc(t('no_student_history')) + '</td></tr>')
             + '</tbody></table></div>';
         dialog.showModal();
     } catch (error) {
         ui.toast(error.message || t('student_history_error'), true);
     }
 }
-
 function ensureAdminDynamicUI() {
     if (!document.querySelector('#adminClassesTable')) {
         const table = document.createElement('div');
@@ -325,6 +305,7 @@ async function openImportCorrection(batchId) {
                 + '<label><span data-i18n="student_number">N° élève</span><input name="student_number" maxlength="30" value="' + uiEscapeValue(row.student_number) + '"></label>';
             container.appendChild(fieldset);
         }
+        setLanguage(currentLanguage());
 
         dialog.dataset.batchId = String(batchId);
         dialog.showModal();
@@ -656,18 +637,19 @@ async function openAnnualReport() {
             const total = Number(student.recorded_count) || 0;
             const present = Number(student.present_count) || 0;
             const rate = total > 0 ? ((present / total) * 100).toFixed(1) : '0.0';
-            return `<tr><td>${index + 1}</td><td>${esc(`${student.first_name} ${student.last_name}`)}</td><td>${student.present_count}</td><td>${student.absent_count}</td><td>${student.other_count}</td><td>${rate}%</td></tr>`;
+            return '<tr><td>' + (index + 1) + '</td><td>' + esc(displayStudentName(student)) + '</td><td>' + Number(student.present_count) + '</td><td>' + Number(student.absent_count) + '</td><td>' + Number(student.other_count) + '</td><td>' + rate + '%</td></tr>';
         }).join('');
-
         const win = window.open('', '_blank');
         if (!win) throw new Error(t('report_window_blocked'));
-        win.document.write(`<!doctype html><html lang="fr" dir="rtl"><head><meta charset="utf-8"><title>SAMS — Statistiques</title><style>body{font-family:Arial,sans-serif;padding:2rem;color:#111}h1{text-align:center}p{text-align:center;color:#555}table{width:100%;border-collapse:collapse;margin-top:2rem}th,td{border:1px solid #aaa;padding:.55rem;text-align:center}th{background:#eee}@media print{@page{size:A4 portrait;margin:12mm}}</style></head><body><h1>SAMS — Statistiques analytiques</h1><p>${esc(report.class?.name || '')} · ${esc(report.month || currentMonth())}</p><table><thead><tr><th>#</th><th>Élève</th><th>Présences</th><th>Absences</th><th>Autres</th><th>Taux</th></tr></thead><tbody>${rows}</tbody></table><script>window.onload=()=>window.print();</script></body></html>`);
+        const lang = currentLanguage();
+        const dir = lang === 'ar' ? 'rtl' : 'ltr';
+        const title = esc(t('monthly_analytics'));
+        win.document.write('<!doctype html><html lang="' + lang + '" dir="' + dir + '"><head><meta charset="utf-8"><title>SAMS — ' + title + '</title><style>body{font-family:Arial,sans-serif;padding:2rem;color:#111}h1{text-align:center}p{text-align:center;color:#555}table{width:100%;border-collapse:collapse;margin-top:2rem}th,td{border:1px solid #aaa;padding:.55rem;text-align:center}th{background:#eee}@media print{@page{size:A4 portrait;margin:12mm}}</style></head><body><h1>' + title + '</h1><p>' + esc(report.class?.name || '') + ' · ' + esc(report.month || currentMonth()) + '</p><table><thead><tr><th>#</th><th>' + esc(t('student')) + '</th><th>' + esc(t('present_count')) + '</th><th>' + esc(t('absent_count_label')) + '</th><th>' + esc(t('other_count')) + '</th><th>' + esc(t('presence_rate')) + '</th></tr></thead><tbody>' + rows + '</tbody></table><script>window.onload=()=>window.print();</script></body></html>');
         win.document.close();
     } catch (error) {
         ui.toast(error.message || t('report_generation_error'), true);
     }
 }
-
 function esc(value) {
     const div = document.createElement('div');
     div.textContent = String(value ?? '');
