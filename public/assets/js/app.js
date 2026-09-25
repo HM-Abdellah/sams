@@ -55,10 +55,47 @@ async function boot() {
         if (state.user?.role !== 'admin') document.querySelectorAll('.admin-only').forEach((el) => el.remove());
         renderAll();
         if (state.classId) await loadClass();
+        if (state.user?.role === 'admin') await loadAdmin();
     } catch (error) {
         ui.toast(error.message || 'Erreur de démarrage.', true);
     } finally {
         loading = false;
+    }
+}
+
+async function loadAdmin() {
+    if (state.user?.role !== 'admin') return;
+    try {
+        const requests = [
+            API.users(),
+            API.academicYears(),
+            state.classId ? API.imports(state.classId) : Promise.resolve({ imports: [] }),
+            API.audit({ page: 1, per_page: 20 }),
+        ];
+        const [users, academicYears, imports, audit] = await Promise.all(requests);
+        setState({
+            users: users.users || [],
+            academicYears: academicYears.academic_years || [],
+            imports: imports.imports || [],
+            auditItems: audit.items || [],
+        });
+        renderAll();
+    } catch (error) {
+        ui.toast(error.message || 'Erreur de chargement administration.', true);
+    }
+}
+
+async function loadArchive(view = 'days') {
+    if (!state.classId) return;
+    try {
+        const month = document.querySelector('#archiveMonth')?.value || state.month;
+        const data = view === 'month'
+            ? await API.archiveMonth(state.classId, month)
+            : await API.archiveDays(state.classId, month);
+        setState({ archive: data, archiveView: view });
+        renderAll();
+    } catch (error) {
+        ui.toast(error.message || 'Erreur de chargement archive.', true);
     }
 }
 
@@ -150,10 +187,13 @@ function wire() {
         ui.attendance();
     }));
 
-    document.querySelectorAll('.tab').forEach((button) => button.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach((button) => button.addEventListener('click', async () => {
         document.querySelectorAll('.tab').forEach((item) => item.classList.toggle('active', item === button));
         document.querySelectorAll('[data-panel]').forEach((panel) => panel.classList.toggle('hidden', panel.dataset.panel !== button.dataset.tab));
         setState({ tab: button.dataset.tab });
+
+        if (button.dataset.tab === 'archive') await loadArchive('days');
+        if (button.dataset.tab === 'admin') await loadAdmin();
     }));
 
     const attendanceBody = document.querySelector('#attendanceBody');
@@ -230,6 +270,131 @@ function wire() {
     document.querySelector('#reportBtn')?.addEventListener('click', () => document.querySelector('#reportDialog')?.showModal());
     document.querySelector('#officialReportBtn')?.addEventListener('click', () => { document.querySelector('#reportDialog')?.close(); window.print(); });
     document.querySelector('#annualReportBtn')?.addEventListener('click', () => { document.querySelector('#reportDialog')?.close(); openAnnualReport(); });
+
+    document.querySelector('#loadArchiveBtn')?.addEventListener('click', () => loadArchive(state.archiveView || 'days'));
+    document.querySelectorAll('[data-archive-view]').forEach((button) => button.addEventListener('click', async () => {
+        document.querySelectorAll('[data-archive-view]').forEach((item) => item.classList.toggle('active', item === button));
+        await loadArchive(button.dataset.archiveView || 'days');
+    }));
+    const archiveMonth = document.querySelector('#archiveMonth');
+    if (archiveMonth) archiveMonth.value = state.month;
+
+    document.querySelector('#userForm')?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        try {
+            await API.createUser({
+                username: document.querySelector('#userUsernameInput').value.trim(),
+                full_name: document.querySelector('#userFullNameInput').value.trim(),
+                role: document.querySelector('#userRoleInput').value,
+                password: document.querySelector('#userPasswordInput').value,
+            });
+            event.currentTarget.reset();
+            await loadAdmin();
+            ui.toast('Utilisateur créé.');
+        } catch (error) {
+            ui.toast(error.message || 'Erreur de création utilisateur.', true);
+        }
+    });
+
+    document.querySelector('#academicYearForm')?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        try {
+            await API.createAcademicYear({
+                name: document.querySelector('#academicYearNameInput').value.trim(),
+                starts_on: document.querySelector('#academicYearStartInput').value,
+                ends_on: document.querySelector('#academicYearEndInput').value,
+                activate: document.querySelector('#academicYearActivateInput').value === '1',
+            });
+            event.currentTarget.reset();
+            await loadAdmin();
+            const classes = await API.classes();
+            setState({ classes: classes.classes || [] });
+            renderAll();
+            ui.toast('Année scolaire créée.');
+        } catch (error) {
+            ui.toast(error.message || 'Erreur année scolaire.', true);
+        }
+    });
+
+    document.querySelector('#assignmentForm')?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const teacherId = Number(document.querySelector('#assignmentTeacherInput').value);
+        const classId = Number(document.querySelector('#assignmentClassInput').value);
+        try {
+            await API.assignTeacher(teacherId, classId);
+            await loadAdmin();
+            ui.toast('Affectation enregistrée.');
+        } catch (error) {
+            ui.toast(error.message || 'Erreur d’affectation.', true);
+        }
+    });
+
+    document.querySelector('#userForm')?.addEventListener('reset', () => {
+        const password = document.querySelector('#userPasswordInput');
+        if (password) password.value = '';
+    });
+
+    document.querySelector('#importForm')?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!state.classId) return ui.toast('Sélectionnez une classe.', true);
+        const file = document.querySelector('#studentImportFile')?.files?.[0];
+        if (!file) return ui.toast('Sélectionnez un fichier CSV.', true);
+        try {
+            const result = await API.stageImport(state.classId, file);
+            await loadAdmin();
+            ui.toast(`Import staging #${result.batch_id} créé.`);
+        } catch (error) {
+            ui.toast(error.message || 'Erreur d’import.', true);
+        }
+    });
+
+    document.querySelector('#usersTable')?.addEventListener('click', async (event) => {
+        const unlock = event.target.closest('[data-unlock-user]');
+        const toggle = event.target.closest('[data-toggle-user]');
+        try {
+            if (unlock) {
+                await API.unlockUser(Number(unlock.dataset.unlockUser));
+                await loadAdmin();
+                ui.toast('Compte déverrouillé.');
+                return;
+            }
+            if (toggle) {
+                const id = Number(toggle.dataset.toggleUser);
+                const current = state.users.find((user) => Number(user.id) === id);
+                if (!current) return;
+                await API.updateUser(id, {
+                    full_name: current.full_name,
+                    role: current.role,
+                    is_active: Number(toggle.dataset.active) !== 1,
+                });
+                await loadAdmin();
+            }
+        } catch (error) {
+            ui.toast(error.message || 'Erreur de compte utilisateur.', true);
+        }
+    });
+
+    document.querySelector('#importsTable')?.addEventListener('click', async (event) => {
+        const revalidate = event.target.closest('[data-revalidate-import]');
+        const runImport = event.target.closest('[data-run-import]');
+        try {
+            if (revalidate) {
+                await API.revalidateImport(Number(revalidate.dataset.revalidateImport));
+                await loadAdmin();
+                ui.toast('Import revalidé.');
+                return;
+            }
+            if (runImport && !runImport.disabled) {
+                if (!window.confirm('Importer tous les élèves valides de ce batch ?')) return;
+                await API.runImport(Number(runImport.dataset.runImport));
+                await loadClass();
+                await loadAdmin();
+                ui.toast('Import terminé.');
+            }
+        } catch (error) {
+            ui.toast(error.message || 'Erreur d’import.', true);
+        }
+    });
 
     setupSignature({
         canvas: document.querySelector('#signatureCanvas'),
