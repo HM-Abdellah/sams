@@ -2,6 +2,7 @@ import { API, setCsrf, getCsrf } from './api.js';
 import { state, setState } from './state.js';
 import { ui, renderAll } from './ui.js';
 import { setupSignature } from './signature.js';
+import { DAYS, PERIODS, dateFromWeek, startOfWeek, attendanceKey, displayName } from './logic.js';
 import { initLanguage, t } from './i18n.js';
 
 let loading = false;
@@ -35,9 +36,13 @@ async function loadClass() {
         ui.setLoading?.(true);
         const [students, attendance] = await Promise.all([
             API.students(state.classId),
-            API.attendance(state.classId, currentMonth()),
+            API.attendanceWeek(state.classId, state.weekStart),
         ]);
-        setState({ students: students.students || [], attendance: attendance.attendance || [] });
+        setState({
+            students: students.students || [],
+            attendance: attendance.attendance || [],
+            selectedDay: state.selectedDay || state.weekStart,
+        });
         renderAll();
         await loadSignature();
     } catch (error) {
@@ -59,7 +64,15 @@ async function boot() {
 
         setCsrf(session.csrf || '');
         const month = currentMonth();
-        setState({ user: session.user, csrf: session.csrf || '', month });
+        const defaultWeekStart = startOfWeek(new Date().toISOString().slice(0, 10));
+        setState({
+            user: session.user,
+            csrf: session.csrf || '',
+            month,
+            weekStart: state.weekStart || defaultWeekStart,
+            selectedDay: state.selectedDay || defaultWeekStart,
+            selectedPeriod: state.selectedPeriod || 1,
+        });
         initLanguage();
         await startPresenceHeartbeat();
 
@@ -67,8 +80,8 @@ async function boot() {
         const list = Array.isArray(classes.classes) ? classes.classes : [];
         setOperationalClasses(list);
 
-        const monthInput = document.querySelector('#monthSelect');
-        if (monthInput) monthInput.value = month;
+        const weekInput = document.querySelector('#weekStart');
+        if (weekInput) weekInput.value = state.weekStart;
 
         const currentUser = document.querySelector('#currentUser');
         if (currentUser && state.user) currentUser.textContent = `${state.user.full_name} · ${state.user.role}`;
