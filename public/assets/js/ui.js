@@ -1,5 +1,6 @@
 import { state } from './state.js';
 import { PERIODS, attendanceKey, countsForStudent, attendanceRate, isRisk, displayName } from './logic.js';
+import { t, currentLanguage } from './i18n.js';
 
 const esc = (value) => {
     const div = document.createElement('div');
@@ -130,6 +131,117 @@ export const ui = {
             item.className = 'student-card';
             item.innerHTML = `<div><strong>${esc(displayName(student))}</strong><small>${esc(student.massar_code || 'Sans Massar')} · ${esc(student.student_number || 'Sans numéro')}</small></div><div class="dialog-actions">${state.user?.role === 'admin' ? '<button class="btn small" data-transfer-student="' + esc(student.id) + '" type="button">Transférer</button>' : ''}<button class="btn small" data-edit-student="${student.id}" type="button">Modifier</button><button class="btn danger small" data-delete-student="${student.id}" type="button">Désactiver</button></div>`;
             box.appendChild(item);
+        }
+    },
+
+    teachers() {
+        const box = document.querySelector('#teachersList');
+        if (!box) return;
+
+        const subjectFilter = document.querySelector('#teacherSubjectFilter');
+        const classFilter = document.querySelector('#teacherClassFilter');
+        const statusFilter = document.querySelector('#teacherStatusFilter');
+        const searchInput = document.querySelector('#teacherSearch');
+
+        const currentSubject = subjectFilter?.value || 'all';
+        const currentClass = classFilter?.value || 'all';
+
+        if (subjectFilter) {
+            subjectFilter.innerHTML = '<option value="all" data-i18n="all_subjects"></option>'
+                + state.subjects.map((subject) =>
+                    '<option value="' + esc(subject.id) + '">' + esc(subjectLabel(subject)) + '</option>'
+                ).join('');
+            subjectFilter.value = state.subjects.some((item) => String(item.id) === currentSubject) ? currentSubject : 'all';
+        }
+
+        if (classFilter) {
+            const classes = state.adminClasses
+                .filter((item) => Number(item.is_active) === 1)
+                .slice()
+                .sort((a, b) => String(a.academic_year_name || '').localeCompare(String(b.academic_year_name || '')) || String(a.name).localeCompare(String(b.name)));
+            classFilter.innerHTML = '<option value="all" data-i18n="all_classes"></option>'
+                + classes.map((cls) =>
+                    '<option value="' + esc(cls.id) + '">' + esc(classLabel(cls)) + '</option>'
+                ).join('');
+            classFilter.value = classes.some((item) => String(item.id) === currentClass) ? currentClass : 'all';
+        }
+
+        const allTeachers = Array.isArray(state.teachers) ? state.teachers : [];
+        const onlineCount = allTeachers.filter((teacher) => Number(teacher.is_online) === 1).length;
+        const unverifiedCount = allTeachers.filter((teacher) => Number(teacher.phone_verified) !== 1).length;
+        const inactiveCount = allTeachers.filter((teacher) => Number(teacher.is_active) !== 1).length;
+        document.querySelector('#teacherTotal')?.replaceChildren(document.createTextNode(String(allTeachers.length)));
+        document.querySelector('#teacherOnline')?.replaceChildren(document.createTextNode(String(onlineCount)));
+        document.querySelector('#teacherUnverified')?.replaceChildren(document.createTextNode(String(unverifiedCount)));
+        document.querySelector('#teacherInactive')?.replaceChildren(document.createTextNode(String(inactiveCount)));
+
+        const search = String(searchInput?.value || '').trim().toLowerCase();
+        const status = statusFilter?.value || 'all';
+        const teachingsByTeacher = new Map();
+        for (const teaching of (Array.isArray(state.teachings) ? state.teachings : [])) {
+            const id = Number(teaching.teacher_id);
+            if (!teachingsByTeacher.has(id)) teachingsByTeacher.set(id, []);
+            teachingsByTeacher.get(id).push(teaching);
+        }
+
+        const filtered = allTeachers.filter((teacher) => {
+            const teachings = teachingsByTeacher.get(Number(teacher.id)) || [];
+            const haystack = [
+                teacher.full_name,
+                teacher.employee_id || teacher.username,
+                teacher.phone || ''
+            ].join(' ').toLowerCase();
+
+            if (search && !haystack.includes(search)) return false;
+            if (status === 'online' && Number(teacher.is_online) !== 1) return false;
+            if (status === 'offline' && Number(teacher.is_online) === 1) return false;
+            if (status === 'active' && Number(teacher.is_active) !== 1) return false;
+            if (status === 'inactive' && Number(teacher.is_active) === 1) return false;
+            if (currentSubject !== 'all' && !teachings.some((item) => String(item.subject_id) === currentSubject)) return false;
+            if (currentClass !== 'all' && !teachings.some((item) => String(item.class_id) === currentClass)) return false;
+            return true;
+        });
+
+        box.innerHTML = filtered.map((teacher) => {
+            const teachings = teachingsByTeacher.get(Number(teacher.id)) || [];
+            const statusClass = Number(teacher.is_online) === 1 ? 'online' : 'offline';
+            const statusLabel = Number(teacher.is_online) === 1 ? t('online') : t('offline');
+            const activation = Number(teacher.phone_verified) === 1 ? t('verified') : t('not_verified');
+
+            const assignmentMarkup = teachings.length
+                ? teachings.map((item) =>
+                    '<div class="teaching-chip">'
+                    + '<span><strong>' + esc(subjectLabel(item)) + '</strong><small>' + esc(classLabel(item)) + '</small></span>'
+                    + '<button class="btn small danger" type="button" data-unassign-teaching="' + esc(item.id) + '" aria-label="' + esc(t('remove')) + '">×</button>'
+                    + '</div>'
+                ).join('')
+                : '<div class="empty-inline">' + esc(t('no_assignments')) + '</div>';
+
+            return '<article class="teacher-card">'
+                + '<div class="teacher-card-head">'
+                + '<div class="teacher-avatar">' + esc(initials(teacher.full_name)) + '</div>'
+                + '<div class="teacher-identity">'
+                + '<strong>' + esc(teacher.full_name) + '</strong>'
+                + '<small>' + esc(teacher.employee_id || teacher.username || t('no_employee_id')) + '</small>'
+                + '</div>'
+                + '<span class="presence-badge ' + statusClass + '"><i aria-hidden="true"></i>' + esc(statusLabel) + '</span>'
+                + '</div>'
+                + '<div class="teacher-meta">'
+                + '<span>' + esc(t('phone')) + ': ' + esc(teacher.phone || t('no_phone')) + '</span>'
+                + '<span>' + esc(t('verified')) + ': ' + esc(activation) + '</span>'
+                + '<span>' + esc(t('last_activity')) + ': ' + esc(teacher.last_seen_at || '—') + '</span>'
+                + '</div>'
+                + '<div class="teacher-section"><span class="teacher-section-title">' + esc(t('subjects')) + ' / ' + esc(t('classes')) + '</span>'
+                + '<div class="teaching-chips">' + assignmentMarkup + '</div></div>'
+                + '<div class="teacher-actions">'
+                + '<button class="btn small" type="button" data-edit-teacher="' + esc(teacher.id) + '">' + esc(t('manage')) + '</button>'
+                + '<button class="btn small primary" type="button" data-assign-teacher="' + esc(teacher.id) + '">' + esc(t('assign')) + '</button>'
+                + '</div>'
+                + '</article>';
+        }).join('');
+
+        if (!filtered.length) {
+            box.innerHTML = '<div class="empty-state">' + esc(t('no_assignments')) + '</div>';
         }
     },
 
@@ -314,11 +426,26 @@ export const ui = {
     },
 };
 
+function subjectLabel(subject) {
+    const lang = currentLanguage();
+    return subject?.['name_' + (lang === 'ar' ? 'ar' : lang === 'en' ? 'en' : 'fr')] || subject?.name_fr || subject?.subject_name_fr || subject?.code || '—';
+}
+
+function classLabel(item) {
+    const pieces = [item?.class_level || item?.level, item?.class_branch || item?.branch, item?.class_name || item?.name, item?.academic_year_name];
+    return pieces.filter(Boolean).join(' · ');
+}
+
+function initials(name) {
+    return String(name || 'T').trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0].toUpperCase()).join('') || 'T';
+}
+
 export function renderAll() {
     ui.classes();
     ui.attendance();
     ui.students();
     ui.statistics();
+    ui.teachers();
     ui.admin();
     if (state.archive) ui.archive(state.archive, state.archiveView || 'days');
 }
