@@ -231,6 +231,25 @@ $pdo->exec(
 
 $pdo->exec("UPDATE students SET class_id = 2 WHERE id = 1");
 
+$oldEnrollmentEnd = $pdo->query(
+    "SELECT ends_on FROM student_enrollments WHERE id = 1"
+)->fetchColumn();
+expect_true(
+    (string)$oldEnrollmentEnd === '2026-09-30',
+    'Previous enrollment should end the day before transfer.'
+);
+
+$newEnrollmentStart = $pdo->query(
+    "SELECT starts_on
+     FROM student_enrollments
+     WHERE student_id = 1 AND class_id = 2
+     LIMIT 1"
+)->fetchColumn();
+expect_true(
+    (string)$newEnrollmentStart === '2026-10-01',
+    'New enrollment should start on the transfer effective date.'
+);
+
 $historical = $pdo->query(
     "SELECT COUNT(*)
      FROM attendance a
