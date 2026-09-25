@@ -25,10 +25,9 @@ final class Auth
             throw new \InvalidArgumentException('Invalid user identity.');
         }
 
-        Security::regenerateSessionId();
-        // Store only the immutable identity reference. Role/name are re-read from
-        // the database on every authenticated request so account changes take effect
-        // immediately instead of remaining cached in the session.
+        // Reset pre-auth session state, rotate the session ID, and reset the
+        // application session clock before attaching the authenticated identity.
+        Security::clearSessionState();
         $_SESSION[self::SESSION_USER] = ['id' => $id];
         Csrf::rotate();
     }
