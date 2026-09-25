@@ -177,7 +177,7 @@ export const ui = {
                     const row = weeklyMap.get(Number(teacher.id));
                     const isCurrent = Number(teacher.id) === Number(state.user?.id);
                     const status = row?.status || 'pending';
-                    const canSign = isCurrent && state.user?.role === 'teacher' && !row?.status;
+                    const canSign = isCurrent && state.user?.role === 'teacher' && (!row || row.status === 'needs_resign');
                     return '<article class="weekly-teacher-row">'
                         + '<div><strong>' + esc(teacher.full_name) + '</strong><small>' + esc(teacher.employee_id || '') + '</small></div>'
                         + '<span class="weekly-teacher-status ' + esc(status) + '">' + esc(status === 'signed' ? t('week_signed') : status === 'needs_resign' ? t('week_needs_resign') : t('week_pending')) + '</span>'
