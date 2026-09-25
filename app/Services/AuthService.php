@@ -75,6 +75,7 @@ final class AuthService
                 'id' => (int)$user['id'],
                 'full_name' => (string)$user['full_name'],
                 'role' => (string)$user['role'],
+                'session_version' => (int)$user['session_version'],
             ];
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) {
