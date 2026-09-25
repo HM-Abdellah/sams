@@ -134,6 +134,27 @@ export const ui = {
     },
 
     admin() {
+        const classesTable = document.querySelector('#adminClassesTable');
+        if (classesTable) {
+            classesTable.querySelector('thead').innerHTML = '<tr><th>Classe</th><th>Niveau</th><th>Branche</th><th>Année</th><th>Active</th><th>Actions</th></tr>';
+            classesTable.querySelector('tbody').innerHTML = state.adminClasses.map((cls) => {
+                const active = Number(cls.is_active) === 1;
+                return '<tr>'
+                    + '<td>' + esc(cls.name) + '</td>'
+                    + '<td>' + esc(cls.level || '—') + '</td>'
+                    + '<td>' + esc(cls.branch || '—') + '</td>'
+                    + '<td>' + esc(cls.academic_year_name || '—') + '</td>'
+                    + '<td>' + (active ? 'Oui' : 'Non') + '</td>'
+                    + '<td>'
+                    + '<button class="btn small" data-edit-class="' + esc(cls.id) + '" type="button">Modifier</button> '
+                    + '<button class="btn danger small" data-toggle-class="' + esc(cls.id) + '" data-active="' + (active ? '1' : '0') + '" type="button">'
+                    + (active ? 'Désactiver' : 'Activer')
+                    + '</button>'
+                    + '</td>'
+                    + '</tr>';
+            }).join('') || '<tr><td colspan="6" class="empty-state">Aucune classe.</td></tr>';
+        }
+
         const usersTable = document.querySelector('#usersTable');
         if (usersTable) {
             usersTable.querySelector('thead').innerHTML = '<tr><th>Utilisateur</th><th>Nom</th><th>Rôle</th><th>Actif</th><th>Actions</th></tr>';
@@ -145,6 +166,8 @@ export const ui = {
                     + '<td>' + esc(user.role) + '</td>'
                     + '<td>' + (active ? 'Oui' : 'Non') + '</td>'
                     + '<td>'
+                    + '<button class="btn small" data-edit-user="' + esc(user.id) + '" type="button">Modifier</button> '
+                    + '<button class="btn small" data-reset-user="' + esc(user.id) + '" type="button">Mot de passe</button> '
                     + '<button class="btn small" data-unlock-user="' + esc(user.id) + '" type="button">Déverrouiller</button> '
                     + '<button class="btn danger small" data-toggle-user="' + esc(user.id) + '" data-active="' + (active ? '1' : '0') + '" type="button">'
                     + (active ? 'Désactiver' : 'Activer')
