@@ -168,7 +168,7 @@ $csrf = Csrf::token();
         <div class="students-list">
             <article class="student-card">
                 <div>
-                    <strong>Créer un utilisateur</strong>
+                    <strong data-i18n="create_user">Créer un utilisateur</strong>
                     <small data-i18n="user_types">Admin, enseignant ou conseiller.</small>
                 </div>
             </article>
@@ -189,11 +189,11 @@ $csrf = Csrf::token();
                 </div>
             </article>
             <form id="academicYearForm">
-                <label>Nom<input id="academicYearNameInput" required maxlength="20" placeholder="2026/2027"></label>
+                <label><span data-i18n="name">Nom</span><input id="academicYearNameInput" required maxlength="20" placeholder="2026/2027"></label>
                 <label><span data-i18n="start">Début</span><input id="academicYearStartInput" type="date" required></label>
                 <label><span data-i18n="end">Fin</span><input id="academicYearEndInput" type="date" required></label>
-                <label><span data-i18n="activate">Activer</span><select id="academicYearActivateInput"><option value="1">Oui</option><option value="0">Non</option></select></label>
-                <button class="btn success" type="submit">Créer</button>
+                <label><span data-i18n="activate">Activer</span><select id="academicYearActivateInput"><option value="1" data-i18n="yes">Oui</option><option value="0" data-i18n="no">Non</option></select></label>
+                <button class="btn success" type="submit" data-i18n="create">Créer</button>
             </form>
         </div>
 
@@ -207,7 +207,7 @@ $csrf = Csrf::token();
             <form id="assignmentForm">
                 <label><span data-i18n="teacher">Enseignant</span><select id="assignmentTeacherInput"></select></label>
                 <label><span data-i18n="class">Classe</span><select id="assignmentClassInput"></select></label>
-                <button class="btn primary" type="submit">Affecter</button>
+                <button class="btn primary" type="submit" data-i18n="assign">Affecter</button>
             </form>
             <div class="table-scroll"><table id="usersTable"><thead></thead><tbody></tbody></table></div>
         </div>
@@ -220,7 +220,7 @@ $csrf = Csrf::token();
                 </div>
             </article>
             <form id="importForm">
-                <label>Fichier CSV<input id="studentImportFile" type="file" accept=".csv,text/csv" required></label>
+                <label><span data-i18n="file">Fichier CSV</span><input id="studentImportFile" type="file" accept=".csv,text/csv" required></label>
                 <button class="btn primary" type="submit" data-i18n="analyze_staging">Analyser / staging</button>
             </form>
             <div class="table-scroll"><table id="importsTable"><thead></thead><tbody></tbody></table></div>
