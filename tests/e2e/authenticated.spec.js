@@ -13,7 +13,7 @@ test.describe('authenticated SAMS smoke', () => {
     await page.locator('#username').fill(username);
     await page.locator('#password').fill(password);
     await page.locator('#loginForm').evaluate((form) => {
-      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      form.requestSubmit();
     });
 
     await page.waitForURL(/index\.php$/);
@@ -75,7 +75,7 @@ test.describe('authenticated SAMS smoke', () => {
     await page.locator('#username').fill(username);
     await page.locator('#password').fill(password);
     await page.locator('#loginForm').evaluate((form) => {
-      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      form.requestSubmit();
     });
 
     await page.waitForURL(/index\.php$/);
@@ -101,7 +101,7 @@ test.describe('authenticated SAMS smoke', () => {
     await page.locator('#username').fill(teacherUsername);
     await page.locator('#password').fill(teacherPassword);
     await page.locator('#loginForm').evaluate((form) => {
-      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      form.requestSubmit();
     });
 
     await page.waitForURL(/index\.php$/);
@@ -115,7 +115,7 @@ test.describe('authenticated SAMS smoke', () => {
     await page.locator('#username').fill(username);
     await page.locator('#password').fill(password);
     await page.locator('#loginForm').evaluate((form) => {
-      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      form.requestSubmit();
     });
 
     await page.waitForURL(/index\.php$/);
@@ -151,7 +151,7 @@ test.describe('authenticated SAMS smoke', () => {
     await page.locator('#username').fill(username);
     await page.locator('#password').fill(password);
     await page.locator('#loginForm').evaluate((form) => {
-      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      form.requestSubmit();
     });
 
     await page.waitForURL(/index\.php$/);
@@ -189,7 +189,7 @@ test.describe('authenticated SAMS smoke', () => {
     await page.locator('#username').fill(username);
     await page.locator('#password').fill(password);
     await page.locator('#loginForm').evaluate((form) => {
-      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      form.requestSubmit();
     });
 
     await page.waitForURL(/index\.php$/);
@@ -253,7 +253,7 @@ test.describe('authenticated SAMS smoke', () => {
     await page.locator('#username').fill(username);
     await page.locator('#password').fill(password);
     await page.locator('#loginForm').evaluate((form) => {
-      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      form.requestSubmit();
     });
 
     await page.waitForURL(/index\.php$/);
