@@ -53,3 +53,22 @@ CREATE TABLE attendance_week_signatures (
         FOREIGN KEY (invalidated_by) REFERENCES users(id)
         ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB;
+
+CREATE TABLE attendance_week_submissions (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    class_id BIGINT UNSIGNED NOT NULL,
+    week_start DATE NOT NULL,
+    received_by BIGINT UNSIGNED NOT NULL,
+    received_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_attendance_week_submissions_class_week (class_id, week_start),
+    KEY idx_attendance_week_submissions_received_by (received_by, received_at),
+    CONSTRAINT fk_attendance_week_submissions_class
+        FOREIGN KEY (class_id) REFERENCES classes(id)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_attendance_week_submissions_receiver
+        FOREIGN KEY (received_by) REFERENCES users(id)
+        ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB;
