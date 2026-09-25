@@ -150,9 +150,10 @@
 .print-signoff-table td small{display:block;font-size:4.2pt;margin-top:.5mm}
 .print-signoff-table td small{max-width:22mm;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-left:auto;margin-right:auto}
 .print-weekly-signatures th:nth-child(1){width:35mm}
-.print-weekly-signatures th:nth-child(2){width:28mm}
-.print-weekly-signatures th:nth-child(3){width:34mm}
-.print-weekly-signatures th:nth-child(4){width:45mm}
+.print-weekly-signatures th:nth-child(2){width:42mm}
+.print-weekly-signatures th:nth-child(3){width:28mm}
+.print-weekly-signatures th:nth-child(4){width:34mm}
+.print-weekly-signatures th:nth-child(5){width:45mm}
 .print-signature-image{display:block;max-width:35mm;max-height:12mm;margin:auto}
 .print-mark{display:inline-flex;align-items:center;justify-content:center;height:100%;min-height:4.5mm}
 .print-blank{color:#000}
