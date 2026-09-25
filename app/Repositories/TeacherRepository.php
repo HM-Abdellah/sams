@@ -58,7 +58,8 @@ final class TeacherRepository
              INNER JOIN subjects s ON s.id = tt.subject_id
              INNER JOIN classes c ON c.id = tt.class_id
              INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-             ORDER BY tt.teacher_id, s.name_fr, ay.starts_on DESC, c.name, tt.id'
+             WHERE c.is_active = 1 AND ay.is_active = 1
+             ORDER BY tt.teacher_id, s.name_fr, c.branch, c.name, tt.id'
         )->fetchAll();
     }
 
