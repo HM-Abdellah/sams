@@ -16,7 +16,7 @@ function currentMonth() {
 
 async function loadClass() {
     if (!state.classId) return;
-    await flushAttendanceQueue();
+    if (!await flushAttendanceQueue()) return;
     try {
         ui.setLoading?.(true);
         const [students, attendance] = await Promise.all([
