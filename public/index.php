@@ -41,14 +41,16 @@ $csrf = Csrf::token();
 
 <main class="app-shell">
     <section class="toolbar" aria-label="Filtres principaux" data-i18n-aria="main_filters">
-        <div class="toolbar-left">
+        <div class="toolbar-left week-toolbar">
             <label><span data-i18n="class">Classe</span><select id="classSelect" aria-label="Classe"></select></label>
-            <label><span data-i18n="month">Mois</span><input id="monthSelect" type="month" aria-label="Mois"></label>
+            <button id="prevWeekBtn" class="btn ghost" type="button" data-i18n="previous_week" aria-label="Previous week">‹</button>
+            <label><span data-i18n="week">Semaine</span><input id="weekStart" type="date" aria-label="Semaine"></label>
+            <button id="nextWeekBtn" class="btn ghost" type="button" data-i18n="next_week" aria-label="Next week">›</button>
             <button id="reloadBtn" class="btn primary" type="button" data-i18n="refresh">Actualiser</button>
         </div>
         <div class="toolbar-right">
             <button id="addClassBtn" class="btn success admin-only" type="button" data-i18n="add_class">+ Classe</button>
-            <button id="reportBtn" class="btn" type="button" data-i18n="report">Rapport</button>
+            <button id="reportBtn" class="btn" type="button" data-i18n="print_week">Imprimer la semaine</button>
         </div>
     </section>
 
@@ -69,24 +71,33 @@ $csrf = Csrf::token();
     </nav>
 
     <section class="panel" data-panel="attendance">
-        <div class="panel-head">
+        <div class="panel-head attendance-head">
             <div>
-                <h1>Feuille mensuelle de présence</h1>
-                <p>1 clic = présent · double-clic = absent · clic droit = effacer · 8 périodes par jour</p>
+                <h1 data-i18n="weekly_attendance">Feuille hebdomadaire de présence</h1>
+                <p data-i18n="weekly_attendance_hint">Choisissez le jour et la période, puis marquez chaque élève avec un grand bouton.</p>
             </div>
-            <input id="studentSearch" type="search" placeholder="Rechercher un élève…" autocomplete="off" aria-label="Rechercher un élève">
+            <input id="studentSearch" type="search" placeholder="Rechercher un élève…" data-i18n-placeholder="search_student" autocomplete="off" aria-label="Rechercher un élève">
         </div>
+
+        <div class="week-day-strip" id="weekDays" role="tablist" aria-label="Jours de la semaine"></div>
+
+        <div class="period-strip" id="periods" role="group" aria-label="Périodes"></div>
+
         <div class="filters">
-            <button class="filter active" data-filter="all" type="button">Tous</button>
-            <button class="filter" data-filter="risk" type="button">À risque</button>
-            <button class="filter" data-filter="committed" type="button">Assidus</button>
+            <button class="filter active" data-filter="all" type="button" data-i18n="all">Tous</button>
+            <button class="filter" data-filter="risk" type="button" data-i18n="at_risk">À risque</button>
+            <button class="filter" data-filter="committed" type="button" data-i18n="regular">Assidus</button>
         </div>
-        <div class="table-scroll">
+
+        <div class="attendance-mobile-list" id="attendanceMobileList"></div>
+
+        <div class="table-scroll attendance-desktop-table">
             <table id="attendanceTable">
                 <thead id="attendanceHead"></thead>
                 <tbody id="attendanceBody"></tbody>
             </table>
         </div>
+        <div id="weeklyPrintSheet" class="weekly-print-sheet" aria-hidden="true"></div>
     </section>
 
     <section class="panel hidden" data-panel="students">
