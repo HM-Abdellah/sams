@@ -89,7 +89,7 @@ try {
         Response::error('Save your class signature before signing attendance.', 422);
     }
 
-    if ($action !== 'sign_week') {
+    if (in_array($action, ['sign_period', 'reopen_period'], true)) {
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
             Response::error('Invalid attendance date.', 422);
         }
@@ -100,6 +100,12 @@ try {
             Response::error('Attendance date is outside the academic year.', 422);
         }
         $weekStart = (new ReportService())->weekRange($date)[0];
+    } else {
+        if ($weekEnd < (string)$class['academic_year_starts_on'] || $weekStart > (string)$class['academic_year_ends_on']) {
+            Response::error('Attendance week is outside the academic year.', 422);
+        }
+        $weekStart = max($weekStart, (string)$class['academic_year_starts_on']);
+        $weekEnd = min($weekEnd, (string)$class['academic_year_ends_on']);
     }
 
     $existingPeriod = null;
