@@ -114,15 +114,18 @@ Returns the operational roster for a class.
 
 ### POST `api/students.php?class_id=ID`
 
-Admin and teacher.
+Admin and teacher for create/update; admin only for transfer/delete.
 
 JSON actions:
 
 - `create`: `first_name`, `last_name`, optional `student_number`, optional `massar_code`, optional `birth_date`
 - `update`: `id` plus the same student fields
-- `delete`: `id` (admin only; this deactivates the student)
+- `transfer`: `id`, `target_class_id`, `effective_date`
+- `delete`: `id` (this deactivates the student)
 
 Creating a student also creates the initial enrollment for the class academic year inside the same transaction.
+
+A transfer is transactional: the current enrollment is closed on the day before the effective date, a new target-class enrollment starts on the effective date, and `students.class_id` is updated. Transfers are restricted to active classes in the same academic year. Existing attendance on or after the effective date blocks the transfer so historical attendance cannot be orphaned from its enrollment period.
 
 ## Attendance
 
