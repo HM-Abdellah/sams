@@ -47,7 +47,7 @@ export const ui = {
         select.innerHTML = '';
         if (!state.classes.length) {
             const option = document.createElement('option');
-            option.textContent = 'Aucune classe';
+            option.textContent = t('no_classes');
             option.disabled = true;
             option.selected = true;
             select.appendChild(option);
@@ -136,12 +136,13 @@ export const ui = {
         const box = document.querySelector('#studentsList');
         const count = document.querySelector('#studentCount');
         if (!box) return;
-        if (count) count.textContent = `${state.students.length} élève(s)`;
+        if (count) count.textContent = `${state.students.length} ${t('students')}`;
         box.innerHTML = '';
         for (const student of state.students) {
             const item = document.createElement('article');
             item.className = 'student-card';
-            item.innerHTML = `<div><strong>${esc(displayName(student))}</strong><small>${esc(student.massar_code || 'Sans Massar')} · ${esc(student.student_number || 'Sans numéro')}</small></div><div class="dialog-actions">${state.user?.role === 'admin' ? '<button class="btn small" data-transfer-student="' + esc(student.id) + '" type="button">Transférer</button>' : ''}<button class="btn small" data-edit-student="${student.id}" type="button">Modifier</button><button class="btn danger small" data-delete-student="${student.id}" type="button">Désactiver</button></div>`;
+            const transfer = state.user?.role === 'admin' ? '<button class="btn small" data-transfer-student="' + esc(student.id) + '" type="button">' + esc(t('transfer')) + '</button>' : '';
+            item.innerHTML = '<div><strong>' + esc(displayName(student)) + '</strong><small>' + esc(student.massar_code || t('no_massar')) + ' · ' + esc(student.student_number || t('no_student_number')) + '</small></div><div class="dialog-actions">' + transfer + '<button class="btn small" data-edit-student="' + esc(student.id) + '" type="button">' + esc(t('edit')) + '</button><button class="btn danger small" data-delete-student="' + esc(student.id) + '" type="button">' + esc(t('deactivate')) + '</button></div>';
             box.appendChild(item);
         }
     },
@@ -523,7 +524,7 @@ export const ui = {
             const total = counts.present + counts.absent + counts.other;
             const card = document.createElement('article');
             card.className = `stat-card ${counts.absent >= 8 ? 'risk' : ''}`;
-            card.innerHTML = `<strong>${esc(displayName(student))}</strong><span>${counts.absent} absence(s)</span><span>${counts.present} présence(s)</span><span>${counts.other} autre(s)</span><b>${attendanceRate(counts.present, total)}%</b>`;
+            card.innerHTML = '<strong>' + esc(displayName(student)) + '</strong><span>' + counts.absent + ' ' + esc(t('absences_count')) + '</span><span>' + counts.present + ' ' + esc(t('presence_count')) + '</span><span>' + counts.other + ' ' + esc(t('other_count')) + '</span><b>' + attendanceRate(counts.present, total) + '%</b>';
             box.appendChild(card);
         }
     },
