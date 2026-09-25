@@ -25,8 +25,15 @@ final class Response
         http_response_code($status);
         header('Content-Type: application/json; charset=UTF-8');
         header('Cache-Control: no-store');
+        header('X-Content-Type-Options: nosniff');
+        header('Referrer-Policy: same-origin');
+        header('X-Frame-Options: DENY');
+
         try {
-            echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+            echo json_encode(
+                $payload,
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
+            );
         } catch (\JsonException) {
             http_response_code(500);
             echo '{"success":false,"error":"Response encoding failed."}';
