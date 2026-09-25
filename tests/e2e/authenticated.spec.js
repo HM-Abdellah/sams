@@ -110,6 +110,70 @@ test.describe('authenticated SAMS smoke', () => {
     await expect(page.locator('.tab[data-tab="admin"]')).toHaveCount(0);
   });
 
+  test('admin can manage a class and a user through the UI', async ({ page }) => {
+    await page.goto('/login.php');
+    await page.locator('#username').fill(username);
+    await page.locator('#password').fill(password);
+    await page.locator('#loginForm').evaluate((form) => {
+      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    });
+
+    await page.waitForURL(/index\.php$/);
+    await page.locator('.tab[data-tab="admin"]').click();
+    await expect(page.locator('#adminClassesTable')).toBeVisible();
+
+    const className = 'E2E-UI-' + Date.now();
+    await page.locator('#addClassBtn').click();
+    await page.locator('#classNameInput').fill(className);
+    await page.locator('#classLevelInput').fill('2BAC');
+    await page.locator('#classBranchInput').fill('SP');
+    await page.locator('#classForm button[type="submit"]').click();
+
+    await page.locator('.tab[data-tab="admin"]').click();
+    const classRow = page.locator('#adminClassesTable tbody tr').filter({ hasText: className }).first();
+    await expect(classRow).toBeVisible();
+
+    await classRow.locator('[data-edit-class]').click();
+    await page.locator('#editClassNameInput').fill(className + '-EDITED');
+    await page.locator('#editClassForm button[type="submit"]').click();
+
+    await page.locator('.tab[data-tab="admin"]').click();
+    const editedClassRow = page.locator('#adminClassesTable tbody tr').filter({ hasText: className + '-EDITED' }).first();
+    await expect(editedClassRow).toBeVisible();
+
+    await editedClassRow.locator('[data-toggle-class]').click();
+    await expect(editedClassRow.locator('td').nth(4)).toHaveText('Non');
+
+    await editedClassRow.locator('[data-toggle-class]').click();
+    await expect(editedClassRow.locator('td').nth(4)).toHaveText('Oui');
+
+    const createdUsername = 'e2e-ui-' + Date.now();
+    const newPassword = 'e2e-ui-password-2026';
+
+    await page.locator('#userUsernameInput').fill(createdUsername);
+    await page.locator('#userFullNameInput').fill('E2E UI User');
+    await page.locator('#userRoleInput').selectOption('teacher');
+    await page.locator('#userPasswordInput').fill(newPassword);
+    await page.locator('#userForm button[type="submit"]').click();
+
+    await expect(page.locator('#usersTable tbody tr').filter({ hasText: createdUsername }).first()).toBeVisible();
+    const userRow = page.locator('#usersTable tbody tr').filter({ hasText: createdUsername }).first();
+
+    await userRow.locator('[data-edit-user]').click();
+    await page.locator('#editUserFullNameInput').fill('E2E UI User Edited');
+    await page.locator('#editUserForm button[type="submit"]').click();
+
+    await page.locator('.tab[data-tab="admin"]').click();
+    const editedUserRow = page.locator('#usersTable tbody tr').filter({ hasText: createdUsername }).first();
+    await editedUserRow.locator('[data-reset-user]').click();
+    await page.locator('#resetUserPasswordInput').fill('e2e-ui-password-reset-2026');
+    await page.locator('#resetUserPasswordForm button[type="submit"]').click();
+
+    await page.locator('.tab[data-tab="admin"]').click();
+    await editedUserRow.locator('[data-toggle-user]').click();
+    await expect(editedUserRow.locator('td').nth(3)).toHaveText('Non');
+  });
+
   test('logout invalidates the authenticated browser session', async ({ page }) => {
     await page.goto('/login.php');
     await page.locator('#username').fill(username);
