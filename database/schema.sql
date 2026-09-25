@@ -24,6 +24,7 @@ DROP TABLE IF EXISTS student_import_rows;
 DROP TABLE IF EXISTS teacher_teachings;
 DROP TABLE IF EXISTS student_import_batches;
 DROP TABLE IF EXISTS attendance_week_signatures;
+DROP TABLE IF EXISTS attendance_week_submissions;
 DROP TABLE IF EXISTS attendance_signoffs;
 DROP TABLE IF EXISTS attendance;
 DROP TABLE IF EXISTS student_enrollments;
@@ -267,6 +268,25 @@ CREATE TABLE attendance_week_signatures (
     CONSTRAINT fk_attendance_week_signatures_invalidated_by
         FOREIGN KEY (invalidated_by) REFERENCES users(id)
         ON UPDATE CASCADE ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE attendance_week_submissions (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    class_id BIGINT UNSIGNED NOT NULL,
+    week_start DATE NOT NULL,
+    received_by BIGINT UNSIGNED NOT NULL,
+    received_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_attendance_week_submissions_class_week (class_id, week_start),
+    KEY idx_attendance_week_submissions_received_by (received_by, received_at),
+    CONSTRAINT fk_attendance_week_submissions_class
+        FOREIGN KEY (class_id) REFERENCES classes(id)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_attendance_week_submissions_receiver
+        FOREIGN KEY (received_by) REFERENCES users(id)
+        ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
 CREATE TABLE signatures (
