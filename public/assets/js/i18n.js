@@ -1,5 +1,6 @@
 const DICTIONARY = {
   fr: {
+    attendance:'Présence',students:'Élèves',statistics:'Statistiques',signature:'Signature',archive:'Archive',month:'Mois',add_class:'+ Classe',report:'Rapport',present_count:'Présences',absent_count_label:'Absences',late_excused:'Retards / excusés',main_filters:'Filtres principaux',
     level:'Niveau',name:'Nom',file:'Fichier',status:'État',unlock:'Déverrouiller',role_admin:'Administrateur',role_teacher:'Enseignant',role_counselor:'Conseiller',
     admin_desc:'Gestion fonctionnelle du périmètre SAMS.',create_user:'Créer un utilisateur',user_types:'Administrateur, enseignant ou conseiller.',username:'Nom utilisateur',role:'Rôle',password:'Mot de passe',school_years:'Années scolaires',one_active_year:'Une seule année active à la fois.',start:'Début',end:'Fin',activate:'Activer',teacher_class_assignment:'Affectation enseignant → classe',teacher_class_assignment_desc:'Les enseignants ne voient que leurs classes opérationnelles.',csv_import:'Import élèves CSV',csv_import_desc:'Validation puis import transactionnel.',analyze_staging:'Analyser / staging',activity_audit:'Activité / audit',latest_actions:'Dernières actions enregistrées.',edit:'Modifier',deactivate:'Désactiver',since:'Depuis',actions:'Actions',user_status:'Actif',academic_year:'Année',student_import:'Import',rows:'Lignes',valid:'Valides',errors:'Erreurs',correct:'Corriger',revalidate:'Revalider',import_action:'Importer',none:'Aucun',empty_classes:'Aucune classe.',empty_users:'Aucun utilisateur.',empty_assignments:'Aucune affectation pour cette classe.',empty_years:'Aucune année scolaire.',empty_imports:'Aucun import pour cette classe.',empty_activity:'Aucune activité.',
     locked_accounts:'Comptes verrouillés',date:'Date',
@@ -20,6 +21,7 @@ const DICTIONARY = {
     no_employee_id: 'Aucun matricule', manage: 'Gérer', remove: 'Retirer', duplicate_assignment: 'Cette affectation existe déjà.'
   },
   ar: {
+    attendance:'الحضور',students:'التلاميذ',statistics:'الإحصائيات',signature:'التوقيع',archive:'الأرشيف',month:'الشهر',add_class:'+ قسم',report:'التقرير',present_count:'الحضور',absent_count_label:'الغيابات',late_excused:'التأخرات / المعفون',main_filters:'عوامل التصفية الرئيسية',
     level:'المستوى',name:'الاسم',file:'الملف',status:'الحالة',unlock:'إلغاء القفل',role_admin:'مدير',role_teacher:'أستاذ',role_counselor:'مستشار',
     admin_desc:'الإدارة الوظيفية لنظام SAMS.',create_user:'إنشاء مستخدم',user_types:'مدير أو أستاذ أو مستشار.',username:'اسم المستخدم',role:'الدور',password:'كلمة المرور',school_years:'السنوات الدراسية',one_active_year:'يمكن تفعيل سنة دراسية واحدة فقط في الوقت نفسه.',start:'البداية',end:'النهاية',activate:'تفعيل',teacher_class_assignment:'تعيين الأستاذ ← القسم',teacher_class_assignment_desc:'لا يرى الأساتذة إلا أقسامهم التشغيلية.',csv_import:'استيراد التلاميذ CSV',csv_import_desc:'التحقق ثم الاستيراد داخل معاملة واحدة.',analyze_staging:'تحليل / تجهيز',activity_audit:'النشاط / السجل',latest_actions:'آخر الإجراءات المسجلة.',edit:'تعديل',deactivate:'تعطيل',since:'منذ',actions:'الإجراءات',user_status:'نشط',academic_year:'السنة',student_import:'الاستيراد',rows:'الأسطر',valid:'صالحة',errors:'أخطاء',correct:'تصحيح',revalidate:'إعادة التحقق',import_action:'استيراد',none:'لا شيء',empty_classes:'لا توجد أقسام.',empty_users:'لا يوجد مستخدمون.',empty_assignments:'لا توجد تعيينات لهذا القسم.',empty_years:'لا توجد سنوات دراسية.',empty_imports:'لا توجد عمليات استيراد لهذا القسم.',empty_activity:'لا يوجد نشاط.',
     locked_accounts:'الحسابات المقفلة',date:'التاريخ',
@@ -40,6 +42,7 @@ const DICTIONARY = {
     no_employee_id: 'لا يوجد رقم مهني', manage: 'إدارة', remove: 'إزالة', duplicate_assignment: 'هذا التكليف موجود بالفعل.'
   },
   en: {
+    attendance:'Attendance',students:'Students',statistics:'Statistics',signature:'Signature',archive:'Archive',month:'Month',add_class:'+ Class',report:'Report',present_count:'Present',absent_count_label:'Absences',late_excused:'Late / Excused',main_filters:'Main filters',
     level:'Level',name:'Name',file:'File',status:'Status',unlock:'Unlock',role_admin:'Administrator',role_teacher:'Teacher',role_counselor:'Counselor',
     admin_desc:'Functional SAMS administration.',create_user:'Create user',user_types:'Administrator, teacher or counselor.',username:'Username',role:'Role',password:'Password',school_years:'Academic years',one_active_year:'Only one academic year can be active at a time.',start:'Start',end:'End',activate:'Activate',teacher_class_assignment:'Teacher → class assignment',teacher_class_assignment_desc:'Teachers only see their operational classes.',csv_import:'Student CSV import',csv_import_desc:'Validation followed by transactional import.',analyze_staging:'Analyze / stage',activity_audit:'Activity / audit',latest_actions:'Latest recorded actions.',edit:'Edit',deactivate:'Deactivate',since:'Since',actions:'Actions',user_status:'Active',academic_year:'Academic year',student_import:'Import',rows:'Rows',valid:'Valid',errors:'Errors',correct:'Correct',revalidate:'Revalidate',import_action:'Import',none:'None',empty_classes:'No classes.',empty_users:'No users.',empty_assignments:'No assignments for this class.',empty_years:'No academic years.',empty_imports:'No imports for this class.',empty_activity:'No activity.',
     locked_accounts:'Locked accounts',date:'Date',
@@ -82,6 +85,10 @@ export function setLanguage(language) {
   document.querySelectorAll('[data-i18n]').forEach((element) => {
     const key = element.dataset.i18n;
     if (key) element.textContent = t(key);
+  });
+  document.querySelectorAll('[data-i18n-aria]').forEach((element) => {
+    const key = element.dataset.i18nAria;
+    if (key) element.setAttribute('aria-label', t(key));
   });
   document.querySelectorAll('[data-i18n-placeholder]').forEach((element) => {
     const key = element.dataset.i18nPlaceholder;
