@@ -1,6 +1,7 @@
 import { API } from './api.js';
 import { state } from './state.js';
 import { ui } from './ui.js';
+import { t } from './i18n.js';
 
 export function isSignatureDataUrl(value) {
     return typeof value === 'string' && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(value);
@@ -28,7 +29,7 @@ export function setupSignature({ canvas, clearButton, saveButton }) {
             ui.toast('Signature enregistrée.');
         } catch (error) {
             dirty = true;
-            ui.toast(error.message || 'Impossible d’enregistrer la signature.', true);
+            ui.toast(error.message || t('signature_save_error'), true);
         }
     };
 
@@ -75,7 +76,7 @@ export function setupSignature({ canvas, clearButton, saveButton }) {
             dirty = false;
             ui.toast('Signature effacée.');
         } catch (error) {
-            ui.toast(error.message || 'Impossible d’effacer la signature.', true);
+            ui.toast(error.message || t('signature_clear_error'), true);
         }
     });
 
