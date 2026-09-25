@@ -225,7 +225,7 @@ try {
                     $weekStartForEntry = (new ReportService())->weekRange($entry['attendance_date'])[0];
                     $signoffs->invalidatePeriod($classId, $entry['attendance_date'], $entry['period'], (int)$user['id']);
                     $signoffs->invalidateWeekSignature($classId, $weekStartForEntry, (int)$user['id']);
-
+                    $signoffs->clearSubmission($classId, $weekStartForEntry);
                     ++$changed;
                     continue;
                 }
@@ -263,7 +263,7 @@ try {
                 $weekStartForEntry = (new ReportService())->weekRange($entry['attendance_date'])[0];
                 $signoffs->invalidatePeriod($classId, $entry['attendance_date'], $entry['period'], (int)$user['id']);
                 $signoffs->invalidateWeekSignature($classId, $weekStartForEntry, (int)$user['id']);
-
+                $signoffs->clearSubmission($classId, $weekStartForEntry);
                 ++$changed;
             }
 
@@ -342,6 +342,7 @@ try {
                 $weekStartForEntry = (new ReportService())->weekRange($date)[0];
                 $signoffs->invalidatePeriod($classId, $date, $period, (int)$user['id']);
                 $signoffs->invalidateWeekSignature($classId, $weekStartForEntry, (int)$user['id']);
+                $signoffs->clearSubmission($classId, $weekStartForEntry);
             }
 
             $pdo->commit();
@@ -376,7 +377,7 @@ try {
         $weekStartForEntry = (new ReportService())->weekRange($date)[0];
         $signoffs->invalidatePeriod($classId, $date, $period, (int)$user['id']);
         $signoffs->invalidateWeekSignature($classId, $weekStartForEntry, (int)$user['id']);
-
+        $signoffs->clearSubmission($classId, $weekStartForEntry);
         $pdo->commit();
         Response::success(['changed' => true]);
     } catch (Throwable $e) {
