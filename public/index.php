@@ -101,7 +101,7 @@ $csrf = Csrf::token();
     </section>
 
     <section class="panel hidden" data-panel="students">
-        <div class="panel-head"><div><h1 data-i18n="class_students">Élèves de la classe</h1><p id="studentCount">0 élève</p></div><button class="btn success" id="addStudentBtn" type="button" data-i18n="add_student">+ Élève</button></div>
+        <div class="panel-head"><div><h1 data-i18n="class_students">Élèves de la classe</h1><p id="studentCount" data-i18n="student_count_zero">0 élève</p></div><button class="btn success" id="addStudentBtn" type="button" data-i18n="add_student">+ Élève</button></div>
         <div class="students-list" id="studentsList"></div>
     </section>
 
