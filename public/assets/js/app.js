@@ -207,6 +207,19 @@ function ensureAdminDynamicUI() {
         document.body.appendChild(dialog);
     }
 
+    if (!document.querySelector('#transferStudentDialog')) {
+        const dialog = document.createElement('dialog');
+        dialog.id = 'transferStudentDialog';
+        dialog.innerHTML = '<form id="transferStudentForm">'
+            + '<h2>Transférer un élève</h2>'
+            + '<input id="transferStudentId" type="hidden">'
+            + '<label>Classe cible<select id="transferTargetClassInput" required></select></label>'
+            + '<label>Date d’effet<input id="transferEffectiveDateInput" type="date" required></label>'
+            + '<div class="dialog-actions"><button class="btn" type="button" data-close-dialog="transferStudentDialog">Annuler</button><button class="btn primary" type="submit">Transférer</button></div>'
+            + '</form>';
+        document.body.appendChild(dialog);
+    }
+
     if (!document.querySelector('#resetUserPasswordDialog')) {
         const dialog = document.createElement('dialog');
         dialog.id = 'resetUserPasswordDialog';
@@ -218,6 +231,14 @@ function ensureAdminDynamicUI() {
             + '</form>';
         document.body.appendChild(dialog);
     }
+    const transferTarget = document.querySelector('#transferTargetClassInput');
+    if (transferTarget) {
+        transferTarget.innerHTML = state.classes
+            .filter((cls) => Number(cls.id) !== Number(state.classId))
+            .map((cls) => '<option value="' + esc(cls.id) + '">' + esc(cls.name) + '</option>')
+            .join('');
+    }
+
     const adminPanel = document.querySelector('[data-panel="admin"]');
     if (!adminPanel) return;
 
@@ -593,9 +614,33 @@ function wire() {
     });
 
     document.querySelector('#studentsList')?.addEventListener('click', async (event) => {
+        const transferButton = event.target.closest('[data-transfer-student]');
         const editButton = event.target.closest('[data-edit-student]');
         const deleteButton = event.target.closest('[data-delete-student]');
         if (!state.classId) return;
+
+        if (transferButton) {
+            if (state.user?.role !== 'admin') return;
+            const studentId = Number(transferButton.dataset.transferStudent);
+            const student = state.students.find((item) => Number(item.id) === studentId);
+            if (!student) return;
+
+            const target = document.querySelector('#transferTargetClassInput');
+            if (!target || target.options.length === 0) {
+                ui.toast('Aucune classe cible disponible.', true);
+                return;
+            }
+
+            document.querySelector('#transferStudentId').value = String(studentId);
+            target.value = target.options[0].value;
+
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            document.querySelector('#transferEffectiveDateInput').value = tomorrow.toISOString().slice(0, 10);
+
+            document.querySelector('#transferStudentDialog')?.showModal();
+            return;
+        }
 
         if (editButton) {
             const student = state.students.find((item) => Number(item.id) === Number(editButton.dataset.editStudent));
@@ -783,6 +828,25 @@ function wire() {
             ui.toast('Affectation enregistrée.');
         } catch (error) {
             ui.toast(error.message || 'Erreur d’affectation.', true);
+        }
+    });
+
+    document.querySelector('#transferStudentForm')?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!state.classId || state.user?.role !== 'admin') return;
+
+        const studentId = Number(document.querySelector('#transferStudentId').value);
+        const targetClassId = Number(document.querySelector('#transferTargetClassInput').value);
+        const effectiveDate = document.querySelector('#transferEffectiveDateInput').value;
+
+        try {
+            await API.transferStudent(state.classId, studentId, targetClassId, effectiveDate);
+            document.querySelector('#transferStudentDialog')?.close();
+            await loadClass();
+            await loadAdmin();
+            ui.toast('Transfert effectué.');
+        } catch (error) {
+            ui.toast(error.message || 'Erreur de transfert.', true);
         }
     });
 
