@@ -213,6 +213,17 @@ $csrf = Csrf::token();
     <div class="dialog-actions"><button class="btn" value="cancel" type="button" data-close-dialog="studentDialog">Annuler</button><button class="btn primary" id="saveStudentBtn" type="submit">Ajouter</button></div>
 </form></dialog>
 
+<dialog id="editStudentDialog"><form id="editStudentForm">
+    <h2>Modifier un élève</h2>
+    <input id="editStudentId" type="hidden">
+    <label>Prénom<input id="editFirstNameInput" required maxlength="80"></label>
+    <label>Nom<input id="editLastNameInput" required maxlength="80"></label>
+    <label>Massar<input id="editMassarInput" maxlength="32"></label>
+    <label>Date de naissance<input id="editBirthDateInput" type="date"></label>
+    <label>N° élève<input id="editStudentNumberInput" maxlength="30"></label>
+    <div class="dialog-actions"><button class="btn" type="button" data-close-dialog="editStudentDialog">Annuler</button><button class="btn primary" type="submit">Enregistrer</button></div>
+</form></dialog>
+
 <dialog id="classDialog"><form id="classForm">
     <h2>Créer une classe</h2>
     <label>Nom<input id="classNameInput" required maxlength="100"></label>
