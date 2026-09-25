@@ -9,7 +9,7 @@ This document is the frontend/backend contract for the release candidate.
 - Mutating requests require the current `X-CSRF-Token` header.
 - IDs are positive integers.
 - Browser-side validation is for UX only; the API remains authoritative.
-- Historical archive reads are read-only and do not require CSRF.
+- Historical archive reads are read-only, require the `admin` role, and do not require CSRF.
 - Mutations that change persistent state are transactional and audited.
 
 ## Authentication
@@ -171,6 +171,12 @@ A transfer is transactional: the current enrollment is closed on the day before 
 
 Returns enrollment-aware attendance rows for the month.
 
+### GET `api/attendance.php?class_id=ID&week_start=YYYY-MM-DD`
+
+Returns enrollment-aware attendance records for the six-day school week starting on the supplied Monday. The requested range is clamped to the class academic-year boundaries. The weekly endpoint is the operational attendance view used by teachers.
+
+The monthly GET contract remains available for compatibility and reporting, but the operational attendance screen uses the weekly endpoint.
+
 ### POST `api/attendance.php`
 
 Admin and teacher.
@@ -287,19 +293,19 @@ Import is allowed only when every row is valid. Student creation, enrollment cre
 
 ### GET `api/archive.php?view=days&class_id=ID&month=YYYY-MM`
 
-Returns recorded attendance days for the selected historical class/month.
+Admin only. Returns recorded attendance days for the selected historical class/month.
 
 ### GET `api/archive.php?view=month&class_id=ID&month=YYYY-MM`
 
-Returns monthly student totals for the historical class/month.
+Admin only. Returns monthly student totals for the historical class/month.
 
 ### GET `api/archive.php?view=day&class_id=ID&date=YYYY-MM-DD`
 
-Returns the historical class roster with attendance records for that day.
+Admin only. Returns the historical class roster with attendance records for that day.
 
 ### GET `api/archive.php?view=student&class_id=ID&student_id=ID`
 
-Returns the student's enrollment and attendance history within the selected historical class.
+Admin only. Returns the student's enrollment and attendance history within the selected historical class.
 
 Historical access is intentionally separate from operational class access so archived records remain readable after the active academic year changes.
 
