@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/app/bootstrap.php';
 
-use InvalidArgumentException;
 use SAMS\Helpers\Auth;
 use SAMS\Helpers\Csrf;
 use SAMS\Helpers\Database;
@@ -15,7 +14,6 @@ use SAMS\Repositories\AuditLogRepository;
 use SAMS\Repositories\ClassRepository;
 use SAMS\Repositories\StudentRepository;
 use SAMS\Services\AttendanceService;
-use Throwable;
 
 try {
     $user = Auth::requireLogin();
