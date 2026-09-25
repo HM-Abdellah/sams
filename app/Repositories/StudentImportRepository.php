@@ -192,7 +192,7 @@ final class StudentImportRepository
             $batchId,
         ]);
 
-        return $stmt->rowCount() > 0;
+        return true;
     }
 
     public function updateStats(
