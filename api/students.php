@@ -115,6 +115,15 @@ try {
             Response::error('Attendance already exists on or after the transfer date.', 409);
         }
 
+        if ($enrollments->hasOverlappingEnrollment(
+            $studentId,
+            $effectiveDate,
+            null,
+            (int)$currentEnrollment['id']
+        )) {
+            Response::error('Student already has another enrollment overlapping the transfer date.', 409);
+        }
+
         $existingTargetNumber = (string)($student['student_number'] ?? '');
         if ($existingTargetNumber !== '') {
             $targetNumbers = $repo->existingNumbersInClass($targetClassId, [$existingTargetNumber]);
