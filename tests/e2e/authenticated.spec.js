@@ -296,6 +296,16 @@ test.describe('authenticated SAMS smoke', () => {
   });
 
   test('admin can receive a fully signed weekly register', async ({ page }) => {
+    test.skip(!teacherUsername || !teacherPassword, 'Set teacher E2E credentials to run weekly receipt isolation tests.');
+
+    await login(page, teacherUsername, teacherPassword);
+    await page.locator('#periods [data-select-period="1"]').click();
+    await page.locator('#attendanceMobileList [data-attendance-toggle]').first().click();
+    await page.locator('#attendanceWorkflow [data-sign-period]').click();
+    await page.locator('#weeklyTeacherSignatures [data-sign-week]').click();
+    await page.locator('#logoutBtn').click();
+    await page.waitForURL(/login\.php$/);
+
     await login(page, username, password);
     await page.locator('#classSelect').selectOption({ label: 'E2E-2BAC-A' });
     await expect(page.locator('#weeklyTeacherSignatures')).toContainText('1/1');
