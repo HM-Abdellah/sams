@@ -34,6 +34,32 @@ Then open:
 
 This is for development/testing. The router exposes only public/ and api/ and keeps application source/configuration outside the HTTP surface. It is not a replacement for the intended Apache deployment.
 
+### CS50.dev clean demo setup
+
+For a clean local/demo database in CS50.dev:
+
+    cp config/database.example.php config/database.php
+    sudo service mariadb start
+    mysql -u root < database/schema.sql
+    mysql -u root sams < database/seed.sql
+    php scripts/seed_demo.php
+
+Then start the built-in server:
+
+    php -S 0.0.0.0:8080 scripts/dev_router.php
+
+Open the forwarded port and use:
+
+    Administrator
+    Username: admin.demo
+    Password: SAMS-Demo-Admin-2026!
+
+    Teacher
+    Username: teacher.demo
+    Password: SAMS-Demo-Teacher-2026!
+
+The demo seed creates the 2026/2027 academic year, two demo classes, a teacher-class assignment, and four demo students. It is intentionally for local/demo testing only.
+
 ## Configuration
 
 The application expects:
@@ -105,3 +131,9 @@ The CI pipeline also runs these checks against a clean MariaDB school dataset.
 ## Demo / presentation data
 
 Keep presentation data separate from real school records. The E2E bootstrap script is intended for ephemeral test databases only and must not be pointed at a real school database.
+
+For local/manual demo setup, use:
+
+    php scripts/seed_demo.php
+
+This creates only clearly labeled demo users/classes/students and must never be used against a real school database.
