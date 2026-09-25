@@ -28,7 +28,10 @@ final class Auth
         // Reset pre-auth session state, rotate the session ID, and reset the
         // application session clock before attaching the authenticated identity.
         Security::clearSessionState();
-        $_SESSION[self::SESSION_USER] = ['id' => $id];
+        $_SESSION[self::SESSION_USER] = [
+            'id' => $id,
+            'session_version' => $sessionVersion,
+        ];
         Csrf::rotate();
     }
 
@@ -61,11 +64,25 @@ final class Auth
             return null;
         }
 
-        $id = $_SESSION[self::SESSION_USER]['id'] ?? null;
-        if (!is_int($id) && !ctype_digit((string)$id)) return null;
+        $sessionUser = $_SESSION[self::SESSION_USER] ?? null;
+        if (!is_array($sessionUser)) return null;
+
+        $id = $sessionUser['id'] ?? null;
+        $sessionVersion = $sessionUser['session_version'] ?? null;
+
+        if (
+            (!is_int($id) && !ctype_digit((string)$id))
+            || (!is_int($sessionVersion) && !ctype_digit((string)$sessionVersion))
+        ) {
+            Security::clearSessionState();
+            return null;
+        }
 
         $user = (new UserRepository())->findActiveById((int)$id);
-        if ($user === null) {
+        if (
+            $user === null
+            || (int)($user['session_version'] ?? 0) !== (int)$sessionVersion
+        ) {
             Security::clearSessionState();
             return null;
         }
