@@ -21,6 +21,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 -- Drop in dependency order so a fresh install can safely rebuild every table.
 DROP TABLE IF EXISTS student_import_rows;
+DROP TABLE IF EXISTS teacher_teachings;
 DROP TABLE IF EXISTS student_import_batches;
 DROP TABLE IF EXISTS attendance;
 DROP TABLE IF EXISTS student_enrollments;
@@ -31,6 +32,7 @@ DROP TABLE IF EXISTS students;
 DROP TABLE IF EXISTS classes;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS academic_years;
+DROP TABLE IF EXISTS subjects;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -49,7 +51,10 @@ CREATE TABLE academic_years (
 CREATE TABLE users (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     username VARCHAR(50) NOT NULL,
+    employee_id VARCHAR(50) NULL,
     full_name VARCHAR(120) NOT NULL,
+    phone VARCHAR(30) NULL,
+    phone_verified BOOLEAN NOT NULL DEFAULT FALSE,
     password_hash VARCHAR(255) NOT NULL,
     role ENUM('admin', 'teacher', 'counselor') NOT NULL DEFAULT 'teacher',
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
@@ -57,10 +62,12 @@ CREATE TABLE users (
     locked_until DATETIME NULL,
     session_version INT UNSIGNED NOT NULL DEFAULT 1,
     last_login_at DATETIME NULL,
+    last_seen_at DATETIME NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     UNIQUE KEY uq_users_username (username),
+    UNIQUE KEY uq_users_employee_id (employee_id),
     KEY idx_users_role_active (role, is_active)
 ) ENGINE=InnoDB;
 
@@ -81,6 +88,20 @@ CREATE TABLE classes (
         ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
+CREATE TABLE subjects (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    code VARCHAR(30) NOT NULL,
+    name_fr VARCHAR(120) NOT NULL,
+    name_ar VARCHAR(120) NOT NULL,
+    name_en VARCHAR(120) NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_subjects_code (code),
+    KEY idx_subjects_active (is_active)
+) ENGINE=InnoDB;
+
 CREATE TABLE teacher_classes (
     teacher_id BIGINT UNSIGNED NOT NULL,
     class_id BIGINT UNSIGNED NOT NULL,
@@ -93,6 +114,28 @@ CREATE TABLE teacher_classes (
     CONSTRAINT fk_teacher_classes_class
         FOREIGN KEY (class_id) REFERENCES classes(id)
         ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE teacher_teachings (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    teacher_id BIGINT UNSIGNED NOT NULL,
+    subject_id BIGINT UNSIGNED NOT NULL,
+    class_id BIGINT UNSIGNED NOT NULL,
+    assigned_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_teacher_teachings (teacher_id, subject_id, class_id),
+    KEY idx_teacher_teachings_teacher (teacher_id),
+    KEY idx_teacher_teachings_subject (subject_id),
+    KEY idx_teacher_teachings_class (class_id),
+    CONSTRAINT fk_teacher_teachings_teacher
+        FOREIGN KEY (teacher_id) REFERENCES users(id)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_teacher_teachings_subject
+        FOREIGN KEY (subject_id) REFERENCES subjects(id)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_teacher_teachings_class
+        FOREIGN KEY (class_id) REFERENCES classes(id)
+        ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
 CREATE TABLE students (
