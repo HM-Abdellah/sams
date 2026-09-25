@@ -74,7 +74,7 @@ try {
             if ($pdo->inTransaction()) $pdo->rollBack();
 
             if ((int)($e->errorInfo[1] ?? 0) === 1062) {
-                Response::error('Username already exists.', 409);
+                Response::error('Username or employee ID already exists.', 409);
             }
 
             throw $e;
