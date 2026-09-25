@@ -41,7 +41,7 @@ jobs:
 
       - name: Install MySQL PDO extension
         shell: sh
-        run: docker-php-ext-install pdo_mysql
+        run: docker-php-ext-install pdo_mysql mbstring
 
       - name: Lint PHP sources
         shell: sh
