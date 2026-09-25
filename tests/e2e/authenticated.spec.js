@@ -314,9 +314,21 @@ test.describe('authenticated SAMS smoke', () => {
     await page.locator('#weeklyTeacherSignatures [data-receive-week]').click();
     await expect(page.locator('#weeklyTeacherSignatures .register-receipt.received')).toBeVisible();
 
+    await page.locator('#reportBtn').click();
+    await expect(page.locator('#weeklyPrintSheet')).toContainText('Mathematics');
+
     await page.reload();
     await expect(page.locator('#weeklyTeacherSignatures .register-receipt.received')).toBeVisible();
     await expect(page.locator('#weeklyTeacherSignatures [data-receive-week]')).toHaveCount(0);
+
+    await page.locator('#logoutBtn').click();
+    await page.waitForURL(/login\.php$/);
+
+    await login(page, teacherUsername, teacherPassword);
+    await page.locator('#periods [data-select-period="1"]').click();
+    await page.locator('#attendanceWorkflow [data-reopen-period]').click();
+    await expect(page.locator('#weeklyTeacherSignatures .register-receipt')).toHaveCount(0);
+    await expect(page.locator('#weeklyTeacherSignatures .weekly-teacher-status.needs_resign')).toHaveCount(1);
   });
 
   test('admin can manage a class and a user through the UI', async ({ page }) => {
