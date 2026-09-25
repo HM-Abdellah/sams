@@ -180,7 +180,7 @@ final class StudentRepository
     {
         $stmt = Database::connection()->prepare(
             'UPDATE students
-             SET class_id = ?, status = 'active'
+             SET class_id = ?, status = \'active\'
              WHERE id = ? AND class_id = ?'
         );
         $stmt->execute([$toClassId, $studentId, $fromClassId]);
