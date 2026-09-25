@@ -25,6 +25,19 @@ final class AttendanceRepository
         return $stmt->fetchAll();
     }
 
+    public function forClassRange(int $classId, string $start, string $end): array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT a.id, a.student_id, a.attendance_date, a.period, a.status, a.recorded_by, a.updated_at
+             FROM attendance a
+             INNER JOIN students s ON s.id = a.student_id
+             WHERE s.class_id = ? AND a.attendance_date BETWEEN ? AND ?
+             ORDER BY a.attendance_date, a.period, a.student_id'
+        );
+        $stmt->execute([$classId, $start, $end]);
+        return $stmt->fetchAll();
+    }
+
     public function find(int $studentId, string $date, int $period): ?array
     {
         $stmt = Database::connection()->prepare(
