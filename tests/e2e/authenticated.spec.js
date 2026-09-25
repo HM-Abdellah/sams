@@ -294,6 +294,16 @@ test.describe('authenticated SAMS smoke', () => {
     await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
   });
 
+  test('admin can receive a fully signed weekly register', async ({ page }) => {
+    await login(page, username, password);
+    await page.locator('#classSelect').selectOption({ label: 'E2E-2BAC-A' });
+    await expect(page.locator('#weeklyTeacherSignatures')).toContainText('1/1');
+    await expect(page.locator('#weeklyTeacherSignatures [data-receive-week]')).toBeVisible();
+
+    await page.locator('#weeklyTeacherSignatures [data-receive-week]').click();
+    await expect(page.locator('#weeklyTeacherSignatures .register-receipt.received')).toBeVisible();
+  });
+
   test('admin can manage a class and a user through the UI', async ({ page }) => {
     await login(page, username, password);
     await page.locator('.tab[data-tab="admin"]').click();
