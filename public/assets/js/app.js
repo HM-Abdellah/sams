@@ -367,7 +367,7 @@ async function loadTeachers() {
         });
         renderAll();
     } catch (error) {
-        ui.toast(error.message || 'Erreur de chargement des enseignants.', true);
+        ui.toast(error.message || t('teachers_load_error'), true);
     }
 }
 
@@ -406,7 +406,7 @@ async function loadArchive(view = 'days') {
         setState({ archive: data, archiveView: view });
         renderAll();
     } catch (error) {
-        ui.toast(error.message || 'Erreur de chargement archive.', true);
+        ui.toast(error.message || t('archive_load_error'), true);
     }
 }
 
@@ -873,7 +873,7 @@ function wire() {
             form.reset();
             await loadClass();
             ui.toast(t('student_added'));
-        } catch (error) { ui.toast(error.message || 'Erreur.', true); }
+        } catch (error) { ui.toast(error.message || t('app_error'), true); }
     });
 
     document.querySelector('#studentsList')?.addEventListener('click', async (event) => {
@@ -924,7 +924,7 @@ function wire() {
             await API.deleteStudent(state.classId, Number(deleteButton.dataset.deleteStudent));
             await loadClass();
             ui.toast(t('student_disabled'));
-        } catch (error) { ui.toast(error.message || 'Erreur.', true); }
+        } catch (error) { ui.toast(error.message || t('app_error'), true); }
     });
 
     document.querySelector('#editStudentForm')?.addEventListener('submit', async (event) => {
@@ -942,7 +942,7 @@ function wire() {
             await loadClass();
             ui.toast(t('student_updated'));
         } catch (error) {
-            ui.toast(error.message || 'Erreur de modification.', true);
+            ui.toast(error.message || t('modify_error'), true);
         }
     });
 
@@ -961,7 +961,7 @@ function wire() {
             setOperationalClasses(classes.classes || []);
             ui.classes();
             ui.toast(t('class_created'));
-        } catch (error) { ui.toast(error.message || 'Erreur.', true); }
+        } catch (error) { ui.toast(error.message || t('app_error'), true); }
     });
 
     document.querySelector('#reportBtn')?.addEventListener('click', printWeeklyAttendance);
@@ -984,7 +984,7 @@ function wire() {
                 await openStudentHistory(Number(historyButton.dataset.studentHistory));
             }
         } catch (error) {
-            ui.toast(error.message || 'Erreur de chargement archive.', true);
+            ui.toast(error.message || t('archive_load_error'), true);
         }
     });
 
@@ -1008,7 +1008,7 @@ function wire() {
             if (state.classId) await loadClass();
             ui.toast(t('class_updated'));
         } catch (error) {
-            ui.toast(error.message || 'Erreur de modification de classe.', true);
+            ui.toast(error.message || t('class_modify_error'), true);
         }
     });
 
@@ -1025,7 +1025,7 @@ function wire() {
             await loadAdmin();
             ui.toast(t('user_updated'));
         } catch (error) {
-            ui.toast(error.message || 'Erreur de modification utilisateur.', true);
+            ui.toast(error.message || t('user_modify_error'), true);
         }
     });
 
@@ -1091,7 +1091,7 @@ function wire() {
             await loadAdmin();
             ui.toast(t('assignment_saved'));
         } catch (error) {
-            ui.toast(error.message || 'Erreur d’affectation.', true);
+            ui.toast(error.message || t('assignment_error'), true);
         }
     });
 
@@ -1216,7 +1216,7 @@ function wire() {
             await loadAdmin();
             ui.toast(t('assignment_removed'));
         } catch (error) {
-            ui.toast(error.message || 'Erreur de retrait.', true);
+            ui.toast(error.message || t('unassign_error'), true);
         }
     });
 
@@ -1259,7 +1259,7 @@ function wire() {
                 ui.toast(t('import_finished'));
             }
         } catch (error) {
-            ui.toast(error.message || 'Erreur d’import.', true);
+            ui.toast(error.message || t('error_import'), true);
         }
     });
 
@@ -1289,7 +1289,7 @@ function wire() {
             await loadAdmin();
             ui.toast(t('corrections_saved'));
         } catch (error) {
-            ui.toast(error.message || 'Erreur pendant la correction.', true);
+            ui.toast(error.message || t('import_correction_error'), true);
         }
     });
 
@@ -1306,7 +1306,7 @@ async function loadSignature() {
         const result = await API.signature(state.classId);
         window.dispatchEvent(new CustomEvent('sams:signature-load', { detail: result.signature?.signature_data || '' }));
     } catch (error) {
-        ui.toast(error.message || 'Impossible de charger la signature.', true);
+        ui.toast(error.message || t('signature_load_error'), true);
     }
 }
 
