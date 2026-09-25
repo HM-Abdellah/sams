@@ -112,16 +112,19 @@ Attendance records remain in the database permanently. The weekly screen is only
 
 Historical attendance is exposed through the administration archive only. This keeps the teacher workflow focused on current attendance while allowing administrators to review previous periods for school records and end-of-term activity assessment.
 
-The **Print week** action builds an independent A4 landscape, black-and-white attendance register from the same weekly data loaded on screen. The printed version is intentionally denser and more formal than the digital UI, with class information, six school days, eight periods per day, weekly totals, a legend, and signature lines.
+Attendance follows the paper-register convention: a present student stays blank, while an absent student gets an **X**. One tap toggles blank ↔ X. After the teacher finishes a lesson, they sign that lesson; signing locks its attendance cells. A correction requires an explicit reopen action, and the correction is audited. The week also has a final certification area where each teacher assigned to the class signs their weekly register. Changing a certified lesson invalidates the weekly signatures so the file cannot silently diverge from what was signed.
+
+The **Print week** action builds an independent A4 landscape, black-and-white attendance register from the same weekly data loaded on screen. The printed version is intentionally denser and more formal than the digital UI, with class information, six school days, eight periods per day, a lesson sign-off matrix, all weekly teacher certifications, and captured signature images.
 
 ## Teacher directory and multilingual administration
 
 The administration interface now has a dedicated **Teachers** area. It tracks teacher identity data (employee ID and phone), recent presence, multilingual subjects, and exact teaching assignments to classes. A teaching assignment is tied to one teacher, one subject, and one class, so branches and academic years are not collapsed into one ambiguous label.
 
-For an existing local database, apply:
+For an existing local database, apply the required migrations in order:
 
 ```sql
 SOURCE database/migrations/002_teacher_management.sql;
+SOURCE database/migrations/003_attendance_register_signoffs.sql;
 ```
 
 Fresh installations receive the same structure automatically through `database/schema.sql`.
