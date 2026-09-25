@@ -1,0 +1,27 @@
+name: SAMS PHP CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  php:
+    runs-on: ubuntu-latest
+    container:
+      image: php:8.4-cli
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Lint PHP sources
+        shell: sh
+        run: |
+          find api app config public scripts tests -type f -name '*.php' -print0 \
+            | xargs -0 -n1 php -l
+
+      - name: Run service tests
+        shell: sh
+        run: php tests/run.php
