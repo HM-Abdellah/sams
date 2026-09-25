@@ -134,6 +134,74 @@ export const ui = {
         }
     },
 
+    adminDashboard() {
+        const data = state.adminDashboard;
+        if (!data) return;
+        const summary = data.summary || {};
+        const pulse = document.querySelector('#dashboardPulse');
+        if (pulse) {
+            const cards = [
+                [t('school'), [[t('class_count'), Number(summary.active_classes || 0)], [t('student_count'), Number(summary.active_students || 0)]]],
+                [t('teacher_status'), [[t('total_teachers'), Number(summary.active_teachers || 0)], [t('online'), Number(summary.online_teachers || 0)]]],
+                [t('today_records'), [[t('records'), Number(summary.today_records || 0)], [t('presence_rate'), formatPct(summary.today_presence_rate)]]],
+                [t('today_records'), [[t('present'), Number(summary.today_present || 0)], [t('absent'), Number(summary.today_absent || 0)], [t('late'), Number(summary.today_late || 0)], [t('excused'), Number(summary.today_excused || 0)]]],
+            ];
+            pulse.innerHTML = cards.map(([title, items]) => '<article class="dashboard-metric"><span>' + esc(title) + '</span>' + items.map(([label, value]) => '<div><small>' + esc(label) + '</small><strong>' + esc(value) + '</strong></div>').join('') + '</article>').join('');
+        }
+        const date = document.querySelector('#dashboardDate');
+        if (date) date.textContent = String(data.date || '—');
+        const noRecords = Array.isArray(data.classes_without_today_records) ? data.classes_without_today_records : [];
+        const attentionStudents = Array.isArray(data.attention_students) ? data.attention_students : [];
+        const alerts = [];
+        if (noRecords.length) alerts.push('<div class="dashboard-alert warning"><strong>' + esc(t('no_records_today')) + '</strong><span>' + noRecords.slice(0, 6).map((item) => esc(classLabel(item))).join(' · ') + (noRecords.length > 6 ? ' +' + (noRecords.length - 6) : '') + '</span></div>');
+        if (attentionStudents.length) alerts.push('<div class="dashboard-alert danger"><strong>' + esc(t('attention_students')) + '</strong><span>' + attentionStudents.length + ' · ' + esc(t('absence_threshold')) + ' ' + (data.absence_alert_threshold || 0) + '</span></div>');
+        if (Number(summary.unverified_teachers || 0)) alerts.push('<div class="dashboard-alert warning"><strong>' + esc(t('not_verified')) + '</strong><span>' + Number(summary.unverified_teachers) + '</span></div>');
+        if (Number(summary.locked_teachers || 0)) alerts.push('<div class="dashboard-alert danger"><strong>' + esc(t('locked_accounts')) + '</strong><span>' + Number(summary.locked_teachers) + '</span></div>');
+        document.querySelector('#dashboardAlerts').innerHTML = alerts.join('') || '<div class="empty-inline">' + esc(t('no_alerts')) + '</div>';
+        document.querySelector('#dashboardAlertCount').textContent = String(alerts.length);
+        const teacherBox = document.querySelector('#dashboardTeachers');
+        if (teacherBox) {
+            const rows = [[t('total_teachers'), Number(summary.active_teachers || 0)], [t('online'), Number(summary.online_teachers || 0)], [t('not_verified'), Number(summary.unverified_teachers || 0)], [t('locked_accounts'), Number(summary.locked_teachers || 0)]];
+            teacherBox.innerHTML = rows.map(([label, value]) => '<div class="dashboard-row"><span>' + esc(label) + '</span><strong>' + esc(value) + '</strong></div>').join('');
+        }
+        const classes = Array.isArray(data.class_stats) ? data.class_stats : [];
+        const branches = new Map();
+        for (const row of classes) {
+            const key = String(row.branch || '—');
+            if (!branches.has(key)) branches.set(key, { branch: key, classes: 0, students: 0, records: 0, present: 0, absent: 0, late: 0, excused: 0 });
+            const item = branches.get(key);
+            item.classes += 1; item.students += Number(row.student_count || 0); item.records += Number(row.today_records || 0);
+            item.present += Number(row.present_count || 0); item.absent += Number(row.absent_count || 0); item.late += Number(row.late_count || 0); item.excused += Number(row.excused_count || 0);
+        }
+        const branchGrid = document.querySelector('#dashboardBranchGrid');
+        if (branchGrid) {
+            branchGrid.innerHTML = Array.from(branches.values()).map((branch) => {
+                const total = branch.present + branch.absent + branch.late + branch.excused;
+                const rate = total ? (branch.present / total) * 100 : 0;
+                return '<article class="branch-card"><div class="branch-card-head"><strong>' + esc(branch.branch) + '</strong><span>' + branch.classes + ' ' + esc(t('class_count')) + '</span></div><div class="branch-card-grid">' + metric(t('student_count'), branch.students) + metric(t('records'), branch.records) + metric(t('present'), branch.present) + metric(t('absent'), branch.absent) + metric(t('late'), branch.late) + metric(t('presence_rate'), formatPct(rate)) + '</div></article>';
+            }).join('') || '<div class="empty-state">' + esc(t('no_alerts')) + '</div>';
+        }
+        const classTable = document.querySelector('#dashboardClassTable');
+        if (classTable) {
+            classTable.querySelector('thead').innerHTML = '<tr><th>' + esc(t('branch')) + '</th><th>' + esc(t('class_name')) + '</th><th>' + esc(t('student_count')) + '</th><th>' + esc(t('records')) + '</th><th>' + esc(t('present')) + '</th><th>' + esc(t('absent')) + '</th><th>' + esc(t('late')) + '</th><th>' + esc(t('excused')) + '</th><th>' + esc(t('presence_rate')) + '</th></tr>';
+            classTable.querySelector('tbody').innerHTML = classes.map((row) => {
+                const total = Number(row.present_count || 0) + Number(row.absent_count || 0) + Number(row.late_count || 0) + Number(row.excused_count || 0);
+                const rate = total ? (Number(row.present_count || 0) / total) * 100 : 0;
+                return '<tr><td>' + esc(row.branch || '—') + '</td><td>' + esc(classLabel(row)) + '</td><td>' + Number(row.student_count || 0) + '</td><td>' + Number(row.today_records || 0) + '</td><td>' + Number(row.present_count || 0) + '</td><td>' + Number(row.absent_count || 0) + '</td><td>' + Number(row.late_count || 0) + '</td><td>' + Number(row.excused_count || 0) + '</td><td>' + esc(formatPct(rate)) + '</td></tr>';
+            }).join('') || '<tr><td colspan="9" class="empty-state">' + esc(t('no_alerts')) + '</td></tr>';
+        }
+        const studentTable = document.querySelector('#dashboardStudentTable');
+        if (studentTable) {
+            studentTable.querySelector('thead').innerHTML = '<tr><th>' + esc(t('student')) + '</th><th>' + esc(t('class_name')) + '</th><th>' + esc(t('absence_count')) + '</th><th>' + esc(t('late_count')) + '</th><th>' + esc(t('review')) + '</th></tr>';
+            studentTable.querySelector('tbody').innerHTML = attentionStudents.map((row) => '<tr><td>' + esc([row.first_name, row.last_name].filter(Boolean).join(' ')) + '</td><td>' + esc(classLabel(row)) + '</td><td>' + Number(row.absent_count || 0) + '</td><td>' + Number(row.late_count || 0) + '</td><td>' + esc(t('review')) + '</td></tr>').join('') || '<tr><td colspan="5" class="empty-state">' + esc(t('no_alerts')) + '</td></tr>';
+        }
+        const auditTable = document.querySelector('#dashboardAuditTable');
+        if (auditTable) {
+            const audit = Array.isArray(data.recent_audit) ? data.recent_audit : [];
+            auditTable.querySelector('thead').innerHTML = '<tr><th>' + esc(t('dashboard_as_of')) + '</th><th>' + esc(t('activity')) + '</th><th>' + esc(t('user')) + '</th><th>' + esc(t('entity')) + '</th></tr>';
+            auditTable.querySelector('tbody').innerHTML = audit.map((row) => '<tr><td>' + esc(row.created_at || '—') + '</td><td>' + esc(row.action || '—') + '</td><td>' + esc(row.full_name || row.username || '—') + '</td><td>' + esc(row.entity_type || '—') + ' #' + esc(row.entity_id ?? '—') + '</td></tr>').join('') || '<tr><td colspan="4" class="empty-state">' + esc(t('no_alerts')) + '</td></tr>';
+        }
+    },
     teachers() {
         const box = document.querySelector('#teachersList');
         if (!box) return;
@@ -449,6 +517,10 @@ export const ui = {
     },
 };
 
+function formatPct(value) { return String(Number(value || 0).toFixed(1)) + '%'; }
+
+function metric(label, value) { return '<div><small>' + esc(label) + '</small><strong>' + esc(value) + '</strong></div>'; }
+
 function subjectLabel(subject) {
     const lang = currentLanguage();
     return subject?.['name_' + (lang === 'ar' ? 'ar' : lang === 'en' ? 'en' : 'fr')] || subject?.name_fr || subject?.subject_name_fr || subject?.code || '—';
@@ -469,6 +541,7 @@ export function renderAll() {
     ui.students();
     ui.statistics();
     ui.teachers();
+    ui.adminDashboard();
     ui.admin();
     if (state.archive) ui.archive(state.archive, state.archiveView || 'days');
 }
