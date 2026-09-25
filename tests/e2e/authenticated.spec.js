@@ -194,6 +194,32 @@ test.describe('authenticated SAMS smoke', () => {
     await expect(page.locator('#teachersList .teacher-card').filter({ hasText: 'E2E Teacher' })).toContainText('E2E-2BAC-B');
   });
 
+  test('admin dashboard separates school, branch and class statistics and supports languages', async ({ page }) => {
+    await login(page, username, password);
+
+    await page.locator('.language-btn[data-lang="ar"]').click();
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+    await expect(page.locator('[data-panel="teachers"] [data-i18n="teacher_management"]')).toHaveText('إدارة الأساتذة');
+
+    await page.locator('.language-btn[data-lang="en"]').click();
+    await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+    await expect(page.locator('[data-panel="teachers"] [data-i18n="teacher_management"]')).toHaveText('Teacher management');
+
+    await page.locator('.tab[data-tab="admin"]').click();
+    await expect(page.locator('[data-i18n="school_dashboard"]')).toHaveText('School dashboard');
+    await expect(page.locator('#dashboardPulse')).toContainText('School');
+    await expect(page.locator('#dashboardPulse')).toContainText('4');
+    await expect(page.locator('#dashboardBranchGrid .branch-card')).toHaveCount(1);
+    await expect(page.locator('#dashboardBranchGrid .branch-card').first()).toContainText('SP');
+    const classRows = page.locator('#dashboardClassTable tbody tr');
+    await expect(classRows).toHaveCount(2);
+    await expect(page.locator('#dashboardClassTable')).toContainText('E2E-2BAC-A');
+    await expect(page.locator('#dashboardClassTable')).toContainText('E2E-2BAC-B');
+
+    await page.locator('.language-btn[data-lang="fr"]').click();
+    await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+  });
+
   test('admin can manage a class and a user through the UI', async ({ page }) => {
     await login(page, username, password);
     await page.locator('.tab[data-tab="admin"]').click();
