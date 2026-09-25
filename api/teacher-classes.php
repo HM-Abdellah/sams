@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/app/bootstrap.php';
 
-use PDOException;
 use SAMS\Helpers\Auth;
 use SAMS\Helpers\Csrf;
 use SAMS\Helpers\Database;
@@ -13,7 +12,6 @@ use SAMS\Repositories\AuditLogRepository;
 use SAMS\Repositories\ClassRepository;
 use SAMS\Repositories\TeacherClassRepository;
 use SAMS\Repositories\UserRepository;
-use Throwable;
 
 try {
     $admin = Auth::requireRole('admin');
