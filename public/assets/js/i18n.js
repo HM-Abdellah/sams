@@ -1,5 +1,6 @@
 const DICTIONARY = {
   fr: {
+    row:'Ligne',period:'Période',admin_load_error:'Erreur de chargement de l’administration.',teacher_manage_error:'Erreur de gestion de l’enseignant.',app_error:'Une erreur est survenue.',
     app_title:'SAMS — Gestion des absences',brand_subtitle:'Système de gestion des absences scolaires',language:'Langue',theme:'Changer le thème',archive_month:'Mois de l’archive',
     status_present:'Présent',status_absent:'Absent',status_late:'Retard',status_excused:'Excusé',status_not_marked:'Non marqué',class_activated:'Classe activée.',class_deactivated:'Classe désactivée.',activate_year_error:'Impossible d’activer cette année.',report_window_blocked:'Le navigateur a bloqué la fenêtre du rapport.',report_generation_error:'Impossible de générer le rapport.',subject_create_error:'Erreur de création de matière.',password_reset_error:'Erreur de réinitialisation.',user_create_error_runtime:'Erreur de création utilisateur.',academic_year_error_runtime:'Erreur année scolaire.',import_confirm:'Importer tous les élèves valides de ce batch ?',
     login_subtitle:'Système de gestion des absences',login:'Se connecter',local_server_note:'Serveur local XAMPP · Réseau de l’établissement',
@@ -28,6 +29,7 @@ const DICTIONARY = {
     no_employee_id: 'Aucun matricule', manage: 'Gérer', remove: 'Retirer', duplicate_assignment: 'Cette affectation existe déjà.'
   },
   ar: {
+    row:'السطر',period:'الحصة',admin_load_error:'حدث خطأ أثناء تحميل الإدارة.',teacher_manage_error:'حدث خطأ أثناء إدارة الأستاذ.',app_error:'حدث خطأ.',
     app_title:'SAMS — تدبير الغياب',brand_subtitle:'نظام تدبير الغياب المدرسي',language:'اللغة',theme:'تغيير المظهر',archive_month:'شهر الأرشيف',
     status_present:'حاضر',status_absent:'غائب',status_late:'متأخر',status_excused:'معفى',status_not_marked:'غير مسجل',class_activated:'تم تفعيل القسم.',class_deactivated:'تم تعطيل القسم.',activate_year_error:'تعذر تفعيل هذه السنة.',report_window_blocked:'المتصفح منع فتح نافذة التقرير.',report_generation_error:'تعذر إنشاء التقرير.',subject_create_error:'حدث خطأ في إنشاء المادة.',password_reset_error:'حدث خطأ في إعادة تعيين كلمة المرور.',user_create_error_runtime:'حدث خطأ أثناء إنشاء المستخدم.',academic_year_error_runtime:'حدث خطأ في السنة الدراسية.',import_confirm:'هل تريد استيراد جميع التلاميذ الصالحين في هذه الدفعة؟',
     login_subtitle:'نظام تدبير الغياب',login:'تسجيل الدخول',local_server_note:'خادم محلي XAMPP · شبكة المؤسسة',
@@ -56,6 +58,7 @@ const DICTIONARY = {
     no_employee_id: 'لا يوجد رقم مهني', manage: 'إدارة', remove: 'إزالة', duplicate_assignment: 'هذا التكليف موجود بالفعل.'
   },
   en: {
+    row:'Row',period:'Period',admin_load_error:'Error loading administration.',teacher_manage_error:'Teacher management error.',app_error:'An error occurred.',
     app_title:'SAMS — Attendance management',brand_subtitle:'School attendance management system',language:'Language',theme:'Change theme',archive_month:'Archive month',
     status_present:'Present',status_absent:'Absent',status_late:'Late',status_excused:'Excused',status_not_marked:'Not marked',class_activated:'Class activated.',class_deactivated:'Class deactivated.',activate_year_error:'Unable to activate this year.',report_window_blocked:'The browser blocked the report window.',report_generation_error:'Unable to generate the report.',subject_create_error:'Error creating subject.',password_reset_error:'Error resetting password.',user_create_error_runtime:'Error creating user.',academic_year_error_runtime:'Academic year error.',import_confirm:'Import all valid students from this batch?',
     login_subtitle:'Attendance management system',login:'Log in',local_server_note:'Local XAMPP server · School network',
