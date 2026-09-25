@@ -43,6 +43,7 @@ try {
                 'teachers' => $signoffs->teachersForClass($classId),
                 'period_signoffs' => [],
                 'weekly_signatures' => [],
+                'submission' => $signoffs->findSubmission($classId, $weekStart),
             ]);
         }
 
@@ -55,6 +56,7 @@ try {
             'teachers' => $signoffs->teachersForClass($classId),
             'period_signoffs' => $signoffs->forWeek($classId, $weekStart, $weekEnd),
             'weekly_signatures' => $signoffs->weekSignatures($classId, $weekStart),
+            'submission' => $signoffs->findSubmission($classId, $weekStart),
         ]);
     }
 
