@@ -133,6 +133,97 @@ export const ui = {
         }
     },
 
+    admin() {
+        const usersTable = document.querySelector('#usersTable');
+        if (usersTable) {
+            usersTable.querySelector('thead').innerHTML = '<tr><th>Utilisateur</th><th>Nom</th><th>Rôle</th><th>Actif</th><th>Actions</th></tr>';
+            usersTable.querySelector('tbody').innerHTML = state.users.map((user) => {
+                const active = Number(user.is_active) === 1;
+                return "`<tr>
+                    <td>${esc(user.username)}$</td>
+                    <td>${esc(user.full_name)}$</td>
+                    <td>${esc(user.role)}$</td>
+                    <td>${active ? 'Oui' : 'Non'}$</td>
+                    <td>
+                        <button class="btn small" data-unlock-user="${user.id}$" type="button">Déverrouiller</button>
+                        <button class="btn danger small" data-toggle-user="${user.id}$" data-active="${active ? '1' : '0'}$" type="button">${active ? 'Désactiver' : 'Activer'}$</button>
+                    </td>
+                </tr>`";
+            }).join('') || '<tr><td colspan="5" class="empty-state">Aucun utilisateur.</td></tr>';
+        }
+
+        const teacherSelect = document.querySelector('#assignmentTeacherInput');
+        if (teacherSelect) {
+            const teachers = state.users.filter((user) => user.role === 'teacher' && Number(user.is_active) === 1);
+            teacherSelect.innerHTML = teachers.map((user) => "`<option value="${user.id}$">${esc(user.full_name)}$ (${esc(user.username)}$)</option>`").join('');
+        }
+
+        const classSelect = document.querySelector('#assignmentClassInput');
+        if (classSelect) {
+            classSelect.innerHTML = state.classes.map((cls) => "`<option value="${cls.id}$">${esc(cls.name)}$</option>`").join('');
+        }
+
+        const importsTable = document.querySelector('#importsTable');
+        if (importsTable) {
+            importsTable.querySelector('thead').innerHTML = '<tr><th>Fichier</th><th>État</th><th>Lignes</th><th>Valides</th><th>Erreurs</th><th>Actions</th></tr>';
+            importsTable.querySelector('tbody').innerHTML = state.imports.map((batch) => "`<tr>
+                <td>${esc(batch.original_filename)}$</td>
+                <td>${esc(batch.status)}$</td>
+                <td>${Number(batch.total_rows)}$</td>
+                <td>${Number(batch.valid_rows)}$</td>
+                <td>${Number(batch.error_rows)}$</td>
+                <td>
+                    <button class="btn small" data-revalidate-import="${batch.id}$" type="button">Revalider</button>
+                    <button class="btn success small" data-run-import="${batch.id}$" type="button" ${batch.status === 'validated' ? '' : 'disabled'}$>Importer</button>
+                </td>
+            </tr>`").join('') || '<tr><td colspan="6" class="empty-state">Aucun import pour cette classe.</td></tr>';
+        }
+
+        const auditTable = document.querySelector('#auditTable');
+        if (auditTable) {
+            auditTable.querySelector('thead').innerHTML = '<tr><th>Date</th><th>Action</th><th>Utilisateur</th><th>Entité</th></tr>';
+            const items = Array.isArray(state.auditItems) ? state.auditItems : [];
+            auditTable.querySelector('tbody').innerHTML = items.map((item) => "`<tr>
+                <td>${esc(item.created_at)}$</td>
+                <td>${esc(item.action)}$</td>
+                <td>${esc(item.full_name || item.username || '—')}$</td>
+                <td>${esc(item.entity_type || '—')}$ #${esc(item.entity_id ?? '—')}$</td>
+            </tr>`").join('') || '<tr><td colspan="4" class="empty-state">Aucune activité.</td></tr>';
+        }
+    },
+
+    archive(data, view = 'days') {
+        const table = document.querySelector('#archiveTable');
+        if (!table) return;
+        const head = table.querySelector('thead');
+        const body = table.querySelector('tbody');
+
+        if (view === 'month') {
+            head.innerHTML = '<tr><th>Élève</th><th>Présences</th><th>Absences</th><th>Retards</th><th>Excusés</th><th>Jours enregistrés</th></tr>';
+            const rows = Array.isArray(data?.students) ? data.students : [];
+            body.innerHTML = rows.map((row) => "`<tr>
+                <td>${esc((``{row.first_name || ''} ``{row.last_name || ''}``).trim())}$</td>
+                <td>${Number(row.present_count)}$</td>
+                <td>${Number(row.absent_count)}$</td>
+                <td>${Number(row.late_count)}$</td>
+                <td>${Number(row.excused_count)}$</td>
+                <td>${Number(row.recorded_days)}$</td>
+            </tr>`").join('') || '<tr><td colspan="6" class="empty-state">Aucun enregistrement.</td></tr>';
+            return;
+        }
+
+        head.innerHTML = '<tr><th>Date</th><th>Enregistrements</th><th>Présences</th><th>Absences</th><th>Retards</th><th>Excusés</th></tr>';
+        const rows = Array.isArray(data?.days) ? data.days : [];
+        body.innerHTML = rows.map((row) => "`<tr>
+            <td>${esc(row.attendance_date)}$</td>
+            <td>${Number(row.recorded_count)}$</td>
+            <td>${Number(row.present_count)}$</td>
+            <td>${Number(row.absent_count)}$</td>
+            <td>${Number(row.late_count)}$</td>
+            <td>${Number(row.excused_count)}$</td>
+        </tr>`").join('') || '<tr><td colspan="6" class="empty-state">Aucun enregistrement pour ce mois.</td></tr>';
+    },
+
     stats() {
         let present = 0;
         let absent = 0;
@@ -169,4 +260,6 @@ export function renderAll() {
     ui.attendance();
     ui.students();
     ui.statistics();
+    ui.admin();
+    if (state.archive) ui.archive(state.archive, state.archiveView || 'days');
 }
