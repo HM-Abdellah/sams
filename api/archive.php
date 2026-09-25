@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/app/bootstrap.php';
 
-use SAMSHelpersAuth;
-use SAMSHelpersResponse;
-use SAMSRepositoriesArchiveRepository;
-use SAMSRepositoriesClassRepository;
-use SAMSServicesReportService;
+use SAMS\Helpers\Auth;
+use SAMS\Helpers\Response;
+use SAMS\Repositories\ArchiveRepository;
+use SAMS\Repositories\ClassRepository;
+use SAMS\Services\ReportService;
 
 try {
     $user = Auth::requireLogin();
