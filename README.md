@@ -66,7 +66,7 @@ SAMS needs both PHP and MySQL/MariaDB. php -S replaces Apache for development on
 
 From the project root:
 
-:::shell
+```bash
 cp config/database.example.php config/database.php
 # Edit config/database.php with the local MariaDB credentials.
 
@@ -75,7 +75,7 @@ php -S 0.0.0.0:8080 -t .
 
 Open:
 
-:::text
+```text
 http://localhost:8080/public/
 :::
 
