@@ -152,7 +152,7 @@ async function openArchiveDay(date) {
 
         content.innerHTML = '<p><strong>' + esc(result.class?.name || '') + '</strong> · ' + esc(date) + '</p>'
             + (students.size
-                ? '<div class="table-scroll"><table><thead><tr><th>Élève</th><th>Massar</th>' +
+                ? '<div class="table-scroll"><table><thead><tr><th>' + esc(t('student')) + '</th><th>' + esc(t('massar')) + '</th>' +
                     Array.from({length:8}, (_, i) => '<th>' + (i + 1) + '</th>').join('') +
                     '</tr></thead><tbody>' +
                     [...students.values()].map((student) =>
@@ -172,7 +172,7 @@ async function openArchiveDay(date) {
                 : '<p class="empty-state">Aucun enregistrement pour cette date.</p>');
         dialog.showModal();
     } catch (error) {
-        ui.toast(error.message || 'Impossible de charger la journée.', true);
+        ui.toast(error.message || t('archive_day_error'), true);
     }
 }
 
@@ -191,14 +191,14 @@ async function openStudentHistory(studentId) {
         content.innerHTML = '<p><strong>' + esc([first?.first_name, first?.last_name].filter(Boolean).join(' ')) + '</strong>'
             + ' · Massar: ' + esc(first?.massar_code || '—')
             + ' · Classe: ' + esc(result.class?.name || first?.class_name || '—') + '</p>'
-            + '<div class="table-scroll"><table><thead><tr><th>Date</th><th>Période</th><th>Statut</th></tr></thead><tbody>'
+            + '<div class="table-scroll"><table><thead><tr><th>' + esc(t('date')) + '</th><th>' + esc(t('period')) + '</th><th>' + esc(t('status')) + '</th></tr></thead><tbody>'
             + (attendanceRows.map((row) =>
                 '<tr><td>' + esc(row.attendance_date) + '</td><td>' + Number(row.period) + '</td><td>' + esc(row.status) + '</td></tr>'
-            ).join('') || '<tr><td colspan="3" class="empty-state">Aucune présence enregistrée.</td></tr>')
+            ).join('') || '<tr><td colspan="3" class="empty-state">' + esc(t('no_student_history')) + '</td></tr>')
             + '</tbody></table></div>';
         dialog.showModal();
     } catch (error) {
-        ui.toast(error.message || 'Impossible de charger l’historique.', true);
+        ui.toast(error.message || t('student_history_error'), true);
     }
 }
 
@@ -544,7 +544,7 @@ async function flushAttendanceQueue() {
                     ui.attendance();
                     ui.stats();
                     ui.statistics();
-                    ui.toast(error.message || 'Échec de sauvegarde.', true);
+                    ui.toast(error.message || t('attendance_save_failed'), true);
                     return false;
                 }
             }
@@ -660,11 +660,11 @@ async function openAnnualReport() {
         }).join('');
 
         const win = window.open('', '_blank');
-        if (!win) throw new Error('Le navigateur a bloqué la fenêtre du rapport.');
+        if (!win) throw new Error(t('report_window_blocked'));
         win.document.write(`<!doctype html><html lang="fr" dir="rtl"><head><meta charset="utf-8"><title>SAMS — Statistiques</title><style>body{font-family:Arial,sans-serif;padding:2rem;color:#111}h1{text-align:center}p{text-align:center;color:#555}table{width:100%;border-collapse:collapse;margin-top:2rem}th,td{border:1px solid #aaa;padding:.55rem;text-align:center}th{background:#eee}@media print{@page{size:A4 portrait;margin:12mm}}</style></head><body><h1>SAMS — Statistiques analytiques</h1><p>${esc(report.class?.name || '')} · ${esc(report.month || currentMonth())}</p><table><thead><tr><th>#</th><th>Élève</th><th>Présences</th><th>Absences</th><th>Autres</th><th>Taux</th></tr></thead><tbody>${rows}</tbody></table><script>window.onload=()=>window.print();</script></body></html>`);
         win.document.close();
     } catch (error) {
-        ui.toast(error.message || 'Impossible de générer le rapport.', true);
+        ui.toast(error.message || t('report_generation_error'), true);
     }
 }
 
@@ -800,7 +800,7 @@ function wire() {
             await loadTeachers();
             ui.toast(t('create'));
         } catch (error) {
-            ui.toast(error.message || 'Erreur de création de matière.', true);
+            ui.toast(error.message || t('subject_create_error'), true);
         }
     });
 
@@ -1058,7 +1058,7 @@ function wire() {
             await loadAdmin();
             ui.toast(t('password_reset'));
         } catch (error) {
-            ui.toast(error.message || 'Erreur de réinitialisation.', true);
+            ui.toast(error.message || t('password_reset_error'), true);
         }
     });
 
@@ -1075,7 +1075,7 @@ function wire() {
             await loadAdmin();
             ui.toast(t('user_created'));
         } catch (error) {
-            ui.toast(error.message || 'Erreur de création utilisateur.', true);
+            ui.toast(error.message || t('user_create_error_runtime'), true);
         }
     });
 
@@ -1096,7 +1096,7 @@ function wire() {
             if (state.classId) await loadClass();
             ui.toast(t('year_created'));
         } catch (error) {
-            ui.toast(error.message || 'Erreur année scolaire.', true);
+            ui.toast(error.message || t('academic_year_error_runtime'), true);
         }
     });
 
@@ -1175,7 +1175,7 @@ function wire() {
                 await loadAdmin();
                 renderAll();
                 if (state.classId) await loadClass();
-                ui.toast(active ? 'Classe activée.' : 'Classe désactivée.');
+                ui.toast(active ? t('class_activated') : t('class_deactivated'));
             }
         } catch (error) {
             ui.toast(error.message || 'Erreur de classe.', true);
@@ -1250,7 +1250,7 @@ function wire() {
             if (state.classId) await loadClass();
             ui.toast(t('year_activated'));
         } catch (error) {
-            ui.toast(error.message || 'Impossible d’activer cette année.', true);
+            ui.toast(error.message || t('activate_year_error'), true);
         }
     });
 
@@ -1270,7 +1270,7 @@ function wire() {
                 return;
             }
             if (runImport && !runImport.disabled) {
-                if (!window.confirm('Importer tous les élèves valides de ce batch ?')) return;
+                if (!window.confirm(t('import_confirm'))) return;
                 await API.runImport(Number(runImport.dataset.runImport));
                 await loadClass();
                 await loadAdmin();
