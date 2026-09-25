@@ -17,6 +17,9 @@ export const state = {
   archive: null,
   classId: null,
   month: new Date().toISOString().slice(0, 7),
+  weekStart: '',
+  selectedDay: '',
+  selectedPeriod: 1,
   tab: 'attendance',
   filter: 'all',
   search: ''
@@ -47,6 +50,9 @@ export function resetState() {
     archive: null,
     classId: null,
     month: new Date().toISOString().slice(0, 7),
+    weekStart: '',
+    selectedDay: '',
+    selectedPeriod: 1,
     tab: 'attendance',
     filter: 'all',
     search: ''
