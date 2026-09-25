@@ -21,6 +21,7 @@ export const state = {
   selectedDay: '',
   selectedPeriod: 1,
   tab: 'attendance',
+  archiveView: 'days',
   filter: 'all',
   search: ''
 };
@@ -54,6 +55,7 @@ export function resetState() {
     selectedDay: '',
     selectedPeriod: 1,
     tab: 'attendance',
+    archiveView: 'days',
     filter: 'all',
     search: ''
   });
