@@ -101,7 +101,7 @@ try {
             Response::error('Transfer date is outside the current academic year.', 422);
         }
 
-        $enrollments = new SAMSRepositoriesStudentEnrollmentRepository();
+        $enrollments = new StudentEnrollmentRepository();
         $currentEnrollment = $enrollments->currentForStudent($studentId);
         if ($currentEnrollment === null || (int)$currentEnrollment['class_id'] !== $classId) {
             Response::error('Current student enrollment could not be resolved.', 409);
