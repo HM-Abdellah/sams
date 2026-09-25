@@ -19,9 +19,13 @@ SET NAMES utf8mb4;
 SET time_zone = '+00:00';
 SET FOREIGN_KEY_CHECKS = 0;
 
+-- Drop in dependency order so a fresh install can safely rebuild every table.
+DROP TABLE IF EXISTS student_import_rows;
+DROP TABLE IF EXISTS student_import_batches;
+DROP TABLE IF EXISTS attendance;
+DROP TABLE IF EXISTS student_enrollments;
 DROP TABLE IF EXISTS audit_logs;
 DROP TABLE IF EXISTS signatures;
-DROP TABLE IF EXISTS attendance;
 DROP TABLE IF EXISTS teacher_classes;
 DROP TABLE IF EXISTS students;
 DROP TABLE IF EXISTS classes;
