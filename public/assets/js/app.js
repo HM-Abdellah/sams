@@ -14,8 +14,14 @@ let presenceTimer = null;
 let attendanceVersion = 0;
 const pendingAttendance = new Map();
 
+function localDateString() {
+    const now = new Date();
+    const pad = (value) => String(value).padStart(2, '0');
+    return now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate());
+}
+
 function currentMonth() {
-    return state.month || new Date().toISOString().slice(0, 7);
+    return state.month || localDateString().slice(0, 7);
 }
 
 function setOperationalClasses(classes) {
@@ -64,7 +70,7 @@ async function boot() {
 
         setCsrf(session.csrf || '');
         const month = currentMonth();
-        const defaultWeekStart = startOfWeek(new Date().toISOString().slice(0, 10));
+        const defaultWeekStart = startOfWeek(localDateString());
         setState({
             user: session.user,
             csrf: session.csrf || '',
