@@ -347,7 +347,7 @@ export const ui = {
                     + '<td>' + esc(cls.level || '—') + '</td>'
                     + '<td>' + esc(cls.branch || '—') + '</td>'
                     + '<td>' + esc(cls.academic_year_name || '—') + '</td>'
-                    + '<td>' + (active ? 'Oui' : 'Non') + '</td>'
+                    + '<td>' + (active ? t('yes') : t('no')) + '</td>'
                     + '<td>'
                     + '<button class="btn small" data-edit-class="' + esc(cls.id) + '" type="button">' + esc(t('edit')) + '</button> '
                     + '<button class="btn danger small" data-toggle-class="' + esc(cls.id) + '" data-active="' + (active ? '1' : '0') + '" type="button">'
@@ -355,7 +355,7 @@ export const ui = {
                     + '</button>'
                     + '</td>'
                     + '</tr>';
-            }).join('') || '<tr><td colspan="6" class="empty-state">Aucune classe.</td></tr>';
+            }).join('') || '<tr><td colspan="6" class="empty-state">' + esc(t('empty_classes')) + '</td></tr>';
         }
 
         const usersTable = document.querySelector('#usersTable');
@@ -366,18 +366,18 @@ export const ui = {
                 return '<tr>'
                     + '<td>' + esc(user.username) + '</td>'
                     + '<td>' + esc(user.full_name) + '</td>'
-                    + '<td>' + esc(user.role) + '</td>'
+                    + '<td>' + esc(roleLabel(user.role)) + '</td>'
                     + '<td>' + (active ? 'Oui' : 'Non') + '</td>'
                     + '<td>'
                     + '<button class="btn small" data-edit-user="' + esc(user.id) + '" type="button">Modifier</button> '
                     + '<button class="btn small" data-reset-user="' + esc(user.id) + '" type="button">' + esc(t('password')) + '</button> '
                     + '<button class="btn small" data-unlock-user="' + esc(user.id) + '" type="button">' + esc(t('unlock')) + '</button> '
                     + '<button class="btn danger small" data-toggle-user="' + esc(user.id) + '" data-active="' + (active ? '1' : '0') + '" type="button">'
-                    + (active ? 'Désactiver' : 'Activer')
+                    + (active ? t('deactivate') : t('activate'))
                     + '</button>'
                     + '</td>'
                     + '</tr>';
-            }).join('') || '<tr><td colspan="5" class="empty-state">Aucun utilisateur.</td></tr>';
+            }).join('') || '<tr><td colspan="5" class="empty-state">' + esc(t('empty_users')) + '</td></tr>';
         }
 
         const teacherSelect = document.querySelector('#assignmentTeacherInput');
@@ -400,7 +400,7 @@ export const ui = {
             assignmentsTable.querySelector('thead').innerHTML = '<tr><th>' + esc(t('teacher')) + '</th><th>' + esc(t('active')) + '</th><th>' + esc(t('since')) + '</th><th>' + esc(t('actions')) + '</th></tr>';
             assignmentsTable.querySelector('tbody').innerHTML = state.assignments.map((item) =>
                 '<tr><td>' + esc(item.full_name) + ' (' + esc(item.username) + ')</td>'
-                + '<td>' + (Number(item.is_active) === 1 ? 'Oui' : 'Non') + '</td>'
+                + '<td>' + (Number(item.is_active) === 1 ? t('yes') : t('no')) + '</td>'
                 + '<td>' + esc(item.assigned_at) + '</td>'
                 + '<td><button class="btn danger small" data-unassign-teacher="' + esc(item.id) + '" type="button">' + esc(t('remove')) + '</button></td></tr>'
             ).join('') || '<tr><td colspan="4" class="empty-state">Aucune affectation pour cette classe.</td></tr>';
@@ -416,7 +416,7 @@ export const ui = {
                     + '<td>' + esc(year.ends_on) + '</td>'
                     + '<td>' + (active ? 'Oui' : 'Non') + '</td>'
                     + '<td><button class="btn small" data-activate-year="' + esc(year.id) + '" type="button" ' + (active ? 'disabled' : '') + '>' + esc(t('activate')) + '</button></td></tr>';
-            }).join('') || '<tr><td colspan="5" class="empty-state">Aucune année scolaire.</td></tr>';
+            }).join('') || '<tr><td colspan="5" class="empty-state">' + esc(t('empty_years')) + '</td></tr>';
         }
 
         const importsTable = document.querySelector('#importsTable');
@@ -516,6 +516,11 @@ export const ui = {
         }
     },
 };
+
+function roleLabel(role) {
+    const key = role === 'admin' ? 'role_admin' : role === 'teacher' ? 'role_teacher' : 'role_counselor';
+    return t(key);
+}
 
 function formatPct(value) { return String(Number(value || 0).toFixed(1)) + '%'; }
 
