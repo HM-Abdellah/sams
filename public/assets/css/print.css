@@ -161,3 +161,6 @@
   .print-section-title{page-break-after:avoid}
   .print-signoff-table,.print-weekly-signatures{page-break-inside:auto}
 }
+
+.print-receipt{display:flex;justify-content:space-between;gap:6mm;margin:2mm 0;padding:2mm;border:1px solid #000;font-size:7pt}
+.print-receipt span{font-size:6.5pt}
