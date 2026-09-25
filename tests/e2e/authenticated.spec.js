@@ -10,10 +10,24 @@ test.describe('authenticated SAMS smoke', () => {
     await page.goto('login.php');
     await page.locator('#username').fill(user);
     await page.locator('#password').fill(pass);
-    await Promise.all([
-      page.waitForURL(/index\.php$/),
-      page.locator('#loginBtn').click(),
-    ]);
+    const loginResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/auth.php?action=login') &&
+        response.request().method() === 'POST'
+    );
+
+    await page.locator('#loginBtn').click();
+
+    const loginResponse = await loginResponsePromise;
+    const loginBody = await loginResponse.text();
+
+    if (!loginResponse.ok()) {
+      throw new Error(
+        `Login API failed: HTTP ${loginResponse.status()} — ${loginBody}`
+      );
+    }
+
+    await page.waitForURL(/index\.php$/);
   }
 
   test.skip(!username || !password, 'Set SAMS_E2E_USERNAME and SAMS_E2E_PASSWORD to run authenticated E2E tests.');
