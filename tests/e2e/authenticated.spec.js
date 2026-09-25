@@ -33,6 +33,7 @@ test.describe('authenticated SAMS smoke', () => {
       await expect(page.locator('#assignmentForm')).toBeVisible();
       await expect(page.locator('#importForm')).toBeVisible();
     }
+  });
 
   test('attendance edits are sent as one bulk request', async ({ page }) => {
     const batches = [];
