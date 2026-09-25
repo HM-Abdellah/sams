@@ -103,6 +103,12 @@ try {
         'INSERT INTO teacher_classes (teacher_id, class_id) VALUES (?, ?)'
     );
     $assignmentStmt->execute([$teacherId, $classA]);
+    $signatureStmt = $pdo->prepare(
+        'INSERT INTO signatures (teacher_id, class_id, signature_data, mime_type)
+         VALUES (?, ?, ?, ?)'
+    );
+    $signatureStmt->execute([$teacherId, $classA, 'data:image/png;base64,E2E-SIGNATURE', 'image/png']);
+
     $teachingStmt = $pdo->prepare(
         'INSERT INTO teacher_teachings (teacher_id, subject_id, class_id) VALUES (?, ?, ?)'
     );
