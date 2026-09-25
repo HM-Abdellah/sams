@@ -232,9 +232,9 @@ function ensureAdminDynamicUI() {
             + '<h2 data-i18n="edit_user">Modifier un utilisateur</h2>'
             + '<input id="editUserId" type="hidden">'
             + '<label><span data-i18n="full_name">Nom complet</span><input id="editUserFullNameInput" required maxlength="120"></label>'
-            + '<label><span data-i18n="role">Rôle</span><select id="editUserRoleInput"><option value="teacher">teacher</option><option value="counselor">counselor</option><option value="admin">admin</option></select></label>'
+            + '<label><span data-i18n="role">Rôle</span><select id="editUserRoleInput"><option value="teacher" data-i18n="role_teacher">Enseignant</option><option value="counselor" data-i18n="role_counselor">Conseiller</option><option value="admin" data-i18n="role_admin">Administrateur</option></select></label>'
             + '<label><span data-i18n="active">Actif</span><select id="editUserActiveInput"><option value="1">Oui</option><option value="0">Non</option></select></label>'
-            + '<div class="dialog-actions"><button class="btn" type="button" data-close-dialog="editUserDialog">Annuler</button><button class="btn primary" type="submit">Enregistrer</button></div>'
+            + '<div class="dialog-actions"><button class="btn" type="button" data-close-dialog="editUserDialog" data-i18n="cancel">Annuler</button><button class="btn primary" type="submit" data-i18n="save">Enregistrer</button></div>'
             + '</form>';
         document.body.appendChild(dialog);
     }
@@ -247,7 +247,7 @@ function ensureAdminDynamicUI() {
             + '<input id="transferStudentId" type="hidden">'
             + '<label><span data-i18n="target_class">Classe cible</span><select id="transferTargetClassInput" required></select></label>'
             + '<label><span data-i18n="effective_date">Date d’effet</span><input id="transferEffectiveDateInput" type="date" required></label>'
-            + '<div class="dialog-actions"><button class="btn" type="button" data-close-dialog="transferStudentDialog" data-i18n="cancel">Annuler</button><button class="btn primary" type="submit">Transférer</button></div>'
+            + '<div class="dialog-actions"><button class="btn" type="button" data-close-dialog="transferStudentDialog" data-i18n="cancel">Annuler</button><button class="btn primary" type="submit" data-i18n="transfer">Transférer</button></div>'
             + '</form>';
         document.body.appendChild(dialog);
     }
@@ -371,7 +371,7 @@ async function loadAdmin() {
         });
         renderAll();
     } catch (error) {
-        ui.toast(error.message || 'Erreur de chargement administration.', true);
+        ui.toast(error.message || t('admin_load_error'), true);
     }
 }
 
@@ -766,7 +766,7 @@ function wire() {
             await loadTeachers();
             ui.toast(t('save'));
         } catch (error) {
-            ui.toast(error.message || 'Erreur de modification.', true);
+            ui.toast(error.message || t('modify_error'), true);
         }
     });
 
@@ -782,7 +782,7 @@ function wire() {
             await loadTeachers();
             ui.toast(t('assign'));
         } catch (error) {
-            ui.toast(error.message || 'Erreur d’affectation.', true);
+            ui.toast(error.message || t('assignment_error'), true);
         }
     });
 
@@ -833,7 +833,7 @@ function wire() {
                 await loadTeachers();
             }
         } catch (error) {
-            ui.toast(error.message || 'Erreur de gestion enseignant.', true);
+            ui.toast(error.message || t('teacher_manage_error'), true);
         }
     });
 
@@ -1128,7 +1128,7 @@ function wire() {
             await loadAdmin();
             ui.toast(t('transfer_done'));
         } catch (error) {
-            ui.toast(error.message || 'Erreur de transfert.', true);
+            ui.toast(error.message || t('transfer_error'), true);
         }
     });
 
@@ -1147,7 +1147,7 @@ function wire() {
             await loadAdmin();
             ui.toast(`${t('import_created').replace('%id%', result.batch_id)}`);
         } catch (error) {
-            ui.toast(error.message || 'Erreur d’import.', true);
+            ui.toast(error.message || t('error_import'), true);
         }
     });
 
@@ -1178,7 +1178,7 @@ function wire() {
                 ui.toast(active ? t('class_activated') : t('class_deactivated'));
             }
         } catch (error) {
-            ui.toast(error.message || 'Erreur de classe.', true);
+            ui.toast(error.message || t('class_error'), true);
         }
     });
 
@@ -1222,7 +1222,7 @@ function wire() {
                 await loadAdmin();
             }
         } catch (error) {
-            ui.toast(error.message || 'Erreur de compte utilisateur.', true);
+            ui.toast(error.message || t('account_error'), true);
         }
     });
 
