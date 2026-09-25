@@ -109,24 +109,33 @@ final class AdminDashboardRepository
                 s.id,
                 s.first_name,
                 s.last_name,
-                c.id AS class_id,
-                c.name AS class_name,
-                c.level AS class_level,
-                c.branch AS class_branch,
+                current_class.id AS class_id,
+                current_class.name AS class_name,
+                current_class.level AS class_level,
+                current_class.branch AS class_branch,
                 COALESCE(SUM(a.status = 'absent'), 0) AS absent_count,
                 COALESCE(SUM(a.status = 'late'), 0) AS late_count
              FROM students s
-             INNER JOIN student_enrollments e ON e.student_id = s.id
-             INNER JOIN classes c ON c.id = e.class_id
-             INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-             LEFT JOIN attendance a ON a.enrollment_id = e.id
-                AND a.attendance_date BETWEEN ay.starts_on AND LEAST(ay.ends_on, CURDATE())
-             WHERE s.status = 'active'
-               AND c.is_active = 1
-               AND ay.is_active = 1
+             INNER JOIN student_enrollments current_enrollment
+                ON current_enrollment.student_id = s.id
+               AND current_enrollment.starts_on <= CURDATE()
+               AND (current_enrollment.ends_on IS NULL OR current_enrollment.ends_on >= CURDATE())
+             INNER JOIN classes current_class
+                ON current_class.id = current_enrollment.class_id
+             INNER JOIN academic_years current_year
+                ON current_year.id = current_class.academic_year_id
+               AND current_year.is_active = 1
+             LEFT JOIN student_enrollments e
+                ON e.student_id = s.id
                AND e.starts_on <= CURDATE()
-               AND (e.ends_on IS NULL OR e.ends_on >= CURDATE())
-             GROUP BY s.id, s.first_name, s.last_name, c.id, c.name, c.level, c.branch
+             LEFT JOIN attendance a
+                ON a.enrollment_id = e.id
+               AND a.attendance_date BETWEEN current_year.starts_on AND LEAST(current_year.ends_on, CURDATE())
+             WHERE s.status = 'active'
+               AND current_class.is_active = 1
+               AND (e.ends_on IS NULL OR e.ends_on >= current_year.starts_on)
+             GROUP BY s.id, s.first_name, s.last_name,
+                      current_class.id, current_class.name, current_class.level, current_class.branch
              HAVING absent_count >= {$threshold}
              ORDER BY absent_count DESC, late_count DESC, s.last_name, s.first_name
              LIMIT 10"
@@ -142,6 +151,15 @@ final class AdminDashboardRepository
              INNER JOIN academic_years ay ON ay.id = c.academic_year_id
              WHERE c.is_active = 1
                AND ay.is_active = 1
+               AND EXISTS (
+                   SELECT 1
+                   FROM student_enrollments e
+                   INNER JOIN students s ON s.id = e.student_id
+                   WHERE e.class_id = c.id
+                     AND e.starts_on <= CURDATE()
+                     AND (e.ends_on IS NULL OR e.ends_on >= CURDATE())
+                     AND s.status = 'active'
+               )
                AND NOT EXISTS (
                    SELECT 1
                    FROM attendance a
