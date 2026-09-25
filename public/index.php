@@ -16,7 +16,7 @@ $user = Auth::user();
 $csrf = Csrf::token();
 ?>
 <!doctype html>
-<html lang="fr" dir="rtl">
+<html lang="fr" dir="ltr">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -34,8 +34,8 @@ $csrf = Csrf::token();
     </div>
     <div class="user-area">
         <span id="currentUser"><?= htmlspecialchars((string)$user['full_name'], ENT_QUOTES, 'UTF-8') ?></span>
-        <button id="themeBtn" class="btn ghost" type="button" aria-label="Changer le thème">🌙</button>
-        <button id="logoutBtn" class="btn danger" type="button">Déconnexion</button>
+        <div class="language-switcher" role="group" aria-label="Language"><button class="btn ghost language-btn" data-lang="fr" type="button">FR</button><button class="btn ghost language-btn" data-lang="ar" type="button">العربية</button><button class="btn ghost language-btn" data-lang="en" type="button">EN</button></div><button id="themeBtn" class="btn ghost" type="button" aria-label="Changer le thème">🌙</button>
+        <button id="logoutBtn" class="btn danger" type="button" data-i18n="logout">Déconnexion</button>
     </div>
 </header>
 
@@ -65,7 +65,7 @@ $csrf = Csrf::token();
         <button class="tab" data-tab="statistics" type="button">Statistiques</button>
         <button class="tab" data-tab="signature" type="button">Signature</button>
         <button class="tab" data-tab="archive" type="button">Archive</button>
-        <button class="tab admin-only" data-tab="admin" type="button">Administration</button>
+        <button class="tab admin-only" data-tab="teachers" type="button" data-i18n="teachers">Enseignants</button><button class="tab admin-only" data-tab="admin" type="button" data-i18n="administration">Administration</button>
     </nav>
 
     <section class="panel" data-panel="attendance">
@@ -202,6 +202,33 @@ $csrf = Csrf::token();
         </div>
     </section>
 </main>
+
+<dialog id="teacherEditDialog"><form id="teacherEditForm">
+    <h2 data-i18n="edit_teacher">Modifier l’enseignant</h2>
+    <input id="teacherEditId" type="hidden">
+    <label><span data-i18n="employee_id">Matricule</span><input id="teacherEditEmployeeId" required maxlength="50"></label>
+    <label><span data-i18n="full_name">Nom complet</span><input id="teacherEditFullName" required maxlength="120"></label>
+    <label><span data-i18n="phone">Téléphone</span><input id="teacherEditPhone" maxlength="30" inputmode="tel"></label>
+    <label><span data-i18n="account_active">Compte actif</span><select id="teacherEditActive"><option value="1" data-i18n="yes">Oui</option><option value="0" data-i18n="no">Non</option></select></label>
+    <div class="dialog-actions"><button class="btn" type="button" data-close-dialog="teacherEditDialog" data-i18n="cancel">Annuler</button><button class="btn primary" type="submit" data-i18n="save">Enregistrer</button></div>
+</form></dialog>
+
+<dialog id="teachingDialog"><form id="teachingForm">
+    <h2 data-i18n="assign_teaching">Affecter un enseignement</h2>
+    <label><span data-i18n="teacher">Enseignant</span><select id="teachingTeacherId" required></select></label>
+    <label><span data-i18n="subject">Matière</span><select id="teachingSubjectId" required></select></label>
+    <label><span data-i18n="class">Classe</span><select id="teachingClassId" required></select></label>
+    <div class="dialog-actions"><button class="btn" type="button" data-close-dialog="teachingDialog" data-i18n="cancel">Annuler</button><button class="btn primary" type="submit" data-i18n="assign">Affecter</button></div>
+</form></dialog>
+
+<dialog id="subjectDialog"><form id="subjectForm">
+    <h2 data-i18n="new_subject">Nouvelle matière</h2>
+    <label><span data-i18n="subject_code">Code</span><input id="subjectCodeInput" required maxlength="30" placeholder="MATH"></label>
+    <label><span data-i18n="name_french">Nom français</span><input id="subjectNameFrInput" required maxlength="120"></label>
+    <label><span data-i18n="name_arabic">Nom arabe</span><input id="subjectNameArInput" required maxlength="120" dir="rtl"></label>
+    <label><span data-i18n="name_english">Nom anglais</span><input id="subjectNameEnInput" required maxlength="120"></label>
+    <div class="dialog-actions"><button class="btn" type="button" data-close-dialog="subjectDialog" data-i18n="cancel">Annuler</button><button class="btn primary" type="submit" data-i18n="create">Créer</button></div>
+</form></dialog>
 
 <dialog id="studentDialog"><form id="studentForm">
     <h2>Ajouter un élève</h2>
