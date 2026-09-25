@@ -46,7 +46,7 @@ async function loadClass() {
         renderAll();
         await loadSignature();
     } catch (error) {
-        ui.toast(error.message || 'Erreur de chargement.', true);
+        ui.toast(error.message || t('startup_load_error'), true);
     } finally {
         ui.setLoading?.(false);
     }
@@ -94,7 +94,7 @@ async function boot() {
             await loadAdmin();
         }
     } catch (error) {
-        ui.toast(error.message || 'Erreur de démarrage.', true);
+        ui.toast(error.message || t('startup_error'), true);
     } finally {
         loading = false;
     }
@@ -104,14 +104,14 @@ function ensureArchiveDynamicUI() {
     if (!document.querySelector('#archiveDayDialog')) {
         const dialog = document.createElement('dialog');
         dialog.id = 'archiveDayDialog';
-        dialog.innerHTML = '<form><h2>Présences du jour</h2><div id="archiveDayContent"></div><div class="dialog-actions"><button class="btn" type="button" data-close-dialog="archiveDayDialog">Fermer</button></div></form>';
+        dialog.innerHTML = '<form><h2 data-i18n="day_attendance">Présences du jour</h2><div id="archiveDayContent"></div><div class="dialog-actions"><button class="btn" type="button" data-close-dialog="archiveDayDialog" data-i18n="close">Fermer</button></div></form>';
         document.body.appendChild(dialog);
     }
 
     if (!document.querySelector('#studentHistoryDialog')) {
         const dialog = document.createElement('dialog');
         dialog.id = 'studentHistoryDialog';
-        dialog.innerHTML = '<form><h2>Historique de l’élève</h2><div id="studentHistoryContent"></div><div class="dialog-actions"><button class="btn" type="button" data-close-dialog="studentHistoryDialog">Fermer</button></div></form>';
+        dialog.innerHTML = '<form><h2 data-i18n="student_history">Historique de l’élève</h2><div id="studentHistoryContent"></div><div class="dialog-actions"><button class="btn" type="button" data-close-dialog="studentHistoryDialog" data-i18n="close">Fermer</button></div></form>';
         document.body.appendChild(dialog);
     }
 }
@@ -306,7 +306,7 @@ async function openImportCorrection(batchId) {
 
         const rows = (result.rows || []).filter((row) => row.status !== 'valid');
         if (!rows.length) {
-            ui.toast('Aucune ligne à corriger.');
+            ui.toast(t('import_rows_none'));
             return;
         }
 
@@ -328,7 +328,7 @@ async function openImportCorrection(batchId) {
         dialog.dataset.batchId = String(batchId);
         dialog.showModal();
     } catch (error) {
-        ui.toast(error.message || 'Impossible de charger les lignes à corriger.', true);
+        ui.toast(error.message || t('import_rows_error'), true);
     }
 }
 
@@ -648,7 +648,7 @@ function nextStatus(current) {
 }
 
 async function openAnnualReport() {
-    if (!state.classId) return ui.toast('Sélectionnez une classe.', true);
+    if (!state.classId) return ui.toast(t('select_class'), true);
     try {
         const report = await API.report(state.classId, currentMonth());
         const rows = (report.students || []).map((student, index) => {
@@ -681,7 +681,7 @@ function wire() {
             await API.logout();
             window.location.href = 'login.php';
         } catch (error) {
-            ui.toast(error.message || 'Erreur de déconnexion.', true);
+            ui.toast(error.message || t('logout_error'), true);
         }
     });
 
@@ -889,7 +889,7 @@ function wire() {
             form.closest('dialog')?.close();
             form.reset();
             await loadClass();
-            ui.toast('Élève ajouté.');
+            ui.toast(t('student_added'));
         } catch (error) { ui.toast(error.message || 'Erreur.', true); }
     });
 
@@ -907,7 +907,7 @@ function wire() {
 
             const target = document.querySelector('#transferTargetClassInput');
             if (!target || target.options.length === 0) {
-                ui.toast('Aucune classe cible disponible.', true);
+                ui.toast(t('no_target_class'), true);
                 return;
             }
 
@@ -936,11 +936,11 @@ function wire() {
         }
 
         if (!deleteButton) return;
-        if (!window.confirm('Désactiver cet élève ?')) return;
+        if (!window.confirm(t('deactivate_student_confirm'))) return;
         try {
             await API.deleteStudent(state.classId, Number(deleteButton.dataset.deleteStudent));
             await loadClass();
-            ui.toast('Élève désactivé.');
+            ui.toast(t('student_disabled'));
         } catch (error) { ui.toast(error.message || 'Erreur.', true); }
     });
 
@@ -957,7 +957,7 @@ function wire() {
             });
             event.currentTarget.closest('dialog')?.close();
             await loadClass();
-            ui.toast('Élève modifié.');
+            ui.toast(t('student_updated'));
         } catch (error) {
             ui.toast(error.message || 'Erreur de modification.', true);
         }
@@ -977,7 +977,7 @@ function wire() {
             const classes = await API.classes();
             setOperationalClasses(classes.classes || []);
             ui.classes();
-            ui.toast('Classe créée.');
+            ui.toast(t('class_created'));
         } catch (error) { ui.toast(error.message || 'Erreur.', true); }
     });
 
@@ -1023,7 +1023,7 @@ function wire() {
             await loadAdmin();
             renderAll();
             if (state.classId) await loadClass();
-            ui.toast('Classe modifiée.');
+            ui.toast(t('class_updated'));
         } catch (error) {
             ui.toast(error.message || 'Erreur de modification de classe.', true);
         }
@@ -1040,7 +1040,7 @@ function wire() {
             });
             document.querySelector('#editUserDialog')?.close();
             await loadAdmin();
-            ui.toast('Utilisateur modifié.');
+            ui.toast(t('user_updated'));
         } catch (error) {
             ui.toast(error.message || 'Erreur de modification utilisateur.', true);
         }
@@ -1055,7 +1055,7 @@ function wire() {
             event.currentTarget.reset();
             document.querySelector('#resetUserPasswordDialog')?.close();
             await loadAdmin();
-            ui.toast('Mot de passe réinitialisé.');
+            ui.toast(t('password_reset'));
         } catch (error) {
             ui.toast(error.message || 'Erreur de réinitialisation.', true);
         }
@@ -1072,7 +1072,7 @@ function wire() {
             });
             event.currentTarget.reset();
             await loadAdmin();
-            ui.toast('Utilisateur créé.');
+            ui.toast(t('user_created'));
         } catch (error) {
             ui.toast(error.message || 'Erreur de création utilisateur.', true);
         }
@@ -1093,7 +1093,7 @@ function wire() {
             setOperationalClasses(classes.classes || []);
             renderAll();
             if (state.classId) await loadClass();
-            ui.toast('Année scolaire créée.');
+            ui.toast(t('year_created'));
         } catch (error) {
             ui.toast(error.message || 'Erreur année scolaire.', true);
         }
@@ -1106,7 +1106,7 @@ function wire() {
         try {
             await API.assignTeacher(teacherId, classId);
             await loadAdmin();
-            ui.toast('Affectation enregistrée.');
+            ui.toast(t('assignment_saved'));
         } catch (error) {
             ui.toast(error.message || 'Erreur d’affectation.', true);
         }
@@ -1125,7 +1125,7 @@ function wire() {
             document.querySelector('#transferStudentDialog')?.close();
             await loadClass();
             await loadAdmin();
-            ui.toast('Transfert effectué.');
+            ui.toast(t('transfer_done'));
         } catch (error) {
             ui.toast(error.message || 'Erreur de transfert.', true);
         }
@@ -1138,13 +1138,13 @@ function wire() {
 
     document.querySelector('#importForm')?.addEventListener('submit', async (event) => {
         event.preventDefault();
-        if (!state.classId) return ui.toast('Sélectionnez une classe.', true);
+        if (!state.classId) return ui.toast(t('select_class'), true);
         const file = document.querySelector('#studentImportFile')?.files?.[0];
-        if (!file) return ui.toast('Sélectionnez un fichier CSV.', true);
+        if (!file) return ui.toast(t('select_csv'), true);
         try {
             const result = await API.stageImport(state.classId, file);
             await loadAdmin();
-            ui.toast(`Import staging #${result.batch_id} créé.`);
+            ui.toast(`${t('import_created').replace('%id%', result.batch_id)}`);
         } catch (error) {
             ui.toast(error.message || 'Erreur d’import.', true);
         }
@@ -1167,7 +1167,7 @@ function wire() {
             if (toggle) {
                 const id = Number(toggle.dataset.toggleClass);
                 const active = toggle.dataset.active !== '1';
-                if (!window.confirm(active ? 'Activer cette classe ?' : 'Désactiver cette classe ?')) return;
+                if (!window.confirm(active ? t('activate_class_confirm') : t('deactivate_class_confirm'))) return;
                 await API.setClassActive(id, active);
                 const classes = await API.classes();
                 setOperationalClasses(classes.classes || []);
@@ -1206,7 +1206,7 @@ function wire() {
             if (unlock) {
                 await API.unlockUser(Number(unlock.dataset.unlockUser));
                 await loadAdmin();
-                ui.toast('Compte déverrouillé.');
+                ui.toast(t('account_unlocked'));
                 return;
             }
             if (toggle) {
@@ -1231,7 +1231,7 @@ function wire() {
         try {
             await API.unassignTeacher(Number(button.dataset.unassignTeacher), state.classId);
             await loadAdmin();
-            ui.toast('Affectation retirée.');
+            ui.toast(t('assignment_removed'));
         } catch (error) {
             ui.toast(error.message || 'Erreur de retrait.', true);
         }
@@ -1247,7 +1247,7 @@ function wire() {
             await loadAdmin();
             renderAll();
             if (state.classId) await loadClass();
-            ui.toast('Année scolaire activée.');
+            ui.toast(t('year_activated'));
         } catch (error) {
             ui.toast(error.message || 'Impossible d’activer cette année.', true);
         }
@@ -1265,7 +1265,7 @@ function wire() {
             if (revalidate) {
                 await API.revalidateImport(Number(revalidate.dataset.revalidateImport));
                 await loadAdmin();
-                ui.toast('Import revalidé.');
+                ui.toast(t('import_revalidated'));
                 return;
             }
             if (runImport && !runImport.disabled) {
@@ -1273,7 +1273,7 @@ function wire() {
                 await API.runImport(Number(runImport.dataset.runImport));
                 await loadClass();
                 await loadAdmin();
-                ui.toast('Import terminé.');
+                ui.toast(t('import_finished'));
             }
         } catch (error) {
             ui.toast(error.message || 'Erreur d’import.', true);
@@ -1304,7 +1304,7 @@ function wire() {
             dialog?.close();
             await API.revalidateImport(batchId);
             await loadAdmin();
-            ui.toast('Corrections enregistrées et import revalidé.');
+            ui.toast(t('corrections_saved'));
         } catch (error) {
             ui.toast(error.message || 'Erreur pendant la correction.', true);
         }
