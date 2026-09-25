@@ -107,6 +107,52 @@ final class AttendanceSignoffRepository
         return $stmt->fetch() ?: ['signed_lessons' => 0, 'needs_resign' => 0];
     }
 
+    public function findSubmission(int $classId, string $weekStart): ?array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT
+                s.id,
+                s.class_id,
+                s.week_start,
+                s.received_by,
+                u.full_name AS received_by_name,
+                s.received_at
+             FROM attendance_week_submissions s
+             INNER JOIN users u ON u.id = s.received_by
+             WHERE s.class_id = ? AND s.week_start = ?
+             LIMIT 1'
+        );
+        $stmt->execute([$classId, $weekStart]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    public function receiveWeek(int $classId, string $weekStart, int $adminId): int
+    {
+        $stmt = Database::connection()->prepare(
+            'INSERT INTO attendance_week_submissions (class_id, week_start, received_by)
+             VALUES (?, ?, ?)
+             ON DUPLICATE KEY UPDATE
+                received_by = VALUES(received_by),
+                received_at = CURRENT_TIMESTAMP,
+                updated_at = CURRENT_TIMESTAMP'
+        );
+        $stmt->execute([$classId, $weekStart, $adminId]);
+        return (int)Database::connection()->lastInsertId();
+    }
+
+    public function clearSubmission(int $classId, string $weekStart): ?array
+    {
+        $existing = $this->findSubmission($classId, $weekStart);
+        if ($existing === null) return null;
+
+        $stmt = Database::connection()->prepare(
+            'DELETE FROM attendance_week_submissions WHERE class_id = ? AND week_start = ?'
+        );
+        $stmt->execute([$classId, $weekStart]);
+        return $existing;
+    }
+
     public function upsertPeriod(
         int $classId,
         int $teacherId,
