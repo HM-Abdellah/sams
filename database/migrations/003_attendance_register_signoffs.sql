@@ -1,5 +1,5 @@
 -- Electronic class-register workflow: per-lesson sign-off + weekly teacher certification.
-CREATE TABLE attendance_signoffs (
+CREATE TABLE IF NOT EXISTS attendance_signoffs (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     class_id BIGINT UNSIGNED NOT NULL,
     teacher_id BIGINT UNSIGNED NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE attendance_signoffs (
     CONSTRAINT chk_attendance_signoffs_period CHECK (period BETWEEN 1 AND 8)
 ) ENGINE=InnoDB;
 
-CREATE TABLE attendance_week_signatures (
+CREATE TABLE IF NOT EXISTS attendance_week_signatures (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     class_id BIGINT UNSIGNED NOT NULL,
     teacher_id BIGINT UNSIGNED NOT NULL,
@@ -54,7 +54,7 @@ CREATE TABLE attendance_week_signatures (
         ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
-CREATE TABLE attendance_week_submissions (
+CREATE TABLE IF NOT EXISTS attendance_week_submissions (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     class_id BIGINT UNSIGNED NOT NULL,
     week_start DATE NOT NULL,
