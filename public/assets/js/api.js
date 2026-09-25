@@ -29,6 +29,8 @@ function translateApiError(message, status) {
         ['Only teachers can sign attendance.', 'api_teacher_sign_only'],
         ['Sign at least one lesson before signing the week.', 'api_week_sign_requires_lesson'],
         ['Correct and re-sign all changed lessons before signing the week.', 'api_week_needs_resign'],
+        ['All assigned teachers must sign the week before administration can receive it.', 'api_week_not_ready'],
+        ['Only administrators can receive the weekly register.', 'api_admin_receive_only'],
         ['Unknown attendance sign-off action.', 'api_unknown_action'],
     ]);
 
