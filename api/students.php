@@ -44,7 +44,7 @@ try {
     $action = (string)($body['action'] ?? '');
     $audit = new AuditLogRepository();
 
-    if ($action === 'create') {
+    if ($action === 'create' || $action === 'update') {
         Auth::requireRole('admin', 'teacher');
 
         $service = new StudentService();
@@ -53,31 +53,74 @@ try {
         $number = $service->normalizeNumber(
             isset($body['student_number']) ? (string)$body['student_number'] : null
         );
+        $massarCode = $service->normalizeMassarCode(
+            isset($body['massar_code']) ? (string)$body['massar_code'] : null
+        );
+        $birthDate = $service->validateBirthDate(
+            isset($body['birth_date']) ? (string)$body['birth_date'] : null
+        );
 
         $pdo = Database::connection();
         $pdo->beginTransaction();
 
         try {
-            $id = $repo->create($classId, $number, $first, $last);
+            if ($action === 'create') {
+                $id = $repo->create(
+                    $classId,
+                    $number,
+                    $massarCode,
+                    $birthDate,
+                    $first,
+                    $last
+                );
+
+                $audit->record(
+                    (int)$user['id'],
+                    'student.create',
+                    'student',
+                    $id,
+                    ['class_id' => $classId]
+                );
+
+                $pdo->commit();
+                Response::success(['id' => $id], 201);
+            }
+
+            $studentId = (int)($body['id'] ?? 0);
+            if ($studentId < 1) Response::error('Invalid student.', 422);
+
+            $existing = $repo->findInClass($studentId, $classId);
+            if ($existing === null) Response::error('Student not found.', 404);
+
+            $repo->update(
+                $studentId,
+                $classId,
+                $number,
+                $massarCode,
+                $birthDate,
+                $first,
+                $last
+            );
+
             $audit->record(
                 (int)$user['id'],
-                'student.create',
+                'student.update',
                 'student',
-                $id,
+                $studentId,
                 ['class_id' => $classId]
             );
+
             $pdo->commit();
+            Response::success(['id' => $studentId]);
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();
 
             if ($e instanceof PDOException && (int)($e->errorInfo[1] ?? 0) === 1062) {
-                Response::error('Student number already exists in this class.', 409);
+                Response::error('A student identifier is already in use.', 409);
             }
 
             throw $e;
         }
-
-        Response::success(['id' => $id], 201);
     }
 
     if ($action === 'delete') {
