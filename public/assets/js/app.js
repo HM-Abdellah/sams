@@ -70,8 +70,8 @@ async function saveCell(td, status) {
         period: Number(td.dataset.period),
     };
     try {
-        if (status === '') await API.deleteAttendance(payload);
-        else await API.setAttendance({ ...payload, status });
+        if (status === '') await API.deleteAttendance(state.classId, payload);
+        else await API.setAttendance(state.classId, { ...payload, status });
         await loadClass();
     } catch (error) {
         ui.toast(error.message || 'Échec de sauvegarde.', true);
