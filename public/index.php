@@ -66,7 +66,7 @@ $csrf = Csrf::token();
         <button class="tab" data-tab="students" type="button" data-i18n="students">Élèves</button>
         <button class="tab" data-tab="statistics" type="button" data-i18n="statistics">Statistiques</button>
         <button class="tab" data-tab="signature" type="button" data-i18n="signature">Signature</button>
-        <button class="tab" data-tab="archive" type="button" data-i18n="archive">Archive</button>
+        <button class="tab admin-only" data-tab="archive" type="button" data-i18n="archive">Archive</button>
         <button class="tab admin-only" data-tab="teachers" type="button" data-i18n="teachers">Enseignants</button><button class="tab admin-only" data-tab="admin" type="button" data-i18n="administration">Administration</button>
     </nav>
 
@@ -317,10 +317,10 @@ $csrf = Csrf::token();
 </form></dialog>
 
 <dialog id="reportDialog"><form id="reportForm">
-    <h2>Quel rapport voulez-vous générer ?</h2>
-    <button class="btn primary" id="officialReportBtn" type="button">Feuille officielle de présence</button>
-    <button class="btn" id="annualReportBtn" type="button">Statistiques analytiques</button>
-    <button class="btn" type="button" data-close-dialog="reportDialog">Annuler</button>
+    <h2 data-i18n="reports">Rapports</h2>
+    <button class="btn primary" id="officialReportBtn" type="button" data-i18n="print_week">Imprimer la semaine</button>
+    <button class="btn" id="annualReportBtn" type="button" data-i18n="monthly_analytics">Statistiques analytiques</button>
+    <div class="dialog-actions"><button class="btn" type="button" data-close-dialog="reportDialog" data-i18n="cancel">Annuler</button></div>
 </form></dialog>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
