@@ -12,6 +12,8 @@ require_once __DIR__ . '/../app/Helpers/Security.php';
 require_once __DIR__ . '/../app/Helpers/Csrf.php';
 require_once __DIR__ . '/../app/Helpers/Auth.php';
 
+ob_start();
+
 function expect_true(bool $condition, string $message): void
 {
     if (!$condition) {
@@ -231,4 +233,5 @@ foreach ($tests as $name => $test) {
 }
 
 echo PHP_EOL . "Passed: {$passed}; Failed: {$failed}" . PHP_EOL;
+ob_end_flush();
 exit($failed === 0 ? 0 : 1);
