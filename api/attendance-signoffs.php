@@ -130,7 +130,7 @@ try {
             if ($isTeacher && (int)$existing['teacher_id'] !== (int)$user['id']) {
                 Response::error('Only the signing teacher can reopen this lesson.', 403);
             }
-            $changed = $signoffs->reopenPeriod($classId, $date, $period);
+            $changed = $signoffs->reopenPeriod($classId, $date, $period, (int)$user['id']);
             $audit->record(
                 (int)$user['id'],
                 'attendance.reopen_period',
