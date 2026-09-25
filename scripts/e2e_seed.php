@@ -41,7 +41,10 @@ function execute_sql_file(PDO $pdo, string $path): void
 
 execute_sql_file($pdo, __DIR__ . '/../database/schema.sql');
 
-$pdo->exec('USE ' . $pdo->quote($db));
+if (!preg_match('/^[A-Za-z0-9_]+$/', $db)) {
+    throw new RuntimeException('Invalid E2E database name.');
+}
+$pdo->exec('USE `' . $db . '`');
 
 $pdo->beginTransaction();
 
