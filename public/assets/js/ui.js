@@ -339,7 +339,7 @@ export const ui = {
     admin() {
         const classesTable = document.querySelector('#adminClassesTable');
         if (classesTable) {
-            classesTable.querySelector('thead').innerHTML = '<tr><th>Classe</th><th>Niveau</th><th>Branche</th><th>Année</th><th>Active</th><th>Actions</th></tr>';
+            classesTable.querySelector('thead').innerHTML = '<tr><th>' + esc(t('class')) + '</th><th>' + esc(t('level')) + '</th><th>' + esc(t('branch')) + '</th><th>' + esc(t('academic_year')) + '</th><th>' + esc(t('active')) + '</th><th>' + esc(t('actions')) + '</th></tr>';
             classesTable.querySelector('tbody').innerHTML = state.adminClasses.map((cls) => {
                 const active = Number(cls.is_active) === 1;
                 return '<tr>'
@@ -349,9 +349,9 @@ export const ui = {
                     + '<td>' + esc(cls.academic_year_name || '—') + '</td>'
                     + '<td>' + (active ? 'Oui' : 'Non') + '</td>'
                     + '<td>'
-                    + '<button class="btn small" data-edit-class="' + esc(cls.id) + '" type="button">Modifier</button> '
+                    + '<button class="btn small" data-edit-class="' + esc(cls.id) + '" type="button">' + esc(t('edit')) + '</button> '
                     + '<button class="btn danger small" data-toggle-class="' + esc(cls.id) + '" data-active="' + (active ? '1' : '0') + '" type="button">'
-                    + (active ? 'Désactiver' : 'Activer')
+                    + (active ? t('deactivate') : t('activate'))
                     + '</button>'
                     + '</td>'
                     + '</tr>';
@@ -360,7 +360,7 @@ export const ui = {
 
         const usersTable = document.querySelector('#usersTable');
         if (usersTable) {
-            usersTable.querySelector('thead').innerHTML = '<tr><th>Utilisateur</th><th>Nom</th><th>Rôle</th><th>Actif</th><th>Actions</th></tr>';
+            usersTable.querySelector('thead').innerHTML = '<tr><th>' + esc(t('username')) + '</th><th>' + esc(t('full_name')) + '</th><th>' + esc(t('role')) + '</th><th>' + esc(t('active')) + '</th><th>' + esc(t('actions')) + '</th></tr>';
             usersTable.querySelector('tbody').innerHTML = state.users.map((user) => {
                 const active = Number(user.is_active) === 1;
                 return '<tr>'
@@ -370,8 +370,8 @@ export const ui = {
                     + '<td>' + (active ? 'Oui' : 'Non') + '</td>'
                     + '<td>'
                     + '<button class="btn small" data-edit-user="' + esc(user.id) + '" type="button">Modifier</button> '
-                    + '<button class="btn small" data-reset-user="' + esc(user.id) + '" type="button">Mot de passe</button> '
-                    + '<button class="btn small" data-unlock-user="' + esc(user.id) + '" type="button">Déverrouiller</button> '
+                    + '<button class="btn small" data-reset-user="' + esc(user.id) + '" type="button">' + esc(t('password')) + '</button> '
+                    + '<button class="btn small" data-unlock-user="' + esc(user.id) + '" type="button">' + esc(t('unlock')) + '</button> '
                     + '<button class="btn danger small" data-toggle-user="' + esc(user.id) + '" data-active="' + (active ? '1' : '0') + '" type="button">'
                     + (active ? 'Désactiver' : 'Activer')
                     + '</button>'
@@ -397,31 +397,31 @@ export const ui = {
 
         const assignmentsTable = document.querySelector('#assignmentsTable');
         if (assignmentsTable) {
-            assignmentsTable.querySelector('thead').innerHTML = '<tr><th>Enseignant</th><th>Actif</th><th>Depuis</th><th>Action</th></tr>';
+            assignmentsTable.querySelector('thead').innerHTML = '<tr><th>' + esc(t('teacher')) + '</th><th>' + esc(t('active')) + '</th><th>' + esc(t('since')) + '</th><th>' + esc(t('actions')) + '</th></tr>';
             assignmentsTable.querySelector('tbody').innerHTML = state.assignments.map((item) =>
                 '<tr><td>' + esc(item.full_name) + ' (' + esc(item.username) + ')</td>'
                 + '<td>' + (Number(item.is_active) === 1 ? 'Oui' : 'Non') + '</td>'
                 + '<td>' + esc(item.assigned_at) + '</td>'
-                + '<td><button class="btn danger small" data-unassign-teacher="' + esc(item.id) + '" type="button">Retirer</button></td></tr>'
+                + '<td><button class="btn danger small" data-unassign-teacher="' + esc(item.id) + '" type="button">' + esc(t('remove')) + '</button></td></tr>'
             ).join('') || '<tr><td colspan="4" class="empty-state">Aucune affectation pour cette classe.</td></tr>';
         }
 
         const academicYearsTable = document.querySelector('#academicYearsTable');
         if (academicYearsTable) {
-            academicYearsTable.querySelector('thead').innerHTML = '<tr><th>Nom</th><th>Début</th><th>Fin</th><th>Active</th><th>Action</th></tr>';
+            academicYearsTable.querySelector('thead').innerHTML = '<tr><th>' + esc(t('name')) + '</th><th>' + esc(t('start')) + '</th><th>' + esc(t('end')) + '</th><th>' + esc(t('active')) + '</th><th>' + esc(t('actions')) + '</th></tr>';
             academicYearsTable.querySelector('tbody').innerHTML = state.academicYears.map((year) => {
                 const active = Number(year.is_active) === 1;
                 return '<tr><td>' + esc(year.name) + '</td>'
                     + '<td>' + esc(year.starts_on) + '</td>'
                     + '<td>' + esc(year.ends_on) + '</td>'
                     + '<td>' + (active ? 'Oui' : 'Non') + '</td>'
-                    + '<td><button class="btn small" data-activate-year="' + esc(year.id) + '" type="button" ' + (active ? 'disabled' : '') + '>Activer</button></td></tr>';
+                    + '<td><button class="btn small" data-activate-year="' + esc(year.id) + '" type="button" ' + (active ? 'disabled' : '') + '>' + esc(t('activate')) + '</button></td></tr>';
             }).join('') || '<tr><td colspan="5" class="empty-state">Aucune année scolaire.</td></tr>';
         }
 
         const importsTable = document.querySelector('#importsTable');
         if (importsTable) {
-            importsTable.querySelector('thead').innerHTML = '<tr><th>Fichier</th><th>État</th><th>Lignes</th><th>Valides</th><th>Erreurs</th><th>Actions</th></tr>';
+            importsTable.querySelector('thead').innerHTML = '<tr><th>' + esc(t('file')) + '</th><th>' + esc(t('status')) + '</th><th>' + esc(t('rows')) + '</th><th>' + esc(t('valid')) + '</th><th>' + esc(t('errors')) + '</th><th>' + esc(t('actions')) + '</th></tr>';
             importsTable.querySelector('tbody').innerHTML = state.imports.map((batch) =>
                 '<tr><td>' + esc(batch.original_filename) + '</td>'
                 + '<td>' + esc(batch.status) + '</td>'
@@ -429,18 +429,18 @@ export const ui = {
                 + '<td>' + Number(batch.valid_rows) + '</td>'
                 + '<td>' + Number(batch.error_rows) + '</td>'
                 + '<td>'
-                + '<button class="btn small" data-edit-import="' + esc(batch.id) + '" type="button">Corriger</button> '
-                + '<button class="btn small" data-revalidate-import="' + esc(batch.id) + '" type="button">Revalider</button> '
+                + '<button class="btn small" data-edit-import="' + esc(batch.id) + '" type="button">' + esc(t('correct')) + '</button> '
+                + '<button class="btn small" data-revalidate-import="' + esc(batch.id) + '" type="button">' + esc(t('revalidate')) + '</button> '
                 + '<button class="btn success small" data-run-import="' + esc(batch.id) + '" type="button" '
                 + (batch.status === 'validated' ? '' : 'disabled')
-                + '>Importer</button>'
+                + '>' + esc(t('import_action')) + '</button>'
                 + '</td></tr>'
             ).join('') || '<tr><td colspan="6" class="empty-state">Aucun import pour cette classe.</td></tr>';
         }
 
         const auditTable = document.querySelector('#auditTable');
         if (auditTable) {
-            auditTable.querySelector('thead').innerHTML = '<tr><th>Date</th><th>Action</th><th>Utilisateur</th><th>Entité</th></tr>';
+            auditTable.querySelector('thead').innerHTML = '<tr><th>' + esc(t('date')) + '</th><th>' + esc(t('activity')) + '</th><th>' + esc(t('user')) + '</th><th>' + esc(t('entity')) + '</th></tr>';
             const items = Array.isArray(state.auditItems) ? state.auditItems : [];
             auditTable.querySelector('tbody').innerHTML = items.map((item) =>
                 '<tr><td>' + esc(item.created_at) + '</td>'
