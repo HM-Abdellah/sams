@@ -49,6 +49,7 @@ export const API = Object.freeze({
 
     users: () => request('users.php'),
     teachers: () => request('teachers.php'),
+    adminDashboard: () => request('admin-dashboard.php'),
     assignTeaching: (teacherId, subjectId, classId) => request('teachers.php', { method:'POST', body:JSON.stringify({action:'assign',teacher_id:teacherId,subject_id:subjectId,class_id:classId}) }),
     unassignTeaching: (id) => request('teachers.php', { method:'POST', body:JSON.stringify({action:'unassign',id}) }),
     createSubject: (data) => request('teachers.php', { method:'POST', body:JSON.stringify({action:'create_subject',...data}) }),
