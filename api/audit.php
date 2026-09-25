@@ -8,7 +8,6 @@ use SAMS\Helpers\Auth;
 use SAMS\Helpers\Response;
 use SAMS\Helpers\Validation;
 use SAMS\Repositories\AuditLogRepository;
-use Throwable;
 
 try {
     Auth::requireRole('admin');
