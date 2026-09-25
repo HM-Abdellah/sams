@@ -175,8 +175,8 @@ function ensureAdminDynamicUI() {
         const table = document.createElement('div');
         table.className = 'table-scroll';
         table.innerHTML = '<table id="adminClassesTable"><thead></thead><tbody></tbody></table>';
-        const form = document.querySelector('#classForm');
-        form?.insertAdjacentElement('afterend', table);
+        const panel = document.querySelector('[data-panel="admin"]');
+        panel?.appendChild(table);
     }
 
     if (!document.querySelector('#editClassDialog')) {
