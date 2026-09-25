@@ -46,7 +46,7 @@ try {
             Response::error('Invalid teaching assignment.', 422);
         }
         if (!$repo->teacherExists($teacherId)) Response::error('Teacher not found.', 404);
-        if (!$repo->subjectExists($subjectId)) Response::error('Subject not found.', 404);
+        if (!$repo->subjectExistsActive($subjectId)) Response::error('Subject not found or inactive.', 404);
         if (!$repo->classExistsActive($classId)) Response::error('Class not found or inactive.', 404);
 
         $pdo->beginTransaction();
