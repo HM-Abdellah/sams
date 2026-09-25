@@ -159,3 +159,10 @@ body.light{--bg:#f6f8fa;--panel:#ffffff;--panel2:#f0f3f6;--border:#d0d7de;--text
   .weekly-teacher-row{align-items:flex-start;flex-wrap:wrap}
   .weekly-teacher-status{margin-inline-start:auto}
 }
+
+.register-receipt{display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;margin:0 0 .75rem;padding:.75rem;border:1px solid var(--border);border-radius:.7rem;background:var(--panel)}
+.register-receipt strong,.register-receipt span{font-size:.74rem}
+.register-receipt span{color:var(--muted)}
+.register-receipt.ready{border-color:rgba(63,185,80,.45)}
+.register-receipt.ready strong{color:#56d364}
+.register-receipt.received{border-color:rgba(47,129,247,.4)}
