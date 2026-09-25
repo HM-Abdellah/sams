@@ -37,6 +37,7 @@ export const API = Object.freeze({
     transferStudent: (classId, id, targetClassId, effectiveDate) => request(`students.php?class_id=${encodeURIComponent(classId)}`, { method:'POST', body:JSON.stringify({action:'transfer',id,target_class_id:targetClassId,effective_date:effectiveDate}) }),
 
     attendance: (classId, month) => request(`attendance.php?class_id=${encodeURIComponent(classId)}&month=${encodeURIComponent(month)}`),
+    attendanceWeek: (classId, weekStart) => request(`attendance.php?class_id=${encodeURIComponent(classId)}&week_start=${encodeURIComponent(weekStart)}`),
     setAttendance: (classId, data) => request(`attendance.php?class_id=${encodeURIComponent(classId)}`, { method:'POST', body:JSON.stringify(data) }),
     bulkAttendance: (classId, entries) => request(`attendance.php?class_id=${encodeURIComponent(classId)}`, { method:'POST', body:JSON.stringify({action:'bulk', entries}) }),
     deleteAttendance: (classId, data) => request(`attendance.php?class_id=${encodeURIComponent(classId)}`, { method:'DELETE', body:JSON.stringify(data) }),
