@@ -100,7 +100,7 @@ The preview endpoint is admin-only. It returns batch/class summaries by default;
 
 The reconcile endpoint is admin-only and performs target-class mapping plus Massar reconciliation against the production database, but it does not create production student/enrollment rows.
 
-The commit endpoint is admin-only and requires a fully reconciled batch. It rechecks target class identity, student identity, enrollment state, and roster-number collisions under locks before performing the atomic final import. Unresolved conflicts return HTTP 409 and do not write production records.
+The commit endpoint is admin-only and requires a fully reconciled batch. It rechecks target class identity, student identity, and enrollment state under locks before performing the atomic final import. Roster numbers remain source diagnostics only and do not participate in production identity or locking. Unresolved conflicts return HTTP 409 and do not write production records.
 
 
 ## Verification gates
