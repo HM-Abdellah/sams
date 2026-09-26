@@ -13,23 +13,15 @@ try {
     $request = Request::fromGlobals();
     $prefix = '/api/v1';
     $path = $request->path();
-    $marker = strpos($path, $prefix);
 
-    if ($marker === false) {
+    if ($path !== $prefix && !str_starts_with($path, $prefix . '/')) {
         Response::json([
             'success' => false,
             'error' => 'API route not found.',
         ], 404)->send();
     }
 
-    $afterPrefix = substr($path, $marker + strlen($prefix));
-
-    if ($afterPrefix !== '' && $afterPrefix[0] !== '/') {
-        Response::json([
-            'success' => false,
-            'error' => 'API route not found.',
-        ], 404)->send();
-    }
+    $afterPrefix = substr($path, strlen($prefix));
 
     $apiPath = $afterPrefix === '' ? '/' : $afterPrefix;
     $apiRequest = $request->withPath($apiPath);
