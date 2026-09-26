@@ -128,6 +128,41 @@ $csrf = Csrf::token();
         <div class="table-scroll"><table id="archiveTable"><thead></thead><tbody></tbody></table></div>
     </section>
 
+    <section class="panel hidden admin-only" data-panel="teachers">
+        <div class="panel-head">
+            <div>
+                <h1 data-i18n="teacher_management">Gestion des enseignants</h1>
+                <p data-i18n="teacher_management_desc">Présence, identité professionnelle, matières et classes enseignées.</p>
+            </div>
+            <div class="toolbar-right">
+                <button class="btn" id="addSubjectBtn" type="button" data-i18n="new_subject">+ Matière</button>
+                <button class="btn primary" id="assignTeachingBtn" type="button" data-i18n="assign_teaching">+ Ajouter un enseignement</button>
+            </div>
+        </div>
+
+        <div class="stats teacher-stats">
+            <article><span data-i18n="total_teachers">Enseignants</span><strong id="teacherTotal">0</strong></article>
+            <article><span data-i18n="online">Connectés</span><strong id="teacherOnline">0</strong></article>
+            <article><span data-i18n="not_verified">Non vérifiés</span><strong id="teacherUnverified">0</strong></article>
+            <article><span data-i18n="inactive">Inactifs</span><strong id="teacherInactive">0</strong></article>
+        </div>
+
+        <div class="teacher-filters">
+            <input id="teacherSearch" type="search" placeholder="Rechercher un enseignant…" data-i18n-placeholder="search_teacher" autocomplete="off" aria-label="Rechercher un enseignant">
+            <select id="teacherStatusFilter" aria-label="Statut">
+                <option value="all" data-i18n="all">Tous</option>
+                <option value="online" data-i18n="online">Connectés</option>
+                <option value="offline" data-i18n="offline">Non connectés</option>
+                <option value="active" data-i18n="active">Actifs</option>
+                <option value="inactive" data-i18n="inactive">Inactifs</option>
+            </select>
+            <select id="teacherSubjectFilter" aria-label="Matière"></select>
+            <select id="teacherClassFilter" aria-label="Classe"></select>
+        </div>
+
+        <div id="teachersList" class="teachers-grid"></div>
+    </section>
+
     <section class="panel hidden admin-only" data-panel="admin">
         <section class="admin-dashboard">
             <div class="panel-head">

@@ -3,7 +3,7 @@ import { state, setState } from './state.js';
 import { ui, renderAll } from './ui.js';
 import { setupSignature } from './signature.js';
 import { DAYS, PERIODS, dateFromWeek, startOfWeek, attendanceKey, displayName } from './logic.js';
-import { initLanguage, setLanguage, t } from './i18n.js';
+import { currentLanguage, initLanguage, setLanguage, t } from './i18n.js';
 
 let loading = false;
 let clickTimer = null;
@@ -859,6 +859,15 @@ function esc(value) {
     const div = document.createElement('div');
     div.textContent = String(value ?? '');
     return div.innerHTML;
+}
+
+function subjectLabel(subject) {
+    const lang = currentLanguage();
+    return subject?.['name_' + (lang === 'ar' ? 'ar' : lang === 'en' ? 'en' : 'fr')]
+        || subject?.name_fr
+        || subject?.subject_name_fr
+        || subject?.code
+        || '—';
 }
 
 function wire() {

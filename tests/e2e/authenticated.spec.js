@@ -87,6 +87,7 @@ test.describe('authenticated SAMS smoke', () => {
       });
     });
 
+    await page.setViewportSize({ width: 390, height: 844 });
     await login(page, username, password);
     await expect(page.locator('#attendanceMobileList .attendance-student-card').first()).toBeVisible();
     await page.locator('#periods [data-select-period="1"]').click();
@@ -128,11 +129,12 @@ test.describe('authenticated SAMS smoke', () => {
   test('teacher sees only assigned classes', async ({ page }) => {
     test.skip(!teacherUsername || !teacherPassword, 'Set teacher E2E credentials to run teacher isolation tests.');
 
+    await page.setViewportSize({ width: 390, height: 844 });
     await login(page, teacherUsername, teacherPassword);
     await expect(page.locator('#attendanceBody')).toBeVisible();
     await expect(page.locator('#weekDays .week-day-btn')).toHaveCount(6);
     await expect(page.locator('#periods .period-btn')).toHaveCount(8);
-    await expect(page.locator('#attendanceMobileList .attendance-student-card')).toHaveCount(4);
+    await expect(page.locator('#attendanceMobileList .attendance-student-card')).toHaveCount(3);
     await expect(page.locator('.tab[data-tab="admin"]')).toHaveCount(0);
     await expect(page.locator('.tab[data-tab="archive"]')).toHaveCount(0);
   });
@@ -140,6 +142,7 @@ test.describe('authenticated SAMS smoke', () => {
   test('teacher can sign, reopen, correct and re-sign a lesson, then certify the week', async ({ page }) => {
     test.skip(!teacherUsername || !teacherPassword, 'Set teacher E2E credentials to run teacher isolation tests.');
 
+    await page.setViewportSize({ width: 390, height: 844 });
     await login(page, teacherUsername, teacherPassword);
 
     const saturday = await page.locator('#weekDays .week-day-btn').nth(5).getAttribute('data-select-day');
@@ -171,6 +174,7 @@ test.describe('authenticated SAMS smoke', () => {
   test('teacher weekly attendance is touch-friendly and weekly print is populated', async ({ page }) => {
     test.skip(!teacherUsername || !teacherPassword, 'Set teacher E2E credentials to run teacher isolation tests.');
 
+    await page.setViewportSize({ width: 390, height: 844 });
     await login(page, teacherUsername, teacherPassword);
 
     await expect(page.locator('#weekDays .week-day-btn')).toHaveCount(6);
@@ -204,6 +208,7 @@ test.describe('authenticated SAMS smoke', () => {
     await expect(birthDate).toHaveValue('');
     await birthDate.fill('2010-03-15');
     await page.locator('#importCorrectionForm button[type="submit"]').click();
+    await expect(page.locator('#importCorrectionDialog')).toBeHidden();
 
     await page.locator('.tab[data-tab="admin"]').click();
     const validatedRow = page.locator('#importsTable tbody tr').filter({ hasText: 'students-invalid.csv' }).first();
@@ -227,6 +232,7 @@ test.describe('authenticated SAMS smoke', () => {
     await page.locator('#transferTargetClassInput').selectOption({ label: 'E2E-2BAC-B' });
     await page.locator('#transferEffectiveDateInput').fill('2026-10-01');
     await page.locator('#transferStudentForm button[type="submit"]').click();
+    await expect(page.locator('#transferStudentDialog')).toBeHidden();
 
     await page.locator('.tab[data-tab="admin"]').click();
     await expect(page.locator('#studentsList .student-card').filter({ hasText: 'E2E001' })).toHaveCount(0);
@@ -262,6 +268,7 @@ test.describe('authenticated SAMS smoke', () => {
     await page.locator('#teachingSubjectId').selectOption({ label: /Mathématiques/ });
     await page.locator('#teachingClassId').selectOption({ label: /E2E-2BAC-B/ });
     await page.locator('#teachingForm button[type="submit"]').click();
+    await expect(page.locator('#teachingDialog')).toBeHidden();
 
     const teacherCardAfterAssignment = page.locator('#teachersList .teacher-card').filter({ hasText: 'E2E Teacher' }).first();
     await expect(teacherCardAfterAssignment.locator('.teaching-chip')).toHaveCount(2);
@@ -297,6 +304,7 @@ test.describe('authenticated SAMS smoke', () => {
   test('admin can receive a fully signed weekly register', async ({ page }) => {
     test.skip(!teacherUsername || !teacherPassword, 'Set teacher E2E credentials to run weekly receipt isolation tests.');
 
+    await page.setViewportSize({ width: 390, height: 844 });
     await login(page, teacherUsername, teacherPassword);
     await page.locator('#periods [data-select-period="1"]').click();
     await page.locator('#attendanceMobileList [data-attendance-toggle]').first().click();
@@ -344,6 +352,7 @@ test.describe('authenticated SAMS smoke', () => {
     await page.locator('#classLevelInput').fill('2BAC');
     await page.locator('#classBranchInput').fill('SP');
     await page.locator('#classForm button[type="submit"]').click();
+    await expect(page.locator('#classDialog')).toBeHidden();
 
     await page.locator('.tab[data-tab="admin"]').click();
     const classRow = page.locator('#adminClassesTable tbody tr').filter({ hasText: className }).first();
@@ -352,6 +361,7 @@ test.describe('authenticated SAMS smoke', () => {
     await classRow.locator('[data-edit-class]').click();
     await page.locator('#editClassNameInput').fill(className + '-EDITED');
     await page.locator('#editClassForm button[type="submit"]').click();
+    await expect(page.locator('#editClassDialog')).toBeHidden();
 
     await page.locator('.tab[data-tab="admin"]').click();
     const editedClassRow = page.locator('#adminClassesTable tbody tr').filter({ hasText: className + '-EDITED' }).first();
@@ -378,12 +388,14 @@ test.describe('authenticated SAMS smoke', () => {
     await userRow.locator('[data-edit-user]').click();
     await page.locator('#editUserFullNameInput').fill('E2E UI User Edited');
     await page.locator('#editUserForm button[type="submit"]').click();
+    await expect(page.locator('#editUserDialog')).toBeHidden();
 
     await page.locator('.tab[data-tab="admin"]').click();
     const editedUserRow = page.locator('#usersTable tbody tr').filter({ hasText: createdUsername }).first();
     await editedUserRow.locator('[data-reset-user]').click();
     await page.locator('#resetUserPasswordInput').fill('e2e-ui-password-reset-2026');
     await page.locator('#resetUserPasswordForm button[type="submit"]').click();
+    await expect(page.locator('#resetUserPasswordDialog')).toBeHidden();
 
     await page.locator('.tab[data-tab="admin"]').click();
     await editedUserRow.locator('[data-toggle-user]').click();
