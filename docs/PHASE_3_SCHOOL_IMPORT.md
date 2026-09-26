@@ -34,7 +34,7 @@ This slice now covers the full safe import pipeline and the admin review/confirm
 - No replacement of the existing CSV importer.
 - No React-specific import implementation yet; the verified review workflow remains available in the current admin UI until the frontend migration replaces it.
 - No automatic assumptions about branch/filière from class names.
-- No automatic Excel -> Markdown conversion inside SAMS v1; Markdown is an externally produced fallback. Malformed Markdown table shapes are treated as blocking diagnostics rather than being guessed or repaired.
+- No automatic Excel -> Markdown conversion inside SAMS v1; Markdown is an externally produced fallback. Malformed Markdown table shapes are treated as blocking diagnostics rather than being guessed or repaired. Markdown sheets use the same 100-sheet safety cap as Excel.
 
 ## Expected intermediate model
 
