@@ -275,6 +275,27 @@ $csrf = Csrf::token();
             <div class="table-scroll"><table id="importsTable"><thead></thead><tbody></tbody></table></div>
         </div>
 
+        <div class="students-list school-import-section">
+            <article class="student-card">
+                <div>
+                    <strong data-i18n="whole_school_import">Import scolaire complet</strong>
+                    <small data-i18n="whole_school_import_desc">Analysez le classeur de toute l’établissement, vérifiez le rapprochement, puis confirmez l’import final.</small>
+                </div>
+            </article>
+            <form id="schoolImportForm">
+                <label>
+                    <span data-i18n="target_academic_year">Année scolaire cible</span>
+                    <select id="schoolImportAcademicYearInput" required></select>
+                </label>
+                <label>
+                    <span data-i18n="excel_workbook">Classeur Excel</span>
+                    <input id="schoolImportFile" type="file" accept=".xlsx,.xls" required>
+                </label>
+                <button class="btn primary" id="schoolImportUploadBtn" type="submit" data-i18n="analyze_school_import">Analyser le classeur</button>
+            </form>
+            <section id="schoolImportReview" class="school-import-review" aria-live="polite"></section>
+        </div>
+
         <div class="students-list">
             <article class="student-card">
                 <div>
