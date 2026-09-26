@@ -191,11 +191,79 @@ final class SchoolWorkbookImportServiceTest extends TestCase
             rename($path, $invalidPath);
 
             $this->expectException(\InvalidArgumentException::class);
-            $this->expectExceptionMessage('Only XLSX and XLS workbooks are supported.');
+            $this->expectExceptionMessage('Only XLSX, XLS, and Markdown (.md) files are supported.');
             $service->parse($invalidPath);
         } finally {
             @unlink($path);
             @unlink($path . '.csv');
+        }
+    }
+
+    public function testItParsesMarkdownTablesWithMetadataAndStudentRows(): void
+    {
+        $service = new SchoolWorkbookImportService();
+        $path = tempnam(sys_get_temp_dir(), 'sams-school-import-md-');
+        if ($path === false) self::fail('Unable to create temporary Markdown path.');
+
+        $markdown = <<<'MD'
+# Roster
+| المؤسسة | Lycée Test |
+| القسم | TCSF-MD-1 |
+| المستوى | Tronc Commun |
+| السنة الدراسية | 2025/2026 |
+
+| ر.ت | الرمز | النسب | الإسم | النوع | تاريخ الازدياد | مكان الازدياد |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | MD123456 | NomMD1 | PrenomMD1 | ذكر | 2009-01-02 | Rabat |
+| 2 | MD123457 | NomMD2 | PrenomMD2 | أنثى | 03/04/2009 | Temara |
+MD;
+        file_put_contents($path, $markdown);
+
+        try {
+            $result = $service->parse($path);
+
+            self::assertCount(1, $result['classes']);
+            self::assertSame('TCSF-MD-1', $result['classes'][0]['class_name']);
+            self::assertSame('2025/2026', $result['classes'][0]['academic_year']);
+            self::assertCount(2, $result['classes'][0]['students']);
+            self::assertSame('MD123456', $result['classes'][0]['students'][0]['massar_code']);
+            self::assertSame('2009-04-03', $result['classes'][0]['students'][1]['birth_date']);
+            self::assertSame('Roster', $result['classes'][0]['source_sheet']);
+        } finally {
+            @unlink($path);
+        }
+    }
+
+    public function testItParsesMarkdownKeyValueMetadataAndClassRows(): void
+    {
+        $service = new SchoolWorkbookImportService();
+        $path = tempnam(sys_get_temp_dir(), 'sams-school-import-md-');
+        if ($path === false) self::fail('Unable to create temporary Markdown path.');
+
+        $markdown = <<<'MD'
+## Classe 2
+
+**القسم:** TCSF-MD-2  
+**المستوى:** Tronc Commun  
+**السنة الدراسية:** 2025/2026  
+
+| ر.ت | الرمز | النسب | الإسم | تاريخ الازدياد |
+| --- | --- | --- | --- | --- |
+| 1 | MD223456 | NomMD3 | PrenomMD3 | 2009/05/06 |
+MD;
+        file_put_contents($path, $markdown);
+
+        try {
+            $result = $service->parse($path);
+
+            self::assertCount(1, $result['classes']);
+            self::assertSame('TCSF-MD-2', $result['classes'][0]['class_name']);
+            self::assertSame('Tronc Commun', $result['classes'][0]['level']);
+            self::assertSame('2025/2026', $result['classes'][0]['academic_year']);
+            self::assertSame('MD223456', $result['classes'][0]['students'][0]['massar_code']);
+            self::assertSame('Classe 2', $result['classes'][0]['source_sheet']);
+        } finally {
+            @unlink($path);
         }
     }
 
