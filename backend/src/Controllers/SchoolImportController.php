@@ -9,6 +9,7 @@ use SAMS\Helpers\Csrf;
 use SAMS\Helpers\Security;
 use SAMS\Http\Request;
 use SAMS\Http\Response;
+use SAMS\Repositories\SchoolImportRepository;
 use SAMS\Services\SchoolWorkbookImportService;
 use SAMS\Services\SchoolWorkbookImportStagingService;
 use SAMS\Services\SchoolWorkbookImportValidationService;
@@ -30,6 +31,10 @@ final class SchoolImportController
         );
 
         $user = Auth::requireRole('admin');
+
+        if ($request->method() === 'GET') {
+            return $this->preview($request, $params);
+        }
 
         if (!Csrf::verify($request->header('x-csrf-token'))) {
             return Response::json([
@@ -104,4 +109,77 @@ final class SchoolImportController
             'data' => $result,
         ], 201);
     }
+    private function preview(Request $request, array $params): Response
+    {
+        $batchId = isset($params['id']) && ctype_digit((string)$params['id'])
+            ? (int)$params['id']
+            : 0;
+
+        if ($batchId < 1) {
+            return Response::json([
+                'success' => false,
+                'error' => 'Invalid import batch.',
+            ], 422);
+        }
+
+        $imports = new SchoolImportRepository();
+        $batch = $imports->findBatch($batchId);
+        if ($batch === null) {
+            return Response::json([
+                'success' => false,
+                'error' => 'Import batch not found.',
+            ], 404);
+        }
+
+        $classes = $imports->classesForBatch($batchId);
+        $result = [
+            'batch' => $batch,
+            'classes' => $classes,
+        ];
+
+        $rawClassId = $request->queryValue('class_id');
+        if ($rawClassId !== null && trim((string)$rawClassId) !== '') {
+            if (!ctype_digit((string)$rawClassId) || (int)$rawClassId < 1) {
+                return Response::json([
+                    'success' => false,
+                    'error' => 'Invalid import class.',
+                ], 422);
+            }
+
+            $importClassId = (int)$rawClassId;
+            $importClass = $imports->findClassInBatch($importClassId, $batchId);
+            if ($importClass === null) {
+                return Response::json([
+                    'success' => false,
+                    'error' => 'Import class not found.',
+                ], 404);
+            }
+
+            $page = 1;
+            $perPage = 50;
+            $rawPage = $request->queryValue('page');
+            $rawPerPage = $request->queryValue('per_page');
+            if ($rawPage !== null && trim((string)$rawPage) !== '') {
+                if (!ctype_digit((string)$rawPage)) {
+                    return Response::json(['success' => false, 'error' => 'Invalid page.'], 422);
+                }
+                $page = max(1, (int)$rawPage);
+            }
+            if ($rawPerPage !== null && trim((string)$rawPerPage) !== '') {
+                if (!ctype_digit((string)$rawPerPage)) {
+                    return Response::json(['success' => false, 'error' => 'Invalid per_page.'], 422);
+                }
+                $perPage = min(100, max(1, (int)$rawPerPage));
+            }
+
+            $result['class'] = $importClass;
+            $result['rows'] = $imports->rowsForClass($importClassId, $page, $perPage);
+        }
+
+        return Response::json([
+            'success' => true,
+            'data' => $result,
+        ]);
+    }
+
 }
