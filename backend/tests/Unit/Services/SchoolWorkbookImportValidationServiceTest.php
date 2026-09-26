@@ -109,6 +109,7 @@ final class SchoolWorkbookImportValidationServiceTest extends TestCase
             $sheet = $workbook->getActiveSheet();
             $sheet->fromArray([
                 ['القسم', 'TCSF-8'],
+                ['المستوى', '2BAC'],
                 ['السنة الدراسية', '2025/2026'],
                 ['ر.ت', 'الرمز', 'النسب', 'الإسم', 'تاريخ الازدياد'],
                 [1, 'WARN123456', 'Nom16', 'Prenom16', '2009-01-01'],
