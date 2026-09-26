@@ -6,9 +6,9 @@ concurrency:
 
 on:
   push:
-    branches: [main]
+    branches: [main, refactor/phase-2-backend-foundation, feat/phase-3-school-import-v2]
   pull_request:
-    branches: [main]
+    branches: [main, refactor/phase-2-backend-foundation]
 
 jobs:
   php:
@@ -43,8 +43,9 @@ jobs:
         shell: sh
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends libxml2-dev libonig-dev curl unzip
-          docker-php-ext-install dom mbstring pdo_mysql xml xmlwriter
+          apt-get install -y --no-install-recommends git libxml2-dev libonig-dev libzip-dev libfreetype6-dev libjpeg62-turbo-dev libpng-dev libwebp-dev curl unzip
+          docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp
+          docker-php-ext-install dom gd mbstring pdo_mysql xml xmlwriter zip
 
           EXPECTED_CHECKSUM="$(curl -fsSL https://composer.github.io/installer.sig)"
           curl -fsSL https://getcomposer.org/installer -o composer-setup.php
@@ -61,6 +62,21 @@ jobs:
         shell: sh
         run: composer install --no-interaction --prefer-dist --no-progress
 
+      - name: Configure backend database
+        shell: sh
+        run: |
+          cat > backend/config/database.php <<'PHP'
+          <?php
+          return [
+              'host' => getenv('SAMS_TEST_DB_HOST') ?: 'db',
+              'port' => (int)(getenv('SAMS_TEST_DB_PORT') ?: 3306),
+              'database' => getenv('SAMS_TEST_DB_NAME') ?: 'sams',
+              'username' => getenv('SAMS_TEST_DB_USER') ?: 'root',
+              'password' => getenv('SAMS_TEST_DB_PASS') ?: 'root',
+              'charset' => 'utf8mb4',
+          ];
+          PHP
+
       - name: Lint PHP sources
         shell: sh
         run: |
@@ -75,9 +91,24 @@ jobs:
         shell: sh
         run: vendor/bin/phpunit --configuration phpunit.xml
 
+      - name: Checkout Phase 2 schema for migration verification
+        uses: actions/checkout@v6
+        with:
+          ref: refactor/phase-2-backend-foundation
+          path: phase2-base
+
+      - name: Verify migration 005 upgrade path
+        shell: sh
+        run: |
+          SAMS_MIGRATION_BASE_SCHEMA=phase2-base/database/schema.sql php tests/migration_005_integration.php
+
       - name: Run MariaDB integration tests
         shell: sh
         run: php tests/integration.php
+
+      - name: Run whole-school import integration tests
+        shell: sh
+        run: php tests/school_import_final_integration.php
 
       - name: Run API HTTP smoke tests
         shell: sh
@@ -116,7 +147,11 @@ jobs:
           missing_status=$(curl -sS -o /tmp/sams-missing.json -w "%{http_code}" http://127.0.0.1:8090/api/v1/does-not-exist)
           test "$missing_status" = "404"
 
-          echo "[PASS] API HTTP smoke: health=200 method=405 missing=404"
+          import_auth_status=$(curl -sS -o /tmp/sams-import-auth.json -w "%{http_code}" -X POST http://127.0.0.1:8090/api/v1/imports/school/1/reconcile)
+          test "$import_auth_status" = "401"
+          grep -q '"success":false' /tmp/sams-import-auth.json
+
+          echo "[PASS] API HTTP smoke: health=200 method=405 missing=404 import-auth=401"
 
   javascript:
     runs-on: ubuntu-latest

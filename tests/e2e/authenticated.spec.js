@@ -193,6 +193,247 @@ test.describe('authenticated SAMS smoke', () => {
     await expect(page.locator('#weeklyPrintSheet .print-attendance-table tbody tr')).toHaveCount(3);
   });
 
+  test('admin can review and explicitly confirm a whole-school import', async ({ page }) => {
+    await login(page, username, password);
+
+    const batchId = 9001;
+    let reconciled = false;
+    let imported = false;
+
+    function detailResponse(includeRows = false) {
+      const rows = [
+        {
+          id: 9201,
+          import_class_id: 9101,
+          source_row: 9,
+          roster_number: 1,
+          first_name: 'Jean',
+          last_name: 'Dupont',
+          massar_code: 'E2E001',
+          birth_date: '2010-05-12',
+          status: reconciled ? 'matched' : 'valid',
+          match_status: reconciled ? 'existing' : 'not_checked',
+          issues: [],
+        },
+        {
+          id: 9202,
+          import_class_id: 9101,
+          source_row: 10,
+          roster_number: 2,
+          first_name: 'New',
+          last_name: 'Student',
+          massar_code: 'E2ENEW01',
+          birth_date: '2010-01-10',
+          status: reconciled ? 'matched' : 'valid',
+          match_status: reconciled ? 'new' : 'not_checked',
+          issues: [],
+        },
+      ];
+
+      return {
+        success: true,
+        data: {
+          batch: {
+            id: batchId,
+            created_by: 1,
+            created_by_name: 'E2E Admin',
+            target_academic_year_id: 1,
+            target_academic_year_name: '2026/2027',
+            source_academic_year: '2025/2026',
+            original_filename: 'school-2025-2026.xlsx',
+            file_sha256: 'a'.repeat(64),
+            file_size: 4096,
+            status: imported ? 'imported' : 'validated',
+            total_classes: 1,
+            valid_classes: 1,
+            warning_classes: 0,
+            error_classes: 0,
+            total_rows: 2,
+            valid_rows: 2,
+            warning_rows: 0,
+            error_rows: 0,
+          },
+          classes: [{
+            id: 9101,
+            batch_id: batchId,
+            source_sheet: 'TCSF',
+            source_block_start_row: 8,
+            source_block_end_row: 12,
+            source_class_name: 'E2E-2BAC-A',
+            source_level: '2BAC',
+            source_academic_year: '2025/2026',
+            target_class_id: 1,
+            status: reconciled ? 'mapped' : 'valid',
+            student_count: 2,
+            issues: [],
+          }],
+          ...(includeRows ? {
+            class: {
+              id: 9101,
+              batch_id: batchId,
+              source_class_name: 'E2E-2BAC-A',
+              target_class_id: 1,
+              status: reconciled ? 'mapped' : 'valid',
+              student_count: 2,
+              issues: [],
+            },
+            rows: {
+              rows,
+              total: rows.length,
+              page: 1,
+              per_page: 100,
+              pages: 1,
+            },
+          } : {}),
+        },
+      };
+    }
+
+    await page.route('**/api/v1/imports/school', async (route) => {
+      if (route.request().method() !== 'POST') {
+        await route.continue();
+        return;
+      }
+
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          data: {
+            batch_id: batchId,
+            status: 'validated',
+            source_academic_year: '2025/2026',
+            target_academic_year_id: 1,
+            summary: {
+              class_count: 1,
+              valid_class_count: 1,
+              warning_class_count: 0,
+              error_class_count: 0,
+              student_count: 2,
+              valid_row_count: 2,
+              warning_row_count: 0,
+              error_row_count: 0,
+            },
+            workbook_issues: [],
+            classes: [{
+              class_name: 'E2E-2BAC-A',
+              level: '2BAC',
+              academic_year: '2025/2026',
+              source_sheet: 'TCSF',
+              source_block_start_row: 8,
+              source_block_end_row: 12,
+              student_count: 2,
+              status: 'valid',
+              issues: [],
+            }],
+          },
+        }),
+      });
+    });
+
+    await page.route('**/api/v1/imports/school/9001**', async (route) => {
+      const url = new URL(route.request().url());
+
+      if (url.pathname.endsWith('/reconcile')) {
+        reconciled = true;
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: true,
+            data: {
+              batch_id: batchId,
+              ready_to_import: true,
+              already_imported: false,
+              summary: {
+                ready_to_import: true,
+                target_academic_year_id: 1,
+                class_count: 1,
+                mapped_classes: 1,
+                class_conflicts: 0,
+                new_students: 1,
+                existing_students: 1,
+                conflict_rows: 0,
+              },
+            },
+          }),
+        });
+        return;
+      }
+
+      if (url.pathname.endsWith('/commit')) {
+        imported = true;
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: true,
+            data: {
+              batch_id: batchId,
+              already_imported: false,
+              summary: {
+                student_count: 2,
+                new_students: 1,
+                existing_students: 1,
+                enrollments_created: 1,
+              },
+            },
+          }),
+        });
+        return;
+      }
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(detailResponse(url.searchParams.has('class_id'))),
+      });
+    });
+
+    await page.locator('.tab[data-tab="admin"]').click();
+    await expect(page.locator('#schoolImportForm')).toBeVisible();
+
+    await page.locator('.language-btn[data-lang="en"]').click();
+    const targetYearOption = page.locator('#schoolImportAcademicYearInput option').filter({ hasText: '2026/2027' }).first();
+    const targetYearId = await targetYearOption.getAttribute('value');
+    expect(targetYearId).toBeTruthy();
+    await page.locator('#schoolImportAcademicYearInput').selectOption({ value: targetYearId });
+
+    await page.locator('#schoolImportFile').setInputFiles({
+      name: 'school-2025-2026.xlsx',
+      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      buffer: Buffer.from('synthetic-e2e-workbook'),
+    });
+    await page.locator('#schoolImportUploadBtn').click();
+
+    await expect(page.locator('#schoolImportReview')).toContainText('school-2025-2026.xlsx');
+    await expect(page.locator('#schoolImportReview')).toContainText('E2E-2BAC-A');
+    await expect(page.locator('#schoolImportCommitBtn')).toBeDisabled();
+
+    await page.locator('[data-school-import-class="9101"]').click();
+    await expect(page.locator('#schoolImportRowsReview')).toContainText('E2E001');
+    await expect(page.locator('#schoolImportRowsReview')).toContainText('not_checked');
+
+    await page.locator('#schoolImportReconcileBtn').click();
+    await expect(page.locator('#schoolImportReview')).toContainText('Ready for final import');
+    await expect(page.locator('#schoolImportRowsReview')).toContainText('existing');
+    await expect(page.locator('#schoolImportRowsReview')).toContainText('new');
+    await expect(page.locator('#schoolImportCommitBtn')).toBeEnabled();
+
+    await page.locator('#schoolImportCommitBtn').click();
+    await expect(page.locator('#schoolImportCommitDialog')).toBeVisible();
+    await expect(page.locator('#schoolImportCommitConfirmBtn')).toBeDisabled();
+
+    await page.locator('#schoolImportReviewedInput').check();
+    await expect(page.locator('#schoolImportCommitConfirmBtn')).toBeEnabled();
+    await page.locator('#schoolImportCommitConfirmBtn').click();
+
+    await expect(page.locator('#schoolImportCommitDialog')).toBeHidden();
+    await expect(page.locator('#schoolImportReview')).toContainText('Imported');
+    await expect(page.locator('#schoolImportCommitBtn')).toBeDisabled();
+  });
+
   test('admin can complete a CSV import after correcting staged data', async ({ page }) => {
     await login(page, username, password);
     const classSelect = page.locator('#classSelect');

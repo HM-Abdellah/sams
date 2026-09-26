@@ -57,7 +57,8 @@ export async function request(endpoint, options = {}) {
 
     let response;
     try {
-        response = await fetch(BASE + endpoint, { ...options, credentials: 'same-origin', headers });
+        const url = endpoint.startsWith('/') ? endpoint : BASE + endpoint;
+        response = await fetch(url, { ...options, credentials: 'same-origin', headers });
     } catch {
         throw new Error(t('api_server_error'));
     }
@@ -146,6 +147,19 @@ export const API = Object.freeze({
     correctImportRow: (batchId, rowId, data) => request('imports.php', { method:'POST', body:JSON.stringify({action:'correct',batch_id:batchId,row_id:rowId,...data}) }),
     revalidateImport: (batchId) => request('imports.php', { method:'POST', body:JSON.stringify({action:'revalidate',batch_id:batchId}) }),
     runImport: (batchId) => request('imports.php', { method:'POST', body:JSON.stringify({action:'import',batch_id:batchId}) }),
+    stageSchoolImport: (targetAcademicYearId, file) => {
+        const form = new FormData();
+        form.append('file', file);
+        form.append('target_academic_year_id', String(targetAcademicYearId));
+        return request('/api/v1/imports/school', { method:'POST', body:form });
+    },
+    schoolImport: (batchId, params = {}) => {
+        const query = new URLSearchParams(params);
+        const suffix = query.toString() ? '?' + query.toString() : '';
+        return request('/api/v1/imports/school/' + encodeURIComponent(batchId) + suffix);
+    },
+    reconcileSchoolImport: (batchId) => request('/api/v1/imports/school/' + encodeURIComponent(batchId) + '/reconcile', { method:'POST', body:JSON.stringify({}) }),
+    commitSchoolImport: (batchId) => request('/api/v1/imports/school/' + encodeURIComponent(batchId) + '/commit', { method:'POST', body:JSON.stringify({}) }),
 
     archiveDays: (classId, month) => request(`archive.php?view=days&class_id=${encodeURIComponent(classId)}&month=${encodeURIComponent(month)}`),
     archiveMonth: (classId, month) => request(`archive.php?view=month&class_id=${encodeURIComponent(classId)}&month=${encodeURIComponent(month)}`),

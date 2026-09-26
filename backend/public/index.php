@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/src/bootstrap.php';
 
 use SAMS\Controllers\HealthController;
+use SAMS\Controllers\SchoolImportController;
 use SAMS\Http\Request;
 use SAMS\Http\Response;
 use SAMS\Routing\Router;
@@ -29,6 +30,10 @@ try {
     $router = new Router();
 
     $router->get('/health', new HealthController());
+    $schoolImport = new SchoolImportController();
+    $router->post('/imports/school', $schoolImport);
+    $router->get('/imports/school/{id}', $schoolImport);
+    $router->post('/imports/school/{id}/{action}', $schoolImport);
 
     $router->get('/', static function (): Response {
         return Response::json([

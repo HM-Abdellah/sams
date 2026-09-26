@@ -23,31 +23,62 @@ final class StudentRepository
 
     public function existingMassarCodes(array $codes): array
     {
+        $students = $this->studentsByMassarCodes($codes);
+        $result = [];
+
+        foreach ($students as $student) {
+            $result[(string)$student['massar_code']] = (int)$student['id'];
+        }
+
+        return $result;
+    }
+
+    public function studentsByMassarCodes(array $codes): array
+    {
         $codes = array_values(array_unique(array_filter(
-            array_map(static fn($v) => trim((string)$v), $codes),
-            static fn($v) => $v !== ''
+            array_map(static fn($v): string => trim((string)$v), $codes),
+            static fn(string $v): bool => $v !== ''
         )));
         if ($codes === []) return [];
 
         $placeholders = implode(',', array_fill(0, count($codes), '?'));
         $stmt = Database::connection()->prepare(
-            "SELECT id, massar_code FROM students
+            "SELECT
+                id,
+                class_id,
+                student_number,
+                massar_code,
+                birth_date,
+                first_name,
+                last_name,
+                status
+             FROM students
              WHERE massar_code IN ({$placeholders})"
         );
         $stmt->execute($codes);
 
         $result = [];
         foreach ($stmt->fetchAll() as $row) {
-            $result[(string)$row['massar_code']] = (int)$row['id'];
+            $result[$this->massarKey((string)$row['massar_code'])] = $row;
         }
+
         return $result;
     }
 
     public function existingNumbersInClass(int $classId, array $numbers): array
     {
+        return array_fill_keys(
+            array_keys($this->numberOwnersInClass($classId, $numbers)),
+            true
+        );
+    }
+
+    /** @return array<string,int> */
+    public function numberOwnersInClass(int $classId, array $numbers): array
+    {
         $numbers = array_values(array_unique(array_filter(
-            array_map(static fn($v) => trim((string)$v), $numbers),
-            static fn($v) => $v !== ''
+            array_map(static fn($v): string => trim((string)$v), $numbers),
+            static fn(string $v): bool => $v !== ''
         )));
         if ($numbers === []) return [];
 
@@ -55,15 +86,17 @@ final class StudentRepository
         $params = array_merge([$classId], $numbers);
 
         $stmt = Database::connection()->prepare(
-            "SELECT student_number FROM students
+            "SELECT id, student_number
+             FROM students
              WHERE class_id = ? AND student_number IN ({$placeholders})"
         );
         $stmt->execute($params);
 
         $result = [];
         foreach ($stmt->fetchAll() as $row) {
-            $result[(string)$row['student_number']] = true;
+            $result[trim((string)$row['student_number'])] = (int)$row['id'];
         }
+
         return $result;
     }
 
@@ -91,6 +124,29 @@ final class StudentRepository
         return $row ?: null;
     }
 
+    public function findByIdForUpdate(int $studentId): ?array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT
+                id,
+                class_id,
+                student_number,
+                massar_code,
+                birth_date,
+                first_name,
+                last_name,
+                status
+             FROM students
+             WHERE id = ?
+             LIMIT 1
+             FOR UPDATE'
+        );
+        $stmt->execute([$studentId]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
     public function create(
         int $classId,
         ?string $number,
@@ -99,6 +155,45 @@ final class StudentRepository
         string $firstName,
         string $lastName
     ): int {
+        $pdo = Database::connection();
+
+        $startStmt = $pdo->prepare(
+            'SELECT ay.starts_on
+             FROM classes c
+             INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+             WHERE c.id = ?
+             LIMIT 1'
+        );
+        $startStmt->execute([$classId]);
+        $startsOn = $startStmt->fetchColumn();
+
+        if (!is_string($startsOn) || $startsOn === '') {
+            throw new \RuntimeException('Unable to determine student enrollment start date.');
+        }
+
+        $created = $this->createWithEnrollment(
+            $classId,
+            $number,
+            $massarCode,
+            $birthDate,
+            $firstName,
+            $lastName,
+            $startsOn
+        );
+
+        return $created['student_id'];
+    }
+
+    /** @return array{student_id:int,enrollment_id:int} */
+    public function createWithEnrollment(
+        int $classId,
+        ?string $number,
+        ?string $massarCode,
+        ?string $birthDate,
+        string $firstName,
+        string $lastName,
+        string $startsOn
+    ): array {
         $pdo = Database::connection();
 
         $stmt = $pdo->prepare(
@@ -117,22 +212,6 @@ final class StudentRepository
 
         $studentId = (int)$pdo->lastInsertId();
 
-        // A student record is not valid for attendance until an enrollment exists.
-        // Derive its initial enrollment boundary from the class academic year.
-        $startStmt = $pdo->prepare(
-            'SELECT ay.starts_on
-             FROM classes c
-             INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-             WHERE c.id = ?
-             LIMIT 1'
-        );
-        $startStmt->execute([$classId]);
-        $startsOn = $startStmt->fetchColumn();
-
-        if (!is_string($startsOn) || $startsOn === '') {
-            throw new \RuntimeException('Unable to determine student enrollment start date.');
-        }
-
         $enrollmentStmt = $pdo->prepare(
             'INSERT INTO student_enrollments
                 (student_id, class_id, starts_on, ends_on)
@@ -144,7 +223,10 @@ final class StudentRepository
             $startsOn,
         ]);
 
-        return $studentId;
+        return [
+            'student_id' => $studentId,
+            'enrollment_id' => (int)$pdo->lastInsertId(),
+        ];
     }
 
     public function update(
@@ -176,12 +258,22 @@ final class StudentRepository
         ]);
     }
 
-    public function transfer(int $studentId, int $fromClassId, int $toClassId): void
+    public function updateCurrentClass(int $studentId, int $classId): void
     {
         $stmt = Database::connection()->prepare(
             'UPDATE students
-             SET class_id = ?, status = \'active\'
-             WHERE id = ? AND class_id = ?'
+             SET class_id = ?
+             WHERE id = ?'
+        );
+        $stmt->execute([$classId, $studentId]);
+    }
+
+    public function transfer(int $studentId, int $fromClassId, int $toClassId): void
+    {
+        $stmt = Database::connection()->prepare(
+            "UPDATE students
+             SET class_id = ?, status = 'active'
+             WHERE id = ? AND class_id = ?"
         );
         $stmt->execute([$toClassId, $studentId, $fromClassId]);
 
@@ -193,10 +285,20 @@ final class StudentRepository
     public function deactivate(int $studentId, int $classId): void
     {
         $stmt = Database::connection()->prepare(
-            'UPDATE students
-             SET status = \'inactive\'
-             WHERE id = ? AND class_id = ?'
+            "UPDATE students
+             SET status = 'inactive'
+             WHERE id = ? AND class_id = ?"
         );
         $stmt->execute([$studentId, $classId]);
+    }
+
+    private function massarKey(string $value): string
+    {
+        return strtolower(trim($value));
+    }
+
+    private function numberKey(string $value): string
+    {
+        return strtolower(trim($value));
     }
 }
