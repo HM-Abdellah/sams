@@ -43,7 +43,7 @@ jobs:
         shell: sh
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends composer libxml2-dev
+          apt-get install -y --no-install-recommends composer libxml2-dev curl
           docker-php-ext-install dom mbstring pdo_mysql xml xmlwriter
 
       - name: Verify PHP runtime
@@ -72,6 +72,45 @@ jobs:
       - name: Run MariaDB integration tests
         shell: sh
         run: php tests/integration.php
+
+      - name: Run API HTTP smoke tests
+        shell: sh
+        run: |
+          php -S 127.0.0.1:8090 scripts/dev_router.php > /tmp/sams-api.log 2>&1 &
+          server_pid=$!
+
+          cleanup() {
+            kill "$server_pid" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          for i in $(seq 1 20); do
+            if curl -sS http://127.0.0.1:8090/api/v1/health > /tmp/sams-health.json 2>/dev/null; then
+              break
+            fi
+
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              echo "API server exited before becoming ready."
+              cat /tmp/sams-api.log
+              exit 1
+            fi
+
+            sleep 1
+          done
+
+          health_status=$(curl -sS -o /tmp/sams-health.json -w "%{http_code}" http://127.0.0.1:8090/api/v1/health)
+          test "$health_status" = "200"
+          grep -q '"success":true' /tmp/sams-health.json
+          grep -q '"api_version":"v1"' /tmp/sams-health.json
+
+          method_status=$(curl -sS -o /tmp/sams-method.json -w "%{http_code}" -X POST http://127.0.0.1:8090/api/v1/health)
+          test "$method_status" = "405"
+          grep -q '"success":false' /tmp/sams-method.json
+
+          missing_status=$(curl -sS -o /tmp/sams-missing.json -w "%{http_code}" http://127.0.0.1:8090/api/v1/does-not-exist)
+          test "$missing_status" = "404"
+
+          echo "[PASS] API HTTP smoke: health=200 method=405 missing=404"
 
   javascript:
     runs-on: ubuntu-latest
