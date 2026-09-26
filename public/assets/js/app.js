@@ -984,6 +984,7 @@ function wire() {
 
     document.querySelector('#subjectForm')?.addEventListener('submit', async (event) => {
         event.preventDefault();
+        const form = event.currentTarget;
         try {
             await API.createSubject({
                 code: document.querySelector('#subjectCodeInput').value.trim(),
@@ -992,7 +993,7 @@ function wire() {
                 name_en: document.querySelector('#subjectNameEnInput').value.trim(),
             });
             document.querySelector('#subjectDialog')?.close();
-            event.currentTarget.reset();
+            form.reset();
             await loadTeachers();
             ui.toast(t('create'));
         } catch (error) {
@@ -1154,6 +1155,7 @@ function wire() {
     document.querySelector('#editStudentForm')?.addEventListener('submit', async (event) => {
         event.preventDefault();
         if (!state.classId) return;
+        const form = event.currentTarget;
         try {
             await API.updateStudent(state.classId, Number(document.querySelector('#editStudentId').value), {
                 first_name: document.querySelector('#editFirstNameInput').value.trim(),
@@ -1162,7 +1164,7 @@ function wire() {
                 birth_date: document.querySelector('#editBirthDateInput').value || null,
                 student_number: document.querySelector('#editStudentNumberInput').value.trim() || null,
             });
-            event.currentTarget.closest('dialog')?.close();
+            form.closest('dialog')?.close();
             await loadClass();
             ui.toast(t('student_updated'));
         } catch (error) {
@@ -1256,11 +1258,12 @@ function wire() {
 
     document.querySelector('#resetUserPasswordForm')?.addEventListener('submit', async (event) => {
         event.preventDefault();
+        const form = event.currentTarget;
         const userId = Number(document.querySelector('#resetUserId').value);
         const password = document.querySelector('#resetUserPasswordInput').value;
         try {
             await API.resetUserPassword(userId, password);
-            event.currentTarget.reset();
+            form.reset();
             document.querySelector('#resetUserPasswordDialog')?.close();
             await loadAdmin();
             ui.toast(t('password_reset'));
@@ -1271,6 +1274,7 @@ function wire() {
 
     document.querySelector('#userForm')?.addEventListener('submit', async (event) => {
         event.preventDefault();
+        const form = event.currentTarget;
         try {
             await API.createUser({
                 username: document.querySelector('#userUsernameInput').value.trim(),
@@ -1278,7 +1282,7 @@ function wire() {
                 role: document.querySelector('#userRoleInput').value,
                 password: document.querySelector('#userPasswordInput').value,
             });
-            event.currentTarget.reset();
+            form.reset();
             await loadAdmin();
             ui.toast(t('user_created'));
         } catch (error) {
@@ -1288,6 +1292,7 @@ function wire() {
 
     document.querySelector('#academicYearForm')?.addEventListener('submit', async (event) => {
         event.preventDefault();
+        const form = event.currentTarget;
         try {
             await API.createAcademicYear({
                 name: document.querySelector('#academicYearNameInput').value.trim(),
@@ -1295,7 +1300,7 @@ function wire() {
                 ends_on: document.querySelector('#academicYearEndInput').value,
                 activate: document.querySelector('#academicYearActivateInput').value === '1',
             });
-            event.currentTarget.reset();
+            form.reset();
             await loadAdmin();
             const classes = await API.classes();
             setOperationalClasses(classes.classes || []);
