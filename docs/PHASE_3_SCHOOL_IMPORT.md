@@ -48,7 +48,7 @@ The whole-school staging model is deliberately separate from the legacy class-sc
 
 Class mapping is deterministic: each staged source class must resolve to an existing class with the selected target academic year and the source class name. A missing target class is a blocking error; the importer does not silently create a new class or infer branch/filière.
 
-Student reconciliation uses Massar as the primary identity key. An existing Massar reuses the existing `students.id`; a new Massar creates exactly one student record. Existing first name, last name, and non-null birth date are compared before import. Conflicts are persisted on the staging row and block the final commit.
+Student reconciliation uses Massar as the primary identity key. An existing Massar reuses the existing `students.id`; a new Massar creates exactly one student record. Existing first name, last name, and non-null birth date are compared before import. Conflicts are persisted on the staging row and block the final commit. The source `ر.ت`/roster number remains staging metadata only; it is not treated as `students.student_number`.
 
 Enrollments are year-specific. An existing student already enrolled once in the target academic year is reused only when that enrollment belongs to the mapped target class. An enrollment in another target-year class, or multiple target-year enrollments, blocks the import. A missing target-year enrollment is created during the final transaction.
 
