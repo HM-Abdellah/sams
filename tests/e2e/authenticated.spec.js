@@ -19,11 +19,10 @@ test.describe('authenticated SAMS smoke', () => {
     await page.locator('#loginBtn').click();
 
     const loginResponse = await loginResponsePromise;
-    const loginBody = await loginResponse.text();
 
     if (!loginResponse.ok()) {
       throw new Error(
-        `Login API failed: HTTP ${loginResponse.status()} — ${loginBody}`
+        `Login API failed: HTTP ${loginResponse.status()}`
       );
     }
 
