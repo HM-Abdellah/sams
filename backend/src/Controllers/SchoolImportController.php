@@ -1,0 +1,107 @@
+<?php
+
+declare(strict_types=1);
+
+namespace SAMS\Controllers;
+
+use SAMS\Helpers\Auth;
+use SAMS\Helpers\Csrf;
+use SAMS\Helpers\Security;
+use SAMS\Http\Request;
+use SAMS\Http\Response;
+use SAMS\Services\SchoolWorkbookImportService;
+use SAMS\Services\SchoolWorkbookImportStagingService;
+use SAMS\Services\SchoolWorkbookImportValidationService;
+
+final class SchoolImportController
+{
+    public function __construct(
+        private readonly SchoolWorkbookImportStagingService $staging = new SchoolWorkbookImportStagingService(
+            new SchoolWorkbookImportService(),
+            new SchoolWorkbookImportValidationService()
+        )
+    ) {}
+
+    public function __invoke(Request $request, array $params = []): Response
+    {
+        Security::startSession(
+            (string)($GLOBALS['appConfig']['session_name'] ?? 'SAMS_SESSION'),
+            (int)($GLOBALS['appConfig']['session_lifetime'] ?? 3600)
+        );
+
+        $user = Auth::requireRole('admin');
+
+        if (!Csrf::verify($request->header('x-csrf-token'))) {
+            return Response::json([
+                'success' => false,
+                'error' => 'Invalid CSRF token.',
+            ], 419);
+        }
+
+        $file = $request->file('file');
+        if ($file === null) {
+            throw new \InvalidArgumentException('Excel workbook file is required.');
+        }
+
+        $uploadError = (int)($file['error'] ?? UPLOAD_ERR_NO_FILE);
+        if ($uploadError !== UPLOAD_ERR_OK) {
+            throw new \InvalidArgumentException('Unable to receive the workbook.');
+        }
+
+        $tmpName = (string)($file['tmp_name'] ?? '');
+        if ($tmpName === '' || !is_uploaded_file($tmpName)) {
+            throw new \InvalidArgumentException('Invalid uploaded workbook.');
+        }
+
+        $filename = basename((string)($file['name'] ?? ''));
+        $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+        if (!in_array($extension, ['xlsx', 'xls'], true)) {
+            throw new \InvalidArgumentException('Only XLSX and XLS workbooks are supported.');
+        }
+
+        $size = (int)($file['size'] ?? 0);
+        if ($size < 1 || $size > SchoolWorkbookImportService::MAX_FILE_SIZE) {
+            throw new \InvalidArgumentException('Workbook is empty or too large.');
+        }
+
+        $mime = null;
+        if (class_exists(\finfo::class)) {
+            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+            $mime = $finfo->file($tmpName) ?: null;
+        }
+        $allowedMimes = [
+            'xlsx' => [
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'application/zip',
+            ],
+            'xls' => [
+                'application/vnd.ms-excel',
+                'application/octet-stream',
+            ],
+        ];
+        if ($mime !== null && !in_array($mime, $allowedMimes[$extension], true)) {
+            throw new \InvalidArgumentException('Workbook content type does not match its extension.');
+        }
+
+        $targetAcademicYearId = null;
+        $rawTarget = $request->postValue('target_academic_year_id');
+        if ($rawTarget !== null && trim((string)$rawTarget) !== '') {
+            if (!ctype_digit((string)$rawTarget)) {
+                throw new \InvalidArgumentException('Invalid target academic year.');
+            }
+            $targetAcademicYearId = (int)$rawTarget;
+        }
+
+        $result = $this->staging->stage(
+            $tmpName,
+            (int)$user['id'],
+            $filename,
+            $targetAcademicYearId
+        );
+
+        return Response::json([
+            'success' => true,
+            'data' => $result,
+        ], 201);
+    }
+}
