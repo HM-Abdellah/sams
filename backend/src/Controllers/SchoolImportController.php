@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace SAMS\Controllers;
 
+use SAMS\Exceptions\SchoolImportWorkflowException;
 use SAMS\Helpers\Auth;
 use SAMS\Helpers\Csrf;
 use SAMS\Helpers\Security;
 use SAMS\Http\Request;
 use SAMS\Http\Response;
 use SAMS\Repositories\SchoolImportRepository;
+use SAMS\Services\SchoolWorkbookImportReconciliationService;
 use SAMS\Services\SchoolWorkbookImportService;
 use SAMS\Services\SchoolWorkbookImportStagingService;
 use SAMS\Services\SchoolWorkbookImportValidationService;
@@ -20,17 +22,13 @@ final class SchoolImportController
         private readonly SchoolWorkbookImportStagingService $staging = new SchoolWorkbookImportStagingService(
             new SchoolWorkbookImportService(),
             new SchoolWorkbookImportValidationService()
-        )
+        ),
+        private readonly SchoolWorkbookImportReconciliationService $reconciliation = new SchoolWorkbookImportReconciliationService()
     ) {}
 
     public function __invoke(Request $request, array $params = []): Response
     {
-        Security::startSession(
-            (string)($GLOBALS['appConfig']['session_name'] ?? 'SAMS_SESSION'),
-            (int)($GLOBALS['appConfig']['session_lifetime'] ?? 3600)
-        );
-
-        $user = Auth::requireRole('admin');
+        $user = $this->requireAdmin($request);
 
         if ($request->method() === 'GET') {
             return $this->preview($request, $params);
@@ -43,6 +41,15 @@ final class SchoolImportController
             ], 419);
         }
 
+        if (isset($params['action'])) {
+            return $this->workflowAction($request, $params, (int)$user['id']);
+        }
+
+        return $this->upload($request, $user);
+    }
+
+    private function upload(Request $request, array $user): Response
+    {
         $file = $request->file('file');
         if ($file === null) {
             throw new \InvalidArgumentException('Excel workbook file is required.');
@@ -74,6 +81,7 @@ final class SchoolImportController
             $finfo = new \finfo(FILEINFO_MIME_TYPE);
             $mime = $finfo->file($tmpName) ?: null;
         }
+
         $allowedMimes = [
             'xlsx' => [
                 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -84,6 +92,7 @@ final class SchoolImportController
                 'application/octet-stream',
             ],
         ];
+
         if ($mime !== null && !in_array($mime, $allowedMimes[$extension], true)) {
             throw new \InvalidArgumentException('Workbook content type does not match its extension.');
         }
@@ -109,6 +118,53 @@ final class SchoolImportController
             'data' => $result,
         ], 201);
     }
+
+    private function workflowAction(
+        Request $request,
+        array $params,
+        int $userId
+    ): Response {
+        $batchId = isset($params['id']) && ctype_digit((string)$params['id'])
+            ? (int)$params['id']
+            : 0;
+
+        if ($batchId < 1) {
+            return Response::json([
+                'success' => false,
+                'error' => 'Invalid import batch.',
+            ], 422);
+        }
+
+        $action = (string)($params['action'] ?? '');
+        if (!in_array($action, ['reconcile', 'commit'], true)) {
+            return Response::json([
+                'success' => false,
+                'error' => 'Import workflow action not found.',
+            ], 404);
+        }
+
+        try {
+            $result = $action === 'reconcile'
+                ? $this->reconciliation->reconcile($batchId, $userId)
+                : $this->reconciliation->commit($batchId, $userId);
+
+            return Response::json([
+                'success' => true,
+                'data' => $result,
+            ]);
+        } catch (SchoolImportWorkflowException $e) {
+            return Response::json([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 409);
+        } catch (\InvalidArgumentException $e) {
+            return Response::json([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
     private function preview(Request $request, array $params): Response
     {
         $batchId = isset($params['id']) && ctype_digit((string)$params['id'])
@@ -159,12 +215,14 @@ final class SchoolImportController
             $perPage = 50;
             $rawPage = $request->queryValue('page');
             $rawPerPage = $request->queryValue('per_page');
+
             if ($rawPage !== null && trim((string)$rawPage) !== '') {
                 if (!ctype_digit((string)$rawPage)) {
                     return Response::json(['success' => false, 'error' => 'Invalid page.'], 422);
                 }
                 $page = max(1, (int)$rawPage);
             }
+
             if ($rawPerPage !== null && trim((string)$rawPerPage) !== '') {
                 if (!ctype_digit((string)$rawPerPage)) {
                     return Response::json(['success' => false, 'error' => 'Invalid per_page.'], 422);
@@ -182,4 +240,13 @@ final class SchoolImportController
         ]);
     }
 
+    private function requireAdmin(Request $request): array
+    {
+        Security::startSession(
+            (string)($GLOBALS['appConfig']['session_name'] ?? 'SAMS_SESSION'),
+            (int)($GLOBALS['appConfig']['session_lifetime'] ?? 3600)
+        );
+
+        return Auth::requireRole('admin');
+    }
 }
