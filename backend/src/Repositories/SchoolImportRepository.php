@@ -8,6 +8,128 @@ use SAMSHelpersDatabase;
 
 final class SchoolImportRepository
 {
+    public function findBatch(int $batchId): ?array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT
+                b.id,
+                b.created_by,
+                u.full_name AS created_by_name,
+                b.target_academic_year_id,
+                ay.name AS target_academic_year_name,
+                b.source_academic_year,
+                b.original_filename,
+                b.file_sha256,
+                b.file_size,
+                b.status,
+                b.total_classes,
+                b.valid_classes,
+                b.warning_classes,
+                b.error_classes,
+                b.total_rows,
+                b.valid_rows,
+                b.warning_rows,
+                b.error_rows,
+                b.imported_at,
+                b.created_at,
+                b.updated_at
+             FROM school_import_batches b
+             INNER JOIN users u ON u.id = b.created_by
+             LEFT JOIN academic_years ay ON ay.id = b.target_academic_year_id
+             WHERE b.id = ?
+             LIMIT 1'
+        );
+        $stmt->execute([$batchId]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    public function classesForBatch(int $batchId): array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT
+                id,
+                batch_id,
+                source_sheet,
+                source_block_start_row,
+                source_block_end_row,
+                source_class_name,
+                source_level,
+                source_academic_year,
+                target_class_id,
+                status,
+                student_count,
+                issues,
+                created_at,
+                updated_at
+             FROM school_import_classes
+             WHERE batch_id = ?
+             ORDER BY id'
+        );
+        $stmt->execute([$batchId]);
+
+        $rows = $stmt->fetchAll();
+        foreach ($rows as &$row) {
+            $row['issues'] = $this->decodeJsonArray($row['issues'] ?? null);
+        }
+        unset($row);
+
+        return $rows;
+    }
+
+    public function rowsForClass(int $importClassId, int $page = 1, int $perPage = 50): array
+    {
+        $page = max(1, $page);
+        $perPage = max(1, min(100, $perPage));
+        $offset = ($page - 1) * $perPage;
+
+        $countStmt = Database::connection()->prepare(
+            'SELECT COUNT(*) FROM school_import_rows WHERE import_class_id = ?'
+        );
+        $countStmt->execute([$importClassId]);
+        $total = (int)$countStmt->fetchColumn();
+
+        $stmt = Database::connection()->prepare(
+            'SELECT
+                id,
+                import_class_id,
+                source_row,
+                roster_number,
+                first_name,
+                last_name,
+                massar_code,
+                birth_date,
+                sex,
+                birth_place,
+                status,
+                match_status,
+                issues,
+                matched_student_id,
+                target_enrollment_id,
+                created_at,
+                updated_at
+             FROM school_import_rows
+             WHERE import_class_id = ?
+             ORDER BY source_row
+             LIMIT ' . $perPage . ' OFFSET ' . $offset
+        );
+        $stmt->execute([$importClassId]);
+
+        $rows = $stmt->fetchAll();
+        foreach ($rows as &$row) {
+            $row['issues'] = $this->decodeJsonArray($row['issues'] ?? null);
+        }
+        unset($row);
+
+        return [
+            'rows' => $rows,
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage,
+            'pages' => $total === 0 ? 0 : (int)ceil($total / $perPage),
+        ];
+    }
     public function createBatch(
         int $createdBy,
         ?int $targetAcademicYearId,
