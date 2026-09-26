@@ -370,6 +370,42 @@ MD;
         }
     }
 
+    public function testItTreatsMarkItDownMissingValueSentinelsAsEmpty(): void
+    {
+        $service = new SchoolWorkbookImportService();
+        $temporaryPath = tempnam(sys_get_temp_dir(), 'sams-school-import-markitdown-missing-');
+        if ($temporaryPath === false) self::fail('Unable to create temporary Markdown path.');
+        $path = $temporaryPath . '.md';
+        if (!rename($temporaryPath, $path)) self::fail('Unable to create temporary Markdown path.');
+
+        $markdown = <<<'MD'
+## Sentinel Test
+| المؤسسة | Integration School |
+| --- | --- |
+| القسم | Sentinel Test |
+| المستوى | Tronc Commun |
+| السنة الدراسية | 2025/2026 |
+| ر.ت | الرمز | النسب | الإسم | تاريخ الازدياد |
+| 1.0 | NaN | NaN | Given | 2009-01-02 00:00:00 |
+MD;
+        file_put_contents($path, $markdown);
+
+        try {
+            $result = $service->parse($path);
+
+            self::assertCount(1, $result['classes']);
+            self::assertSame('1', $result['classes'][0]['students'][0]['roster_number']);
+            self::assertNull($result['classes'][0]['students'][0]['massar_code']);
+            self::assertNull($result['classes'][0]['students'][0]['last_name']);
+            self::assertSame('Given', $result['classes'][0]['students'][0]['first_name']);
+            self::assertSame('2009-01-02', $result['classes'][0]['students'][0]['birth_date']);
+            self::assertContains('missing_massar_code', $result['classes'][0]['students'][0]['issues']);
+            self::assertContains('missing_last_name', $result['classes'][0]['students'][0]['issues']);
+        } finally {
+            @unlink($path);
+        }
+    }
+
     public function testItReportsAHeaderFoundWithoutClassContext(): void
     {
         $service = new SchoolWorkbookImportService();

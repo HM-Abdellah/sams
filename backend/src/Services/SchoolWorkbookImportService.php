@@ -371,7 +371,13 @@ final class SchoolWorkbookImportService
         $value = str_replace(['\\|', '&vert;'], ['|', '|'], $value);
         $value = preg_replace('/<br\s*\/?>/iu', ' ', $value) ?? $value;
         $value = preg_replace('/(\x60\x60\x60|\x60|\*\*|__)/u', '', $value) ?? $value;
-        return trim($value);
+        $value = trim($value);
+
+        if (preg_match('/^(?:nan|<na>|none|null|n\/a)$/iu', $value) === 1) {
+            return '';
+        }
+
+        return $value;
     }
 
     /** @return array{classes: list<array<string,mixed>>, issues: list<string>} */
@@ -590,7 +596,7 @@ final class SchoolWorkbookImportService
         return [
             'source_sheet' => $sheetName,
             'source_row' => $rowNumber,
-            'roster_number' => isset($header['ordinal']) ? $this->cellText($row, $header['ordinal']) : null,
+            'roster_number' => isset($header['ordinal']) ? $this->normalizeRosterNumber($this->cellText($row, $header['ordinal'])) : null,
             'massar_code' => $massar !== '' ? $massar : null,
             'last_name' => $lastName !== '' ? $lastName : null,
             'first_name' => $firstName !== '' ? $firstName : null,
@@ -599,6 +605,15 @@ final class SchoolWorkbookImportService
             'birth_place' => isset($header['birth_place']) ? ($this->cellText($row, $header['birth_place']) ?: null) : null,
             'issues' => array_values(array_unique($issues)),
         ];
+    }
+
+    private function normalizeRosterNumber(string $value): string
+    {
+        if (preg_match('/^(\d+)\.0+$/', $value, $matches) === 1) {
+            return $matches[1];
+        }
+
+        return $value;
     }
 
     private function normalizeBirthDate(mixed $value): ?string
@@ -614,7 +629,24 @@ final class SchoolWorkbookImportService
         }
 
         $text = trim((string)$value);
-        foreach (['Y-m-d', 'd/m/Y', 'd-m-Y', 'Y/m/d', 'd.m.Y'] as $format) {
+        foreach ([
+            'Y-m-d',
+            'Y-m-d H:i:s',
+            'Y-m-d H:i',
+            'Y-m-d\\TH:i:s',
+            'd/m/Y',
+            'd/m/Y H:i:s',
+            'd/m/Y H:i',
+            'd-m-Y',
+            'd-m-Y H:i:s',
+            'd-m-Y H:i',
+            'Y/m/d',
+            'Y/m/d H:i:s',
+            'Y/m/d H:i',
+            'd.m.Y',
+            'd.m.Y H:i:s',
+            'd.m.Y H:i',
+        ] as $format) {
             $date = DateTimeImmutable::createFromFormat('!' . $format, $text);
             $errors = DateTimeImmutable::getLastErrors();
             $hasErrors = is_array($errors) && ($errors['warning_count'] > 0 || $errors['error_count'] > 0);
