@@ -27,8 +27,7 @@ if ($uri === '/api' || str_starts_with($uri, '/api/')) {
     $file = $root . $uri;
 
     if (is_file($file)) {
-        require $file;
-        return;
+        return false;
     }
 }
 
