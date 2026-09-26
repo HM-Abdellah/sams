@@ -117,7 +117,7 @@ final class AttendanceSignoffRepository
     {
         $stmt = Database::connection()->prepare(
             "SELECT
-                COUNT(*) AS signed_lessons,
+                SUM(CASE WHEN status = 'signed' THEN 1 ELSE 0 END) AS signed_lessons,
                 SUM(CASE WHEN status = 'needs_resign' THEN 1 ELSE 0 END) AS needs_resign
              FROM attendance_signoffs
              WHERE class_id = ? AND teacher_id = ? AND attendance_date BETWEEN ? AND ?"
