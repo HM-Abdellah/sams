@@ -56,6 +56,31 @@ final class SchoolWorkbookImportServiceTest extends TestCase
         }
     }
 
+    public function testItCarriesMetadataFoundBeforeTheClassMarker(): void
+    {
+        $service = new SchoolWorkbookImportService();
+        $path = $this->writeWorkbook(function (Spreadsheet $workbook): void {
+            $sheet = $workbook->getActiveSheet();
+            $sheet->fromArray([
+                ['السنة الدراسية', '2025/2026'],
+                ['المستوى', '1BAC'],
+                ['القسم', '1BACSEF-3'],
+                ['ر.ت', 'الرمز', 'النسب', 'الإسم', 'تاريخ الازدياد'],
+                [1, 'FF123456', 'Nom8', 'Prenom8', '2008-01-02'],
+            ], null, 'A1');
+        }, 'xlsx');
+
+        try {
+            $result = $service->parse($path);
+
+            self::assertSame('1BACSEF-3', $result['classes'][0]['class_name']);
+            self::assertSame('1BAC', $result['classes'][0]['level']);
+            self::assertSame('2025/2026', $result['classes'][0]['academic_year']);
+        } finally {
+            @unlink($path);
+        }
+    }
+
     public function testItParsesOneClassPerWorksheetAndPreservesSheetName(): void
     {
         $service = new SchoolWorkbookImportService();
