@@ -107,7 +107,8 @@ $pdo->exec(
     "INSERT INTO classes (academic_year_id, name, level, branch)
      VALUES
        ({$oldAcademicYearId}, '2BAC SP A', '2BAC', 'SP'),
-       ({$targetAcademicYearId}, '2BAC SP A', '2BAC', 'SP')"
+       ({$targetAcademicYearId}, '2BAC SP A', '2BAC', 'SP'),
+       ({$targetAcademicYearId}, '2BAC SP B', '2BAC', 'SP')"
 );
 
 $oldClassId = (int)$pdo->query(
@@ -185,6 +186,9 @@ try {
     expect_true((int)$reusedStudent['id'] === $existingStudentId, 'Existing Massar must reuse the same student id.');
     expect_true((int)$reusedStudent['class_id'] === $targetClassId, 'Active-year import should move current class pointer to target class.');
     expect_true((int)$newStudent['class_id'] === $targetClassId, 'New student should point to the target class.');
+    expect_true($pdo->query(
+        "SELECT student_number FROM students WHERE id = " . (int)$newStudent['id']
+    )->fetchColumn() === null, 'Roster order must not be stored as student_number.');
 
     $targetEnrollmentCount = (int)$pdo->query(
         "SELECT COUNT(*)
@@ -253,6 +257,40 @@ try {
         expect_true($conflictBlocked, 'Commit must reject unresolved identity conflicts.');
     } finally {
         @unlink($conflictWorkbook);
+    }
+
+
+
+    $enrollmentConflictWorkbook = createWorkbook(
+        [[1, 'MC-EXIST', 'FamilyA', 'GivenA', '2009-01-02']],
+        '2BAC SP B'
+    );
+    try {
+        $enrollmentStage = $staging->stage(
+            $enrollmentConflictWorkbook,
+            $adminId,
+            'enrollment-conflict.xlsx',
+            $targetAcademicYearId
+        );
+        $enrollmentReconcile = $reconciliation->reconcile((int)$enrollmentStage['batch_id'], $adminId);
+        expect_true($enrollmentReconcile['ready_to_import'] === false, 'Existing enrollment in another target class must block import.');
+
+        $enrollmentRow = $pdo->query(
+            "SELECT status, match_status, issues
+             FROM school_import_rows
+             WHERE import_class_id IN (
+                 SELECT id FROM school_import_classes WHERE batch_id = " . (int)$enrollmentStage['batch_id'] . "
+             )
+             LIMIT 1"
+        )->fetch();
+        expect_true($enrollmentRow['status'] === 'error', 'Enrollment conflict row must be marked error.');
+        expect_true($enrollmentRow['match_status'] === 'conflict', 'Enrollment conflict row must be marked conflict.');
+        expect_true(
+            str_contains((string)$enrollmentRow['issues'], 'student_enrollment_conflict'),
+            'Enrollment conflict must be persisted.'
+        );
+    } finally {
+        @unlink($enrollmentConflictWorkbook);
     }
 
     $unmappedWorkbook = createWorkbook(
