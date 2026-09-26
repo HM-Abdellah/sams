@@ -73,18 +73,18 @@ function createMarkdownImport(array $rows, string $className = '2BAC SP B'): str
         throw new RuntimeException('Unable to create Markdown fixture path.');
     }
 
-    $markdown = "# School Import\\n"
-        . "| المؤسسة | Integration School |\\n"
-        . "| القسم | " . $className . " |\\n"
-        . "| المستوى | 2BAC |\\n"
-        . "| السنة الدراسية | 2026/2027 |\\n\\n"
-        . "| ر.ت | الرمز | النسب | الإسم | تاريخ الازدياد |\\n"
-        . "| --- | --- | --- | --- | --- |\\n";
+    $markdown = "# School Import\n"
+        . "| المؤسسة | Integration School |\n"
+        . "| القسم | " . $className . " |\n"
+        . "| المستوى | 2BAC |\n"
+        . "| السنة الدراسية | 2026/2027 |\n\n"
+        . "| ر.ت | الرمز | النسب | الإسم | تاريخ الازدياد |\n"
+        . "| --- | --- | --- | --- | --- |\n";
 
     foreach ($rows as $row) {
         $markdown .= '| '
             . implode(' | ', array_map(static fn($value): string => str_replace('|', '\\|', (string)$value), $row))
-            . " |\\n";
+            . " |\n";
     }
 
     file_put_contents($path, $markdown);
