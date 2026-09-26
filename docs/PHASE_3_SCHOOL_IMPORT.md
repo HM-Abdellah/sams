@@ -55,3 +55,19 @@ Migration 005 adds three dedicated staging tables:
 The legacy `student_import_batches` / `student_import_rows` tables remain untouched while the new importer is validated.
 
 The schema intentionally does not store a copy of the complete uploaded workbook. Only normalized staging data and diagnostics are persisted.
+## HTTP staging/preview contract
+
+POST /api/v1/imports/school
+  multipart/form-data:
+    file
+    target_academic_year_id (optional during analysis)
+
+GET /api/v1/imports/school/{batch_id}
+
+GET /api/v1/imports/school/{batch_id}?class_id={import_class_id}&page=1&per_page=50
+
+The upload endpoint is admin-only, requires the existing SAMS session and CSRF token, validates the uploaded file before parsing, stages normalized rows transactionally, and returns a summary rather than the complete student dataset.
+
+The preview endpoint is admin-only. It returns batch/class summaries by default; student rows are fetched only for a class and are paginated with a hard maximum page size of 100.
+
+No endpoint in this slice creates or modifies records in students or student_enrollments.
