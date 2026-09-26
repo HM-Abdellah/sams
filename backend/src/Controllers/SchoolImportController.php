@@ -52,7 +52,7 @@ final class SchoolImportController
     {
         $file = $request->file('file');
         if ($file === null) {
-            throw new \InvalidArgumentException('Excel workbook file is required.');
+            throw new \InvalidArgumentException('Excel or Markdown import file is required.');
         }
 
         $uploadError = (int)($file['error'] ?? UPLOAD_ERR_NO_FILE);
@@ -89,6 +89,11 @@ final class SchoolImportController
             ],
             'xls' => [
                 'application/vnd.ms-excel',
+                'application/octet-stream',
+            ],
+            'md' => [
+                'text/markdown',
+                'text/plain',
                 'application/octet-stream',
             ],
         ];
