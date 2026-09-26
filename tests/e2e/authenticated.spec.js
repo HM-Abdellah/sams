@@ -264,7 +264,20 @@ test.describe('authenticated SAMS smoke', () => {
     await page.locator('#schoolImportAcademicYearInput').selectOption({ value: targetYearId });
 
     await page.locator('#schoolImportFile').setInputFiles('tests/fixtures/school_import_e2e.xlsx');
+    const uploadResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/v1/imports/school') &&
+        response.request().method() === 'POST'
+    );
+
     await page.locator('#schoolImportUploadBtn').click();
+
+    const uploadResponse = await uploadResponsePromise;
+    const uploadBody = await uploadResponse.text();
+    expect(uploadResponse.status(), `School import upload response: ${uploadBody}`).toBe(201);
+    const uploadPayload = JSON.parse(uploadBody);
+    expect(uploadPayload.success).toBe(true);
+    expect(uploadPayload.data?.batch_id).toBeTruthy();
 
     await expect(page.locator('#schoolImportReview')).toContainText('school_import_e2e.xlsx');
     await expect(page.locator('#schoolImportReview')).toContainText('E2E-2BAC-B');

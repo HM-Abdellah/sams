@@ -371,6 +371,21 @@ MD;
         }
     }
 
+    public function testItParsesTheCommittedHttpXlsxFixture(): void
+    {
+        $service = new SchoolWorkbookImportService();
+        $path = dirname(__DIR__, 4) . '/tests/fixtures/school_import_e2e.xlsx';
+
+        self::assertFileExists($path);
+
+        $result = $service->parse($path, 'school_import_e2e.xlsx');
+
+        self::assertCount(1, $result['classes']);
+        self::assertSame('E2E-2BAC-B', $result['classes'][0]['class_name']);
+        self::assertCount(1, $result['classes'][0]['students']);
+        self::assertSame('E2E001', $result['classes'][0]['students'][0]['massar_code']);
+    }
+
     public function testItFlagsMalformedMarkdownTableColumnCounts(): void
     {
         $service = new SchoolWorkbookImportService();
