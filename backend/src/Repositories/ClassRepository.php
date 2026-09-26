@@ -64,7 +64,8 @@ final class ClassRepository
                 c.is_active,
                 ay.name AS academic_year_name,
                 ay.starts_on AS academic_year_starts_on,
-                ay.ends_on AS academic_year_ends_on
+                ay.ends_on AS academic_year_ends_on,
+                ay.is_active AS academic_year_active
              FROM classes c
              INNER JOIN academic_years ay ON ay.id = c.academic_year_id
              WHERE c.id = ?
@@ -72,6 +73,57 @@ final class ClassRepository
         );
         $stmt->execute([$classId]);
         $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    public function findByAcademicYearAndName(int $academicYearId, string $name): ?array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT
+                c.id,
+                c.name,
+                c.level,
+                c.branch,
+                c.academic_year_id,
+                c.is_active,
+                ay.name AS academic_year_name,
+                ay.starts_on AS academic_year_starts_on,
+                ay.ends_on AS academic_year_ends_on,
+                ay.is_active AS academic_year_active
+             FROM classes c
+             INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+             WHERE c.academic_year_id = ? AND c.name = ?
+             LIMIT 1'
+        );
+        $stmt->execute([$academicYearId, $name]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    public function findForUpdate(int $classId): ?array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT
+                c.id,
+                c.name,
+                c.level,
+                c.branch,
+                c.academic_year_id,
+                c.is_active,
+                ay.name AS academic_year_name,
+                ay.starts_on AS academic_year_starts_on,
+                ay.ends_on AS academic_year_ends_on,
+                ay.is_active AS academic_year_active
+             FROM classes c
+             INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+             WHERE c.id = ?
+             LIMIT 1
+             FOR UPDATE'
+        );
+        $stmt->execute([$classId]);
+        $row = $stmt->fetch();
+
         return $row ?: null;
     }
 
