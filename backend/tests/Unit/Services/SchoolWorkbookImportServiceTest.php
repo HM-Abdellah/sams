@@ -243,6 +243,8 @@ final class SchoolWorkbookImportServiceTest extends TestCase
             self::assertGreaterThanOrEqual(2, $result['summary']['error_count']);
             self::assertContains('duplicate_massar_code_in_workbook', $result['classes'][0]['students'][0]['issues']);
             self::assertContains('duplicate_massar_code_in_workbook', $result['classes'][1]['students'][0]['issues']);
+            self::assertSame('error', $result['classes'][0]['students'][0]['status']);
+            self::assertSame('error', $result['classes'][1]['students'][0]['status']);
         } finally {
             @unlink($path);
         }
