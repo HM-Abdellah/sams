@@ -194,15 +194,6 @@ final class SchoolWorkbookImportReconciliationService
                     continue;
                 }
 
-                $numbers = [];
-                foreach ($classRows as $row) {
-                    $number = trim((string)($row['roster_number'] ?? ''));
-                    if ($number !== '') $numbers[] = $number;
-                }
-                $numberOwners = $this->students->numberOwnersInClass(
-                    (int)$target['id'],
-                    $numbers
-                );
 
                 $classHasRowConflict = false;
 
@@ -473,7 +464,7 @@ final class SchoolWorkbookImportReconciliationService
                     $existingStudents[$this->massarKey($massar)] = [
                         'id' => $studentId,
                         'class_id' => $targetClassId,
-                        'student_number' => $number !== '' ? $number : null,
+                        'student_number' => null,
                         'massar_code' => $massar,
                         'birth_date' => $row['birth_date'],
                         'first_name' => $row['first_name'],
