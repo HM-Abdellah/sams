@@ -287,6 +287,17 @@ function ensureAdminDynamicUI() {
         dialog.innerHTML = '<form id="importCorrectionForm"><h2 data-i18n="correct_invalid_rows">Corriger les lignes invalides</h2><div id="importCorrectionRows"></div><div class="dialog-actions"><button class="btn" type="button" data-close-dialog="importCorrectionDialog" data-i18n="cancel">Annuler</button><button class="btn primary" type="submit" data-i18n="correct_and_revalidate">Corriger et revalider</button></div></form>';
         document.body.appendChild(dialog);
     }
+    if (!document.querySelector('#schoolImportCommitDialog')) {
+        const dialog = document.createElement('dialog');
+        dialog.id = 'schoolImportCommitDialog';
+        dialog.innerHTML = '<form method="dialog" id="schoolImportCommitForm">'
+            + '<h2 data-i18n="school_import_commit_title">Confirmer l’import final</h2>'
+            + '<div id="schoolImportCommitSummary"></div>'
+            + '<label class="school-import-review-check"><input id="schoolImportReviewedInput" type="checkbox"><span data-i18n="school_import_review_confirm">J’ai vérifié le mapping et les correspondances affichés ci-dessus.</span></label>'
+            + '<div class="dialog-actions"><button class="btn" type="button" data-close-dialog="schoolImportCommitDialog" data-i18n="cancel">Annuler</button><button class="btn success" id="schoolImportCommitConfirmBtn" type="button" disabled data-i18n="school_import_commit">Importer définitivement</button></div>'
+            + '</form>';
+        document.body.appendChild(dialog);
+    }
 }
 
 async function openImportCorrection(batchId) {
@@ -870,6 +881,103 @@ function subjectLabel(subject) {
         || '—';
 }
 
+async function loadSchoolImportReview(batchId, options = {}) {
+    if (!batchId) return;
+    try {
+        const params = {};
+        if (options.classId) {
+            params.class_id = options.classId;
+            params.page = 1;
+            params.per_page = 100;
+        }
+        const result = await API.schoolImport(batchId, params);
+        setState({
+            schoolImport: {
+                ...(state.schoolImport || {}),
+                batch: result.batch || null,
+                classes: result.classes || [],
+                summary: options.summary ?? state.schoolImport?.summary ?? null,
+                ready_to_import: options.readyToImport ?? state.schoolImport?.ready_to_import ?? false,
+                already_imported: result.batch?.status === 'imported' || state.schoolImport?.already_imported === true,
+                selectedClassId: options.classId ? Number(options.classId) : (options.clearSelection ? null : state.schoolImport?.selectedClassId ?? null),
+                selectedRows: options.classId ? (result.rows || null) : (options.clearSelection ? null : state.schoolImport?.selectedRows ?? null),
+            }
+        });
+        renderAll();
+    } catch (error) {
+        ui.toast(error.message || t('school_import_review_error'), true);
+    }
+}
+
+async function reconcileSchoolImport(batchId) {
+    if (!batchId) return;
+    const button = document.querySelector('#schoolImportReconcileBtn');
+    if (button) button.disabled = true;
+    try {
+        const result = await API.reconcileSchoolImport(batchId);
+        await loadSchoolImportReview(batchId, {
+            summary: result.summary || null,
+            readyToImport: result.ready_to_import === true,
+            clearSelection: false,
+        });
+        ui.toast(result.ready_to_import ? t('school_import_reconciled_ready') : t('school_import_reconciled_blocked'));
+    } catch (error) {
+        ui.toast(error.message || t('school_import_reconcile_error'), true);
+    } finally {
+        const current = document.querySelector('#schoolImportReconcileBtn');
+        if (current && state.schoolImport?.batch?.status !== 'imported') current.disabled = false;
+    }
+}
+
+function openSchoolImportCommitDialog() {
+    const data = state.schoolImport;
+    if (!data?.batch || data.ready_to_import !== true || data.batch.status === 'imported') return;
+
+    const dialog = document.querySelector('#schoolImportCommitDialog');
+    const summary = document.querySelector('#schoolImportCommitSummary');
+    const checkbox = document.querySelector('#schoolImportReviewedInput');
+    const confirm = document.querySelector('#schoolImportCommitConfirmBtn');
+    if (!dialog || !summary || !checkbox || !confirm) return;
+
+    const values = data.summary || {};
+    summary.innerHTML = '<p><strong>' + esc(data.batch.original_filename) + '</strong></p>'
+        + '<p>' + esc(t('school_import_commit_summary')) + '</p>'
+        + '<dl class="school-import-confirm-grid">'
+        + '<div><dt>' + esc(t('classes')) + '</dt><dd>' + Number(values.class_count || data.batch.total_classes || 0) + '</dd></div>'
+        + '<div><dt>' + esc(t('students')) + '</dt><dd>' + Number(values.student_count || data.batch.total_rows || 0) + '</dd></div>'
+        + '<div><dt>' + esc(t('school_import_new')) + '</dt><dd>' + Number(values.new_students || 0) + '</dd></div>'
+        + '<div><dt>' + esc(t('school_import_existing')) + '</dt><dd>' + Number(values.existing_students || 0) + '</dd></div>'
+        + '<div><dt>' + esc(t('school_import_conflicts')) + '</dt><dd>' + Number(values.conflict_rows || 0) + '</dd></div>'
+        + '</dl>';
+    checkbox.checked = false;
+    confirm.disabled = true;
+    dialog.showModal();
+}
+
+async function commitSchoolImport() {
+    const data = state.schoolImport;
+    if (!data?.batch) return;
+
+    const confirm = document.querySelector('#schoolImportCommitConfirmBtn');
+    if (confirm) confirm.disabled = true;
+
+    try {
+        const result = await API.commitSchoolImport(Number(data.batch.id));
+        document.querySelector('#schoolImportCommitDialog')?.close();
+        await loadSchoolImportReview(Number(data.batch.id), {
+            summary: result.summary || null,
+            readyToImport: false,
+            clearSelection: false,
+        });
+        ui.toast(t('school_import_committed'));
+        await loadAdmin();
+        if (state.classId) await loadClass();
+    } catch (error) {
+        ui.toast(error.message || t('school_import_commit_error'), true);
+        if (confirm) confirm.disabled = false;
+    }
+}
+
 function wire() {
     document.querySelector('#reloadBtn')?.addEventListener('click', loadClass);
     document.querySelector('#logoutBtn')?.addEventListener('click', async () => {
@@ -1361,6 +1469,63 @@ function wire() {
         } catch (error) {
             ui.toast(error.message || t('error_import'), true);
         }
+    });
+
+    document.querySelector('#schoolImportForm')?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const file = document.querySelector('#schoolImportFile')?.files?.[0];
+        const academicYearId = Number(document.querySelector('#schoolImportAcademicYearInput')?.value || 0);
+        if (!file) return ui.toast(t('school_import_select_file'), true);
+        if (!academicYearId) return ui.toast(t('school_import_select_year'), true);
+
+        const uploadButton = document.querySelector('#schoolImportUploadBtn');
+        if (uploadButton) uploadButton.disabled = true;
+        try {
+            const result = await API.stageSchoolImport(academicYearId, file);
+            await loadSchoolImportReview(Number(result.batch_id), {
+                summary: null,
+                readyToImport: false,
+                clearSelection: true,
+            });
+            ui.toast(t('school_import_staged'));
+            document.querySelector('#schoolImportFile').value = '';
+        } catch (error) {
+            ui.toast(error.message || t('school_import_upload_error'), true);
+        } finally {
+            const button = document.querySelector('#schoolImportUploadBtn');
+            if (button) button.disabled = false;
+        }
+    });
+
+    document.querySelector('#schoolImportReview')?.addEventListener('click', async (event) => {
+        const classButton = event.target.closest('[data-school-import-class]');
+        const reconcileButton = event.target.closest('#schoolImportReconcileBtn');
+        const commitButton = event.target.closest('#schoolImportCommitBtn');
+
+        if (classButton) {
+            const batchId = Number(state.schoolImport?.batch?.id || 0);
+            const classId = Number(classButton.dataset.schoolImportClass || 0);
+            if (batchId && classId) await loadSchoolImportReview(batchId, { classId });
+            return;
+        }
+
+        if (reconcileButton && !reconcileButton.disabled) {
+            await reconcileSchoolImport(Number(state.schoolImport?.batch?.id || 0));
+            return;
+        }
+
+        if (commitButton && !commitButton.disabled) {
+            openSchoolImportCommitDialog();
+        }
+    });
+
+    document.querySelector('#schoolImportReviewedInput')?.addEventListener('change', (event) => {
+        const confirm = document.querySelector('#schoolImportCommitConfirmBtn');
+        if (confirm) confirm.disabled = !event.target.checked;
+    });
+
+    document.querySelector('#schoolImportCommitConfirmBtn')?.addEventListener('click', async () => {
+        await commitSchoolImport();
     });
 
     document.querySelector('#adminClassesTable')?.addEventListener('click', async (event) => {
