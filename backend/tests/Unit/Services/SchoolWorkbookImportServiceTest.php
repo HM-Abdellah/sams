@@ -150,6 +150,26 @@ final class SchoolWorkbookImportServiceTest extends TestCase
         }
     }
 
+    public function testItRejectsUnsupportedFileExtensions(): void
+    {
+        $service = new SchoolWorkbookImportService();
+        $path = tempnam(sys_get_temp_dir(), 'sams-school-import-');
+        if ($path === false) self::fail('Unable to create temporary file.');
+
+        try {
+            file_put_contents($path, 'not an excel file');
+            $invalidPath = $path . '.csv';
+            rename($path, $invalidPath);
+
+            $this->expectException(\InvalidArgumentException::class);
+            $this->expectExceptionMessage('Only XLSX and XLS workbooks are supported.');
+            $service->parse($invalidPath);
+        } finally {
+            @unlink($path);
+            @unlink($path . '.csv');
+        }
+    }
+
     public function testItReportsAHeaderFoundWithoutClassContext(): void
     {
         $service = new SchoolWorkbookImportService();
