@@ -6,7 +6,7 @@ Accept the school's real Excel roster as a single workbook, detect every class b
 
 ## Scope of this slice
 
-This slice is intentionally parser-only:
+This slice now covers the full safe import pipeline foundation:
 
 1. Add PhpSpreadsheet as the spreadsheet reader.
 2. Detect worksheets without assuming a fixed sheet count or row layout.
@@ -16,14 +16,20 @@ This slice is intentionally parser-only:
 6. Support both one class per worksheet and multiple repeated class blocks in one worksheet.
 7. Preserve source coordinates for diagnostics.
 8. Produce explicit issues for malformed or incomplete rows.
-9. Use synthetic fixtures only; never commit real student data.
+9. Detect duplicate Massar codes and duplicate roster numbers inside the workbook.
+10. Stage normalized workbook data without touching production students/enrollments.
+11. Map source classes to an exact target academic year + class name.
+12. Reconcile students by global Massar identity and detect identity/enrollment/number conflicts.
+13. Commit the reconciled batch in one database transaction with idempotent replay protection.
+14. Use synthetic fixtures only; never commit real student data.
 
 ## Non-goals
 
-- No database writes.
-- No student/enrollment reconciliation yet.
+- No direct production writes during upload/staging.
+- No automatic creation of uncertain target classes.
+- No automatic overwrite of conflicting student identity data.
 - No replacement of the existing CSV importer.
-- No React UI yet.
+- No React import UI yet.
 - No automatic assumptions about branch/filière from class names.
 
 ## Expected intermediate model
@@ -36,9 +42,17 @@ Upload .xlsx/.xls -> secure file checks -> workbook parser -> topology/class det
 
 The parser must never silently guess a class or silently drop a malformed student row.
 
-## Later database slice
+## Reconciliation and final import
 
-The existing class-scoped student_import_batches design is not the final model for a whole-school workbook. Before commit/import is implemented, the domain layer must define target academic year, class identity within an academic year, Massar-based student identity reuse, enrollment creation/reuse, conflict handling, and atomic rollback.
+The whole-school staging model is deliberately separate from the legacy class-scoped importer.
+
+Class mapping is deterministic: each staged source class must resolve to an existing class with the selected target academic year and the source class name. A missing target class is a blocking error; the importer does not silently create a new class or infer branch/filière.
+
+Student reconciliation uses Massar as the primary identity key. An existing Massar reuses the existing `students.id`; a new Massar creates exactly one student record. Existing first name, last name, and non-null birth date are compared before import. Conflicts are persisted on the staging row and block the final commit.
+
+Enrollments are year-specific. An existing student already enrolled once in the target academic year is reused only when that enrollment belongs to the mapped target class. An enrollment in another target-year class, or multiple target-year enrollments, blocks the import. A missing target-year enrollment is created during the final transaction.
+
+The final commit is atomic: student rows, enrollment rows, staging state changes, and the final audit event are part of one database transaction. A production write failure rolls the complete batch back, leaving the staged batch retryable. A committed batch is idempotent and will not create duplicate students/enrollments on a second commit attempt.
 
 ## Attendance UI invariant
 
@@ -66,8 +80,14 @@ GET /api/v1/imports/school/{batch_id}
 
 GET /api/v1/imports/school/{batch_id}?class_id={import_class_id}&page=1&per_page=50
 
+POST /api/v1/imports/school/{batch_id}/reconcile
+
+POST /api/v1/imports/school/{batch_id}/commit
+
 The upload endpoint is admin-only, requires the existing SAMS session and CSRF token, validates the uploaded file before parsing, stages normalized rows transactionally, and returns a summary rather than the complete student dataset.
 
 The preview endpoint is admin-only. It returns batch/class summaries by default; student rows are fetched only for a class and are paginated with a hard maximum page size of 100.
 
-No endpoint in this slice creates or modifies records in students or student_enrollments.
+The reconcile endpoint is admin-only and performs target-class mapping plus Massar reconciliation against the production database, but it does not create production student/enrollment rows.
+
+The commit endpoint is admin-only and requires a fully reconciled batch. It rechecks target class identity, student identity, enrollment state, and roster-number collisions under locks before performing the atomic final import. Unresolved conflicts return HTTP 409 and do not write production records.
