@@ -251,6 +251,26 @@ test.describe('authenticated SAMS smoke', () => {
     await expect(page.locator('#schoolImportCommitBtn')).toBeDisabled();
   });
 
+  test('admin can upload a real XLSX fixture through the HTTP import endpoint', async ({ page }) => {
+    await login(page, username, password);
+
+    await page.locator('.tab[data-tab="admin"]').click();
+    await expect(page.locator('#schoolImportForm')).toBeVisible();
+
+    await page.locator('.language-btn[data-lang="en"]').click();
+    const targetYearOption = page.locator('#schoolImportAcademicYearInput option').filter({ hasText: '2026/2027' }).first();
+    const targetYearId = await targetYearOption.getAttribute('value');
+    expect(targetYearId).toBeTruthy();
+    await page.locator('#schoolImportAcademicYearInput').selectOption({ value: targetYearId });
+
+    await page.locator('#schoolImportFile').setInputFiles('tests/fixtures/school_import_e2e.xlsx');
+    await page.locator('#schoolImportUploadBtn').click();
+
+    await expect(page.locator('#schoolImportReview')).toContainText('school_import_e2e.xlsx');
+    await expect(page.locator('#schoolImportReview')).toContainText('E2E-2BAC-B');
+    await expect(page.locator('#schoolImportReview')).toContainText('1');
+  });
+
   test('admin can review and explicitly confirm a whole-school import', async ({ page }) => {
     await login(page, username, password);
 
