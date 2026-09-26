@@ -90,6 +90,33 @@ final class SchoolWorkbookImportServiceTest extends TestCase
         }
     }
 
+    public function testItClearsMissingMetadataIssuesWhenMetadataAppearsAfterClassMarker(): void
+    {
+        $service = new SchoolWorkbookImportService();
+        $path = $this->writeWorkbook(function (Spreadsheet $workbook): void {
+            $sheet = $workbook->getActiveSheet();
+            $sheet->fromArray([
+                ['القسم', 'TCSF-DEFERRED'],
+                ['المستوى', 'Tronc Commun'],
+                ['السنة الدراسية', '2025/2026'],
+                ['ر.ت', 'الرمز', 'النسب', 'الإسم', 'تاريخ الازدياد'],
+                [1, 'DEFER123456', 'NomDeferred', 'PrenomDeferred', '2009-01-02'],
+            ], null, 'A1');
+        }, 'xlsx');
+
+        try {
+            $result = $service->parse($path);
+
+            self::assertCount(1, $result['classes']);
+            self::assertSame('Tronc Commun', $result['classes'][0]['level']);
+            self::assertSame('2025/2026', $result['classes'][0]['academic_year']);
+            self::assertNotContains('missing_level', $result['classes'][0]['issues']);
+            self::assertNotContains('missing_academic_year', $result['classes'][0]['issues']);
+        } finally {
+            @unlink($path);
+        }
+    }
+
     public function testItCarriesMetadataFoundBeforeTheClassMarker(): void
     {
         $service = new SchoolWorkbookImportService();
