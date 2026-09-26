@@ -228,14 +228,6 @@ final class SchoolWorkbookImportReconciliationService
 
                             $this->addIdentityIssues($issues, $student, $row);
 
-                            $number = trim((string)($row['roster_number'] ?? ''));
-                            if ($number !== '') {
-                                $ownerId = $numberOwners[$this->numberKey($number)] ?? null;
-                                if ($ownerId !== null && $ownerId !== $matchedStudentId) {
-                                    $issues[] = 'target_class_number_conflict';
-                                }
-                            }
-
                             $enrollmentList = $yearEnrollments[$matchedStudentId] ?? [];
                             if (count($enrollmentList) === 1) {
                                 if ((int)$enrollmentList[0]['class_id'] === (int)$target['id']) {
@@ -248,15 +240,6 @@ final class SchoolWorkbookImportReconciliationService
                             }
                         }
 
-                        if ($student === null) {
-                            $number = trim((string)($row['roster_number'] ?? ''));
-                            if ($number !== '') {
-                                $ownerId = $numberOwners[$this->numberKey($number)] ?? null;
-                                if ($ownerId !== null) {
-                                    $issues[] = 'target_class_number_conflict';
-                                }
-                            }
-                        }
                     }
 
                     $issues = array_values(array_unique($issues));
@@ -448,24 +431,6 @@ final class SchoolWorkbookImportReconciliationService
                 )
             );
 
-            $numberOwnersByClass = [];
-            foreach ($targetClassIds as $targetClassId) {
-                $numbers = [];
-                foreach ($rows as $row) {
-                    if (
-                        (int)($row['target_class_id'] ?? 0) === $targetClassId
-                        && trim((string)($row['roster_number'] ?? '')) !== ''
-                    ) {
-                        $numbers[] = trim((string)$row['roster_number']);
-                    }
-                }
-
-                $numberOwnersByClass[$targetClassId] = $this->students->numberOwnersInClass(
-                    $targetClassId,
-                    $numbers
-                );
-            }
-
             $newStudents = 0;
             $existingStudentCount = 0;
             $enrollmentsCreated = 0;
@@ -477,24 +442,13 @@ final class SchoolWorkbookImportReconciliationService
                 $target = $targetClasses[$targetClassId];
 
                 $massar = trim((string)$row['massar_code']);
-                $number = trim((string)($row['roster_number'] ?? ''));
                 $student = $existingStudents[$this->massarKey($massar)] ?? null;
 
                 if ($student === null) {
-                    $owners = $numberOwnersByClass[$targetClassId] ?? [];
-                    if (
-                        $number !== ''
-                        && isset($owners[$this->numberKey($number)])
-                    ) {
-                        throw new SchoolImportWorkflowException(
-                            'A student number was taken by another student after reconciliation.'
-                        );
-                    }
-
                     try {
                         $created = $this->students->createWithEnrollment(
                             $targetClassId,
-                            $number !== '' ? $number : null,
+                            null,
                             $massar,
                             trim((string)($row['birth_date'] ?? '')) !== ''
                                 ? (string)$row['birth_date']
@@ -552,17 +506,6 @@ final class SchoolWorkbookImportReconciliationService
                         );
                     }
 
-                    $owners = $numberOwnersByClass[$targetClassId] ?? [];
-                    if (
-                        $number !== ''
-                        && isset($owners[$this->numberKey($number)])
-                        && $owners[$this->numberKey($number)] !== $studentId
-                    ) {
-                        throw new SchoolImportWorkflowException(
-                            'A student number was taken by another student after reconciliation.'
-                        );
-                    }
-
                     $studentEnrollments = $yearEnrollments[$studentId] ?? [];
                     $targetEnrollmentId = null;
 
@@ -587,10 +530,9 @@ final class SchoolWorkbookImportReconciliationService
                     }
 
                     if ((int)($academicYear['is_active'] ?? 0) === 1) {
-                        $this->students->updateCurrentClassAndNumber(
+                        $this->students->updateCurrentClass(
                             $studentId,
-                            $targetClassId,
-                            $number !== '' ? $number : null
+                            $targetClassId
                         );
                     }
                 }
@@ -700,11 +642,6 @@ final class SchoolWorkbookImportReconciliationService
     }
 
     private function massarKey(string $value): string
-    {
-        return strtolower(trim($value));
-    }
-
-    private function numberKey(string $value): string
     {
         return strtolower(trim($value));
     }
