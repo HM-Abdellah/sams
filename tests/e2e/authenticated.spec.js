@@ -193,6 +193,43 @@ test.describe('authenticated SAMS smoke', () => {
     await expect(page.locator('#weeklyPrintSheet .print-attendance-table tbody tr')).toHaveCount(3);
   });
 
+  test('admin can upload a Markdown fallback through the real import API', async ({ page }) => {
+    await login(page, username, password);
+
+    await page.locator('.tab[data-tab="admin"]').click();
+    await expect(page.locator('#schoolImportForm')).toBeVisible();
+
+    await page.locator('.language-btn[data-lang="en"]').click();
+    const targetYearOption = page.locator('#schoolImportAcademicYearInput option').filter({ hasText: '2026/2027' }).first();
+    const targetYearId = await targetYearOption.getAttribute('value');
+    expect(targetYearId).toBeTruthy();
+    await page.locator('#schoolImportAcademicYearInput').selectOption({ value: targetYearId });
+
+    const markdown = [
+      '## E2E-2BAC-A',
+      '| المؤسسة | Integration School |  |  |  |  |  |',
+      '| --- | --- | --- | --- | --- | --- | --- |',
+      '| القسم | E2E-2BAC-A |  |  |  |  |  |',
+      '| المستوى | 2BAC |  |  |  |  |  |',
+      '| السنة الدراسية | 2026/2027 |  |  |  |  |  |',
+      '|  |  |  |  |  |  |  |',
+      '| ر.ت | الرمز | النسب | الإسم | النوع | تاريخ الازدياد | مكان الازدياد |',
+      '| 1 | E2EMDAPI001 | FamilyMDAPI | GivenMDAPI | ذكر | 2009-01-01 | Rabat |',
+      '',
+    ].join('\n');
+
+    await page.locator('#schoolImportFile').setInputFiles({
+      name: 'school-fallback.md',
+      mimeType: 'text/markdown',
+      buffer: Buffer.from(markdown, 'utf8'),
+    });
+    await page.locator('#schoolImportUploadBtn').click();
+
+    await expect(page.locator('#schoolImportReview')).toContainText('school-fallback.md');
+    await expect(page.locator('#schoolImportReview')).toContainText('E2E-2BAC-A');
+    await expect(page.locator('#schoolImportReview')).toContainText('1');
+  });
+
   test('admin can review and explicitly confirm a whole-school import', async ({ page }) => {
     await login(page, username, password);
 

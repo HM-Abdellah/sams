@@ -41,25 +41,27 @@ final class StudentRepository
         )));
         if ($codes === []) return [];
 
-        $placeholders = implode(',', array_fill(0, count($codes), '?'));
-        $stmt = Database::connection()->prepare(
-            "SELECT
-                id,
-                class_id,
-                student_number,
-                massar_code,
-                birth_date,
-                first_name,
-                last_name,
-                status
-             FROM students
-             WHERE massar_code IN ({$placeholders})"
-        );
-        $stmt->execute($codes);
-
         $result = [];
-        foreach ($stmt->fetchAll() as $row) {
-            $result[$this->massarKey((string)$row['massar_code'])] = $row;
+        foreach (array_chunk($codes, 1000) as $chunk) {
+            $placeholders = implode(',', array_fill(0, count($chunk), '?'));
+            $stmt = Database::connection()->prepare(
+                "SELECT
+                    id,
+                    class_id,
+                    student_number,
+                    massar_code,
+                    birth_date,
+                    first_name,
+                    last_name,
+                    status
+                 FROM students
+                 WHERE massar_code IN ({$placeholders})"
+            );
+            $stmt->execute($chunk);
+
+            foreach ($stmt->fetchAll() as $row) {
+                $result[$this->massarKey((string)$row['massar_code'])] = $row;
+            }
         }
 
         return $result;

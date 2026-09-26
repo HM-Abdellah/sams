@@ -1,8 +1,8 @@
-# Phase 3 — Whole-School Excel Import
+# Phase 3 — Whole-School School Roster Import
 
 ## Goal
 
-Accept the school's real Excel roster as a single workbook, detect every class block and its students, and produce a validated intermediate model that later layers can preview and import transactionally.
+Accept the school's real Excel roster as the primary input, with Markdown as a controlled fallback representation when Excel parsing is unavailable. Detect every class block and its students, and produce a validated intermediate model that later layers can preview and import transactionally.
 
 ## Scope of this slice
 
@@ -23,7 +23,8 @@ This slice now covers the full safe import pipeline and the admin review/confirm
 13. Commit the reconciled batch in one database transaction with idempotent replay protection.
 14. Provide an admin review surface for class mappings, student matches, conflicts, and explicit final confirmation.
 15. Verify the Phase 2 -> Phase 3 database upgrade path for migration 005.
-16. Use synthetic fixtures only; never commit real student data.
+16. Support `.md` as a fallback input produced externally from the source workbook (for example with MarkItDown), using the same validation, staging, reconciliation, and commit pipeline.
+17. Use synthetic fixtures only; never commit real student data.
 
 ## Non-goals
 
@@ -33,6 +34,7 @@ This slice now covers the full safe import pipeline and the admin review/confirm
 - No replacement of the existing CSV importer.
 - No React-specific import implementation yet; the verified review workflow remains available in the current admin UI until the frontend migration replaces it.
 - No automatic assumptions about branch/filière from class names.
+- No automatic Excel -> Markdown conversion inside SAMS v1; Markdown is an externally produced fallback.
 
 ## Expected intermediate model
 
@@ -40,7 +42,9 @@ A parsed workbook returns workbook/sheet metadata, detected class blocks, class 
 
 ## Import pipeline
 
-Upload .xlsx/.xls -> secure file checks -> workbook parser -> topology/class detection -> row normalization -> preview + validation -> class/student identity matching -> explicit admin confirmation -> one DB transaction.
+Primary path: Upload `.xlsx/.xls` -> secure file checks -> Excel parser -> topology/class detection -> row normalization -> validation -> class/student identity matching -> explicit admin confirmation -> one DB transaction.
+
+Fallback path: Source Excel -> external MarkItDown conversion -> upload `.md` -> Markdown parser -> the same topology/detection, normalization, validation, staging, reconciliation, confirmation, and transaction path. Markdown does not bypass any safety or validation layer.
 
 The parser must never silently guess a class or silently drop a malformed student row.
 
@@ -59,6 +63,10 @@ The final commit is atomic: student rows, enrollment rows, staging state changes
 ## Attendance UI invariant
 
 The workbook can contain rich student metadata, but the attendance register must continue to display only the student's first name + last name and attendance periods such as 8–9, 9–10, etc.
+
+## Source-format policy
+
+Excel remains the canonical/source-of-truth school roster format. Markdown is a fallback/derived representation intended for parser recovery, not a replacement for Excel. The fallback must pass exactly the same staging, validation, reconciliation, authorization, and transaction checks.
 
 ## Database staging slice
 
@@ -109,4 +117,4 @@ The Phase 3 CI gate must execute, not merely discover, all of the following on t
 - API HTTP smoke tests, including protected reconciliation authorization.
 - Playwright E2E, including the admin upload -> review -> reconcile -> explicit confirmation -> commit journey.
 
-A successful green gate is required before treating this phase as ready for review. The real school workbook remains an external acceptance fixture until its binary Excel file is supplied; synthetic fixtures must remain the only repository test data.
+A successful green gate is required before treating this phase as ready for review. The real school workbook remains an external acceptance fixture until its binary Excel file is supplied. A real MarkItDown-generated `.md` from that workbook is also an acceptance fixture for the fallback path. Synthetic fixtures must remain the only repository test data.

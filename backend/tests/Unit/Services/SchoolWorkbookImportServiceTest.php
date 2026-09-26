@@ -202,8 +202,10 @@ final class SchoolWorkbookImportServiceTest extends TestCase
     public function testItParsesMarkdownTablesWithMetadataAndStudentRows(): void
     {
         $service = new SchoolWorkbookImportService();
-        $path = tempnam(sys_get_temp_dir(), 'sams-school-import-md-');
-        if ($path === false) self::fail('Unable to create temporary Markdown path.');
+        $temporaryPath = tempnam(sys_get_temp_dir(), 'sams-school-import-md-');
+        if ($temporaryPath === false) self::fail('Unable to create temporary Markdown path.');
+        $path = $temporaryPath . '.md';
+        if (!rename($temporaryPath, $path)) self::fail('Unable to create temporary Markdown path.');
 
         $markdown = <<<'MD'
 # Roster
@@ -237,8 +239,10 @@ MD;
     public function testItParsesMarkdownKeyValueMetadataAndClassRows(): void
     {
         $service = new SchoolWorkbookImportService();
-        $path = tempnam(sys_get_temp_dir(), 'sams-school-import-md-');
-        if ($path === false) self::fail('Unable to create temporary Markdown path.');
+        $temporaryPath = tempnam(sys_get_temp_dir(), 'sams-school-import-md-');
+        if ($temporaryPath === false) self::fail('Unable to create temporary Markdown path.');
+        $path = $temporaryPath . '.md';
+        if (!rename($temporaryPath, $path)) self::fail('Unable to create temporary Markdown path.');
 
         $markdown = <<<'MD'
 ## Classe 2
@@ -262,6 +266,42 @@ MD;
             self::assertSame('2025/2026', $result['classes'][0]['academic_year']);
             self::assertSame('MD223456', $result['classes'][0]['students'][0]['massar_code']);
             self::assertSame('Classe 2', $result['classes'][0]['source_sheet']);
+        } finally {
+            @unlink($path);
+        }
+    }
+
+    public function testItParsesMarkItDownStyleSheetTables(): void
+    {
+        $service = new SchoolWorkbookImportService();
+        $temporaryPath = tempnam(sys_get_temp_dir(), 'sams-school-import-markitdown-');
+        if ($temporaryPath === false) self::fail('Unable to create temporary Markdown path.');
+        $path = $temporaryPath . '.md';
+        if (!rename($temporaryPath, $path)) self::fail('Unable to create temporary Markdown path.');
+
+        $markdown = <<<'MD'
+## TCSF-MD-MARKITDOWN
+| المؤسسة | Integration School |  |  |  |  |  |
+| --- | --- | --- | --- | --- | --- | --- |
+| القسم | TCSF-MD-MARKITDOWN |  |  |  |  |  |
+| المستوى | Tronc Commun |  |  |  |  |  |
+| السنة الدراسية | 2025/2026 |  |  |  |  |  |
+|  |  |  |  |  |  |  |
+| ر.ت | الرمز | النسب | الإسم | النوع | تاريخ الازدياد | مكان الازدياد |
+| 1 | MDMK123456 | NomMark | PrenomMark | ذكر | 2009-10-11 | Rabat |
+MD;
+        file_put_contents($path, $markdown);
+
+        try {
+            $result = $service->parse($path);
+
+            self::assertCount(1, $result['classes']);
+            self::assertSame('TCSF-MD-MARKITDOWN', $result['classes'][0]['class_name']);
+            self::assertSame('2025/2026', $result['classes'][0]['academic_year']);
+            self::assertSame('TCSF-MD-MARKITDOWN', $result['classes'][0]['source_sheet']);
+            self::assertCount(1, $result['classes'][0]['students']);
+            self::assertSame('MDMK123456', $result['classes'][0]['students'][0]['massar_code']);
+            self::assertSame('2009-10-11', $result['classes'][0]['students'][0]['birth_date']);
         } finally {
             @unlink($path);
         }

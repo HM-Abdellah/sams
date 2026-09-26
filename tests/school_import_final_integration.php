@@ -63,8 +63,13 @@ function createWorkbook(array $rows, string $className = '2BAC SP A'): string
 
 function createMarkdownImport(array $rows, string $className = '2BAC SP B'): string
 {
-    $path = tempnam(sys_get_temp_dir(), 'sams-school-import-md-final-');
-    if ($path === false) {
+    $temporaryPath = tempnam(sys_get_temp_dir(), 'sams-school-import-md-final-');
+    if ($temporaryPath === false) {
+        throw new RuntimeException('Unable to create Markdown fixture path.');
+    }
+
+    $path = $temporaryPath . '.md';
+    if (!rename($temporaryPath, $path)) {
         throw new RuntimeException('Unable to create Markdown fixture path.');
     }
 
@@ -157,6 +162,29 @@ $pdo->exec(
      VALUES ({$existingStudentId}, {$oldClassId}, '2025-09-01', '2026-07-31')"
 );
 
+$chunkMassars = ['MC-EXIST'];
+for ($i = 0; $i < 1200; ++$i) {
+    $chunkMassars[] = 'CHUNK-NO-MATCH-' . $i;
+}
+$chunkStudents = (new SAMS\Repositories\StudentRepository())->studentsByMassarCodes($chunkMassars);
+expect_true(
+    isset($chunkStudents['mc-exist']) && count($chunkStudents) === 1,
+    'Student Massar lookup must support more than 1000 input codes.'
+);
+
+$chunkStudentIds = [$existingStudentId];
+for ($i = 0; $i < 1200; ++$i) {
+    $chunkStudentIds[] = 900000 + $i;
+}
+$chunkEnrollments = (new SAMS\Repositories\StudentEnrollmentRepository())->forStudentsInAcademicYear(
+    $chunkStudentIds,
+    $targetAcademicYearId
+);
+expect_true(
+    count($chunkEnrollments) === 0,
+    'Chunked enrollment lookup should safely handle more than 1000 student IDs with no matches.'
+);
+
 $validWorkbook = createWorkbook([
     [1, 'MC-EXIST', 'FamilyA', 'GivenA', '2009-01-02'],
     [2, 'MC-NEW', 'FamilyB', 'GivenB', '2009-02-03'],
@@ -246,7 +274,49 @@ try {
         'Idempotent commit must not create duplicate students.'
     );
 
-    $warningRosterWorkbook = createWorkbook([
+        $renamedClassWorkbook = createWorkbook([
+        [1, 'MC-RENAME-GUARD', 'FamilyRename', 'GivenRename', '2009-10-10'],
+    ]);
+    try {
+        $renamedStage = $staging->stage(
+            $renamedClassWorkbook,
+            $adminId,
+            'renamed-target-class.xlsx',
+            $targetAcademicYearId
+        );
+        $renamedReconcile = $reconciliation->reconcile((int)$renamedStage['batch_id'], $adminId);
+        expect_true($renamedReconcile['ready_to_import'] === true, 'Class rename guard fixture should reconcile cleanly.');
+
+        $pdo->exec(
+            "UPDATE classes
+             SET name = '2BAC SP A RENAMED'
+             WHERE id = {$targetClassId}"
+        );
+
+        $renameBlocked = false;
+        try {
+            $reconciliation->commit((int)$renamedStage['batch_id'], $adminId);
+        } catch (SAMS\Exceptions\SchoolImportWorkflowException) {
+            $renameBlocked = true;
+        }
+        expect_true($renameBlocked, 'Commit must reject a target class renamed after reconciliation.');
+
+        expect_true(
+            (int)$pdo->query(
+                "SELECT COUNT(*) FROM students WHERE massar_code = 'MC-RENAME-GUARD'"
+            )->fetchColumn() === 0,
+            'A renamed target class must not receive imported students.'
+        );
+    } finally {
+        $pdo->exec(
+            "UPDATE classes
+             SET name = '2BAC SP A'
+             WHERE id = {$targetClassId}"
+        );
+        @unlink($renamedClassWorkbook);
+    }
+
+$warningRosterWorkbook = createWorkbook([
         [1, 'MC-WARN-1', 'FamilyWarnA', 'GivenWarnA', '2009-06-06'],
         [1, 'MC-WARN-2', 'FamilyWarnB', 'GivenWarnB', '2009-07-07'],
     ]);

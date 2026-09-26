@@ -67,8 +67,8 @@ final class SchoolImportController
 
         $filename = basename((string)($file['name'] ?? ''));
         $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-        if (!in_array($extension, ['xlsx', 'xls'], true)) {
-            throw new \InvalidArgumentException('Only XLSX and XLS workbooks are supported.');
+        if (!in_array($extension, ['xlsx', 'xls', 'md'], true)) {
+            throw new \InvalidArgumentException('Only XLSX, XLS, and Markdown (.md) files are supported.');
         }
 
         $size = (int)($file['size'] ?? 0);

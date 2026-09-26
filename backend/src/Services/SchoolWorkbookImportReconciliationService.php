@@ -401,9 +401,10 @@ final class SchoolWorkbookImportReconciliationService
                 if (
                     $target === null
                     || (int)$target['academic_year_id'] !== $targetAcademicYearId
+                    || trim((string)$target['name']) !== trim((string)($class['source_class_name'] ?? ''))
                 ) {
                     throw new SchoolImportWorkflowException(
-                        'A target class changed or no longer belongs to the selected academic year.'
+                        'A target class changed or no longer matches the reconciled source class.'
                     );
                 }
                 $targetClasses[$targetClassId] = $target;
