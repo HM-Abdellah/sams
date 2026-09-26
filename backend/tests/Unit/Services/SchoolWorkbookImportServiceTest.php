@@ -406,6 +406,36 @@ MD;
         }
     }
 
+    public function testItRejectsFutureBirthDates(): void
+    {
+        $service = new SchoolWorkbookImportService();
+        $temporaryPath = tempnam(sys_get_temp_dir(), 'sams-school-import-future-birth-');
+        if ($temporaryPath === false) self::fail('Unable to create temporary Markdown path.');
+        $path = $temporaryPath . '.md';
+        if (!rename($temporaryPath, $path)) self::fail('Unable to create temporary Markdown path.');
+
+        $tomorrow = (new \DateTimeImmutable('tomorrow'))->format('Y-m-d');
+        $markdown = "## Future Date\n"
+            . "| القسم | Future Date |\n"
+            . "| المستوى | Tronc Commun |\n"
+            . "| السنة الدراسية | 2025/2026 |\n"
+            . "| ر.ت | الرمز | النسب | الإسم | تاريخ الازدياد |\n"
+            . "| --- | --- | --- | --- | --- |\n"
+            . "| 1 | FUTURE123456 | Family | Given | {$tomorrow} |\n";
+        file_put_contents($path, $markdown);
+
+        try {
+            $result = $service->parse($path);
+
+            self::assertContains(
+                'future_birth_date',
+                $result['classes'][0]['students'][0]['issues']
+            );
+        } finally {
+            @unlink($path);
+        }
+    }
+
     public function testItReportsAHeaderFoundWithoutClassContext(): void
     {
         $service = new SchoolWorkbookImportService();

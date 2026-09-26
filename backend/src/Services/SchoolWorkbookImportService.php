@@ -212,6 +212,17 @@ final class SchoolWorkbookImportService
                 $flushTable();
                 $sheetName = trim($this->markdownInlineText($matches[1]));
                 if ($sheetName !== '') {
+                    if (mb_strlen($sheetName) > 255) {
+                        throw new InvalidArgumentException('The Markdown sheet heading is too long.');
+                    }
+
+                    if (
+                        !array_key_exists($sheetName, $sheetGroups)
+                        && count($sheetGroups) >= self::MAX_SHEETS
+                    ) {
+                        throw new InvalidArgumentException('The Markdown import contains too many worksheets.');
+                    }
+
                     $currentSheetName = $sheetName;
                 }
                 continue;
@@ -590,6 +601,8 @@ final class SchoolWorkbookImportService
             $birthDate = $this->normalizeBirthDate($rawBirthDate);
             if ($this->cellText($row, $header['birth_date']) !== '' && $birthDate === null) {
                 $issues[] = 'invalid_birth_date';
+            } elseif ($birthDate !== null && $birthDate > (new DateTimeImmutable('today'))->format('Y-m-d')) {
+                $issues[] = 'future_birth_date';
             }
         }
 
