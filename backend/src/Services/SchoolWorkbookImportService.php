@@ -35,11 +35,11 @@ final class SchoolWorkbookImportService
      *
      * @return array{classes: list<array<string,mixed>>, sheets: list<array<string,mixed>>, total_students: int}
      */
-    public function parse(string $path): array
+    public function parse(string $path, ?string $originalFilename = null): array
     {
-        $this->assertReadableWorkbook($path);
+        $this->assertReadableWorkbook($path, $originalFilename);
 
-        if ($this->fileExtension($path) === 'md') {
+        if ($this->fileExtension($path, $originalFilename) === 'md') {
             return $this->parseMarkdown($path);
         }
 
@@ -97,7 +97,7 @@ final class SchoolWorkbookImportService
         }
     }
 
-    private function assertReadableWorkbook(string $path): void
+    private function assertReadableWorkbook(string $path, ?string $originalFilename = null): void
     {
         if ($path === '' || !is_file($path) || !is_readable($path)) {
             throw new InvalidArgumentException('The uploaded workbook is not readable.');
@@ -112,15 +112,19 @@ final class SchoolWorkbookImportService
             throw new InvalidArgumentException('The workbook is too large.');
         }
 
-        $extension = $this->fileExtension($path);
+        $extension = $this->fileExtension($path, $originalFilename);
         if (!in_array($extension, ['xlsx', 'xls', 'md'], true)) {
             throw new InvalidArgumentException('Only XLSX, XLS, and Markdown (.md) files are supported.');
         }
     }
 
-    private function fileExtension(string $path): string
+    private function fileExtension(string $path, ?string $originalFilename = null): string
     {
-        return strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $source = $originalFilename !== null && trim($originalFilename) !== ''
+            ? $originalFilename
+            : $path;
+
+        return strtolower(pathinfo($source, PATHINFO_EXTENSION));
     }
 
     private function parseMarkdown(string $path): array

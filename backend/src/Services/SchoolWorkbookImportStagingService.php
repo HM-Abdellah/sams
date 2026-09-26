@@ -43,7 +43,7 @@ final class SchoolWorkbookImportStagingService
             }
         }
 
-        $parsed = $this->parser->parse($path);
+        $parsed = $this->parser->parse($path, $filename);
         $validated = $this->validator->validate($parsed);
 
         $fileSize = filesize($path);

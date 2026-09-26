@@ -179,6 +179,33 @@ final class SchoolWorkbookImportServiceTest extends TestCase
         }
     }
 
+    public function testItUsesTheOriginalFilenameWhenUploadTempPathHasNoExtension(): void
+    {
+        $service = new SchoolWorkbookImportService();
+        $path = tempnam(sys_get_temp_dir(), 'sams-school-import-no-ext-');
+        if ($path === false) self::fail('Unable to create temporary file.');
+
+        $markdown = <<<'MD'
+## Temp Upload
+| القسم | Temp Upload |  |
+| المستوى | Tronc Commun |  |
+| السنة الدراسية | 2025/2026 |  |
+| ر.ت | الرمز | النسب | الإسم |
+| 1 | NOEXT123456 | FamilyNoExt | GivenNoExt |
+MD;
+        file_put_contents($path, $markdown);
+
+        try {
+            $result = $service->parse($path, 'school-fallback.md');
+
+            self::assertCount(1, $result['classes']);
+            self::assertSame('Temp Upload', $result['classes'][0]['class_name']);
+            self::assertSame('NOEXT123456', $result['classes'][0]['students'][0]['massar_code']);
+        } finally {
+            @unlink($path);
+        }
+    }
+
     public function testItRejectsUnsupportedFileExtensions(): void
     {
         $service = new SchoolWorkbookImportService();
