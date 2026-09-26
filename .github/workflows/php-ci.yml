@@ -120,7 +120,11 @@ jobs:
           missing_status=$(curl -sS -o /tmp/sams-missing.json -w "%{http_code}" http://127.0.0.1:8090/api/v1/does-not-exist)
           test "$missing_status" = "404"
 
-          echo "[PASS] API HTTP smoke: health=200 method=405 missing=404"
+          import_auth_status=$(curl -sS -o /tmp/sams-import-auth.json -w "%{http_code}" -X POST http://127.0.0.1:8090/api/v1/imports/school/1/reconcile)
+          test "$import_auth_status" = "401"
+          grep -q '"success":false' /tmp/sams-import-auth.json
+
+          echo "[PASS] API HTTP smoke: health=200 method=405 missing=404 import-auth=401"
 
   javascript:
     runs-on: ubuntu-latest
