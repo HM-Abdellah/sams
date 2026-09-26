@@ -311,11 +311,14 @@ test.describe('authenticated SAMS smoke', () => {
     await expect(page.locator('#weeklyTeacherSignatures')).toContainText('1/1');
     await expect(page.locator('#weeklyTeacherSignatures [data-receive-week]')).toBeVisible();
 
-    await page.locator('#weeklyTeacherSignatures [data-receive-week]').click();
-    await expect(page.locator('#weeklyTeacherSignatures .register-receipt.received')).toBeVisible();
-
+    await page.evaluate(() => {
+      window.print = () => {};
+    });
     await page.locator('#reportBtn').click();
     await expect(page.locator('#weeklyPrintSheet')).toContainText('Mathematics');
+
+    await page.locator('#weeklyTeacherSignatures [data-receive-week]').click();
+    await expect(page.locator('#weeklyTeacherSignatures .register-receipt.received')).toBeVisible();
 
     await page.reload();
     await expect(page.locator('#weeklyTeacherSignatures .register-receipt.received')).toBeVisible();
