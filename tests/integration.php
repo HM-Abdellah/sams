@@ -114,6 +114,78 @@ expect_true(
     'Whole-school import rows must reference student_enrollments.'
 );
 
+require_once __DIR__ . '/../backend/vendor/autoload.php';
+
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use SAMS\Services\SchoolWorkbookImportStagingService;
+
+$stagingPath = tempnam(sys_get_temp_dir(), 'sams-integration-school-import-');
+if ($stagingPath === false) {
+    throw new RuntimeException('Unable to create school import fixture path.');
+}
+$stagingWorkbook = $stagingPath . '.xlsx';
+@unlink($stagingPath);
+
+try {
+    $workbook = new Spreadsheet();
+    $sheet = $workbook->getActiveSheet();
+    $sheet->setTitle('School Import');
+    $sheet->fromArray([
+        ['المؤسسة', 'Integration School'],
+        ['القسم', 'E2E-IMPORT-A'],
+        ['المستوى', '2BAC'],
+        ['السنة الدراسية', '2026/2027'],
+        [],
+        ['ر.ت', 'الرمز', 'النسب', 'الإسم', 'تاريخ الازدياد'],
+        [1, 'IMPTEST0001', 'FamilyA', 'GivenA', '2009-01-02'],
+        [2, 'IMPTEST0002', 'FamilyB', 'GivenB', '03/04/2009'],
+    ], null, 'A1');
+    (new Xlsx($workbook))->save($stagingWorkbook);
+    $workbook->disconnectWorksheets();
+    unset($workbook);
+
+    $beforeStudents = (int)$pdo->query('SELECT COUNT(*) FROM students')->fetchColumn();
+    $beforeEnrollments = (int)$pdo->query('SELECT COUNT(*) FROM student_enrollments')->fetchColumn();
+
+    $result = (new SchoolWorkbookImportStagingService())->stage(
+        $stagingWorkbook,
+        1,
+        'integration-school.xlsx',
+        1
+    );
+
+    expect_true($result['status'] === 'validated', 'Valid school workbook should be staged as validated.');
+    expect_true($result['summary']['class_count'] === 1, 'School import should stage one class.');
+    expect_true($result['summary']['student_count'] === 2, 'School import should stage two students.');
+    expect_true(
+        (int)$pdo->query("SELECT COUNT(*) FROM school_import_batches")->fetchColumn() === 1,
+        'School import batch was not persisted.'
+    );
+    expect_true(
+        (int)$pdo->query("SELECT COUNT(*) FROM school_import_classes")->fetchColumn() === 1,
+        'School import class block was not persisted.'
+    );
+    expect_true(
+        (int)$pdo->query("SELECT COUNT(*) FROM school_import_rows")->fetchColumn() === 2,
+        'School import rows were not persisted.'
+    );
+    expect_true(
+        (int)$pdo->query('SELECT COUNT(*) FROM students')->fetchColumn() === $beforeStudents,
+        'Whole-school staging must not create production student rows.'
+    );
+    expect_true(
+        (int)$pdo->query('SELECT COUNT(*) FROM student_enrollments')->fetchColumn() === $beforeEnrollments,
+        'Whole-school staging must not create production enrollment rows.'
+    );
+    expect_true(
+        (int)$pdo->query("SELECT COUNT(*) FROM audit_logs WHERE action = 'school_import.stage'")->fetchColumn() === 1,
+        'Whole-school staging audit event was not persisted.'
+    );
+} finally {
+    @unlink($stagingWorkbook);
+}
+
 
 $pdo->exec(
     "INSERT INTO academic_years (name, starts_on, ends_on, is_active)
