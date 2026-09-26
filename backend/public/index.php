@@ -31,6 +31,7 @@ try {
 
     $router->get('/health', new HealthController());
     $router->post('/imports/school', new SchoolImportController());
+    $router->get('/imports/school/{id}', new SchoolImportController());
 
     $router->get('/', static function (): Response {
         return Response::json([
