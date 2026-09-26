@@ -394,7 +394,13 @@ test.describe('authenticated SAMS smoke', () => {
     await page.locator('#userFullNameInput').fill('E2E UI User');
     await page.locator('#userRoleInput').selectOption('teacher');
     await page.locator('#userPasswordInput').fill(newPassword);
+    const createUserResponse = page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/users.php') &&
+        response.request().method() === 'POST'
+    );
     await page.locator('#userForm button[type="submit"]').click();
+    await expect((await createUserResponse).ok()).toBeTruthy();
 
     await expect(page.locator('#usersTable tbody tr').filter({ hasText: createdUsername }).first()).toBeVisible();
     const userRow = page.locator('#usersTable tbody tr').filter({ hasText: createdUsername }).first();
