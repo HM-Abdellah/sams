@@ -379,9 +379,11 @@ test.describe('authenticated SAMS smoke', () => {
     const editedClassRow = page.locator('#adminClassesTable tbody tr').filter({ hasText: className + '-EDITED' }).first();
     await expect(editedClassRow).toBeVisible();
 
+    page.once('dialog', (dialog) => dialog.accept());
     await editedClassRow.locator('[data-toggle-class]').click();
     await expect(editedClassRow.locator('td').nth(4)).toHaveText('Non');
 
+    page.once('dialog', (dialog) => dialog.accept());
     await editedClassRow.locator('[data-toggle-class]').click();
     await expect(editedClassRow.locator('td').nth(4)).toHaveText('Oui');
 
