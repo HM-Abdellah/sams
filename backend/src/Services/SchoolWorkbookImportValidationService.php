@@ -19,8 +19,6 @@ final class SchoolWorkbookImportValidationService
         $workbookIssues = [];
         $seenMassars = [];
         $seenClasses = [];
-        $errorCount = 0;
-        $warningCount = 0;
 
         foreach ($sheets as $sheet) {
             $issues = is_array($sheet['issues'] ?? null) ? $sheet['issues'] : [];
@@ -29,39 +27,46 @@ final class SchoolWorkbookImportValidationService
                     'sheet' => (string)($sheet['name'] ?? ''),
                     'issue' => (string)$issue,
                 ];
-                ++$errorCount;
             }
         }
 
         foreach ($classes as $classIndex => &$class) {
-            if (!is_array($class)) continue;
-            $class['issues'] = array_values(array_unique(array_map('strval', is_array($class['issues'] ?? null) ? $class['issues'] : [])));
+            if (!is_array($class)) {
+                $class = [
+                    'class_name' => null,
+                    'level' => null,
+                    'academic_year' => null,
+                    'source_sheet' => null,
+                    'issues' => ['malformed_class_block'],
+                    'students' => [],
+                ];
+            }
 
+            $class['issues'] = $this->uniqueStrings($class['issues'] ?? []);
             $className = trim((string)($class['class_name'] ?? ''));
             $academicYear = trim((string)($class['academic_year'] ?? ''));
 
-            if ($className === '') {
-                $class['issues'][] = 'missing_class_name';
-            }
-
-            if ($academicYear === '') {
-                $class['issues'][] = 'missing_academic_year';
-            }
+            if ($className === '') $class['issues'][] = 'missing_class_name';
+            if ($academicYear === '') $class['issues'][] = 'missing_academic_year';
 
             $classKey = $this->canonicalKey($academicYear, $className);
             if ($classKey !== '|' && isset($seenClasses[$classKey])) {
                 $class['issues'][] = 'duplicate_class_in_workbook';
-                $classes[$seenClasses[$classKey]]['issues'][] = 'duplicate_class_in_workbook';
+                $firstClass = $seenClasses[$classKey];
+                $classes[$firstClass]['issues'][] = 'duplicate_class_in_workbook';
             } elseif ($classKey !== '|') {
                 $seenClasses[$classKey] = $classIndex;
             }
 
             $students = is_array($class['students'] ?? null) ? $class['students'] : [];
             foreach ($students as $studentIndex => &$student) {
-                if (!is_array($student)) continue;
-                $student['issues'] = array_values(array_unique(array_map('strval', is_array($student['issues'] ?? null) ? $student['issues'] : [])));
+                if (!is_array($student)) {
+                    $student = ['issues' => ['malformed_student_row']];
+                }
 
+                $student['issues'] = $this->uniqueStrings($student['issues'] ?? []);
                 $massar = trim((string)($student['massar_code'] ?? ''));
+
                 if ($massar !== '') {
                     if (isset($seenMassars[$massar])) {
                         $student['issues'][] = 'duplicate_massar_code_in_workbook';
@@ -74,29 +79,14 @@ final class SchoolWorkbookImportValidationService
                         ];
                     }
                 }
-
-                $student['issues'] = array_values(array_unique($student['issues']));
-                $student['status'] = $student['issues'] === [] ? 'valid' : 'error';
-                if ($student['status'] === 'error') ++$errorCount;
             }
             unset($student);
 
-            if ($class['issues'] !== []) {
-                $class['status'] = 'error';
-                $errorCount += count(array_unique($class['issues']));
-            } else {
-                $class['status'] = 'valid';
-            }
-
-            $class['issues'] = array_values(array_unique($class['issues']));
+            $class['issues'] = $this->uniqueStrings($class['issues']);
+            $class['student_count'] = count($students);
+            $class['students'] = $students;
         }
         unset($class);
-
-        $classCount = count($classes);
-        $studentCount = 0;
-        foreach ($classes as $class) {
-            $studentCount += is_array($class['students'] ?? null) ? count($class['students']) : 0;
-        }
 
         $academicYears = [];
         foreach ($classes as $class) {
@@ -108,20 +98,75 @@ final class SchoolWorkbookImportValidationService
                 'sheet' => null,
                 'issue' => 'multiple_academic_years',
             ];
-            ++$warningCount;
         }
+
+        $errorCount = count($this->errorIssues($workbookIssues));
+        $warningCount = count($academicYears) > 1 ? 1 : 0;
+        $studentCount = 0;
+
+        foreach ($classes as &$class) {
+            $class['issues'] = $this->uniqueStrings($class['issues'] ?? []);
+            $students = is_array($class['students'] ?? null) ? $class['students'] : [];
+
+            foreach ($students as &$student) {
+                $student['issues'] = $this->uniqueStrings($student['issues'] ?? []);
+                $student['status'] = $student['issues'] === [] ? 'valid' : 'error';
+                if ($student['status'] === 'error') ++$errorCount;
+            }
+            unset($student);
+
+            $class['students'] = $students;
+            $class['student_count'] = count($students);
+            $class['status'] = $class['issues'] === [] && !$this->hasStudentErrors($students) ? 'valid' : 'error';
+            if ($class['status'] === 'error') ++$errorCount;
+            $studentCount += count($students);
+        }
+        unset($class);
 
         return [
             'valid' => $errorCount === 0,
             'summary' => [
-                'class_count' => $classCount,
+                'class_count' => count($classes),
                 'student_count' => $studentCount,
                 'error_count' => $errorCount,
                 'warning_count' => $warningCount,
             ],
-            'workbook_issues' => $workbookIssues,
+            'workbook_issues' => $this->uniqueIssueObjects($workbookIssues),
             'classes' => $classes,
         ];
+    }
+
+    private function hasStudentErrors(array $students): bool
+    {
+        foreach ($students as $student) {
+            if (($student['status'] ?? 'error') === 'error') return true;
+        }
+        return false;
+    }
+
+    private function errorIssues(array $issues): array
+    {
+        return array_values(array_filter($issues, static fn(array $item): bool => !in_array($item['issue'], ['multiple_academic_years'], true)));
+    }
+
+    private function uniqueStrings(mixed $values): array
+    {
+        if (!is_array($values)) return [];
+        $values = array_map(static fn($value): string => (string)$value, $values);
+        return array_values(array_unique($values));
+    }
+
+    private function uniqueIssueObjects(array $issues): array
+    {
+        $result = [];
+        $seen = [];
+        foreach ($issues as $issue) {
+            $key = (string)($issue['sheet'] ?? '') . '|' . (string)($issue['issue'] ?? '');
+            if (isset($seen[$key])) continue;
+            $seen[$key] = true;
+            $result[] = $issue;
+        }
+        return $result;
     }
 
     private function canonicalKey(string $academicYear, string $className): string
