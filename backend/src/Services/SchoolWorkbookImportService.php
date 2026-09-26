@@ -116,6 +116,7 @@ final class SchoolWorkbookImportService
     private function parseSheet(string $sheetName, array $rows): array
     {
         $classes = [];
+        $sheetIssues = [];
         $current = null;
         $header = null;
         $pendingMetadata = [
@@ -168,6 +169,9 @@ final class SchoolWorkbookImportService
             $detectedHeader = $this->detectHeader($row);
             if ($detectedHeader !== null) {
                 $header = $detectedHeader;
+                if ($current === null) {
+                    $sheetIssues[] = 'roster_without_class';
+                }
                 continue;
             }
 
@@ -185,6 +189,19 @@ final class SchoolWorkbookImportService
 
         if ($current !== null) {
             $classes[] = $this->finalizeClass($current);
+        }
+
+        if ($sheetIssues !== []) {
+            $classes[] = [
+                'class_name' => null,
+                'level' => null,
+                'academic_year' => null,
+                'source_sheet' => $sheetName,
+                'source_block_start_row' => null,
+                'issues' => array_values(array_unique($sheetIssues)),
+                'student_count' => 0,
+                'students' => [],
+            ];
         }
 
         return $classes;
