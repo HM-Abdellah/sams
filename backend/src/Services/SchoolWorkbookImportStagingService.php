@@ -166,7 +166,20 @@ final class SchoolWorkbookImportStagingService
                 'error_row_count' => $errorRows,
             ],
             'workbook_issues' => $validated['workbook_issues'],
-            'classes' => $validated['classes'],
+            'classes' => array_map(
+                static fn(array $class): array => [
+                    'class_name' => $class['class_name'] ?? null,
+                    'level' => $class['level'] ?? null,
+                    'academic_year' => $class['academic_year'] ?? null,
+                    'source_sheet' => $class['source_sheet'] ?? null,
+                    'source_block_start_row' => $class['source_block_start_row'] ?? null,
+                    'source_block_end_row' => $class['source_block_end_row'] ?? null,
+                    'student_count' => (int)($class['student_count'] ?? count($class['students'] ?? [])),
+                    'status' => $class['status'] ?? 'error',
+                    'issues' => $class['issues'] ?? [],
+                ],
+                $classes
+            ),
             'sheets' => $parsed['sheets'],
         ];
     }
