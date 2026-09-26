@@ -156,7 +156,7 @@ final class SchoolWorkbookImportService
                 $header = null;
 
                 if ($current['level'] === null) $current['issues'][] = 'missing_level';
-                if ($academicYear === null) $current['issues'][] = 'missing_academic_year';
+                if ($current['academic_year'] === null) $current['issues'][] = 'missing_academic_year';
 
                 continue;
             }
