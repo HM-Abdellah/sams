@@ -60,7 +60,8 @@ final class SchoolWorkbookImportService
             foreach ($workbook->getWorksheetIterator() as $sheet) {
                 $sheetName = $sheet->getTitle();
                 $rows = $sheet->toArray(null, true, true, true);
-                $sheetClasses = $this->parseSheet($sheetName, $rows);
+                $sheetResult = $this->parseSheet($sheetName, $rows);
+                $sheetClasses = $sheetResult['classes'];
 
                 $sheetStudentCount = 0;
                 foreach ($sheetClasses as $class) {
@@ -73,6 +74,7 @@ final class SchoolWorkbookImportService
                     'name' => $sheetName,
                     'class_count' => count($sheetClasses),
                     'student_count' => $sheetStudentCount,
+                    'issues' => $sheetResult['issues'],
                 ];
             }
 
@@ -112,6 +114,7 @@ final class SchoolWorkbookImportService
         }
     }
 
+    /** @return array{classes: list<array<string,mixed>>, issues: list<string>} */
     /** @param array<int|string,array<int|string,mixed>> $rows */
     private function parseSheet(string $sheetName, array $rows): array
     {
@@ -191,20 +194,10 @@ final class SchoolWorkbookImportService
             $classes[] = $this->finalizeClass($current);
         }
 
-        if ($sheetIssues !== []) {
-            $classes[] = [
-                'class_name' => null,
-                'level' => null,
-                'academic_year' => null,
-                'source_sheet' => $sheetName,
-                'source_block_start_row' => null,
-                'issues' => array_values(array_unique($sheetIssues)),
-                'student_count' => 0,
-                'students' => [],
-            ];
-        }
-
-        return $classes;
+        return [
+            'classes' => $classes,
+            'issues' => array_values(array_unique($sheetIssues)),
+        ];
     }
 
     private function finalizeClass(array $class): array
