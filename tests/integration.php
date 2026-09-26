@@ -160,7 +160,7 @@ try {
         null
     );
 
-    expect_true($result['status'] === 'validated', 'Valid school workbook should be staged as validated. Details: ' . json_encode(['workbook_issues' => $result['workbook_issues'] ?? [], 'classes' => $result['classes'] ?? []], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+    expect_true($result['status'] === 'validated', 'Valid school workbook should be staged as validated.');
     expect_true($result['summary']['class_count'] === 1, 'School import should stage one class.');
     expect_true($result['summary']['student_count'] === 2, 'School import should stage two students.');
     expect_true(
