@@ -1173,14 +1173,16 @@ function wire() {
     document.querySelector('#addClassBtn')?.addEventListener('click', () => document.querySelector('#classDialog')?.showModal());
     document.querySelector('#classForm')?.addEventListener('submit', async (event) => {
         event.preventDefault();
+        const form = event.currentTarget;
+        const dialog = form.closest('dialog');
         try {
             await API.createClass({
                 name: document.querySelector('#classNameInput').value.trim(),
                 level: document.querySelector('#classLevelInput').value.trim(),
                 branch: document.querySelector('#classBranchInput').value.trim(),
             });
-            event.currentTarget.closest('dialog')?.close();
-            event.currentTarget.reset();
+            dialog?.close();
+            form.reset();
             const classes = await API.classes();
             setOperationalClasses(classes.classes || []);
             ui.classes();
