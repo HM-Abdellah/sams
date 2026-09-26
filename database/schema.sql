@@ -20,6 +20,9 @@ SET time_zone = '+00:00';
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- Drop in dependency order so a fresh install can safely rebuild every table.
+DROP TABLE IF EXISTS school_import_rows;
+DROP TABLE IF EXISTS school_import_classes;
+DROP TABLE IF EXISTS school_import_batches;
 DROP TABLE IF EXISTS student_import_rows;
 DROP TABLE IF EXISTS teacher_teachings;
 DROP TABLE IF EXISTS student_import_batches;
@@ -327,7 +330,37 @@ CREATE TABLE audit_logs (
         ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
-CREATE TABLE student_import_batches (
+CREATE TABLE school_import_batches (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    created_by BIGINT UNSIGNED NOT NULL,
+    target_academic_year_id BIGINT UNSIGNED NULL,
+    source_academic_year VARCHAR(40) NULL,
+    original_filename VARCHAR(255) NOT NULL,
+    file_sha256 CHAR(64) NOT NULL,
+    file_size BIGINT UNSIGNED NOT NULL,
+    status ENUM('staged', 'validated', 'imported', 'failed') NOT NULL DEFAULT 'staged',
+    total_classes INT UNSIGNED NOT NULL DEFAULT 0,
+    valid_classes INT UNSIGNED NOT NULL DEFAULT 0,
+    warning_classes INT UNSIGNED NOT NULL DEFAULT 0,
+    error_classes INT UNSIGNED NOT NULL DEFAULT 0,
+    total_rows INT UNSIGNED NOT NULL DEFAULT 0,
+    valid_rows INT UNSIGNED NOT NULL DEFAULT 0,
+    warning_rows INT UNSIGNED NOT NULL DEFAULT 0,
+    error_rows INT UNSIGNED NOT NULL DEFAULT 0,
+    imported_at TIMESTAMP NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_school_import_batches_created (created_at),
+    KEY idx_school_import_batches_status (status, created_at),
+    KEY idx_school_import_batches_hash (file_sha256),
+    CONSTRAINT fk_school_import_batches_creator
+        FOREIGN KEY (created_by) REFERENCES users(id)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_school_import_batches_target_year
+        FOREIGN KEY (target_academic_year_id) REFERENCES academic_years(id)
+        ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB;CREATE TABLE student_import_batches (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     class_id BIGINT UNSIGNED NOT NULL,
     created_by BIGINT UNSIGNED NOT NULL,
