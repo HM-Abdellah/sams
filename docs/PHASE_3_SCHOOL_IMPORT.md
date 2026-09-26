@@ -6,7 +6,7 @@ Accept the school's real Excel roster as a single workbook, detect every class b
 
 ## Scope of this slice
 
-This slice now covers the full safe import pipeline foundation:
+This slice now covers the full safe import pipeline and the admin review/confirmation workflow:
 
 1. Add PhpSpreadsheet as the spreadsheet reader.
 2. Detect worksheets without assuming a fixed sheet count or row layout.
@@ -21,7 +21,9 @@ This slice now covers the full safe import pipeline foundation:
 11. Map source classes to an exact target academic year + class name.
 12. Reconcile students by global Massar identity and detect identity/enrollment/number conflicts.
 13. Commit the reconciled batch in one database transaction with idempotent replay protection.
-14. Use synthetic fixtures only; never commit real student data.
+14. Provide an admin review surface for class mappings, student matches, conflicts, and explicit final confirmation.
+15. Verify the Phase 2 -> Phase 3 database upgrade path for migration 005.
+16. Use synthetic fixtures only; never commit real student data.
 
 ## Non-goals
 
@@ -29,7 +31,7 @@ This slice now covers the full safe import pipeline foundation:
 - No automatic creation of uncertain target classes.
 - No automatic overwrite of conflicting student identity data.
 - No replacement of the existing CSV importer.
-- No React import UI yet.
+- No React-specific import implementation yet; the verified review workflow remains available in the current admin UI until the frontend migration replaces it.
 - No automatic assumptions about branch/filière from class names.
 
 ## Expected intermediate model
@@ -91,3 +93,20 @@ The preview endpoint is admin-only. It returns batch/class summaries by default;
 The reconcile endpoint is admin-only and performs target-class mapping plus Massar reconciliation against the production database, but it does not create production student/enrollment rows.
 
 The commit endpoint is admin-only and requires a fully reconciled batch. It rechecks target class identity, student identity, enrollment state, and roster-number collisions under locks before performing the atomic final import. Unresolved conflicts return HTTP 409 and do not write production records.
+
+
+## Verification gates
+
+The Phase 3 CI gate must execute, not merely discover, all of the following on the Phase 3 head:
+
+- JavaScript syntax check.
+- PHP lint.
+- Legacy service tests.
+- Backend PHPUnit suite.
+- Migration 005 upgrade-path test against the Phase 2 schema.
+- MariaDB integration tests.
+- Whole-school reconciliation/atomic-commit integration tests.
+- API HTTP smoke tests, including protected reconciliation authorization.
+- Playwright E2E, including the admin upload -> review -> reconcile -> explicit confirmation -> commit journey.
+
+A successful green gate is required before treating this phase as ready for review. The real school workbook remains an external acceptance fixture until its binary Excel file is supplied; synthetic fixtures must remain the only repository test data.
