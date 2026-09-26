@@ -44,7 +44,10 @@ final class SchoolWorkbookImportService
         }
 
         try {
-            $reader = IOFactory::createReaderForFile($path);
+            $readerType = $this->fileExtension($path, $originalFilename) === 'xls'
+                ? 'Xls'
+                : 'Xlsx';
+            $reader = IOFactory::createReader($readerType);
             $reader->setReadDataOnly(true);
             $workbook = $reader->load($path);
         } catch (Throwable $e) {

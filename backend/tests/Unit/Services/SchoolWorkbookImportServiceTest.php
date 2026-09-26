@@ -179,6 +179,43 @@ final class SchoolWorkbookImportServiceTest extends TestCase
         }
     }
 
+    public function testItReadsAnXlsxFromAnExtensionlessUploadTempPath(): void
+    {
+        $source = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $source->getActiveSheet();
+        $sheet->setTitle('Extensionless XLSX');
+        $sheet->fromArray([
+            ['القسم', '2BAC-EXTENSIONLESS'],
+            ['المستوى', '2BAC'],
+            ['السنة الدراسية', '2025/2026'],
+            ['ر.ت', 'الرمز', 'النسب', 'الإسم'],
+            [1, 'EXTLESS123456', 'Family', 'Given'],
+        ], null, 'A1');
+
+        $xlsxPath = tempnam(sys_get_temp_dir(), 'sams-school-import-extensionless-xlsx-source-');
+        if ($xlsxPath === false) self::fail('Unable to create source workbook path.');
+        $temporaryPath = tempnam(sys_get_temp_dir(), 'sams-school-import-extensionless-xlsx-');
+        if ($temporaryPath === false) self::fail('Unable to create extensionless workbook path.');
+
+        (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($source))->save($xlsxPath);
+        $source->disconnectWorksheets();
+        unset($source);
+
+        try {
+            $service = new SchoolWorkbookImportService();
+            self::assertTrue(copy($xlsxPath, $temporaryPath));
+
+            $result = $service->parse($temporaryPath, 'real-upload.xlsx');
+
+            self::assertCount(1, $result['classes']);
+            self::assertSame('2BAC-EXTENSIONLESS', $result['classes'][0]['class_name']);
+            self::assertSame('EXTLESS123456', $result['classes'][0]['students'][0]['massar_code']);
+        } finally {
+            @unlink($xlsxPath);
+            @unlink($temporaryPath);
+        }
+    }
+
     public function testItUsesTheOriginalFilenameWhenUploadTempPathHasNoExtension(): void
     {
         $service = new SchoolWorkbookImportService();
