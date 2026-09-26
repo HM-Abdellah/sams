@@ -118,6 +118,10 @@ final class SchoolWorkbookImportService
         $classes = [];
         $current = null;
         $header = null;
+        $pendingMetadata = [
+            'level' => null,
+            'academic_year' => null,
+        ];
 
         foreach ($rows as $rawRowNumber => $row) {
             $rowNumber = (int)$rawRowNumber;
@@ -134,16 +138,20 @@ final class SchoolWorkbookImportService
 
                 $current = [
                     'class_name' => $className,
-                    'level' => $level,
-                    'academic_year' => $academicYear,
+                    'level' => $level ?? $pendingMetadata['level'],
+                    'academic_year' => $academicYear ?? $pendingMetadata['academic_year'],
                     'source_sheet' => $sheetName,
                     'source_block_start_row' => $rowNumber,
                     'issues' => [],
                     'students' => [],
                 ];
+                $pendingMetadata = [
+                    'level' => null,
+                    'academic_year' => null,
+                ];
                 $header = null;
 
-                if ($level === null) $current['issues'][] = 'missing_level';
+                if ($current['level'] === null) $current['issues'][] = 'missing_level';
                 if ($academicYear === null) $current['issues'][] = 'missing_academic_year';
 
                 continue;
@@ -152,6 +160,9 @@ final class SchoolWorkbookImportService
             if ($current !== null) {
                 if ($level !== null && $current['level'] === null) $current['level'] = $level;
                 if ($academicYear !== null && $current['academic_year'] === null) $current['academic_year'] = $academicYear;
+            } else {
+                if ($level !== null) $pendingMetadata['level'] = $level;
+                if ($academicYear !== null) $pendingMetadata['academic_year'] = $academicYear;
             }
 
             $detectedHeader = $this->detectHeader($row);
