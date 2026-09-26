@@ -227,7 +227,28 @@ test.describe('authenticated SAMS smoke', () => {
 
     await expect(page.locator('#schoolImportReview')).toContainText('school-fallback.md');
     await expect(page.locator('#schoolImportReview')).toContainText('E2E-2BAC-A');
-    await expect(page.locator('#schoolImportReview')).toContainText('1');
+    await expect(page.locator('#schoolImportCommitBtn')).toBeDisabled();
+
+    await page.locator('[data-school-import-class]').filter({ hasText: 'E2E-2BAC-A' }).click();
+    await expect(page.locator('#schoolImportRowsReview')).toContainText('E2EMDAPI001');
+    await expect(page.locator('#schoolImportRowsReview')).toContainText('not_checked');
+
+    await page.locator('#schoolImportReconcileBtn').click();
+    await expect(page.locator('#schoolImportReview')).toContainText('Ready for final import');
+    await expect(page.locator('#schoolImportRowsReview')).toContainText('new');
+    await expect(page.locator('#schoolImportCommitBtn')).toBeEnabled();
+
+    await page.locator('#schoolImportCommitBtn').click();
+    await expect(page.locator('#schoolImportCommitDialog')).toBeVisible();
+    await expect(page.locator('#schoolImportCommitConfirmBtn')).toBeDisabled();
+
+    await page.locator('#schoolImportReviewedInput').check();
+    await expect(page.locator('#schoolImportCommitConfirmBtn')).toBeEnabled();
+    await page.locator('#schoolImportCommitConfirmBtn').click();
+
+    await expect(page.locator('#schoolImportCommitDialog')).toBeHidden();
+    await expect(page.locator('#schoolImportReview')).toContainText('Imported');
+    await expect(page.locator('#schoolImportCommitBtn')).toBeDisabled();
   });
 
   test('admin can review and explicitly confirm a whole-school import', async ({ page }) => {
