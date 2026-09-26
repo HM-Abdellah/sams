@@ -100,8 +100,8 @@ final class SchoolWorkbookImportValidationService
             ];
         }
 
-        $errorCount = count($this->errorIssues($workbookIssues));
-        $warningCount = count($academicYears) > 1 ? 1 : 0;
+        $errorCount = count($workbookIssues);
+        $warningCount = 0;
         $studentCount = 0;
 
         foreach ($classes as &$class) {
@@ -142,11 +142,6 @@ final class SchoolWorkbookImportValidationService
             if (($student['status'] ?? 'error') === 'error') return true;
         }
         return false;
-    }
-
-    private function errorIssues(array $issues): array
-    {
-        return array_values(array_filter($issues, static fn(array $item): bool => !in_array($item['issue'], ['multiple_academic_years'], true)));
     }
 
     private function uniqueStrings(mixed $values): array
