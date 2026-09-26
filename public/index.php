@@ -288,8 +288,8 @@ $csrf = Csrf::token();
                     <select id="schoolImportAcademicYearInput" required></select>
                 </label>
                 <label>
-                    <span data-i18n="excel_workbook">Classeur Excel</span>
-                    <input id="schoolImportFile" type="file" accept=".xlsx,.xls" required>
+                    <span data-i18n="excel_workbook">Excel / Markdown</span>
+                    <input id="schoolImportFile" type="file" accept=".xlsx,.xls,.md" required>
                 </label>
                 <button class="btn primary" id="schoolImportUploadBtn" type="submit" data-i18n="analyze_school_import">Analyser le classeur</button>
             </form>
