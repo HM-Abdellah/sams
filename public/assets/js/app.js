@@ -916,6 +916,7 @@ async function reconcileSchoolImport(batchId) {
     try {
         const result = await API.reconcileSchoolImport(batchId);
         await loadSchoolImportReview(batchId, {
+            classId: state.schoolImport?.selectedClassId || null,
             summary: result.summary || null,
             readyToImport: result.ready_to_import === true,
             clearSelection: false,
