@@ -323,6 +323,9 @@ test.describe('authenticated SAMS smoke', () => {
     await expect(page.locator('#weeklyTeacherSignatures')).toContainText('1/1');
     await expect(page.locator('#weeklyTeacherSignatures [data-receive-week]')).toBeVisible();
 
+    await page.locator('.language-btn[data-lang="en"]').click();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+
     await page.evaluate(() => {
       window.print = () => {};
     });
@@ -363,6 +366,7 @@ test.describe('authenticated SAMS smoke', () => {
     );
     await page.locator('#classForm button[type="submit"]').click();
     await expect((await createClassResponse).ok()).toBeTruthy();
+    await expect(page.locator('#classDialog')).toBeHidden();
 
     await page.locator('.tab[data-tab="admin"]').click();
     const classRow = page.locator('#adminClassesTable tbody tr').filter({ hasText: className }).first();
