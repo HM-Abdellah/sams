@@ -98,7 +98,7 @@ try {
            AND REFERENCED_TABLE_NAME IS NOT NULL"
     )->fetchColumn();
 
-    assert_true($foreignKeys === 5, 'Migration 005 created an unexpected foreign-key set.');
+    assert_true($foreignKeys === 7, 'Migration 005 created an unexpected foreign-key set.');
 
     $pdo->exec(
         'USE ' . $database
