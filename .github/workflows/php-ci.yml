@@ -91,6 +91,13 @@ jobs:
         shell: sh
         run: vendor/bin/phpunit --configuration phpunit.xml
 
+      - name: Verify migration 005 upgrade path
+        shell: sh
+        run: |
+          git fetch --no-tags --depth=1 origin refactor/phase-2-backend-foundation
+          git show FETCH_HEAD:database/schema.sql > /tmp/sams-phase-2-schema.sql
+          SAMS_MIGRATION_BASE_SCHEMA=/tmp/sams-phase-2-schema.sql php tests/migration_005_integration.php
+
       - name: Run MariaDB integration tests
         shell: sh
         run: php tests/integration.php
