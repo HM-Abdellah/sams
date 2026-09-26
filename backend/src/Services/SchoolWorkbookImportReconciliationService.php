@@ -395,13 +395,21 @@ final class SchoolWorkbookImportReconciliationService
                 static fn(array $class): int => (int)$class['target_class_id'],
                 $classes
             )));
+            $expectedTargetClassNames = [];
+            foreach ($classes as $class) {
+                $targetClassId = (int)($class['target_class_id'] ?? 0);
+                if ($targetClassId > 0) {
+                    $expectedTargetClassNames[$targetClassId] = trim((string)($class['source_class_name'] ?? ''));
+                }
+            }
+
             $targetClasses = [];
             foreach ($targetClassIds as $targetClassId) {
                 $target = $this->classes->findForUpdate($targetClassId);
                 if (
                     $target === null
                     || (int)$target['academic_year_id'] !== $targetAcademicYearId
-                    || trim((string)$target['name']) !== trim((string)($class['source_class_name'] ?? ''))
+                    || trim((string)$target['name']) !== ($expectedTargetClassNames[$targetClassId] ?? '')
                 ) {
                     throw new SchoolImportWorkflowException(
                         'A target class changed or no longer matches the reconciled source class.'
