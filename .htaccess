@@ -1,6 +1,6 @@
-# Root Apache rules for SAMS when the repository is placed directly in htdocs.
-# The browser is redirected to the real public directory so relative asset/API
-# URLs resolve correctly. Private application directories remain blocked.
+# Root Apache rules for SAMS.
+# The legacy public UI remains available during migration; new API traffic
+# uses the centralized backend front controller.
 
 Options -Indexes
 
@@ -10,8 +10,11 @@ Options -Indexes
     # /sams/ -> /sams/public/
     RewriteRule ^$ public/ [R=302,L]
 
-    # Never expose application internals through Apache.
-    RewriteRule ^(?:app|config|database|storage|scripts|tests)(?:/|$) - [F,L,NC]
+    # Centralized API surface.
+    RewriteRule ^api/v1(?:/|$) backend/public/index.php [L,QSA]
+
+    # Never expose private application directories through Apache.
+    RewriteRule ^(?:app|backend/(?:src|config|database|storage|scripts|tests|vendor)|config|database|storage|scripts|tests)(?:/|$) - [F,L,NC]
     RewriteRule \.(?:sql|log|env|ini|bak|old|dist)$ - [F,L,NC]
 </IfModule>
 

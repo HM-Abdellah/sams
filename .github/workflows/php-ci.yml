@@ -14,7 +14,7 @@ jobs:
   php:
     runs-on: ubuntu-latest
     container:
-      image: php:8.4-cli
+      image: php:8.3-cli
 
     services:
       db:
@@ -39,21 +39,35 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Install MySQL PDO extension
+      - name: Install PHP extensions and Composer
         shell: sh
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends libonig-dev
-          docker-php-ext-install pdo_mysql mbstring
+          apt-get install -y --no-install-recommends composer libxml2-dev
+          docker-php-ext-install dom mbstring pdo_mysql xml xmlwriter
+
+      - name: Verify PHP runtime
+        shell: sh
+        run: php -v
+
+      - name: Install backend dependencies
+        working-directory: backend
+        shell: sh
+        run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Lint PHP sources
         shell: sh
         run: |
-          find api app config public scripts tests -type f -name '*.php' -print0             | xargs -0 -n1 php -l
+          find api app backend config public scripts tests -type f -name '*.php' -print0 | xargs -0 -n1 php -l
 
-      - name: Run service tests
+      - name: Run legacy service tests
         shell: sh
         run: php tests/run.php
+
+      - name: Run backend unit tests
+        working-directory: backend
+        shell: sh
+        run: vendor/bin/phpunit --configuration phpunit.xml
 
       - name: Run MariaDB integration tests
         shell: sh
@@ -71,7 +85,7 @@ jobs:
       - name: Check JavaScript syntax
         shell: sh
         run: |
-          find public/assets/js tests/e2e -type f -name '*.js' -print0             | xargs -0 -n1 node --check
+          find public/assets/js tests/e2e -type f -name '*.js' -print0 | xargs -0 -n1 node --check
 
   e2e:
     runs-on: ubuntu-latest
@@ -103,10 +117,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Install PHP and MySQL extension
+      - name: Install PHP 8.3 and MySQL extensions
         run: |
           apt-get update
-          apt-get install -y php-cli php-mysql php-mbstring curl
+          apt-get install -y php8.3-cli php8.3-mysql php8.3-mbstring curl
+
+      - name: Verify PHP runtime
+        run: php -v
 
       - name: Configure E2E database
         shell: bash

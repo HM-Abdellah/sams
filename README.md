@@ -20,9 +20,9 @@ Browser
    ↓
 Apache
    ├── React static build
-   └── /api/* → PHP application
-                  ↓
-              MySQL / MariaDB
+   └── /api/v1/* → backend/public/index.php
+                         ↓
+                     MySQL / MariaDB
 ```
 
 Production does not require a Node.js process, so the application remains suitable for ordinary PHP/MySQL hosting.
@@ -50,10 +50,11 @@ VERIFY
 ```
 
 See:
-- `AGENTS.md` — repository engineering rules
-- `docs/ARCHITECTURE.md` — target architecture
-- `docs/PHASE_1_ARCHITECTURE_PLAN.md` — Phase 1 plan
-- `docs/API_CONTRACT.md` — current API contract during migration
+- AGENTS.md — repository engineering rules
+- docs/ARCHITECTURE.md — target architecture
+- docs/PHASE_1_ARCHITECTURE_PLAN.md — Phase 1 plan
+- docs/PHASE_2_BACKEND_FOUNDATION.md — Phase 2 implementation record
+- docs/API_CONTRACT.md — current API contract during migration
 
 ## Product rules
 
@@ -102,11 +103,27 @@ Active
 
 SMS is optional delivery infrastructure, not a core dependency.
 
+## Backend foundation status
+
+Phase 2 introduces the canonical PHP backend boundary:
+
+```
+/api/v1/*
+      ↓
+backend/public/index.php
+      ↓
+Request → Router → Controller → Response
+      ↓
+backend/src/*
+```
+
+The existing /api/*.php surface remains a compatibility layer while the endpoint-by-endpoint migration is verified. Do not delete it yet.
+
 ## Current repository state
 
-The existing release candidate already contains a PHP/service/repository foundation, enrollment-aware attendance, signatures, imports, CI, and a legacy Vanilla JS frontend.
+The existing release candidate contains enrollment-aware attendance, signatures, imports, CI, and a legacy Vanilla JS frontend.
 
-The rebuild preserves validated domain behavior while replacing the presentation architecture and tightening the HTTP boundaries.
+The backend source is now under backend/src while the old PHP API remains operational through the compatibility bridge.
 
 Do not delete the legacy runtime until its replacement exists and the relevant critical workflows are verified.
 
