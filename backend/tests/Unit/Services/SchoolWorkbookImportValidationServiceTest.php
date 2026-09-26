@@ -44,6 +44,38 @@ final class SchoolWorkbookImportValidationServiceTest extends TestCase
         }
     }
 
+    public function testMixedAcademicYearsAreNotImportable(): void
+    {
+        $parser = new SchoolWorkbookImportService();
+        $validator = new SchoolWorkbookImportValidationService();
+
+        $path = $this->writeWorkbook(function (Spreadsheet $workbook): void {
+            $sheet = $workbook->getActiveSheet();
+            $sheet->fromArray([
+                ['القسم', 'TCSF-7'],
+                ['السنة الدراسية', '2025/2026'],
+                ['ر.ت', 'الرمز', 'النسب', 'الإسم', 'تاريخ الازدياد'],
+                [1, 'II123456', 'Nom14', 'Prenom14', '2009-01-01'],
+                ['القسم', '2BACSE-1'],
+                ['السنة الدراسية', '2026/2027'],
+                ['ر.ت', 'الرمز', 'النسب', 'الإسم', 'تاريخ الازدياد'],
+                [1, 'JJ123456', 'Nom15', 'Prenom15', '2008-01-01'],
+            ], null, 'A1');
+        });
+
+        try {
+            $result = $validator->validate($parser->parse($path));
+
+            self::assertFalse($result['valid']);
+            self::assertContains(
+                'multiple_academic_years',
+                array_column($result['workbook_issues'], 'issue')
+            );
+        } finally {
+            @unlink($path);
+        }
+    }
+
     private function writeWorkbook(callable $builder): string
     {
         $spreadsheet = new Spreadsheet();
