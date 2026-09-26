@@ -18,6 +18,7 @@ final class SchoolWorkbookImportValidationService
         $sheets = is_array($parsed['sheets'] ?? null) ? $parsed['sheets'] : [];
         $workbookIssues = [];
         $seenMassars = [];
+        $seenRosterNumbers = [];
         $seenClasses = [];
 
         foreach ($sheets as $sheet) {
@@ -66,14 +67,30 @@ final class SchoolWorkbookImportValidationService
 
                 $student['issues'] = $this->uniqueStrings($student['issues'] ?? []);
                 $massar = trim((string)($student['massar_code'] ?? ''));
+                $massarKey = strtolower($massar);
 
                 if ($massar !== '') {
-                    if (isset($seenMassars[$massar])) {
+                    if (isset($seenMassars[$massarKey])) {
                         $student['issues'][] = 'duplicate_massar_code_in_workbook';
-                        $first = $seenMassars[$massar];
+                        $first = $seenMassars[$massarKey];
                         $classes[$first['class_index']]['students'][$first['student_index']]['issues'][] = 'duplicate_massar_code_in_workbook';
                     } else {
-                        $seenMassars[$massar] = [
+                        $seenMassars[$massarKey] = [
+                            'class_index' => $classIndex,
+                            'student_index' => $studentIndex,
+                        ];
+                    }
+                }
+
+                $rosterNumber = trim((string)($student['roster_number'] ?? ''));
+                $rosterKey = strtolower($rosterNumber);
+                if ($rosterNumber !== '') {
+                    if (isset($seenRosterNumbers[$classIndex][$rosterKey])) {
+                        $student['issues'][] = 'duplicate_roster_number_in_class';
+                        $first = $seenRosterNumbers[$classIndex][$rosterKey];
+                        $classes[$first['class_index']]['students'][$first['student_index']]['issues'][] = 'duplicate_roster_number_in_class';
+                    } else {
+                        $seenRosterNumbers[$classIndex][$rosterKey] = [
                             'class_index' => $classIndex,
                             'student_index' => $studentIndex,
                         ];
