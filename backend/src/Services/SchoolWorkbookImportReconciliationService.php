@@ -473,6 +473,7 @@ final class SchoolWorkbookImportReconciliationService
 
             foreach ($rows as $row) {
                 $targetClassId = (int)$row['target_class_id'];
+                $enrollmentId = null;
                 $target = $targetClasses[$targetClassId];
 
                 $massar = trim((string)$row['massar_code']);
