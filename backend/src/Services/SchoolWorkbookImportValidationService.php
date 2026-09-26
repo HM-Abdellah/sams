@@ -99,6 +99,13 @@ final class SchoolWorkbookImportValidationService
                 'issue' => 'multiple_academic_years',
             ];
         }
+        if ($classes === []) {
+            $workbookIssues[] = [
+                'sheet' => null,
+                'issue' => 'no_class_blocks_detected',
+            ];
+        }
+
 
         $errorCount = count($workbookIssues);
         $warningCount = 0;
