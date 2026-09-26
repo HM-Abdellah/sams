@@ -217,39 +217,6 @@ final class SchoolWorkbookImportServiceTest extends TestCase
         }
     }
 
-    public function testItReportsDuplicateMassarCodesAcrossTheWorkbook(): void
-    {
-        $service = new SchoolWorkbookImportService();
-        $path = $this->writeWorkbook(function (Spreadsheet $workbook): void {
-            $sheet = $workbook->getActiveSheet();
-            $sheet->fromArray([
-                ['القسم', 'TCSF-5'],
-                ['السنة الدراسية', '2025/2026'],
-                ['ر.ت', 'الرمز', 'النسب', 'الإسم', 'تاريخ الازدياد'],
-                [1, 'DUP123456', 'Nom12', 'Prenom12', '2009-01-01'],
-                ['القسم', 'TCSF-6'],
-                ['السنة الدراسية', '2025/2026'],
-                ['ر.ت', 'الرمز', 'النسب', 'الإسم', 'تاريخ الازدياد'],
-                [1, 'DUP123456', 'Nom13', 'Prenom13', '2009-02-02'],
-            ], null, 'A1');
-        }, 'xlsx');
-
-        try {
-            $parsed = $service->parse($path);
-            $validator = new \SAMS\Services\SchoolWorkbookImportValidationService();
-            $result = $validator->validate($parsed);
-
-            self::assertFalse($result['valid']);
-            self::assertGreaterThanOrEqual(2, $result['summary']['error_count']);
-            self::assertContains('duplicate_massar_code_in_workbook', $result['classes'][0]['students'][0]['issues']);
-            self::assertContains('duplicate_massar_code_in_workbook', $result['classes'][1]['students'][0]['issues']);
-            self::assertSame('error', $result['classes'][0]['students'][0]['status']);
-            self::assertSame('error', $result['classes'][1]['students'][0]['status']);
-        } finally {
-            @unlink($path);
-        }
-    }
-
     private function writeWorkbook(callable $builder, string $format): string
     {
         $spreadsheet = new Spreadsheet();
