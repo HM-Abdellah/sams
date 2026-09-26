@@ -95,12 +95,12 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: refactor/phase-2-backend-foundation
-          path: /tmp/sams-phase-2
+          path: phase2-base
 
       - name: Verify migration 005 upgrade path
         shell: sh
         run: |
-          SAMS_MIGRATION_BASE_SCHEMA=/tmp/sams-phase-2/database/schema.sql php tests/migration_005_integration.php
+          SAMS_MIGRATION_BASE_SCHEMA=phase2-base/database/schema.sql php tests/migration_005_integration.php
 
       - name: Run MariaDB integration tests
         shell: sh
