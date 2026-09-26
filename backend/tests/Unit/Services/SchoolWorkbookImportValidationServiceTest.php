@@ -101,6 +101,43 @@ final class SchoolWorkbookImportValidationServiceTest extends TestCase
         }
     }
 
+    public function testDuplicateRosterNumbersAreWarningsAndDoNotInvalidateRows(): void
+    {
+        $parser = new SchoolWorkbookImportService();
+        $validator = new SchoolWorkbookImportValidationService();
+        $path = $this->writeWorkbook(function (Spreadsheet $workbook): void {
+            $sheet = $workbook->getActiveSheet();
+            $sheet->fromArray([
+                ['القسم', 'TCSF-8'],
+                ['السنة الدراسية', '2025/2026'],
+                ['ر.ت', 'الرمز', 'النسب', 'الإسم', 'تاريخ الازدياد'],
+                [1, 'WARN123456', 'Nom16', 'Prenom16', '2009-01-01'],
+                [1, 'WARN123457', 'Nom17', 'Prenom17', '2009-02-02'],
+            ], null, 'A1');
+        });
+
+        try {
+            $result = $validator->validate($parser->parse($path));
+
+            self::assertTrue($result['valid']);
+            self::assertSame(0, $result['summary']['error_count']);
+            self::assertSame(2, $result['summary']['warning_count']);
+            self::assertSame('warning', $result['classes'][0]['status']);
+            self::assertSame('warning', $result['classes'][0]['students'][0]['status']);
+            self::assertSame('warning', $result['classes'][0]['students'][1]['status']);
+            self::assertContains(
+                'duplicate_roster_number_in_class',
+                $result['classes'][0]['students'][0]['issues']
+            );
+            self::assertContains(
+                'duplicate_roster_number_in_class',
+                $result['classes'][0]['students'][1]['issues']
+            );
+        } finally {
+            @unlink($path);
+        }
+    }
+
     private function writeWorkbook(callable $builder): string
     {
         $spreadsheet = new Spreadsheet();

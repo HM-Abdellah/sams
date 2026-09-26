@@ -6,6 +6,9 @@ namespace SAMS\Services;
 
 final class SchoolWorkbookImportValidationService
 {
+    private const NON_BLOCKING_ISSUES = [
+        'duplicate_roster_number_in_class',
+    ];
     /**
      * Validate parser output without touching the database.
      *
@@ -134,15 +137,27 @@ final class SchoolWorkbookImportValidationService
 
             foreach ($students as &$student) {
                 $student['issues'] = $this->uniqueStrings($student['issues'] ?? []);
-                $student['status'] = $student['issues'] === [] ? 'valid' : 'error';
-                if ($student['status'] === 'error') ++$errorCount;
+                $student['status'] = $this->statusForIssues($student['issues']);
+                if ($student['status'] === 'error') {
+                    ++$errorCount;
+                } elseif ($student['status'] === 'warning') {
+                    ++$warningCount;
+                }
             }
             unset($student);
 
             $class['students'] = $students;
             $class['student_count'] = count($students);
-            $class['status'] = $class['issues'] === [] && !$this->hasStudentErrors($students) ? 'valid' : 'error';
-            if ($class['status'] === 'error') ++$errorCount;
+
+            if ($this->hasBlockingIssues($class['issues']) || $this->hasStudentErrors($students)) {
+                $class['status'] = 'error';
+                ++$errorCount;
+            } elseif ($class['issues'] !== [] || $this->hasStudentWarnings($students)) {
+                $class['status'] = 'warning';
+            } else {
+                $class['status'] = 'valid';
+            }
+
             $studentCount += count($students);
         }
         unset($class);
@@ -158,6 +173,32 @@ final class SchoolWorkbookImportValidationService
             'workbook_issues' => $this->uniqueIssueObjects($workbookIssues),
             'classes' => $classes,
         ];
+    }
+
+    private function statusForIssues(array $issues): string
+    {
+        if ($issues === []) return 'valid';
+        return $this->hasBlockingIssues($issues) ? 'error' : 'warning';
+    }
+
+    private function hasBlockingIssues(array $issues): bool
+    {
+        foreach ($issues as $issue) {
+            if (!in_array((string)$issue, self::NON_BLOCKING_ISSUES, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function hasStudentWarnings(array $students): bool
+    {
+        foreach ($students as $student) {
+            if (($student['status'] ?? 'error') === 'warning') return true;
+        }
+
+        return false;
     }
 
     private function hasStudentErrors(array $students): bool

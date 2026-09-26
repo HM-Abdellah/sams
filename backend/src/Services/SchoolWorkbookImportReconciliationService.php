@@ -148,7 +148,7 @@ final class SchoolWorkbookImportReconciliationService
 
                 if (
                     ($classContext[$classId]['target'] ?? null) !== null
-                    && ($row['status'] ?? '') === 'valid'
+                    && in_array(($row['status'] ?? ''), ['valid', 'warning'], true)
                 ) {
                     $massar = trim((string)($row['massar_code'] ?? ''));
                     if ($massar !== '') $massars[] = $massar;
@@ -203,7 +203,7 @@ final class SchoolWorkbookImportReconciliationService
                     $targetEnrollmentId = null;
                     $matchStatus = 'new';
 
-                    if (($row['status'] ?? '') !== 'valid') {
+                    if (!in_array(($row['status'] ?? ''), ['valid', 'warning'], true)) {
                         $issues[] = 'staged_row_not_validated';
                     } else {
                         $massar = trim((string)($row['massar_code'] ?? ''));

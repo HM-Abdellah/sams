@@ -220,6 +220,52 @@ try {
         'Idempotent commit must not create duplicate students.'
     );
 
+    $warningRosterWorkbook = createWorkbook([
+        [1, 'MC-WARN-1', 'FamilyWarnA', 'GivenWarnA', '2009-06-06'],
+        [1, 'MC-WARN-2', 'FamilyWarnB', 'GivenWarnB', '2009-07-07'],
+    ]);
+
+    try {
+        $warningStage = $staging->stage(
+            $warningRosterWorkbook,
+            $adminId,
+            'duplicate-roster-warning.xlsx',
+            $targetAcademicYearId
+        );
+
+        expect_true(
+            $warningStage['status'] === 'validated',
+            'Duplicate roster numbers are diagnostics only and must not invalidate the staged workbook.'
+        );
+        expect_true(
+            $warningStage['summary']['warning_row_count'] === 2,
+            'Duplicate roster numbers should be counted as row warnings.'
+        );
+
+        $warningReconcile = $reconciliation->reconcile((int)$warningStage['batch_id'], $adminId);
+        expect_true(
+            $warningReconcile['ready_to_import'] === true,
+            'Duplicate roster-number warnings must not block reconciliation.'
+        );
+
+        $warningCommit = $reconciliation->commit((int)$warningStage['batch_id'], $adminId);
+        expect_true(
+            $warningCommit['summary']['new_students'] === 2,
+            'Warning-only roster-number fixture should import both students.'
+        );
+
+        expect_true(
+            (int)$pdo->query(
+                "SELECT COUNT(*) FROM students
+                 WHERE massar_code IN ('MC-WARN-1', 'MC-WARN-2')
+                   AND student_number IS NULL"
+            )->fetchColumn() === 2,
+            'Roster numbers must remain diagnostics and must never populate student_number.'
+        );
+    } finally {
+        @unlink($warningRosterWorkbook);
+    }
+
     $conflictWorkbook = createWorkbook([
         [1, 'MC-EXIST', 'FamilyA', 'GivenA', '2008-12-31'],
     ]);
