@@ -117,6 +117,27 @@ final class SchoolWorkbookImportServiceTest extends TestCase
         }
     }
 
+    public function testItReportsAHeaderFoundWithoutClassContext(): void
+    {
+        $service = new SchoolWorkbookImportService();
+        $path = $this->writeWorkbook(function (Spreadsheet $workbook): void {
+            $sheet = $workbook->getActiveSheet();
+            $sheet->fromArray([
+                ['ر.ت', 'الرمز', 'النسب', 'الإسم', 'تاريخ الازدياد'],
+                [1, 'GG123456', 'Nom9', 'Prenom9', '2009-02-03'],
+            ], null, 'A1');
+        }, 'xlsx');
+
+        try {
+            $result = $service->parse($path);
+
+            self::assertCount(0, $result['classes']);
+            self::assertSame(['roster_without_class'], $result['sheets'][0]['issues']);
+        } finally {
+            @unlink($path);
+        }
+    }
+
     public function testItAcceptsXlsInput(): void
     {
         $service = new SchoolWorkbookImportService();
