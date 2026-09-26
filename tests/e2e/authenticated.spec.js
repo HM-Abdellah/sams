@@ -131,7 +131,7 @@ test.describe('authenticated SAMS smoke', () => {
 
     await page.setViewportSize({ width: 390, height: 844 });
     await login(page, teacherUsername, teacherPassword);
-    await expect(page.locator('#attendanceBody')).toBeVisible();
+    await expect(page.locator('#attendanceMobileList')).toBeVisible();
     await expect(page.locator('#weekDays .week-day-btn')).toHaveCount(6);
     await expect(page.locator('#periods .period-btn')).toHaveCount(8);
     await expect(page.locator('#attendanceMobileList .attendance-student-card')).toHaveCount(3);
