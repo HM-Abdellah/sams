@@ -457,7 +457,11 @@ export const ui = {
         }[status] || status || '—');
         const issueText = (issues) => {
             const list = Array.isArray(issues) ? issues : [];
-            return list.map((issue) => t('school_issue_' + issue) || issue).join(' · ') || '—';
+            return list.map((issue) => {
+                const key = 'school_issue_' + issue;
+                const translated = t(key);
+                return translated === key ? issue : translated;
+            }).join(' · ') || '—';
         };
 
         review.innerHTML =
