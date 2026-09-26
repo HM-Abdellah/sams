@@ -30,6 +30,10 @@ final class SchoolWorkbookImportReconciliationService
         'target_class_changed_since_reconciliation',
     ];
 
+    private const NON_BLOCKING_ISSUES = [
+        'duplicate_roster_number_in_class',
+    ];
+
     public function __construct(
         private readonly SchoolImportRepository $imports = new SchoolImportRepository(),
         private readonly AcademicYearRepository $academicYears = new AcademicYearRepository(),
@@ -234,7 +238,8 @@ final class SchoolWorkbookImportReconciliationService
                     }
 
                     $issues = array_values(array_unique($issues));
-                    if ($issues !== []) {
+                    $blockingIssues = $this->withoutNonBlockingIssues($issues);
+                    if ($blockingIssues !== []) {
                         $matchStatus = 'conflict';
                         $status = 'error';
                         ++$conflictRows;
@@ -624,6 +629,16 @@ final class SchoolWorkbookImportReconciliationService
         return array_values(array_unique(array_filter(
             array_map(static fn($issue): string => (string)$issue, $issues),
             static fn(string $issue): bool => !in_array($issue, self::RECONCILIATION_ISSUES, true)
+        )));
+    }
+
+    private function withoutNonBlockingIssues(mixed $issues): array
+    {
+        if (!is_array($issues)) return [];
+
+        return array_values(array_unique(array_filter(
+            array_map(static fn($issue): string => (string)$issue, $issues),
+            static fn(string $issue): bool => !in_array($issue, self::NON_BLOCKING_ISSUES, true)
         )));
     }
 
