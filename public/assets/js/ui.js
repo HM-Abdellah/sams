@@ -415,6 +415,117 @@ export const ui = {
         }
     },
 
+    schoolImport() {
+        const review = document.querySelector('#schoolImportReview');
+        const yearSelect = document.querySelector('#schoolImportAcademicYearInput');
+        if (yearSelect) {
+            const current = yearSelect.value;
+            yearSelect.innerHTML = state.academicYears.map((year) =>
+                '<option value="' + esc(year.id) + '">' + esc(year.name) + (Number(year.is_active) === 1 ? ' · ' + esc(t('active')) : '') + '</option>'
+            ).join('');
+            if (current && [...yearSelect.options].some((option) => option.value === current)) {
+                yearSelect.value = current;
+            } else {
+                const active = state.academicYears.find((year) => Number(year.is_active) === 1);
+                if (active) yearSelect.value = String(active.id);
+            }
+        }
+
+        if (!review) return;
+        const data = state.schoolImport;
+        if (!data?.batch) {
+            review.innerHTML = '<div class="empty-state">' + esc(t('school_import_no_batch')) + '</div>';
+            return;
+        }
+
+        const batch = data.batch;
+        const classes = Array.isArray(data.classes) ? data.classes : [];
+        const summary = data.summary || {};
+        const ready = data.ready_to_import === true;
+        const sourceYear = batch.source_academic_year || '—';
+        const targetYear = batch.target_academic_year_name || batch.target_academic_year_id || '—';
+        const targetName = (id) => {
+            const target = state.adminClasses.find((cls) => Number(cls.id) === Number(id));
+            return target ? target.name : (id ? '#' + id : '—');
+        };
+        const statusLabel = (status) => ({
+            mapped: t('school_import_mapped'),
+            error: t('school_import_blocked'),
+            valid: t('school_import_valid'),
+            warning: t('school_import_warning'),
+            imported: t('school_import_imported')
+        }[status] || status || '—');
+        const issueText = (issues) => {
+            const list = Array.isArray(issues) ? issues : [];
+            return list.map((issue) => t('school_issue_' + issue) || issue).join(' · ') || '—';
+        };
+
+        review.innerHTML =
+            '<div class="school-import-review-head">'
+            + '<div><h3>' + esc(batch.original_filename) + '</h3>'
+            + '<p>' + esc(t('school_import_source')) + ': <strong>' + esc(sourceYear) + '</strong> · '
+            + esc(t('school_import_target')) + ': <strong>' + esc(targetYear) + '</strong></p></div>'
+            + '<span class="school-import-status ' + (ready ? 'ready' : (batch.status === 'imported' ? 'imported' : 'blocked')) + '">'
+            + esc(batch.status === 'imported' ? t('school_import_imported') : (ready ? t('school_import_ready') : t('school_import_review_required')))
+            + '</span></div>'
+            + '<div class="school-import-metrics">'
+            + '<article><span>' + esc(t('classes')) + '</span><strong>' + Number(batch.total_classes) + '</strong></article>'
+            + '<article><span>' + esc(t('students')) + '</span><strong>' + Number(batch.total_rows) + '</strong></article>'
+            + '<article><span>' + esc(t('school_import_new')) + '</span><strong>' + Number(summary.new_students || 0) + '</strong></article>'
+            + '<article><span>' + esc(t('school_import_existing')) + '</span><strong>' + Number(summary.existing_students || 0) + '</strong></article>'
+            + '<article><span>' + esc(t('school_import_conflicts')) + '</span><strong>' + Number(summary.conflict_rows || 0) + '</strong></article>'
+            + '</div>'
+            + '<div class="table-scroll"><table class="school-import-classes-table"><thead><tr>'
+            + '<th>' + esc(t('school_import_source_class')) + '</th>'
+            + '<th>' + esc(t('school_import_target_class')) + '</th>'
+            + '<th>' + esc(t('students')) + '</th>'
+            + '<th>' + esc(t('status')) + '</th>'
+            + '<th>' + esc(t('issues')) + '</th>'
+            + '<th>' + esc(t('details')) + '</th>'
+            + '</tr></thead><tbody>'
+            + (classes.map((item) =>
+                '<tr class="' + (data.selectedClassId === Number(item.id) ? 'selected' : '') + '">'
+                + '<td>' + esc(item.source_class_name || '—') + '<small>' + esc([item.source_sheet, item.source_academic_year].filter(Boolean).join(' · ')) + '</small></td>'
+                + '<td>' + esc(targetName(item.target_class_id)) + '</td>'
+                + '<td>' + Number(item.student_count || 0) + '</td>'
+                + '<td><span class="school-import-badge ' + esc(item.status || '') + '">' + esc(statusLabel(item.status)) + '</span></td>'
+                + '<td>' + esc(issueText(item.issues)) + '</td>'
+                + '<td><button class="btn small" type="button" data-school-import-class="' + esc(item.id) + '">' + esc(t('school_import_view_students')) + '</button></td>'
+                + '</tr>'
+            ).join('') || '<tr><td colspan="6" class="empty-state">' + esc(t('school_import_no_classes')) + '</td></tr>')
+            + '</tbody></table></div>'
+            + '<div id="schoolImportRowsReview" class="school-import-rows-review"></div>'
+            + '<div class="school-import-actions">'
+            + '<button class="btn" id="schoolImportReconcileBtn" type="button" ' + (batch.status === 'imported' ? 'disabled' : '') + '>' + esc(t('school_import_reconcile')) + '</button>'
+            + '<button class="btn success" id="schoolImportCommitBtn" type="button" ' + (!ready || batch.status === 'imported' ? 'disabled' : '') + '>' + esc(t('school_import_commit')) + '</button>'
+            + '</div>'
+            + '<p class="school-import-review-note">' + esc(ready ? t('school_import_ready_note') : t('school_import_blocking_note')) + '</p>';
+
+        const rowsBox = document.querySelector('#schoolImportRowsReview');
+        if (rowsBox && data.selectedRows) {
+            const rows = Array.isArray(data.selectedRows.rows) ? data.selectedRows.rows : [];
+            const conflictRows = rows.filter((row) => row.match_status === 'conflict' || row.status === 'error');
+            rowsBox.innerHTML =
+                '<div class="school-import-rows-head"><h4>' + esc(t('school_import_student_review')) + '</h4>'
+                + '<span>' + Number(rows.length) + ' / ' + Number(data.selectedRows.total || rows.length) + '</span></div>'
+                + '<div class="table-scroll"><table><thead><tr>'
+                + '<th>' + esc(t('row')) + '</th><th>' + esc(t('student')) + '</th><th>' + esc(t('massar')) + '</th>'
+                + '<th>' + esc(t('school_import_match')) + '</th><th>' + esc(t('status')) + '</th><th>' + esc(t('issues')) + '</th>'
+                + '</tr></thead><tbody>'
+                + (rows.map((row) =>
+                    '<tr class="' + ((row.match_status === 'conflict' || row.status === 'error') ? 'conflict' : '') + '">'
+                    + '<td>' + esc(row.roster_number || row.source_row || '—') + '</td>'
+                    + '<td>' + esc([row.first_name, row.last_name].filter(Boolean).join(' ')) + '</td>'
+                    + '<td>' + esc(row.massar_code || '—') + '</td>'
+                    + '<td>' + esc(row.match_status || '—') + '</td>'
+                    + '<td>' + esc(row.status || '—') + '</td>'
+                    + '<td>' + esc(issueText(row.issues)) + '</td></tr>'
+                ).join('') || '<tr><td colspan="6" class="empty-state">' + esc(t('school_import_no_rows')) + '</td></tr>')
+                + '</tbody></table></div>'
+                + (conflictRows.length ? '<p class="school-import-conflict-note">' + esc(t('school_import_conflict_note')) + '</p>' : '');
+        }
+    },
+
     admin() {
         const classesTable = document.querySelector('#adminClassesTable');
         if (classesTable) {
@@ -632,6 +743,7 @@ export function renderAll() {
     ui.statistics();
     ui.teachers();
     ui.adminDashboard();
+    ui.schoolImport();
     ui.admin();
     if (state.archive) ui.archive(state.archive, state.archiveView || 'days');
 }
