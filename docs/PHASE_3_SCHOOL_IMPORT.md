@@ -19,7 +19,7 @@ This slice now covers the full safe import pipeline and the admin review/confirm
 9. Detect duplicate Massar codes and duplicate roster numbers inside the workbook.
 10. Stage normalized workbook data without touching production students/enrollments.
 11. Map source classes to an exact target academic year + class name.
-12. Reconcile students by global Massar identity and detect identity/enrollment/number conflicts.
+12. Reconcile students by global Massar identity and detect identity/enrollment conflicts; duplicate roster numbers remain non-blocking diagnostics.
 13. Commit the reconciled batch in one database transaction with idempotent replay protection.
 14. Provide an admin review surface for class mappings, student matches, conflicts, and explicit final confirmation.
 15. Verify the Phase 2 -> Phase 3 database upgrade path for migration 005.
