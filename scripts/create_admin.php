@@ -9,8 +9,9 @@
  */
 declare(strict_types=1);
 
-require_once __DIR__ . '/../app/Helpers/Database.php';
-use SAMS\Helpers\Database;
+require_once __DIR__ . '/../backend/src/bootstrap.php';
+
+use SAMSHelpersDatabase;
 
 if (PHP_SAPI !== 'cli') {
     fwrite(STDERR, "This script must be executed from the command line.\n");
@@ -33,8 +34,8 @@ try {
 
     $stmt = $pdo->prepare(
         'INSERT INTO users (username, full_name, password_hash, role, is_active)
-         VALUES (?, ?, ?, \'admin\', 1)
-         ON DUPLICATE KEY UPDATE full_name=VALUES(full_name), password_hash=VALUES(password_hash), role=\'admin\', is_active=1'
+         VALUES (?, ?, ?, 'admin', 1)
+         ON DUPLICATE KEY UPDATE full_name=VALUES(full_name), password_hash=VALUES(password_hash), role='admin', is_active=1'
     );
     $stmt->execute([$username, $fullName, $hash]);
 
