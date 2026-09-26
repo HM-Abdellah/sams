@@ -12,7 +12,7 @@ declare(strict_types=1);
  * Never use these accounts or this script on a real school database.
  */
 
-require_once __DIR__ . '/../app/Helpers/Database.php';
+require_once __DIR__ . '/../backend/src/bootstrap.php';
 
 use SAMS\Helpers\Database;
 
