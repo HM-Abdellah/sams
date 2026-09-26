@@ -61,6 +61,32 @@ function createWorkbook(array $rows, string $className = '2BAC SP A'): string
     return $filename;
 }
 
+function createMarkdownImport(array $rows, string $className = '2BAC SP B'): string
+{
+    $path = tempnam(sys_get_temp_dir(), 'sams-school-import-md-final-');
+    if ($path === false) {
+        throw new RuntimeException('Unable to create Markdown fixture path.');
+    }
+
+    $markdown = "# School Import\\n"
+        . "| المؤسسة | Integration School |\\n"
+        . "| القسم | " . $className . " |\\n"
+        . "| المستوى | 2BAC |\\n"
+        . "| السنة الدراسية | 2026/2027 |\\n\\n"
+        . "| ر.ت | الرمز | النسب | الإسم | تاريخ الازدياد |\\n"
+        . "| --- | --- | --- | --- | --- |\\n";
+
+    foreach ($rows as $row) {
+        $markdown .= '| '
+            . implode(' | ', array_map(static fn($value): string => str_replace('|', '\\|', (string)$value), $row))
+            . " |\\n";
+    }
+
+    file_put_contents($path, $markdown);
+
+    return $path;
+}
+
 $pdo = new PDO(
     sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $host, (int)$port, $db),
     $user,
@@ -264,6 +290,52 @@ try {
         );
     } finally {
         @unlink($warningRosterWorkbook);
+    }
+
+    $markdownWorkbook = createMarkdownImport([
+        [1, 'MD-FINAL-1', 'FamilyMD1', 'GivenMD1', '2009-08-08'],
+        [2, 'MD-FINAL-2', 'FamilyMD2', 'GivenMD2', '2009-09-09'],
+    ]);
+
+    try {
+        $markdownStage = $staging->stage(
+            $markdownWorkbook,
+            $adminId,
+            'school-import-fallback.md',
+            $targetAcademicYearId
+        );
+
+        expect_true(
+            $markdownStage['status'] === 'validated',
+            'Markdown school import should enter validated staging state.'
+        );
+
+        $markdownReconcile = $reconciliation->reconcile((int)$markdownStage['batch_id'], $adminId);
+        expect_true(
+            $markdownReconcile['ready_to_import'] === true,
+            'Markdown school import should be ready after reconciliation.'
+        );
+        expect_true(
+            $markdownReconcile['summary']['new_students'] === 2,
+            'Markdown reconciliation should identify both students as new.'
+        );
+
+        $markdownCommit = $reconciliation->commit((int)$markdownStage['batch_id'], $adminId);
+        expect_true(
+            $markdownCommit['summary']['new_students'] === 2,
+            'Markdown commit should create both students.'
+        );
+
+        expect_true(
+            (int)$pdo->query(
+                "SELECT COUNT(*) FROM students
+                 WHERE massar_code IN ('MD-FINAL-1', 'MD-FINAL-2')
+                   AND student_number IS NULL"
+            )->fetchColumn() === 2,
+            'Markdown roster numbers must not populate student_number.'
+        );
+    } finally {
+        @unlink($markdownWorkbook);
     }
 
     $conflictWorkbook = createWorkbook([
