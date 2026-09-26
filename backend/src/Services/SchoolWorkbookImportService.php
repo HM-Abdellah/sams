@@ -346,7 +346,9 @@ final class SchoolWorkbookImportService
     /** @return list<string>|null */
     private function markdownMetadataRow(string $line): ?array
     {
-        if (!preg_match('/^\s*(?:[-*]\s*)?(?:\*\*)?(.+?)(?:\*\*)?\s*[:：]\s*(.+?)\s*$/u', $line, $matches)) {
+        $line = $this->markdownInlineText($line);
+
+        if (!preg_match('/^\s*(?:[-*]\s*)?(.+?)\s*[:：]\s*(.+?)\s*$/u', $line, $matches)) {
             return null;
         }
 
