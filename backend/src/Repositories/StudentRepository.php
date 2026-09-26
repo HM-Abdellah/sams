@@ -94,7 +94,7 @@ final class StudentRepository
 
         $result = [];
         foreach ($stmt->fetchAll() as $row) {
-            $result[$this->numberKey((string)$row['student_number'])] = (int)$row['id'];
+            $result[trim((string)$row['student_number'])] = (int)$row['id'];
         }
 
         return $result;
@@ -258,18 +258,14 @@ final class StudentRepository
         ]);
     }
 
-    public function updateCurrentClassAndNumber(
-        int $studentId,
-        int $classId,
-        ?string $number
-    ): void {
+    public function updateCurrentClass(int $studentId, int $classId): void
+    {
         $stmt = Database::connection()->prepare(
             'UPDATE students
-             SET class_id = ?,
-                 student_number = ?
+             SET class_id = ?
              WHERE id = ?'
         );
-        $stmt->execute([$classId, $number, $studentId]);
+        $stmt->execute([$classId, $studentId]);
     }
 
     public function transfer(int $studentId, int $fromClassId, int $toClassId): void
