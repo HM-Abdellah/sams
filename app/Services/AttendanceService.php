@@ -21,6 +21,15 @@ final class AttendanceService
         return compact('studentId', 'date', 'period', 'status');
     }
 
+    public function validateKey(int $studentId, string $date, int $period): array
+    {
+        if ($studentId < 1) throw new InvalidArgumentException('Invalid student.');
+        $d = DateTimeImmutable::createFromFormat('!Y-m-d', $date);
+        if (!$d || $d->format('Y-m-d') !== $date) throw new InvalidArgumentException('Invalid attendance date.');
+        if ($period < 1 || $period > 8) throw new InvalidArgumentException('Invalid period.');
+        return compact('studentId', 'date', 'period');
+    }
+
     public function validStatus(string $status): bool
     {
         return in_array($status, self::STATUSES, true);
