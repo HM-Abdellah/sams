@@ -87,6 +87,9 @@ $expectedTables = [
     'audit_logs',
     'student_import_batches',
     'student_import_rows',
+    'school_import_batches',
+    'school_import_classes',
+    'school_import_rows',
 ];
 
 sort($tables);
@@ -94,6 +97,23 @@ sort($expectedTables);
 expect_true($tables === $expectedTables, 'Fresh schema table set does not match expected schema.');
 
 $pdo->exec("USE " . $db);
+
+expect_true(
+    (int)$pdo->query("SELECT COUNT(*) FROM information_schema.KEY_COLUMN_USAGE
+        WHERE TABLE_SCHEMA = " . $pdo->quote($db) . "
+          AND TABLE_NAME = 'school_import_rows'
+          AND REFERENCED_TABLE_NAME = 'students'")->fetchColumn() === 1,
+    'Whole-school import rows must reference students.'
+);
+
+expect_true(
+    (int)$pdo->query("SELECT COUNT(*) FROM information_schema.KEY_COLUMN_USAGE
+        WHERE TABLE_SCHEMA = " . $pdo->quote($db) . "
+          AND TABLE_NAME = 'school_import_rows'
+          AND REFERENCED_TABLE_NAME = 'student_enrollments'")->fetchColumn() === 1,
+    'Whole-school import rows must reference student_enrollments.'
+);
+
 
 $pdo->exec(
     "INSERT INTO academic_years (name, starts_on, ends_on, is_active)
