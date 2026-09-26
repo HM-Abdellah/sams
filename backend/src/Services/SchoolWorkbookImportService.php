@@ -137,6 +137,10 @@ final class SchoolWorkbookImportService
 
             if ($className !== null) {
                 if ($current !== null) {
+                    $current['source_block_end_row'] = max(
+                        (int)$current['source_block_start_row'],
+                        $rowNumber - 1
+                    );
                     $classes[] = $this->finalizeClass($current);
                 }
 
@@ -191,6 +195,7 @@ final class SchoolWorkbookImportService
         }
 
         if ($current !== null) {
+            $current['source_block_end_row'] = $this->lastRowNumber($rows);
             $classes[] = $this->finalizeClass($current);
         }
 
@@ -198,6 +203,18 @@ final class SchoolWorkbookImportService
             'classes' => $classes,
             'issues' => array_values(array_unique($sheetIssues)),
         ];
+    }
+
+    private function lastRowNumber(array $rows): int
+    {
+        if ($rows === []) return 0;
+
+        $last = 0;
+        foreach (array_keys($rows) as $key) {
+            $last = max($last, (int)$key);
+        }
+
+        return $last;
     }
 
     private function finalizeClass(array $class): array
