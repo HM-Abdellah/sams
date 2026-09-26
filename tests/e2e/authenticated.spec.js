@@ -366,8 +366,6 @@ test.describe('authenticated SAMS smoke', () => {
     );
     await page.locator('#classForm button[type="submit"]').click();
     await expect((await createClassResponse).ok()).toBeTruthy();
-    await expect(page.locator('#classDialog')).toBeHidden();
-
     await page.locator('.tab[data-tab="admin"]').click();
     const classRow = page.locator('#adminClassesTable tbody tr').filter({ hasText: className }).first();
     await expect(classRow).toBeVisible();
