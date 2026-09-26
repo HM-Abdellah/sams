@@ -14,7 +14,9 @@ final class Request
         private readonly string $path,
         private readonly array $query = [],
         private readonly array $headers = [],
-        private readonly string $rawBody = ''
+        private readonly string $rawBody = '',
+        private readonly array $postData = [],
+        private readonly array $files = []
     ) {}
 
     public static function fromGlobals(): self
@@ -47,7 +49,9 @@ final class Request
             $path === '' ? '/' : $path,
             $_GET,
             $headers,
-            (string)(file_get_contents('php://input') ?: '')
+            (string)(file_get_contents('php://input') ?: ''),
+            is_array($_POST) ? $_POST : [],
+            is_array($_FILES) ? $_FILES : []
         );
     }
 
@@ -81,6 +85,22 @@ final class Request
         return $this->rawBody;
     }
 
+    public function post(): array
+    {
+        return $this->postData;
+    }
+
+    public function postValue(string $key, mixed $default = null): mixed
+    {
+        return $this->postData[$key] ?? $default;
+    }
+
+    public function file(string $key): ?array
+    {
+        $file = $this->files[$key] ?? null;
+        return is_array($file) ? $file : null;
+    }
+
     public function jsonBody(): array
     {
         if (trim($this->rawBody) === '') {
@@ -111,7 +131,9 @@ final class Request
             $path,
             $this->query,
             $this->headers,
-            $this->rawBody
+            $this->rawBody,
+            $this->postData,
+            $this->files
         );
     }
 }
