@@ -6,9 +6,9 @@ concurrency:
 
 on:
   push:
-    branches: [main]
+    branches: [main, refactor/phase-2-backend-foundation]
   pull_request:
-    branches: [main]
+    branches: [main, refactor/phase-2-backend-foundation]
 
 jobs:
   php:
@@ -78,6 +78,10 @@ jobs:
       - name: Run MariaDB integration tests
         shell: sh
         run: php tests/integration.php
+
+      - name: Run whole-school import integration tests
+        shell: sh
+        run: php tests/school_import_final_integration.php
 
       - name: Run API HTTP smoke tests
         shell: sh
