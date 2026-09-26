@@ -30,8 +30,10 @@ try {
     $router = new Router();
 
     $router->get('/health', new HealthController());
-    $router->post('/imports/school', new SchoolImportController());
-    $router->get('/imports/school/{id}', new SchoolImportController());
+    $schoolImport = new SchoolImportController();
+    $router->post('/imports/school', $schoolImport);
+    $router->get('/imports/school/{id}', $schoolImport);
+    $router->post('/imports/school/{id}/{action}', $schoolImport);
 
     $router->get('/', static function (): Response {
         return Response::json([
