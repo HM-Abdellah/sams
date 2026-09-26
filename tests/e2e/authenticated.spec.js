@@ -1096,7 +1096,11 @@ test.describe('authenticated SAMS smoke', () => {
 
     await page.locator('.tab[data-tab="admin"]').click();
     await expect(page.locator('#schoolImportForm')).toBeVisible();
-    await page.locator('#schoolImportAcademicYearInput').selectOption({ label: '2026/2027' });
+    await page.locator('.language-btn[data-lang="en"]').click();
+    const targetYearOption = page.locator('#schoolImportAcademicYearInput option').filter({ hasText: '2026/2027' }).first();
+    const targetYearId = await targetYearOption.getAttribute('value');
+    expect(targetYearId).toBeTruthy();
+    await page.locator('#schoolImportAcademicYearInput').selectOption({ value: targetYearId });
     await page.locator('#schoolImportFile').setInputFiles({
       name: 'school-2025-2026.xlsx',
       mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
