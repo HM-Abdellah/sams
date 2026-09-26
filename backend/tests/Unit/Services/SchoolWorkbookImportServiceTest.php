@@ -307,6 +307,42 @@ MD;
         }
     }
 
+    public function testItFlagsMalformedMarkdownTableColumnCounts(): void
+    {
+        $service = new SchoolWorkbookImportService();
+        $temporaryPath = tempnam(sys_get_temp_dir(), 'sams-school-import-markdown-shape-');
+        if ($temporaryPath === false) self::fail('Unable to create temporary Markdown path.');
+        $path = $temporaryPath . '.md';
+        if (!rename($temporaryPath, $path)) self::fail('Unable to create temporary Markdown path.');
+
+        $markdown = <<<'MD'
+## TCSF-MD-MALFORMED
+| المؤسسة | Integration School |  |
+| --- | --- | --- |
+| القسم | TCSF-MD-MALFORMED |  |
+| المستوى | Tronc Commun |  |
+| السنة الدراسية | 2025/2026 |  |
+| ر.ت | الرمز | النسب | الإسم | تاريخ الازدياد |
+| 1 | BADPIPE123 | Family | Jr | Given | 2009-01-01 |
+MD;
+        file_put_contents($path, $markdown);
+
+        try {
+            $result = $service->parse($path);
+
+            self::assertContains(
+                'markdown_table_column_count_mismatch',
+                $result['sheets'][0]['issues']
+            );
+
+            $validated = (new \SAMS\Services\SchoolWorkbookImportValidationService())->validate($result);
+            self::assertFalse($validated['valid']);
+            self::assertNotEmpty($validated['workbook_issues']);
+        } finally {
+            @unlink($path);
+        }
+    }
+
     public function testItReportsAHeaderFoundWithoutClassContext(): void
     {
         $service = new SchoolWorkbookImportService();

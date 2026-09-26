@@ -142,17 +142,33 @@ final class SchoolWorkbookImportService
 
         $defaultSheetName = pathinfo($path, PATHINFO_FILENAME) ?: 'Markdown Import';
         $sheetGroups = [];
+        $markdownSheetIssues = [];
         $currentSheetName = $defaultSheetName;
         $currentTable = [];
         $currentTableHasHeader = false;
         $currentTableHasMetadata = false;
 
-        $flushTable = function () use (&$currentTable, &$currentTableHasHeader, &$currentTableHasMetadata, &$sheetGroups, &$currentSheetName): void {
+        $flushTable = function () use (
+            &$currentTable,
+            &$currentTableHasHeader,
+            &$currentTableHasMetadata,
+            &$sheetGroups,
+            &$markdownSheetIssues,
+            &$currentSheetName
+        ): void {
             if ($currentTable === []) return;
 
+            $expectedColumnCount = null;
             foreach ($currentTable as $tableRow) {
                 $cells = $tableRow['cells'];
                 if ($this->isMarkdownSeparatorRow($cells)) continue;
+
+                $columnCount = count($cells);
+                if ($expectedColumnCount === null) {
+                    $expectedColumnCount = $columnCount;
+                } elseif ($columnCount !== $expectedColumnCount) {
+                    $markdownSheetIssues[$currentSheetName][] = 'markdown_table_column_count_mismatch';
+                }
 
                 if ($this->detectHeader($cells) !== null) {
                     $currentTableHasHeader = true;
@@ -240,11 +256,15 @@ final class SchoolWorkbookImportService
             }
 
             $totalStudents += $sheetStudentCount;
+            $sheetIssues = array_values(array_unique(array_merge(
+                $sheetResult['issues'],
+                $markdownSheetIssues[$sheetName] ?? []
+            )));
             $sheets[] = [
                 'name' => $sheetName,
                 'class_count' => count($sheetResult['classes']),
                 'student_count' => $sheetStudentCount,
-                'issues' => $sheetResult['issues'],
+                'issues' => $sheetIssues,
             ];
         }
 
