@@ -108,6 +108,7 @@ final class SchoolWorkbookImportServiceTest extends TestCase
             self::assertSame('1BACSEF-3', $result['classes'][0]['class_name']);
             self::assertSame('1BAC', $result['classes'][0]['level']);
             self::assertSame('2025/2026', $result['classes'][0]['academic_year']);
+            self::assertNotContains('missing_academic_year', $result['classes'][0]['issues']);
         } finally {
             @unlink($path);
         }
