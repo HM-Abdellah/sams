@@ -43,3 +43,15 @@ The existing class-scoped student_import_batches design is not the final model f
 ## Attendance UI invariant
 
 The workbook can contain rich student metadata, but the attendance register must continue to display only the student's first name + last name and attendance periods such as 8–9, 9–10, etc.
+
+## Database staging slice
+
+Migration 005 adds three dedicated staging tables:
+
+- `school_import_batches`: one record per uploaded school workbook, including the explicit target academic year when selected.
+- `school_import_classes`: one record per detected class block, with source sheet/row coordinates and an optional target class mapping.
+- `school_import_rows`: one record per detected student row, with source coordinates, identity fields, validation state, match state, and links to an existing student/enrollment when reconciliation is performed.
+
+The legacy `student_import_batches` / `student_import_rows` tables remain untouched while the new importer is validated.
+
+The schema intentionally does not store a copy of the complete uploaded workbook. Only normalized staging data and diagnostics are persisted.
