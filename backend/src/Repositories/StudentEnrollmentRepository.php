@@ -45,6 +45,50 @@ final class StudentEnrollmentRepository
         return $stmt->fetchAll();
     }
 
+    /**
+     * Return all enrollments for the given students that overlap one academic year.
+     *
+     * @param list<int> $studentIds
+     * @return list<array<string,mixed>>
+     */
+    public function forStudentsInAcademicYear(
+        array $studentIds,
+        int $academicYearId,
+        bool $forUpdate = false
+    ): array {
+        $studentIds = array_values(array_unique(array_filter(
+            array_map(static fn($v): int => (int)$v, $studentIds),
+            static fn(int $v): bool => $v > 0
+        )));
+
+        if ($studentIds === []) return [];
+
+        $placeholders = implode(',', array_fill(0, count($studentIds), '?'));
+        $sql = "SELECT
+                    e.id,
+                    e.student_id,
+                    e.class_id,
+                    e.starts_on,
+                    e.ends_on
+                FROM student_enrollments e
+                INNER JOIN classes c ON c.id = e.class_id
+                INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+                WHERE ay.id = ?
+                  AND e.student_id IN ({$placeholders})
+                  AND e.starts_on <= ay.ends_on
+                  AND (e.ends_on IS NULL OR e.ends_on >= ay.starts_on)
+                ORDER BY e.student_id, e.starts_on, e.id";
+
+        if ($forUpdate) {
+            $sql .= ' FOR UPDATE';
+        }
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute(array_merge([$academicYearId], $studentIds));
+
+        return $stmt->fetchAll();
+    }
+
     public function currentForStudent(int $studentId): ?array
     {
         $stmt = Database::connection()->prepare(
