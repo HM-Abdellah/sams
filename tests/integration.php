@@ -127,6 +127,11 @@ if ($stagingPath === false) {
 $stagingWorkbook = $stagingPath . '.xlsx';
 @unlink($stagingPath);
 
+$pdo->exec(
+    "INSERT INTO users (username, full_name, password_hash, role)
+     VALUES ('integration-admin', 'Integration Admin', 'hash-admin', 'admin')"
+);
+
 try {
     $workbook = new Spreadsheet();
     $sheet = $workbook->getActiveSheet();
