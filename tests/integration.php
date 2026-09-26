@@ -152,7 +152,7 @@ try {
         $stagingWorkbook,
         1,
         'integration-school.xlsx',
-        1
+        null
     );
 
     expect_true($result['status'] === 'validated', 'Valid school workbook should be staged as validated.');
@@ -194,9 +194,7 @@ $pdo->exec(
 
 $pdo->exec(
     "INSERT INTO users (username, full_name, password_hash, role)
-     VALUES
-       ('admin', 'Integration Admin', 'hash-admin', 'admin'),
-       ('teacher1', 'Integration Teacher', 'hash-teacher', 'teacher')"
+     VALUES ('teacher1', 'Integration Teacher', 'hash-teacher', 'teacher')"
 );
 
 $pdo->exec(
