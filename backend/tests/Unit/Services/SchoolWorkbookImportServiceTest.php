@@ -56,6 +56,38 @@ final class SchoolWorkbookImportServiceTest extends TestCase
         }
     }
 
+    public function testHeaderDetectionDoesNotDependOnFixedColumnOrder(): void
+    {
+        $service = new SchoolWorkbookImportService();
+        $path = $this->writeWorkbook(function (Spreadsheet $workbook): void {
+            $sheet = $workbook->getActiveSheet();
+            $sheet->fromArray([
+                ['', 'المؤسسة', 'Lycée Test', '', '', '', ''],
+                ['', 'القسم', 'TCSF-4', '', '', '', ''],
+                ['', 'المستوى', 'Tronc Commun', '', '', '', ''],
+                ['', 'السنة الدراسية', '2025/2026', '', '', '', ''],
+                ['', '', '', '', '', '', ''],
+                ['', 'الإسم', 'الرمز', 'تاريخ الازدياد', 'النوع', 'النسب', 'مكان الازدياد'],
+                ['', 'Prenom10', 'HH123456', '2009-11-12', 'ذكر', 'Nom10', 'Rabat'],
+                ['', '', '', '', '', '', ''],
+                ['', 'Prenom11', 'HH123457', '13/12/2009', 'أنثى', 'Nom11', 'Temara'],
+            ], null, 'A1');
+        }, 'xlsx');
+
+        try {
+            $result = $service->parse($path);
+
+            self::assertCount(1, $result['classes']);
+            self::assertSame('TCSF-4', $result['classes'][0]['class_name']);
+            self::assertCount(2, $result['classes'][0]['students']);
+            self::assertSame('HH123457', $result['classes'][0]['students'][1]['massar_code']);
+            self::assertSame('Nom11', $result['classes'][0]['students'][1]['last_name']);
+            self::assertSame('2009-12-13', $result['classes'][0]['students'][1]['birth_date']);
+        } finally {
+            @unlink($path);
+        }
+    }
+
     public function testItCarriesMetadataFoundBeforeTheClassMarker(): void
     {
         $service = new SchoolWorkbookImportService();
