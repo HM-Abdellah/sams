@@ -43,8 +43,14 @@ jobs:
         shell: sh
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends composer libxml2-dev curl
+          apt-get install -y --no-install-recommends libxml2-dev curl
           docker-php-ext-install dom mbstring pdo_mysql xml xmlwriter
+
+          EXPECTED_CHECKSUM="$(curl -fsSL https://composer.github.io/installer.sig)"
+          curl -fsSL https://getcomposer.org/installer -o composer-setup.php
+          echo "${EXPECTED_CHECKSUM}  composer-setup.php" | sha384sum -c -
+          php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+          rm composer-setup.php
 
       - name: Verify PHP runtime
         shell: sh
