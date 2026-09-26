@@ -44,6 +44,31 @@ final class SchoolWorkbookImportValidationServiceTest extends TestCase
         }
     }
 
+    public function testAWorkbookWithoutClassBlocksIsNotImportable(): void
+    {
+        $parser = new SchoolWorkbookImportService();
+        $validator = new SchoolWorkbookImportValidationService();
+
+        $path = $this->writeWorkbook(function (Spreadsheet $workbook): void {
+            $sheet = $workbook->getActiveSheet();
+            $sheet->fromArray([
+                ['ملاحظات', 'هذا الملف لا يحتوي على لائحة أقسام.'],
+            ], null, 'A1');
+        });
+
+        try {
+            $result = $validator->validate($parser->parse($path));
+
+            self::assertFalse($result['valid']);
+            self::assertContains(
+                'no_class_blocks_detected',
+                array_column($result['workbook_issues'], 'issue')
+            );
+        } finally {
+            @unlink($path);
+        }
+    }
+
     public function testMixedAcademicYearsAreNotImportable(): void
     {
         $parser = new SchoolWorkbookImportService();
