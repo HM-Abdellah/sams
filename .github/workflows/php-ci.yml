@@ -6,7 +6,7 @@ concurrency:
 
 on:
   push:
-    branches: [main, refactor/phase-2-backend-foundation]
+    branches: [main, refactor/phase-2-backend-foundation, feat/phase-3-school-import-v2]
   pull_request:
     branches: [main, refactor/phase-2-backend-foundation]
 
