@@ -48,7 +48,7 @@ final class SchoolWorkbookImportServiceTest extends TestCase
             self::assertSame('TCSF-2', $result['classes'][1]['class_name']);
             self::assertSame('2025/2026', $result['classes'][0]['academic_year']);
             self::assertCount(2, $result['classes'][0]['students']);
-            self::assertSame(1, $result['classes'][0]['source_block_start_row']);
+            self::assertSame(2, $result['classes'][0]['source_block_start_row']);
             self::assertSame(9, $result['classes'][0]['source_block_end_row']);
             self::assertSame('AA123456', $result['classes'][0]['students'][0]['massar_code']);
             self::assertSame('Prenom2', $result['classes'][0]['students'][1]['first_name']);
