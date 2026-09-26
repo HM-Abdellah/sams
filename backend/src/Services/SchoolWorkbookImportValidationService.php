@@ -91,7 +91,10 @@ final class SchoolWorkbookImportValidationService
                     if (isset($seenRosterNumbers[$classIndex][$rosterKey])) {
                         $student['issues'][] = 'duplicate_roster_number_in_class';
                         $first = $seenRosterNumbers[$classIndex][$rosterKey];
-                        $classes[$first['class_index']]['students'][$first['student_index']]['issues'][] = 'duplicate_roster_number_in_class';
+                        $studentIssues = $students[$first['student_index']]['issues'] ?? [];
+                        $students[$first['student_index']]['issues'] = array_values(
+                            array_unique(array_merge($studentIssues, ['duplicate_roster_number_in_class']))
+                        );
                     } else {
                         $seenRosterNumbers[$classIndex][$rosterKey] = [
                             'class_index' => $classIndex,
