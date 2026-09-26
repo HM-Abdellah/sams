@@ -166,8 +166,14 @@ final class SchoolWorkbookImportService
             }
 
             if ($current !== null) {
-                if ($level !== null && $current['level'] === null) $current['level'] = $level;
-                if ($academicYear !== null && $current['academic_year'] === null) $current['academic_year'] = $academicYear;
+                if ($level !== null && $current['level'] === null) {
+                    $current['level'] = $level;
+                    $current['issues'] = array_values(array_diff($current['issues'], ['missing_level']));
+                }
+                if ($academicYear !== null && $current['academic_year'] === null) {
+                    $current['academic_year'] = $academicYear;
+                    $current['issues'] = array_values(array_diff($current['issues'], ['missing_academic_year']));
+                }
             } else {
                 if ($level !== null) $pendingMetadata['level'] = $level;
                 if ($academicYear !== null) $pendingMetadata['academic_year'] = $academicYear;
