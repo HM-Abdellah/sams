@@ -43,7 +43,7 @@ jobs:
         shell: sh
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends libxml2-dev libonig-dev libzip-dev libfreetype6-dev libjpeg62-turbo-dev libpng-dev libwebp-dev curl unzip
+          apt-get install -y --no-install-recommends git libxml2-dev libonig-dev libzip-dev libfreetype6-dev libjpeg62-turbo-dev libpng-dev libwebp-dev curl unzip
           docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp
           docker-php-ext-install dom gd mbstring pdo_mysql xml xmlwriter zip
 
