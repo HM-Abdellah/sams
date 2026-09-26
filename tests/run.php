@@ -2,16 +2,7 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../app/Services/AttendanceService.php';
-require_once __DIR__ . '/../app/Services/ClassService.php';
-require_once __DIR__ . '/../app/Services/StudentService.php';
-require_once __DIR__ . '/../app/Services/UserService.php';
-require_once __DIR__ . '/../app/Services/AcademicYearService.php';
-require_once __DIR__ . '/../app/Services/ReportService.php';
-require_once __DIR__ . '/../app/Services/StudentImportService.php';
-require_once __DIR__ . '/../app/Helpers/Security.php';
-require_once __DIR__ . '/../app/Helpers/Csrf.php';
-require_once __DIR__ . '/../app/Helpers/Auth.php';
+require_once __DIR__ . '/../backend/src/bootstrap.php';
 
 ob_start();
 

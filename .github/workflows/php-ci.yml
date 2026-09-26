@@ -14,7 +14,7 @@ jobs:
   php:
     runs-on: ubuntu-latest
     container:
-      image: php:8.4-cli
+      image: php:8.3-cli
 
     services:
       db:
@@ -39,25 +39,84 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Install MySQL PDO extension
+      - name: Install PHP extensions and Composer
         shell: sh
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends libonig-dev
-          docker-php-ext-install pdo_mysql mbstring
+          apt-get install -y --no-install-recommends libxml2-dev libonig-dev curl unzip
+          docker-php-ext-install dom mbstring pdo_mysql xml xmlwriter
+
+          EXPECTED_CHECKSUM="$(curl -fsSL https://composer.github.io/installer.sig)"
+          curl -fsSL https://getcomposer.org/installer -o composer-setup.php
+          echo "${EXPECTED_CHECKSUM}  composer-setup.php" | sha384sum -c -
+          php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+          rm composer-setup.php
+
+      - name: Verify PHP runtime
+        shell: sh
+        run: php -v
+
+      - name: Install backend dependencies
+        working-directory: backend
+        shell: sh
+        run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Lint PHP sources
         shell: sh
         run: |
-          find api app config public scripts tests -type f -name '*.php' -print0             | xargs -0 -n1 php -l
+          find api app backend config public scripts tests -type f -name '*.php' -print0 | xargs -0 -n1 php -l
 
-      - name: Run service tests
+      - name: Run legacy service tests
         shell: sh
         run: php tests/run.php
+
+      - name: Run backend unit tests
+        working-directory: backend
+        shell: sh
+        run: vendor/bin/phpunit --configuration phpunit.xml
 
       - name: Run MariaDB integration tests
         shell: sh
         run: php tests/integration.php
+
+      - name: Run API HTTP smoke tests
+        shell: sh
+        run: |
+          php -S 127.0.0.1:8090 scripts/dev_router.php > /tmp/sams-api.log 2>&1 &
+          server_pid=$!
+
+          cleanup() {
+            kill "$server_pid" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          for i in $(seq 1 20); do
+            if curl -sS http://127.0.0.1:8090/api/v1/health > /tmp/sams-health.json 2>/dev/null; then
+              break
+            fi
+
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              echo "API server exited before becoming ready."
+              cat /tmp/sams-api.log
+              exit 1
+            fi
+
+            sleep 1
+          done
+
+          health_status=$(curl -sS -o /tmp/sams-health.json -w "%{http_code}" http://127.0.0.1:8090/api/v1/health)
+          test "$health_status" = "200"
+          grep -q '"success":true' /tmp/sams-health.json
+          grep -q '"api_version":"v1"' /tmp/sams-health.json
+
+          method_status=$(curl -sS -o /tmp/sams-method.json -w "%{http_code}" -X POST http://127.0.0.1:8090/api/v1/health)
+          test "$method_status" = "405"
+          grep -q '"success":false' /tmp/sams-method.json
+
+          missing_status=$(curl -sS -o /tmp/sams-missing.json -w "%{http_code}" http://127.0.0.1:8090/api/v1/does-not-exist)
+          test "$missing_status" = "404"
+
+          echo "[PASS] API HTTP smoke: health=200 method=405 missing=404"
 
   javascript:
     runs-on: ubuntu-latest
@@ -71,7 +130,7 @@ jobs:
       - name: Check JavaScript syntax
         shell: sh
         run: |
-          find public/assets/js tests/e2e -type f -name '*.js' -print0             | xargs -0 -n1 node --check
+          find public/assets/js tests/e2e -type f -name '*.js' -print0 | xargs -0 -n1 node --check
 
   e2e:
     runs-on: ubuntu-latest
@@ -103,10 +162,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Install PHP and MySQL extension
+      - name: Install PHP 8.3 and MySQL extensions
         run: |
           apt-get update
-          apt-get install -y php-cli php-mysql php-mbstring curl
+          apt-get install -y php8.3-cli php8.3-mysql php8.3-mbstring curl
+
+      - name: Verify PHP runtime
+        run: php -v
 
       - name: Configure E2E database
         shell: bash

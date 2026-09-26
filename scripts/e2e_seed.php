@@ -149,7 +149,8 @@ try {
         'SELECT id FROM student_enrollments WHERE student_id = ' . $firstStudentId . ' AND class_id = ' . $classA . ' LIMIT 1'
     )->fetchColumn();
 
-    $attendanceDate = date('Y-m-d');
+    // Keep E2E history deterministic; tests intentionally target this fixed date.
+    $attendanceDate = '2026-09-25';
     $attendanceStmt = $pdo->prepare(
         'INSERT INTO attendance
             (student_id, enrollment_id, attendance_date, period, status, recorded_by)

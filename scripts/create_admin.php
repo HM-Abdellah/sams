@@ -9,7 +9,8 @@
  */
 declare(strict_types=1);
 
-require_once __DIR__ . '/../app/Helpers/Database.php';
+require_once __DIR__ . '/../backend/src/bootstrap.php';
+
 use SAMS\Helpers\Database;
 
 if (PHP_SAPI !== 'cli') {

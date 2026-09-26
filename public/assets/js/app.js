@@ -3,7 +3,7 @@ import { state, setState } from './state.js';
 import { ui, renderAll } from './ui.js';
 import { setupSignature } from './signature.js';
 import { DAYS, PERIODS, dateFromWeek, startOfWeek, attendanceKey, displayName } from './logic.js';
-import { initLanguage, setLanguage, t } from './i18n.js';
+import { currentLanguage, initLanguage, setLanguage, t } from './i18n.js';
 
 let loading = false;
 let clickTimer = null;
@@ -861,6 +861,15 @@ function esc(value) {
     return div.innerHTML;
 }
 
+function subjectLabel(subject) {
+    const lang = currentLanguage();
+    return subject?.['name_' + (lang === 'ar' ? 'ar' : lang === 'en' ? 'en' : 'fr')]
+        || subject?.name_fr
+        || subject?.subject_name_fr
+        || subject?.code
+        || '—';
+}
+
 function wire() {
     document.querySelector('#reloadBtn')?.addEventListener('click', loadClass);
     document.querySelector('#logoutBtn')?.addEventListener('click', async () => {
@@ -975,6 +984,7 @@ function wire() {
 
     document.querySelector('#subjectForm')?.addEventListener('submit', async (event) => {
         event.preventDefault();
+        const form = event.currentTarget;
         try {
             await API.createSubject({
                 code: document.querySelector('#subjectCodeInput').value.trim(),
@@ -983,7 +993,7 @@ function wire() {
                 name_en: document.querySelector('#subjectNameEnInput').value.trim(),
             });
             document.querySelector('#subjectDialog')?.close();
-            event.currentTarget.reset();
+            form.reset();
             await loadTeachers();
             ui.toast(t('create'));
         } catch (error) {
@@ -1145,6 +1155,7 @@ function wire() {
     document.querySelector('#editStudentForm')?.addEventListener('submit', async (event) => {
         event.preventDefault();
         if (!state.classId) return;
+        const form = event.currentTarget;
         try {
             await API.updateStudent(state.classId, Number(document.querySelector('#editStudentId').value), {
                 first_name: document.querySelector('#editFirstNameInput').value.trim(),
@@ -1153,7 +1164,7 @@ function wire() {
                 birth_date: document.querySelector('#editBirthDateInput').value || null,
                 student_number: document.querySelector('#editStudentNumberInput').value.trim() || null,
             });
-            event.currentTarget.closest('dialog')?.close();
+            form.closest('dialog')?.close();
             await loadClass();
             ui.toast(t('student_updated'));
         } catch (error) {
@@ -1164,14 +1175,15 @@ function wire() {
     document.querySelector('#addClassBtn')?.addEventListener('click', () => document.querySelector('#classDialog')?.showModal());
     document.querySelector('#classForm')?.addEventListener('submit', async (event) => {
         event.preventDefault();
+        const form = event.currentTarget;
         try {
             await API.createClass({
                 name: document.querySelector('#classNameInput').value.trim(),
                 level: document.querySelector('#classLevelInput').value.trim(),
                 branch: document.querySelector('#classBranchInput').value.trim(),
             });
-            event.currentTarget.closest('dialog')?.close();
-            event.currentTarget.reset();
+            document.querySelector('#classDialog')?.close();
+            form.reset();
             const classes = await API.classes();
             setOperationalClasses(classes.classes || []);
             ui.classes();
@@ -1246,11 +1258,12 @@ function wire() {
 
     document.querySelector('#resetUserPasswordForm')?.addEventListener('submit', async (event) => {
         event.preventDefault();
+        const form = event.currentTarget;
         const userId = Number(document.querySelector('#resetUserId').value);
         const password = document.querySelector('#resetUserPasswordInput').value;
         try {
             await API.resetUserPassword(userId, password);
-            event.currentTarget.reset();
+            form.reset();
             document.querySelector('#resetUserPasswordDialog')?.close();
             await loadAdmin();
             ui.toast(t('password_reset'));
@@ -1261,6 +1274,7 @@ function wire() {
 
     document.querySelector('#userForm')?.addEventListener('submit', async (event) => {
         event.preventDefault();
+        const form = event.currentTarget;
         try {
             await API.createUser({
                 username: document.querySelector('#userUsernameInput').value.trim(),
@@ -1268,7 +1282,7 @@ function wire() {
                 role: document.querySelector('#userRoleInput').value,
                 password: document.querySelector('#userPasswordInput').value,
             });
-            event.currentTarget.reset();
+            form.reset();
             await loadAdmin();
             ui.toast(t('user_created'));
         } catch (error) {
@@ -1278,6 +1292,7 @@ function wire() {
 
     document.querySelector('#academicYearForm')?.addEventListener('submit', async (event) => {
         event.preventDefault();
+        const form = event.currentTarget;
         try {
             await API.createAcademicYear({
                 name: document.querySelector('#academicYearNameInput').value.trim(),
@@ -1285,7 +1300,7 @@ function wire() {
                 ends_on: document.querySelector('#academicYearEndInput').value,
                 activate: document.querySelector('#academicYearActivateInput').value === '1',
             });
-            event.currentTarget.reset();
+            form.reset();
             await loadAdmin();
             const classes = await API.classes();
             setOperationalClasses(classes.classes || []);

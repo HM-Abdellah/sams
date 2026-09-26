@@ -8,6 +8,8 @@
 !.env.example
 config/config.php
 config/database.php
+backend/config/config.php
+backend/config/database.php
 
 # Local database exports / dumps
 *.sql.gz
@@ -18,6 +20,9 @@ backups/
 storage/runtime/
 storage/logs/
 storage/uploads/
+backend/storage/runtime/
+backend/storage/logs/
+backend/storage/uploads/
 
 # XAMPP / local server files
 xampp/
@@ -46,4 +51,6 @@ coverage/
 
 # Node tooling (only if introduced later)
 node_modules/
+backend/vendor/
+backend/.phpunit.cache/
 npm-debug.log*
