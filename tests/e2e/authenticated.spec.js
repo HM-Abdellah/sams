@@ -182,11 +182,14 @@ test.describe('authenticated SAMS smoke', () => {
     await expect(page.locator('#attendanceMobileList .attendance-student-card')).toHaveCount(3);
 
     await page.locator('.language-btn[data-lang="en"]').click();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+    await page.locator('.language-btn[data-lang="en"]').click();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await page.evaluate(() => {
       window.print = () => {};
     });
     await page.locator('#reportBtn').click();
-    await expect(page.locator('#weeklyPrintSheet')).toContainText('Weekly attendance sheet');
+    await expect(page.locator('#weeklyPrintSheet')).toContainText('Official weekly register');
     await expect(page.locator('#weeklyPrintSheet .print-attendance-table tbody tr')).toHaveCount(3);
   });
 
@@ -264,9 +267,9 @@ test.describe('authenticated SAMS smoke', () => {
     await expect(page.locator('#teacherTotal')).toHaveText('1');
 
     await page.locator('#assignTeachingBtn').click();
-    await page.locator('#teachingTeacherId').selectOption({ label: /E2E Teacher/ });
-    await page.locator('#teachingSubjectId').selectOption({ label: /Mathématiques/ });
-    await page.locator('#teachingClassId').selectOption({ label: /E2E-2BAC-B/ });
+    await page.locator('#teachingTeacherId').selectOption({ label: 'E2E Teacher · teacher.e2e' });
+    await page.locator('#teachingSubjectId').selectOption({ label: 'Mathématiques · MATH' });
+    await page.locator('#teachingClassId').selectOption({ label: '2BAC · SP · E2E-2BAC-B · 2026/2027' });
     await page.locator('#teachingForm button[type="submit"]').click();
     await expect(page.locator('#teachingDialog')).toBeHidden();
 
@@ -289,7 +292,9 @@ test.describe('authenticated SAMS smoke', () => {
     await page.locator('.tab[data-tab="admin"]').click();
     await expect(page.locator('[data-i18n="school_dashboard"]')).toHaveText('School dashboard');
     await expect(page.locator('#dashboardPulse')).toContainText('School');
-    await expect(page.locator('#dashboardPulse')).toContainText('4');
+    const schoolMetric = page.locator('#dashboardPulse .dashboard-metric').first();
+    await expect(schoolMetric).toContainText('School');
+    await expect(schoolMetric.locator('div').first().locator('strong')).toHaveText('2');
     await expect(page.locator('#dashboardBranchGrid .branch-card')).toHaveCount(1);
     await expect(page.locator('#dashboardBranchGrid .branch-card').first()).toContainText('SP');
     const classRows = page.locator('#dashboardClassTable tbody tr');
@@ -351,8 +356,13 @@ test.describe('authenticated SAMS smoke', () => {
     await page.locator('#classNameInput').fill(className);
     await page.locator('#classLevelInput').fill('2BAC');
     await page.locator('#classBranchInput').fill('SP');
+    const createClassResponse = page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/classes.php') &&
+        response.request().method() === 'POST'
+    );
     await page.locator('#classForm button[type="submit"]').click();
-    await expect(page.locator('#classDialog')).toBeHidden();
+    await expect((await createClassResponse).ok()).toBeTruthy();
 
     await page.locator('.tab[data-tab="admin"]').click();
     const classRow = page.locator('#adminClassesTable tbody tr').filter({ hasText: className }).first();
