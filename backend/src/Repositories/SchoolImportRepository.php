@@ -45,6 +45,35 @@ final class SchoolImportRepository
         return $row ?: null;
     }
 
+    public function findClassInBatch(int $importClassId, int $batchId): ?array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT
+                id,
+                batch_id,
+                source_sheet,
+                source_block_start_row,
+                source_block_end_row,
+                source_class_name,
+                source_level,
+                source_academic_year,
+                target_class_id,
+                status,
+                student_count,
+                issues,
+                created_at,
+                updated_at
+             FROM school_import_classes
+             WHERE id = ? AND batch_id = ?
+             LIMIT 1'
+        );
+        $stmt->execute([$importClassId, $batchId]);
+        $row = $stmt->fetch();
+        if ($row === false) return null;
+
+        $row['issues'] = $this->decodeJsonArray($row['issues'] ?? null);
+        return $row;
+    }
     public function classesForBatch(int $batchId): array
     {
         $stmt = Database::connection()->prepare(
