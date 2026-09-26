@@ -43,8 +43,9 @@ jobs:
         shell: sh
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends libxml2-dev libonig-dev curl unzip
-          docker-php-ext-install dom mbstring pdo_mysql xml xmlwriter
+          apt-get install -y --no-install-recommends libxml2-dev libonig-dev libzip-dev libfreetype6-dev libjpeg62-turbo-dev libpng-dev libwebp-dev curl unzip
+          docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp
+          docker-php-ext-install dom gd mbstring pdo_mysql xml xmlwriter zip
 
           EXPECTED_CHECKSUM="$(curl -fsSL https://composer.github.io/installer.sig)"
           curl -fsSL https://getcomposer.org/installer -o composer-setup.php
