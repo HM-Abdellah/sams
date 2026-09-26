@@ -62,6 +62,21 @@ jobs:
         shell: sh
         run: composer install --no-interaction --prefer-dist --no-progress
 
+      - name: Configure backend database
+        shell: sh
+        run: |
+          cat > backend/config/database.php <<'PHP'
+          <?php
+          return [
+              'host' => getenv('SAMS_TEST_DB_HOST') ?: 'db',
+              'port' => (int)(getenv('SAMS_TEST_DB_PORT') ?: 3306),
+              'database' => getenv('SAMS_TEST_DB_NAME') ?: 'sams',
+              'username' => getenv('SAMS_TEST_DB_USER') ?: 'root',
+              'password' => getenv('SAMS_TEST_DB_PASS') ?: 'root',
+              'charset' => 'utf8mb4',
+          ];
+          PHP
+
       - name: Lint PHP sources
         shell: sh
         run: |
