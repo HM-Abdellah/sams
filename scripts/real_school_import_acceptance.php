@@ -62,7 +62,7 @@ function acceptance_normalize_identity(mixed $value): string
 {
     $value = acceptance_normalize_text($value);
 
-    return strtolower(preg_replace('/\\s+/u', ' ', $value) ?? $value);
+    return strtolower(preg_replace('/\s+/u', ' ', $value) ?? $value);
 }
 
 function acceptance_normalize_year(mixed $value): string
