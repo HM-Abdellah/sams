@@ -122,7 +122,7 @@ A successful green gate is required before treating this phase as ready for revi
 
 ## External acceptance
 
-The real school workbook and its MarkItDown-generated `.md` are kept outside the repository. External source-equivalence verification confirmed that the production-shaped workbook topology is compatible with the Phase 3 parser after the metadata/header compatibility fix. Full production-staging/commit acceptance must still run in an isolated environment with a target database.
+The real school workbook and its MarkItDown-generated `.md` are kept outside the repository. External source-equivalence verification confirmed that the production-shaped workbook topology is compatible with the Phase 3 parser after the metadata/header compatibility fix. Full real-data staging, reconciliation, atomic-commit, idempotency, and rollback acceptance was subsequently executed against a disposable isolated MariaDB database provisioned from the canonical schema with the target academic-year/class topology.
 
 Observed external workbook shape:
 - 27 worksheets / class blocks.
@@ -131,6 +131,20 @@ Observed external workbook shape:
 - Academic year consistently represented as 2025/2026.
 - Real metadata labels include the `:` prefix form (for example `: القسم` and `: المستوى`) and the workbook uses `تاريخ الإزدياد` for the birth-date header.
 - The corresponding MarkItDown output preserved the same 27 sheets, 27 classes, and 921 student rows.
-- The Excel and Markdown representations matched on class metadata and student identity/date fields except for three source-conversion differences: two numeric `137` birth-place cells became `NaN` in Markdown, and one last-name cell collapsed an internal double space to a single space.
+- The Excel and Markdown representations matched semantically after parser normalization: `NaN`/`<NA>`-style missing tokens are normalized to blank, leaving 0 birth-place presence deltas and 1 whitespace-only last-name delta.
 
 Real student data must not be committed to the repository. The repository test suite continues to use synthetic fixtures only.
+
+Final external acceptance evidence:
+- XLSX parser: 27 classes / 921 rows.
+- Markdown parser: 27 classes / 921 rows.
+- XLSX ↔ Markdown semantic equivalence: PASS.
+- Both formats staged without changing production students/enrollments.
+- Reconciliation: 27/27 classes mapped, 0 conflicts, 921 new students.
+- Atomic commit: +921 students / +921 enrollments.
+- Second commit: idempotent, no duplicates.
+- Forced transaction failure: full rollback verified.
+- Recovery commit recreated the intentionally removed enrollment and replay remained idempotent.
+- Final isolated acceptance DB: 921 students / 921 enrollments.
+
+Acceptance limitation: this run used a clean disposable DB seeded with the exact target-year/class topology. It exercised the real source files and the full import workflow, but it was not a test against an independently pre-populated legacy production student database.
