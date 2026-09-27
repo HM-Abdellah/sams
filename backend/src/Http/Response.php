@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SAMS\Http;
 
 use JsonException;
+use SAMS\Helpers\Security;
 
 final class Response
 {
@@ -53,9 +54,9 @@ final class Response
         http_response_code($this->status);
 
         header('Cache-Control: no-store');
-        header('X-Content-Type-Options: nosniff');
-        header('Referrer-Policy: same-origin');
-        header('X-Frame-Options: DENY');
+        foreach (Security::responseHeaders() as $name => $value) {
+            header($name . ': ' . $value);
+        }
 
         foreach ($this->headers as $name => $value) {
             header($name . ': ' . $value);
