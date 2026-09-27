@@ -54,3 +54,8 @@ node_modules/
 backend/vendor/
 backend/.phpunit.cache/
 npm-debug.log*
+
+# External real-school acceptance files (never commit student data)
+ListEleve_*.xlsx
+ListEleve_*.xls
+ListEleve_*.md
