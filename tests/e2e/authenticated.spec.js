@@ -229,7 +229,7 @@ test.describe('authenticated SAMS smoke', () => {
     await expect(page.locator('#schoolImportReview')).toContainText('E2E-2BAC-B');
     await expect(page.locator('#schoolImportCommitBtn')).toBeDisabled();
 
-    await page.locator('.school-import-classes-table tbody tr').filter({ hasText: 'E2E-2BAC-A' }).locator('[data-school-import-class]').click();
+    await page.locator('.school-import-classes-table tbody tr').filter({ hasText: 'E2E-2BAC-B' }).locator('[data-school-import-class]').click();
     await expect(page.locator('#schoolImportRowsReview')).toContainText('E2EMDAPI001');
     await expect(page.locator('#schoolImportRowsReview')).toContainText('not_checked');
 
