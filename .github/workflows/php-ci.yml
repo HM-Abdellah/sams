@@ -110,6 +110,10 @@ jobs:
         shell: sh
         run: php tests/school_import_final_integration.php
 
+      - name: Run teacher attendance integration tests
+        shell: sh
+        run: php tests/attendance_backend_integration.php
+
       - name: Run API HTTP smoke tests
         shell: sh
         run: |
@@ -151,7 +155,15 @@ jobs:
           test "$import_auth_status" = "401"
           grep -q '"success":false' /tmp/sams-import-auth.json
 
-          echo "[PASS] API HTTP smoke: health=200 method=405 missing=404 import-auth=401"
+          attendance_get_auth_status=$(curl -sS -o /tmp/sams-attendance-get-auth.json -w "%{http_code}" http://127.0.0.1:8090/api/v1/classes/1/attendance?week_start=2026-09-23)
+          test "$attendance_get_auth_status" = "401"
+          grep -q '"success":false' /tmp/sams-attendance-get-auth.json
+
+          attendance_bulk_auth_status=$(curl -sS -o /tmp/sams-attendance-bulk-auth.json -w "%{http_code}" -X POST http://127.0.0.1:8090/api/v1/classes/1/attendance/bulk -H 'Content-Type: application/json' --data '{"entries":[]}' )
+          test "$attendance_bulk_auth_status" = "401"
+          grep -q '"success":false' /tmp/sams-attendance-bulk-auth.json
+
+          echo "[PASS] API HTTP smoke: health=200 method=405 missing=404 import-auth=401 attendance-get-auth=401 attendance-bulk-auth=401"
 
   javascript:
     runs-on: ubuntu-latest
