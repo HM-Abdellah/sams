@@ -32,6 +32,30 @@ final class AttendanceSignoffRepository
         return $stmt->fetchAll();
     }
 
+    /** @return list<array<string,mixed>> */
+    public function signedForClassRange(
+        int $classId,
+        string $start,
+        string $end,
+        bool $forUpdate = false
+    ): array {
+        $sql = 'SELECT class_id, attendance_date, period
+                FROM attendance_signoffs
+                WHERE class_id = ?
+                  AND attendance_date BETWEEN ? AND ?
+                  AND status = "signed"
+                ORDER BY attendance_date, period';
+
+        if ($forUpdate) {
+            $sql .= ' FOR UPDATE';
+        }
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute([$classId, $start, $end]);
+
+        return $stmt->fetchAll();
+    }
+
     public function weekSignatures(int $classId, string $weekStart): array
     {
         $stmt = Database::connection()->prepare(
