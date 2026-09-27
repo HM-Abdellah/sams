@@ -165,6 +165,18 @@ Creating a student also creates the initial enrollment for the class academic ye
 
 A transfer is transactional: the current enrollment is closed on the day before the effective date, a new target-class enrollment starts on the effective date, and `students.class_id` is updated. Transfers are restricted to active classes in the same academic year. Existing attendance on or after the effective date blocks the transfer so historical attendance cannot be orphaned from its enrollment period.
 
+## Canonical v1 teacher attendance
+
+### GET `/api/v1/classes/{class_id}/attendance?week_start=YYYY-MM-DD`
+
+Authenticated users only. The class must be active in the active academic year, and teachers may read only assigned classes. The supplied date is normalized to Monday, the six-day school-week range is clamped to academic-year boundaries when it partially overlaps the year, and a fully out-of-year week returns an empty register. The response contains the active attendance roster using only first/last names plus enrollment-aware attendance rows.
+
+### POST `/api/v1/classes/{class_id}/attendance/bulk`
+
+Admin and teacher only. Requires CSRF. JSON body contains `entries`, capped at 500. Each entry supports `upsert` or `delete`; upserts use the statuses `present`, `absent`, `late`, `excused`. Students must belong to the class and be active, dates must be inside the class academic year, and duplicate student/date/period keys within a batch are rejected. Signed lessons cannot be edited until reopened. The complete batch, audit records, and sign-off invalidation run in one transaction; a failure rolls the whole batch back. Exact no-op updates do not create audit noise.
+
+The legacy attendance endpoints below remain available during the backend migration.
+
 ## Attendance
 
 ### GET `api/attendance.php?class_id=ID&month=YYYY-MM`
