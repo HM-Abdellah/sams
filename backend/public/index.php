@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/src/bootstrap.php';
 
+use SAMS\Controllers\AdminAcademicYearController;
+use SAMS\Controllers\AdminAuditController;
+use SAMS\Controllers\AdminClassController;
+use SAMS\Controllers\AdminDashboardController;
+use SAMS\Controllers\AdminTeacherClassController;
+use SAMS\Controllers\AdminTeacherController;
+use SAMS\Controllers\AdminUserController;
 use SAMS\Controllers\AttendanceController;
 use SAMS\Controllers\HealthController;
 use SAMS\Controllers\SchoolImportController;
@@ -34,6 +41,33 @@ try {
     $attendance = new AttendanceController();
     $router->get('/classes/{id}/attendance', $attendance);
     $router->post('/classes/{id}/attendance/bulk', $attendance);
+
+    $adminDashboard = new AdminDashboardController();
+    $router->get('/admin/dashboard', $adminDashboard);
+
+    $adminAudit = new AdminAuditController();
+    $router->get('/admin/audit', $adminAudit);
+
+    $adminAcademicYears = new AdminAcademicYearController();
+    $router->get('/admin/academic-years', $adminAcademicYears);
+    $router->post('/admin/academic-years', $adminAcademicYears);
+
+    $adminClasses = new AdminClassController();
+    $router->get('/admin/classes', $adminClasses);
+    $router->post('/admin/classes', $adminClasses);
+
+    $adminUsers = new AdminUserController();
+    $router->get('/admin/users', $adminUsers);
+    $router->post('/admin/users', $adminUsers);
+
+    $adminTeachers = new AdminTeacherController();
+    $router->get('/admin/teachers', $adminTeachers);
+    $router->post('/admin/teachers', $adminTeachers);
+
+    $adminTeacherClasses = new AdminTeacherClassController();
+    $router->get('/admin/teacher-classes', $adminTeacherClasses);
+    $router->post('/admin/teacher-classes', $adminTeacherClasses);
+    $router->delete('/admin/teacher-classes', $adminTeacherClasses);
 
     $schoolImport = new SchoolImportController();
     $router->post('/imports/school', $schoolImport);
