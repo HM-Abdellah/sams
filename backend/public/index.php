@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/src/bootstrap.php';
 
+use SAMS\Controllers\AttendanceController;
 use SAMS\Controllers\HealthController;
 use SAMS\Controllers\SchoolImportController;
 use SAMS\Http\Request;
@@ -30,6 +31,10 @@ try {
     $router = new Router();
 
     $router->get('/health', new HealthController());
+    $attendance = new AttendanceController();
+    $router->get('/classes/{id}/attendance', $attendance);
+    $router->post('/classes/{id}/attendance/bulk', $attendance);
+
     $schoolImport = new SchoolImportController();
     $router->post('/imports/school', $schoolImport);
     $router->get('/imports/school/{id}', $schoolImport);
