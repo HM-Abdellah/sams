@@ -204,6 +204,7 @@ jobs:
 
           teacher_sid=$(php -d session.save_path=/tmp/sams-api-sessions -r 'session_name("SAMS_SESSION"); session_start(); $_SESSION["_auth_user"]=["id"=>2,"session_version"=>1]; $_SESSION["_csrf_token"]="phase5-ci-token"; session_write_close(); echo session_id();')
           counselor_sid=$(php -d session.save_path=/tmp/sams-api-sessions -r 'session_name("SAMS_SESSION"); session_start(); $_SESSION["_auth_user"]=["id"=>4,"session_version"=>1]; session_write_close(); echo session_id();')
+          signature_b64='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC'
 
           archive_auth_status=$(curl -sS -o /tmp/sams-archive-auth.json -w "%{http_code}" "http://127.0.0.1:8090/api/v1/admin/archive?view=days&class_id=1&month=2026-09")
           test "$archive_auth_status" = "401"
@@ -235,10 +236,10 @@ jobs:
           signature_get_status=$(curl -sS -o /tmp/sams-signature-get.json -w "%{http_code}" -b "SAMS_SESSION=$teacher_sid" "http://127.0.0.1:8090/api/v1/classes/1/signature")
           test "$signature_get_status" = "200"
 
-          signature_no_csrf_status=$(curl -sS -o /tmp/sams-signature-no-csrf.json -w "%{http_code}" -X POST -b "SAMS_SESSION=$teacher_sid" -H 'Content-Type: application/json' --data '{"signature_data":"data:image/png;base64,'$(printf 'phase6-http-signature' | base64 -w0)'"}' http://127.0.0.1:8090/api/v1/classes/1/signature)
+          signature_no_csrf_status=$(curl -sS -o /tmp/sams-signature-no-csrf.json -w "%{http_code}" -X POST -b "SAMS_SESSION=$teacher_sid" -H 'Content-Type: application/json' --data "{\"signature_data\":\"data:image/png;base64,${signature_b64}\"}" http://127.0.0.1:8090/api/v1/classes/1/signature)
           test "$signature_no_csrf_status" = "419"
 
-          signature_save_status=$(curl -sS -o /tmp/sams-signature-save.json -w "%{http_code}" -X POST -b "SAMS_SESSION=$teacher_sid" -H 'X-CSRF-Token: phase5-ci-token' -H 'Content-Type: application/json' --data '{"signature_data":"data:image/png;base64,'$(printf 'phase6-http-signature' | base64 -w0)'"}' http://127.0.0.1:8090/api/v1/classes/1/signature)
+          signature_save_status=$(curl -sS -o /tmp/sams-signature-save.json -w "%{http_code}" -X POST -b "SAMS_SESSION=$teacher_sid" -H 'X-CSRF-Token: phase5-ci-token' -H 'Content-Type: application/json' --data "{\"signature_data\":\"data:image/png;base64,${signature_b64}\"}" http://127.0.0.1:8090/api/v1/classes/1/signature)
           test "$signature_save_status" = "200"
           grep -q '"signature"' /tmp/sams-signature-save.json
 

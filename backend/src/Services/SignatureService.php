@@ -18,12 +18,18 @@ final class SignatureService
 
     public function validatePngDataUrl(string $data): string
     {
-        if (!preg_match('/^data:image\/png;base64,[A-Za-z0-9+\/=]+$/', $data)) {
+        if (!preg_match('/^data:image\/png;base64,(?<encoded>[A-Za-z0-9+\/]*={0,2})$/', $data, $matches)) {
             throw new InvalidArgumentException('Invalid PNG signature data.');
         }
         if (strlen($data) > 500000) {
             throw new InvalidArgumentException('Signature is too large.');
         }
+
+        $decoded = base64_decode($matches['encoded'], true);
+        if ($decoded === false || !str_starts_with($decoded, "\x89PNG\r\n\x1a\n")) {
+            throw new InvalidArgumentException('Invalid PNG signature data.');
+        }
+
         return $data;
     }
 

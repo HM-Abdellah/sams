@@ -141,6 +141,12 @@ expect_exception(
     404,
     'Unknown student history was accepted.'
 );
+expect_exception(
+    static fn() => $signature->save(2, 1, 'data:image/png;base64,' . base64_encode('not-a-png')),
+    422,
+    'Non-PNG signature payload was accepted.'
+);
+
 $reportData = $report->monthly(2, 'teacher', 1, '2026-09');
 expect_true($reportData['class']['id'] == 1, 'Monthly report returned the wrong class.');
 $alpha = null;
@@ -159,12 +165,14 @@ expect_exception(
     'Unassigned teacher accessed a class report.'
 );
 
-$png = 'data:image/png;base64,' . base64_encode('phase6-signature');
+$redPng = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC';
+$bluePng = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGNgYPgPAAEDAQAIicLsAAAAAElFTkSuQmCC';
+$png = 'data:image/png;base64,' . $redPng;
 $saved = $signature->save(2, 1, $png);
 expect_true((int)$saved['id'] > 0, 'Initial signature save failed.');
 $firstSignatureId = (int)$saved['id'];
 
-$savedAgain = $signature->save(2, 1, $png . '==');
+$savedAgain = $signature->save(2, 1, 'data:image/png;base64,' . $bluePng);
 expect_true((int)$savedAgain['id'] === $firstSignatureId, 'Signature save created a duplicate row.');
 
 $pdo->exec("CREATE TRIGGER fail_phase6_signature_audit
@@ -172,7 +180,7 @@ BEFORE INSERT ON audit_logs
 FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'forced Phase 6 signature rollback'");
 $rollbackFailed = false;
 try {
-    $signature->save(2, 1, 'data:image/png;base64,' . base64_encode('rollback-change'));
+    $signature->save(2, 1, 'data:image/png;base64,' . $redPng);
 } catch (PDOException) {
     $rollbackFailed = true;
 } finally {
@@ -182,7 +190,7 @@ expect_true($rollbackFailed, 'Forced signature persistence failure did not surfa
 
 $stored = $signature->get(2, 1);
 expect_true($stored !== null && (int)$stored['id'] === $firstSignatureId, 'Failed signature mutation did not preserve the previous row.');
-expect_true($stored['signature_data'] === $png . '==', 'Failed signature mutation changed stored data.');
+expect_true($stored['signature_data'] === 'data:image/png;base64,' . $bluePng, 'Failed signature mutation changed stored data.');
 
 expect_true($signature->delete(2, 1) === true, 'Signature delete should report a change.');
 expect_true($signature->delete(2, 1) === false, 'Signature delete should be idempotent.');
