@@ -135,6 +135,7 @@ jobs:
       - name: Run API HTTP smoke tests
         shell: sh
         run: |
+          php tests/api_http_smoke_seed.php
           mkdir -p /tmp/sams-api-sessions
           php -d session.save_path=/tmp/sams-api-sessions -d session.name=SAMS_SESSION -S 127.0.0.1:8090 scripts/dev_router.php > /tmp/sams-api.log 2>&1 &
           server_pid=$!
