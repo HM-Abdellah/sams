@@ -11,6 +11,8 @@ This document is the frontend/backend contract for the release candidate.
 - Browser-side validation is for UX only; the API remains authoritative.
 - Historical archive reads are read-only, require the `admin` role, and do not require CSRF.
 - Mutations that change persistent state are transactional and audited.
+- Canonical v1 JSON request bodies are capped at 1,000,000 bytes and return HTTP 413 when exceeded.
+- JSON API responses include baseline security headers; HSTS is emitted only when the request is HTTPS.
 
 ## Authentication
 
