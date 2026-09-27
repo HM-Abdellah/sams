@@ -114,10 +114,15 @@ jobs:
         shell: sh
         run: php tests/attendance_backend_integration.php
 
+      - name: Run administration integration tests
+        shell: sh
+        run: php tests/administration_backend_integration.php
+
       - name: Run API HTTP smoke tests
         shell: sh
         run: |
-          php -S 127.0.0.1:8090 scripts/dev_router.php > /tmp/sams-api.log 2>&1 &
+          mkdir -p /tmp/sams-api-sessions
+          php -d session.save_path=/tmp/sams-api-sessions -d session.name=SAMS_SESSION -S 127.0.0.1:8090 scripts/dev_router.php > /tmp/sams-api.log 2>&1 &
           server_pid=$!
 
           cleanup() {
@@ -163,7 +168,52 @@ jobs:
           test "$attendance_bulk_auth_status" = "401"
           grep -q '"success":false' /tmp/sams-attendance-bulk-auth.json
 
-          echo "[PASS] API HTTP smoke: health=200 method=405 missing=404 import-auth=401 attendance-get-auth=401 attendance-bulk-auth=401"
+          admin_get_status=$(curl -sS -o /tmp/sams-admin-auth.json -w "%{http_code}" http://127.0.0.1:8090/api/v1/admin/dashboard)
+          test "$admin_get_status" = "401"
+          grep -q '"success":false' /tmp/sams-admin-auth.json
+
+          admin_sid=$(php -d session.save_path=/tmp/sams-api-sessions -r 'session_name("SAMS_SESSION"); session_start(); $_SESSION["_auth_user"]=["id"=>1,"session_version"=>1]; $_SESSION["_csrf_token"]="phase5-ci-token"; session_write_close(); echo session_id();')
+
+          dashboard_status=$(curl -sS -o /tmp/sams-admin-dashboard.json -w "%{http_code}" -b "SAMS_SESSION=$admin_sid" http://127.0.0.1:8090/api/v1/admin/dashboard)
+          test "$dashboard_status" = "200"
+          grep -q '"summary"' /tmp/sams-admin-dashboard.json
+
+          classes_status=$(curl -sS -o /tmp/sams-admin-classes.json -w "%{http_code}" -b "SAMS_SESSION=$admin_sid" http://127.0.0.1:8090/api/v1/admin/classes)
+          test "$classes_status" = "200"
+          grep -q '"classes"' /tmp/sams-admin-classes.json
+
+          users_status=$(curl -sS -o /tmp/sams-admin-users.json -w "%{http_code}" -b "SAMS_SESSION=$admin_sid" http://127.0.0.1:8090/api/v1/admin/users)
+          test "$users_status" = "200"
+          ! grep -q 'password_hash' /tmp/sams-admin-users.json
+
+          teacher_status=$(curl -sS -o /tmp/sams-admin-teachers.json -w "%{http_code}" -b "SAMS_SESSION=$admin_sid" http://127.0.0.1:8090/api/v1/admin/teachers)
+          test "$teacher_status" = "200"
+          ! grep -q 'password_hash' /tmp/sams-admin-teachers.json
+
+          years_status=$(curl -sS -o /tmp/sams-admin-years.json -w "%{http_code}" -b "SAMS_SESSION=$admin_sid" http://127.0.0.1:8090/api/v1/admin/academic-years)
+          test "$years_status" = "200"
+          grep -q '"academic_years"' /tmp/sams-admin-years.json
+
+          audit_status=$(curl -sS -o /tmp/sams-admin-audit.json -w "%{http_code}" -b "SAMS_SESSION=$admin_sid" http://127.0.0.1:8090/api/v1/admin/audit)
+          test "$audit_status" = "200"
+          grep -q '"items"' /tmp/sams-admin-audit.json
+
+          no_csrf_class_status=$(curl -sS -o /tmp/sams-admin-no-csrf.json -w "%{http_code}" -X POST -b "SAMS_SESSION=$admin_sid" -H 'Content-Type: application/json' --data '{"action":"create","name":"HTTP CSRF MUST FAIL"}' http://127.0.0.1:8090/api/v1/admin/classes)
+          test "$no_csrf_class_status" = "419"
+
+          create_class_status=$(curl -sS -o /tmp/sams-admin-create-class.json -w "%{http_code}" -X POST -b "SAMS_SESSION=$admin_sid" -H 'X-CSRF-Token: phase5-ci-token' -H 'Content-Type: application/json' --data '{"action":"create","name":"HTTP Admin Class","level":"2BAC","branch":"SP"}' http://127.0.0.1:8090/api/v1/admin/classes)
+          test "$create_class_status" = "201"
+          grep -q '"id"' /tmp/sams-admin-create-class.json
+
+          counselor_sid=$(php -d session.save_path=/tmp/sams-api-sessions -r 'session_name("SAMS_SESSION"); session_start(); $_SESSION["_auth_user"]=["id"=>4,"session_version"=>1]; session_write_close(); echo session_id();')
+
+          counselor_year_status=$(curl -sS -o /tmp/sams-counselor-years.json -w "%{http_code}" -b "SAMS_SESSION=$counselor_sid" http://127.0.0.1:8090/api/v1/admin/academic-years)
+          test "$counselor_year_status" = "200"
+
+          counselor_class_status=$(curl -sS -o /tmp/sams-counselor-classes.json -w "%{http_code}" -b "SAMS_SESSION=$counselor_sid" http://127.0.0.1:8090/api/v1/admin/classes)
+          test "$counselor_class_status" = "403"
+
+          echo "[PASS] API HTTP smoke: health=200 method=405 missing=404 import-auth=401 attendance-get-auth=401 attendance-bulk-auth=401 admin-auth=401 admin-read=200 admin-write-csrf=419 admin-create=201 counselor-rbac=200/403"
 
   javascript:
     runs-on: ubuntu-latest
