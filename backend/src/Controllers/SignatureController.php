@@ -7,7 +7,6 @@ namespace SAMS\Controllers;
 use SAMS\Helpers\Auth;
 use SAMS\Helpers\Csrf;
 use SAMS\Helpers\Security;
-use SAMS\Helpers\Validation;
 use SAMS\Http\Request;
 use SAMS\Http\Response;
 use SAMS\Repositories\ClassRepository;

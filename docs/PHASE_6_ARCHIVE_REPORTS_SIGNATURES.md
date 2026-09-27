@@ -92,3 +92,19 @@ Admin or teacher with class access. CSRF required.
 ## Exit gate
 
 Phase 6 closes only when the canonical routes, integration tests, HTTP smoke, regression suite, and CI are green, and the branch contains no temporary acceptance data or infrastructure.
+
+## Final verification evidence
+
+- **RED:** synthetic acceptance suite initially failed at the missing canonical `SAMS\\Services\\ArchiveService` boundary before implementation.
+- **GREEN:** GitHub Actions run **#573** passed the complete PHP job, including PHP lint, 13/13 legacy tests, PHPUnit **30 tests / 122 assertions**, migration verification, MariaDB integration, whole-school import integration, teacher attendance integration, administration integration, Phase 6 archive/report/signature integration, and authenticated API HTTP smoke.
+- **GREEN:** JavaScript syntax job passed.
+- **GREEN:** Playwright E2E job passed.
+- Phase 6 integration explicitly verified enrollment-boundary isolation, inactive historical classes, report totals, secret-field exclusion, PNG validation, signature idempotence, transactional rollback, audit coverage, and idempotent delete.
+- HTTP smoke explicitly verified unauthenticated 401 responses, counselor 403 archive RBAC, signature CSRF 419, successful signature save/delete, and report/archive success paths.
+- Review hardened signature validation to require strict base64 plus PNG magic bytes rather than MIME prefix alone.
+- Temporary local MariaDB/PHP acceptance containers were removed after verification.
+- No real school or PII fixtures were added to the repository.
+
+## Phase 6 status
+
+**CLOSED — all ECC gates satisfied.**
