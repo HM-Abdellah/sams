@@ -25,9 +25,9 @@ final class Response
         http_response_code($status);
         header('Content-Type: application/json; charset=UTF-8');
         header('Cache-Control: no-store');
-        header('X-Content-Type-Options: nosniff');
-        header('Referrer-Policy: same-origin');
-        header('X-Frame-Options: DENY');
+        foreach (Security::responseHeaders() as $name => $value) {
+            header($name . ': ' . $value);
+        }
 
         try {
             echo json_encode(
