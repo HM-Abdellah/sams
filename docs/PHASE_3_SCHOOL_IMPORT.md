@@ -117,12 +117,12 @@ The Phase 3 CI gate must execute, not merely discover, all of the following on t
 - API HTTP smoke tests, including protected reconciliation authorization.
 - Playwright E2E, including the admin upload -> review -> reconcile -> explicit confirmation -> commit journey.
 
-A successful green gate is required before treating this phase as ready for review. The real school workbook remains an external acceptance fixture until its binary Excel file is supplied. A real MarkItDown-generated `.md` from that workbook is also an acceptance fixture for the fallback path. Synthetic fixtures must remain the only repository test data.
+A successful green gate is required before treating this phase as ready for review. The real school workbook and its MarkItDown-generated `.md` are used only as external acceptance inputs and are not stored in the repository. Synthetic fixtures must remain the only repository test data.
 
 
 ## External acceptance
 
-The real school workbook used for acceptance is kept outside the repository. The external verification on the supplied workbook confirmed the production-shaped workbook topology is compatible with the Phase 3 parser after the metadata/header compatibility fix.
+The real school workbook and its MarkItDown-generated `.md` are kept outside the repository. External source-equivalence verification confirmed that the production-shaped workbook topology is compatible with the Phase 3 parser after the metadata/header compatibility fix. Full production-staging/commit acceptance must still run in an isolated environment with a target database.
 
 Observed external workbook shape:
 - 27 worksheets / class blocks.
