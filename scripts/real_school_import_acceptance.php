@@ -550,9 +550,9 @@ try {
         );
     }
 
-    if ($directComparison['birth_place_presence_deltas'] !== 2) {
+    if ($directComparison['birth_place_presence_deltas'] !== 0) {
         acceptance_fail(
-            'Expected exactly 2 birth-place presence deltas; got '
+            'Expected 0 birth-place presence deltas after parser normalization; got '
             . $directComparison['birth_place_presence_deltas']
             . '.'
         );
@@ -561,7 +561,7 @@ try {
     acceptance_pass('Real XLSX parser validation: 27 classes / 921 rows.');
     acceptance_pass('Real Markdown parser validation: 27 classes / 921 rows.');
     acceptance_pass(
-        'Real XLSX ↔ Markdown semantic equivalence: PASS (2 birth-place conversion deltas + 1 whitespace-only last-name delta).'
+        'Real XLSX ↔ Markdown semantic equivalence: PASS (0 birth-place deltas after NaN normalization + 1 whitespace-only last-name delta).'
     );
 
     $staging = new \SAMS\Services\SchoolWorkbookImportStagingService();
