@@ -2,13 +2,12 @@
 
 declare(strict_types=1);
 
-use PDO;
-use SAMSHelpersDatabase;
-use SAMSRepositoriesSchoolImportRepository;
-use SAMSServicesSchoolWorkbookImportReconciliationService;
-use SAMSServicesSchoolWorkbookImportService;
-use SAMSServicesSchoolWorkbookImportStagingService;
-use SAMSServicesSchoolWorkbookImportValidationService;
+use SAMS\Helpers\Database as SAMSHelpersDatabase;
+use SAMS\Repositories\SchoolImportRepository as SAMSRepositoriesSchoolImportRepository;
+use SAMS\Services\SchoolWorkbookImportReconciliationService as SAMSServicesSchoolWorkbookImportReconciliationService;
+use SAMS\Services\SchoolWorkbookImportService as SAMSServicesSchoolWorkbookImportService;
+use SAMS\Services\SchoolWorkbookImportStagingService as SAMSServicesSchoolWorkbookImportStagingService;
+use SAMS\Services\SchoolWorkbookImportValidationService as SAMSServicesSchoolWorkbookImportValidationService;
 
 require_once __DIR__ . '/../backend/vendor/autoload.php';
 
