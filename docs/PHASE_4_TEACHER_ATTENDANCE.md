@@ -61,3 +61,29 @@ GREEN requires:
 - canonical v1 attendance HTTP smoke checks are protected correctly;
 - critical E2E attendance flows remain green;
 - the changed diff passes review with no release-blocking authorization, transaction, or enrollment-integrity issue.
+
+## Verification evidence
+
+### RED
+- Baseline lightweight tests: 13 passed / 0 failed.
+- Before implementation, `TeacherAttendanceService` was absent and the new attendance integration could not run.
+
+### GREEN
+- Phase 4 attendance integration passed against synthetic MariaDB data.
+- Weekly register normalization/clamping, teacher class authorization, active-student filtering, bulk upsert/delete, exact no-op handling, duplicate-key rejection, cross-class rejection, academic-year validation, signed-lesson protection, weekly-signature invalidation, submission clearing, transactional rollback, and recovery were verified.
+- Authenticated v1 HTTP smoke passed: GET 200 and bulk POST 200.
+- CSRF enforcement passed: bulk POST without CSRF returned 419.
+- Unauthenticated v1 attendance GET/POST returned 401.
+- Full backend regression in Docker passed: MariaDB integration + Phase 4 integration + PHPUnit 30 tests / 122 assertions.
+- CI run #556 passed PHP, JavaScript, and Playwright E2E.
+
+### Review / cleanup
+- `git diff --check` passed.
+- Canonical v1 attendance routes and API contract were reviewed.
+- Local Phase 4 MariaDB container and temporary test/config files were removed.
+- Ignored local database config was restored; no real student data was used by Phase 4.
+- Working tree is clean.
+
+### Phase limitation
+
+The Phase 4 tests use synthetic fixtures. Real-school acceptance belongs to Phase 3 and is already completed there. The existing legacy attendance UI/E2E remains the compatibility reference until the later React frontend phase replaces it.
