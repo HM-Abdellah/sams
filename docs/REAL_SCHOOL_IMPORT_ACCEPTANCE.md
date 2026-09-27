@@ -1,6 +1,6 @@
 # Real School Import Acceptance
 
-This is a manual-only acceptance procedure for the real school roster. Real .xlsx/.md files stay outside Git and are never required by CI.
+This is a manual-only acceptance procedure for the real school roster. Real .xlsx/.md files stay outside Git and are never required by CI. The procedure below was executed successfully for the current real roster on 2026-09-27.
 
 ## Safety boundary
 
@@ -125,7 +125,7 @@ The run is considered successful only when all of these pass:
 3. Exactly 27 classes / 921 student rows in both representations.
 4. Source-year compatibility with the selected target academic year.
 5. XLSX ↔ Markdown semantic equivalence.
-6. Exactly the previously observed representation differences: 2 birth-place blank/non-blank conversions and 1 whitespace-only last-name difference.
+6. Semantic equivalence after parser normalization: 0 birth-place presence deltas from `NaN`/missing-token normalization and 1 whitespace-only last-name difference.
 7. Real XLSX staging without changing students/enrollments.
 8. Real Markdown staging without changing students/enrollments.
 9. Equality of the two staging representations.
@@ -138,6 +138,10 @@ The run is considered successful only when all of these pass:
 16. The injected failure leaves the isolated DB in the pre-commit state and leaves the batch retryable.
 17. The trigger is removed, the same real batch commits successfully, recreating exactly the removed enrollment.
 18. A replay of that recovery commit is idempotent.
+
+### Final limitation
+
+The acceptance database was a clean disposable MariaDB seeded with the exact target academic-year/class topology. The test therefore proves the real source files and the complete import workflow against the current schema, but does not reproduce every possible state of an independently populated legacy production database.
 
 The rollback probe changes only the disposable acceptance database. Its net final state is restored after the recovery commit.
 
