@@ -17,6 +17,7 @@ use SAMS\Controllers\HealthController;
 use SAMS\Controllers\ReportController;
 use SAMS\Controllers\SchoolImportController;
 use SAMS\Controllers\SignatureController;
+use SAMS\Exceptions\RequestPayloadTooLargeException;
 use SAMS\Http\Request;
 use SAMS\Http\Response;
 use SAMS\Routing\Router;
@@ -99,6 +100,11 @@ try {
     });
 
     $router->dispatch($apiRequest)->send();
+} catch (RequestPayloadTooLargeException $e) {
+    Response::json([
+        'success' => false,
+        'error' => $e->getMessage(),
+    ], 413)->send();
 } catch (InvalidArgumentException $e) {
     Response::json([
         'success' => false,
