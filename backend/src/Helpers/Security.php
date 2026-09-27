@@ -93,6 +93,26 @@ final class Security
         $_SESSION[self::SESSION_LAST_ACTIVITY] = $now;
     }
 
+    /** Return baseline HTTP security headers for API/JSON responses. */
+    public static function responseHeaders(?bool $https = null): array
+    {
+        $https ??= self::isHttps();
+
+        $headers = [
+            'X-Content-Type-Options' => 'nosniff',
+            'Referrer-Policy' => 'same-origin',
+            'X-Frame-Options' => 'DENY',
+            'Content-Security-Policy' => "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
+            'Permissions-Policy' => 'camera=(), geolocation=(), microphone=()',
+        ];
+
+        if ($https) {
+            $headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains';
+        }
+
+        return $headers;
+    }
+
     public static function regenerateSessionId(): void
     {
         if (session_status() !== PHP_SESSION_ACTIVE) throw new \RuntimeException('Session is not active.');
