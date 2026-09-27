@@ -205,6 +205,24 @@ jobs:
       - name: Verify PHP runtime
         run: php -v
 
+      - name: Install Composer
+        shell: bash
+        run: |
+          EXPECTED_CHECKSUM="$(curl -fsSL https://composer.github.io/installer.sig)"
+          curl -fsSL https://getcomposer.org/installer -o composer-setup.php
+          echo "${EXPECTED_CHECKSUM}  composer-setup.php" | sha384sum -c -
+          php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+          rm composer-setup.php
+
+      - name: Install backend dependencies
+        working-directory: backend
+        shell: bash
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Verify PhpSpreadsheet runtime
+        shell: bash
+        run: php -r "require 'backend/vendor/autoload.php'; echo class_exists('PhpOffice\\PhpSpreadsheet\\IOFactory') ? '[PASS] PhpSpreadsheet loaded' . PHP_EOL : exit(1);"
+
       - name: Configure E2E database
         shell: bash
         run: |
