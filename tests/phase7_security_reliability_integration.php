@@ -181,12 +181,16 @@ Auth::login([
 ]);
 p7_expect(Auth::check(), 'Session could not be re-established after version invalidation.');
 
-$_SESSION['_sams_session_last_activity'] = time() - 301;
+$idleTimeout = max(
+    300,
+    (int)(($GLOBALS['appConfig']['session_idle_timeout'] ?? $GLOBALS['appConfig']['session_lifetime'] ?? 3600))
+);
+$_SESSION['_sams_session_last_activity'] = time() - $idleTimeout - 1;
 $expired = Auth::user();
 p7_expect($expired === null, 'Idle timeout did not invalidate the authenticated session.');
 
 Auth::login([
-    'id' => 1,
+      'id' => 1,
     'full_name' => 'Phase 7 Admin',
     'role' => 'admin',
     'session_version' => 2,
