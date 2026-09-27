@@ -91,6 +91,35 @@ final class TeacherRepository
         return (int)Database::connection()->lastInsertId();
     }
 
+    public function findTeachingById(int $teachingId): ?array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT id, teacher_id, subject_id, class_id
+             FROM teacher_teachings
+             WHERE id = ?
+             LIMIT 1'
+        );
+        $stmt->execute([$teachingId]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    public function findTeachingByIdForUpdate(int $teachingId): ?array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT id, teacher_id, subject_id, class_id
+             FROM teacher_teachings
+             WHERE id = ?
+             LIMIT 1
+             FOR UPDATE'
+        );
+        $stmt->execute([$teachingId]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
     public function unassign(int $teachingId): void
     {
         $stmt = Database::connection()->prepare('DELETE FROM teacher_teachings WHERE id = ?');
