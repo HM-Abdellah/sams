@@ -265,8 +265,8 @@ jobs:
           test "$signature_delete_status" = "200"
           grep -q '"changed":true' /tmp/sams-signature-delete.json
 
-          oversized_json=$(php -r 'echo json_encode(["entries" => [], "padding" => str_repeat("x", 1000000)]);')
-          oversized_json_status=$(curl -sS -o /tmp/sams-oversized-json.json -w "%{http_code}" -X POST -b "SAMS_SESSION=$teacher_sid" -H 'X-CSRF-Token: phase5-ci-token' -H 'Content-Type: application/json' --data "$oversized_json" http://127.0.0.1:8090/api/v1/classes/1/attendance/bulk)
+          php -r 'echo json_encode(["entries" => [], "padding" => str_repeat("x", 1000000)]);' > /tmp/sams-oversized-json-request.json
+          oversized_json_status=$(curl -sS -o /tmp/sams-oversized-json.json -w "%{http_code}" -X POST -b "SAMS_SESSION=$teacher_sid" -H 'X-CSRF-Token: phase5-ci-token' -H 'Content-Type: application/json' --data-binary @/tmp/sams-oversized-json-request.json http://127.0.0.1:8090/api/v1/classes/1/attendance/bulk)
           test "$oversized_json_status" = "413"
           grep -q 'too large' /tmp/sams-oversized-json.json
 
