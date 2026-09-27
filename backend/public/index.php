@@ -11,9 +11,12 @@ use SAMS\Controllers\AdminDashboardController;
 use SAMS\Controllers\AdminTeacherClassController;
 use SAMS\Controllers\AdminTeacherController;
 use SAMS\Controllers\AdminUserController;
+use SAMS\Controllers\ArchiveController;
 use SAMS\Controllers\AttendanceController;
 use SAMS\Controllers\HealthController;
+use SAMS\Controllers\ReportController;
 use SAMS\Controllers\SchoolImportController;
+use SAMS\Controllers\SignatureController;
 use SAMS\Http\Request;
 use SAMS\Http\Response;
 use SAMS\Routing\Router;
@@ -41,6 +44,17 @@ try {
     $attendance = new AttendanceController();
     $router->get('/classes/{id}/attendance', $attendance);
     $router->post('/classes/{id}/attendance/bulk', $attendance);
+
+    $archive = new ArchiveController();
+    $router->get('/admin/archive', $archive);
+
+    $report = new ReportController();
+    $router->get('/classes/{id}/report', $report);
+
+    $signature = new SignatureController();
+    $router->get('/classes/{id}/signature', $signature);
+    $router->post('/classes/{id}/signature', $signature);
+    $router->delete('/classes/{id}/signature', $signature);
 
     $adminDashboard = new AdminDashboardController();
     $router->get('/admin/dashboard', $adminDashboard);

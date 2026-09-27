@@ -6,12 +6,23 @@ namespace SAMS\Services;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
+use SAMS\Exceptions\ArchiveReportException;
+use SAMS\Repositories\ClassRepository;
+use SAMS\Repositories\ReportRepository;
 
 final class ReportService
 {
+    public function __construct(
+        private readonly ReportRepository $reports = new ReportRepository(),
+        private readonly ClassRepository $classes = new ClassRepository(),
+    ) {}
+
     public function monthRange(string $month): array
     {
-        if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month)) throw new InvalidArgumentException('Invalid month.');
+        if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month)) {
+            throw new InvalidArgumentException('Invalid month.');
+        }
+
         $start = new DateTimeImmutable($month . '-01');
         return [$start->format('Y-m-d'), $start->format('Y-m-t')];
     }
@@ -19,8 +30,33 @@ final class ReportService
     public function weekRange(string $start): array
     {
         $date = DateTimeImmutable::createFromFormat('!Y-m-d', $start);
-        if (!$date || $date->format('Y-m-d') !== $start) throw new InvalidArgumentException('Invalid date.');
+        if (!$date || $date->format('Y-m-d') !== $start) {
+            throw new InvalidArgumentException('Invalid date.');
+        }
+
         $monday = $date->modify('-' . ((int)$date->format('N') - 1) . ' days');
         return [$monday->format('Y-m-d'), $monday->modify('+5 days')->format('Y-m-d')];
+    }
+
+    public function monthly(int $userId, string $role, int $classId, string $month): array
+    {
+        [$start, $end] = $this->monthRange($month);
+
+        if (!$this->classes->hasAccess($userId, $role, $classId)) {
+            throw new ArchiveReportException('Forbidden.', 403);
+        }
+
+        $class = $this->classes->find($classId);
+        if ($class === null) {
+            throw new ArchiveReportException('Class not found.', 404);
+        }
+
+        return [
+            'class' => $class,
+            'month' => $month,
+            'start' => $start,
+            'end' => $end,
+            'students' => $this->reports->monthlyStudents($classId, $start, $end),
+        ];
     }
 }
