@@ -58,6 +58,38 @@ final class SchoolWorkbookImportServiceTest extends TestCase
         }
     }
 
+    public function testItParsesTheRealSchoolMetadataLayout(): void
+    {
+        $service = new SchoolWorkbookImportService();
+        $path = $this->writeWorkbook(function (Spreadsheet $workbook): void {
+            $sheet = $workbook->getActiveSheet();
+            $sheet->setTitle('Real Shape');
+            $sheet->fromArray([
+                ['الأكاديمية:', null, 'Academy', null, null, 'الجماعة:', 'Commune'],
+                [' : المديرية الإقليمية', null, 'Prefecture', null, null, 'المؤسسة:', 'School'],
+                ['   : المستوى', null, 'الجذع المشترك العلمي – خيار فرنسية', null, null, 'السنة الدراسية:', '2025/2026'],
+                ['   : القسم', null, 'TCSF-REAL-SHAPE', null, null, null, null],
+                [null, null, null, null, null, null, null],
+                ['ر.ت', 'الرمز', 'النسب ', 'الإسم', 'النوع', 'تاريخ الإزدياد', 'مكان الازدياد'],
+                [1, 'REAL123456', 'Family', 'Given', 'ذكر', '2010-08-05', 'Rabat'],
+            ], null, 'A1');
+        }, 'xlsx');
+
+        try {
+            $result = $service->parse($path);
+
+            self::assertCount(1, $result['classes']);
+            self::assertSame('TCSF-REAL-SHAPE', $result['classes'][0]['class_name']);
+            self::assertSame('الجذع المشترك العلمي – خيار فرنسية', $result['classes'][0]['level']);
+            self::assertSame('2025/2026', $result['classes'][0]['academic_year']);
+            self::assertCount(1, $result['classes'][0]['students']);
+            self::assertSame('REAL123456', $result['classes'][0]['students'][0]['massar_code']);
+            self::assertSame('2010-08-05', $result['classes'][0]['students'][0]['birth_date']);
+        } finally {
+            @unlink($path);
+        }
+    }
+
     public function testHeaderDetectionDoesNotDependOnFixedColumnOrder(): void
     {
         $service = new SchoolWorkbookImportService();
