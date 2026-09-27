@@ -8,7 +8,7 @@ on:
   push:
     branches: [main, refactor/phase-2-backend-foundation, feat/phase-3-school-import-v2, feat/phase-4-teacher-attendance-backend, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures]
   pull_request:
-    branches: [main, refactor/phase-2-backend-foundation]
+    branches: [main, refactor/phase-2-backend-foundation, feat/phase-5-administration-backend]
 
 jobs:
   php:
