@@ -6,6 +6,7 @@ require_once __DIR__ . '/../backend/vendor/autoload.php';
 
 use SAMS\Helpers\Auth;
 use SAMS\Helpers\Csrf;
+use SAMS\Helpers\Database;
 use SAMS\Helpers\Security;
 use SAMS\Http\Request;
 use SAMS\Services\AuthService;
@@ -125,8 +126,12 @@ VALUES ('phase7-admin', 'P7A', 'Phase 7 Admin', 'synthetic-hash', 'admin', 1, 1)
        ('phase7-inactive', 'P7I', 'Phase 7 Inactive', 'synthetic-hash', 'teacher', 0, 1)");
 
 p7_expect(
-    $pdo->getAttribute(PDO::ATTR_EMULATE_PREPARES) === false,
+    (int)$pdo->getAttribute(PDO::ATTR_EMULATE_PREPARES) === 0,
     'PDO emulated prepares must remain disabled.'
+);
+p7_expect(
+    (int)Database::connection()->getAttribute(PDO::ATTR_EMULATE_PREPARES) === 0,
+    'SAMS Database connection must keep emulated prepares disabled.'
 );
 p7_expect(SchoolWorkbookImportService::MAX_FILE_SIZE === 20_000_000, 'Workbook file-size limit changed unexpectedly.');
 p7_expect(SchoolWorkbookImportService::MAX_STUDENT_ROWS === 50_000, 'Workbook row limit changed unexpectedly.');
