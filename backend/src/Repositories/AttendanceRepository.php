@@ -19,7 +19,7 @@ final class AttendanceRepository
         );
     }
 
-    public function forClassRange(int $classId, string $start, string $end): array
+    public function forClassRange(int $classId, string $start, string $end, bool $forUpdate = false): array
     {
         $stmt = Database::connection()->prepare(
             'SELECT
@@ -35,7 +35,7 @@ final class AttendanceRepository
              INNER JOIN student_enrollments e ON e.id = a.enrollment_id
              WHERE e.class_id = ?
                AND a.attendance_date BETWEEN ? AND ?
-             ORDER BY a.attendance_date, a.period, a.student_id'
+             ORDER BY a.attendance_date, a.period, a.student_id' . ($forUpdate ? ' FOR UPDATE' : '')
         );
         $stmt->execute([$classId, $start, $end]);
 
@@ -85,9 +85,10 @@ final class AttendanceRepository
         int $period,
         string $status,
         int $recordedBy,
-        ?int $classId = null
+        ?int $classId = null,
+        bool $forUpdate = false
     ): void {
-        $enrollmentId = $this->resolveEnrollmentId($studentId, $date, $classId);
+        $enrollmentId = $this->resolveEnrollmentId($studentId, $date, $classId, $forUpdate);
 
         $stmt = Database::connection()->prepare(
             'INSERT INTO attendance
@@ -112,10 +113,11 @@ final class AttendanceRepository
         int $studentId,
         string $date,
         int $period,
-        ?int $classId = null
+        ?int $classId = null,
+        bool $forUpdate = false
     ): void
     {
-        $enrollmentId = $this->resolveEnrollmentId($studentId, $date, $classId);
+        $enrollmentId = $this->resolveEnrollmentId($studentId, $date, $classId, $forUpdate);
 
         $stmt = Database::connection()->prepare(
             'DELETE FROM attendance
@@ -143,7 +145,7 @@ final class AttendanceRepository
         return $stmt->fetchAll();
     }
 
-    private function resolveEnrollmentId(int $studentId, string $date, ?int $classId = null): int
+    private function resolveEnrollmentId(int $studentId, string $date, ?int $classId = null, bool $forUpdate = false): int
     {
         $sql = 'SELECT id
                 FROM student_enrollments
@@ -157,7 +159,7 @@ final class AttendanceRepository
             $params[] = $classId;
         }
 
-        $sql .= ' ORDER BY starts_on DESC, id DESC LIMIT 1';
+        $sql .= ' ORDER BY starts_on DESC, id DESC LIMIT 1' . ($forUpdate ? ' FOR UPDATE' : '');
 
         $stmt = Database::connection()->prepare($sql);
         $stmt->execute($params);
