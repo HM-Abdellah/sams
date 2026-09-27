@@ -207,7 +207,7 @@ expect_true(
     'Signature delete audit coverage is missing.'
 );
 
-$historyClass = $archive->read(1, 'admin', 3, 'days', '2026-09');
+$historyClass = $archive->read(1, 'admin', 3, 'days', '2026-06');
 expect_true(isset($historyClass['class']) && (int)$historyClass['class']['is_active'] === 0, 'Historical inactive class could not be read.');
 
 echo "Phase 6 archive/report/signature integration: PASS\n";
