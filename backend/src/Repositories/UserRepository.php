@@ -44,6 +44,37 @@ final class UserRepository
         return $row ?: null;
     }
 
+    public function findByIdForUpdate(int $userId): ?array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT id, username, employee_id, full_name, phone, phone_verified, role, is_active,
+                    failed_login_attempts, locked_until, session_version, last_login_at, last_seen_at,
+                    created_at, updated_at
+             FROM users
+             WHERE id = ?
+             LIMIT 1
+             FOR UPDATE'
+        );
+        $stmt->execute([$userId]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    public function activeAdminIdsForUpdate(): array
+    {
+        return array_map(
+            static fn(array $row): int => (int)$row['id'],
+            Database::connection()->query(
+                "SELECT id
+                 FROM users
+                 WHERE role = 'admin' AND is_active = 1
+                 ORDER BY id
+                 FOR UPDATE"
+            )->fetchAll()
+        );
+    }
+
     public function findById(int $userId): ?array
     {
         $stmt = Database::connection()->prepare(
