@@ -26,7 +26,7 @@ final class SchoolWorkbookImportService
         'last_name' => ['النسب', 'الاسم العائلي', 'اللقب'],
         'first_name' => ['الاسم', 'الإسم'],
         'sex' => ['النوع', 'الجنس'],
-        'birth_date' => ['تاريخ الازدياد', 'تاريخ الازدياد'],
+        'birth_date' => ['تاريخ الازدياد', 'تاريخ الإزدياد'],
         'birth_place' => ['مكان الازدياد'],
     ];
 
@@ -525,7 +525,29 @@ final class SchoolWorkbookImportService
             foreach ($labels as $label) {
                 $normalizedLabel = $this->normalizeText($label);
 
-                if ($text === $normalizedLabel) {
+                $labelOnlyVariants = [
+                    $normalizedLabel,
+                    ':' . $normalizedLabel,
+                    ': ' . $normalizedLabel,
+                    $normalizedLabel . ':',
+                    $normalizedLabel . ' :',
+                ];
+
+                if (in_array($text, $labelOnlyVariants, true)) {
+                    $seenLabelColumn = false;
+
+                    foreach ($row as $candidateIndex => $candidate) {
+                        if (!$seenLabelColumn) {
+                            if ((string)$candidateIndex === (string)$index) {
+                                $seenLabelColumn = true;
+                            }
+                            continue;
+                        }
+
+                        $candidateText = trim((string)$candidate);
+                        if ($candidateText !== '') return $candidateText;
+                    }
+
                     foreach ($row as $candidateIndex => $candidate) {
                         if ((string)$candidateIndex === (string)$index) continue;
                         $candidateText = trim((string)$candidate);
