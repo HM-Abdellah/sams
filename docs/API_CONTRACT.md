@@ -319,6 +319,39 @@ Actions:
 
 Import is allowed only when every row is valid. Student creation, enrollment creation, staged-row linking, batch state update, and audit records are committed together.
 
+## Canonical v1 archive, reports, and signatures
+
+### GET `/api/v1/admin/archive?view=days&class_id=ID&month=YYYY-MM`
+
+Admin only. Historical read of recorded attendance days for the selected class/month. The class may be inactive or belong to a historical academic year.
+
+Supported views are `days`, `month`, `day`, and `student`.
+
+- `days`: requires `class_id` and `month`.
+- `month`: requires `class_id` and `month` and returns enrollment-aware student totals.
+- `day`: requires `class_id` and `date=YYYY-MM-DD`; the date must be within the class academic year.
+- `student`: requires `class_id` and `student_id` and returns that student's history within the selected class.
+
+The canonical route is read-only, requires authentication and the `admin` role, and does not require CSRF.
+
+### GET `/api/v1/classes/{id}/report?month=YYYY-MM`
+
+Authenticated users with operational access to the selected class. Returns enrollment-aware monthly attendance totals for the class.
+
+### GET `/api/v1/classes/{id}/signature`
+
+Authenticated users with access to the selected class. Returns the current user's saved class signature, if one exists.
+
+### POST `/api/v1/classes/{id}/signature`
+
+Admin or teacher with access to the selected class. CSRF required. JSON body: `signature_data`, a PNG data URL up to 500,000 bytes.
+
+### DELETE `/api/v1/classes/{id}/signature`
+
+Admin or teacher with access to the selected class. CSRF required. The response reports whether a stored signature row was removed.
+
+Successful signature mutations are transactional and audited. These canonical endpoints coexist with the legacy endpoints below during migration.
+
 ## Archive / history
 
 ### GET `api/archive.php?view=days&class_id=ID&month=YYYY-MM`

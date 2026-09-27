@@ -6,7 +6,7 @@ concurrency:
 
 on:
   push:
-    branches: [main, refactor/phase-2-backend-foundation, feat/phase-3-school-import-v2, feat/phase-4-teacher-attendance-backend, feat/phase-5-administration-backend]
+    branches: [main, refactor/phase-2-backend-foundation, feat/phase-3-school-import-v2, feat/phase-4-teacher-attendance-backend, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures]
   pull_request:
     branches: [main, refactor/phase-2-backend-foundation]
 
@@ -118,6 +118,10 @@ jobs:
         shell: sh
         run: php tests/administration_backend_integration.php
 
+      - name: Run archive, reports, and signatures integration tests
+        shell: sh
+        run: php tests/phase6_archive_reports_signatures_integration.php
+
       - name: Run API HTTP smoke tests
         shell: sh
         run: |
@@ -198,14 +202,56 @@ jobs:
           test "$audit_status" = "200"
           grep -q '"items"' /tmp/sams-admin-audit.json
 
+          teacher_sid=$(php -d session.save_path=/tmp/sams-api-sessions -r 'session_name("SAMS_SESSION"); session_start(); $_SESSION["_auth_user"]=["id"=>2,"session_version"=>1]; $_SESSION["_csrf_token"]="phase5-ci-token"; session_write_close(); echo session_id();')
+          counselor_sid=$(php -d session.save_path=/tmp/sams-api-sessions -r 'session_name("SAMS_SESSION"); session_start(); $_SESSION["_auth_user"]=["id"=>4,"session_version"=>1]; session_write_close(); echo session_id();')
+
+          archive_auth_status=$(curl -sS -o /tmp/sams-archive-auth.json -w "%{http_code}" "http://127.0.0.1:8090/api/v1/admin/archive?view=days&class_id=1&month=2026-09")
+          test "$archive_auth_status" = "401"
+          grep -q '"success":false' /tmp/sams-archive-auth.json
+
+          archive_days_status=$(curl -sS -o /tmp/sams-archive-days.json -w "%{http_code}" -b "SAMS_SESSION=$admin_sid" "http://127.0.0.1:8090/api/v1/admin/archive?view=days&class_id=1&month=2026-09")
+          test "$archive_days_status" = "200"
+          grep -q '"days"' /tmp/sams-archive-days.json
+
+          archive_month_status=$(curl -sS -o /tmp/sams-archive-month.json -w "%{http_code}" -b "SAMS_SESSION=$admin_sid" "http://127.0.0.1:8090/api/v1/admin/archive?view=month&class_id=1&month=2026-09")
+          test "$archive_month_status" = "200"
+          grep -q '"students"' /tmp/sams-archive-month.json
+          ! grep -q 'password_hash' /tmp/sams-archive-month.json
+
+          counselor_archive_status=$(curl -sS -o /tmp/sams-counselor-archive.json -w "%{http_code}" -b "SAMS_SESSION=$counselor_sid" "http://127.0.0.1:8090/api/v1/admin/archive?view=days&class_id=1&month=2026-09")
+          test "$counselor_archive_status" = "403"
+
+          report_auth_status=$(curl -sS -o /tmp/sams-report-auth.json -w "%{http_code}" "http://127.0.0.1:8090/api/v1/classes/1/report?month=2026-09")
+          test "$report_auth_status" = "401"
+
+          report_status=$(curl -sS -o /tmp/sams-report.json -w "%{http_code}" -b "SAMS_SESSION=$teacher_sid" "http://127.0.0.1:8090/api/v1/classes/1/report?month=2026-09")
+          test "$report_status" = "200"
+          grep -q '"students"' /tmp/sams-report.json
+          ! grep -q 'password_hash' /tmp/sams-report.json
+
+          signature_auth_status=$(curl -sS -o /tmp/sams-signature-auth.json -w "%{http_code}" "http://127.0.0.1:8090/api/v1/classes/1/signature")
+          test "$signature_auth_status" = "401"
+
+          signature_get_status=$(curl -sS -o /tmp/sams-signature-get.json -w "%{http_code}" -b "SAMS_SESSION=$teacher_sid" "http://127.0.0.1:8090/api/v1/classes/1/signature")
+          test "$signature_get_status" = "200"
+
+          signature_no_csrf_status=$(curl -sS -o /tmp/sams-signature-no-csrf.json -w "%{http_code}" -X POST -b "SAMS_SESSION=$teacher_sid" -H 'Content-Type: application/json' --data '{"signature_data":"data:image/png;base64,'$(printf 'phase6-http-signature' | base64 -w0)'"}' http://127.0.0.1:8090/api/v1/classes/1/signature)
+          test "$signature_no_csrf_status" = "419"
+
+          signature_save_status=$(curl -sS -o /tmp/sams-signature-save.json -w "%{http_code}" -X POST -b "SAMS_SESSION=$teacher_sid" -H 'X-CSRF-Token: phase5-ci-token' -H 'Content-Type: application/json' --data '{"signature_data":"data:image/png;base64,'$(printf 'phase6-http-signature' | base64 -w0)'"}' http://127.0.0.1:8090/api/v1/classes/1/signature)
+          test "$signature_save_status" = "200"
+          grep -q '"signature"' /tmp/sams-signature-save.json
+
+          signature_delete_status=$(curl -sS -o /tmp/sams-signature-delete.json -w "%{http_code}" -X DELETE -b "SAMS_SESSION=$teacher_sid" -H 'X-CSRF-Token: phase5-ci-token' http://127.0.0.1:8090/api/v1/classes/1/signature)
+          test "$signature_delete_status" = "200"
+          grep -q '"changed":true' /tmp/sams-signature-delete.json
+
           no_csrf_class_status=$(curl -sS -o /tmp/sams-admin-no-csrf.json -w "%{http_code}" -X POST -b "SAMS_SESSION=$admin_sid" -H 'Content-Type: application/json' --data '{"action":"create","name":"HTTP CSRF MUST FAIL"}' http://127.0.0.1:8090/api/v1/admin/classes)
           test "$no_csrf_class_status" = "419"
 
           create_class_status=$(curl -sS -o /tmp/sams-admin-create-class.json -w "%{http_code}" -X POST -b "SAMS_SESSION=$admin_sid" -H 'X-CSRF-Token: phase5-ci-token' -H 'Content-Type: application/json' --data '{"action":"create","name":"HTTP Admin Class","level":"2BAC","branch":"SP"}' http://127.0.0.1:8090/api/v1/admin/classes)
           test "$create_class_status" = "201"
           grep -q '"id"' /tmp/sams-admin-create-class.json
-
-          counselor_sid=$(php -d session.save_path=/tmp/sams-api-sessions -r 'session_name("SAMS_SESSION"); session_start(); $_SESSION["_auth_user"]=["id"=>4,"session_version"=>1]; session_write_close(); echo session_id();')
 
           counselor_year_status=$(curl -sS -o /tmp/sams-counselor-years.json -w "%{http_code}" -b "SAMS_SESSION=$counselor_sid" http://127.0.0.1:8090/api/v1/admin/academic-years)
           test "$counselor_year_status" = "200"
