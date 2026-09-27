@@ -118,3 +118,19 @@ The Phase 3 CI gate must execute, not merely discover, all of the following on t
 - Playwright E2E, including the admin upload -> review -> reconcile -> explicit confirmation -> commit journey.
 
 A successful green gate is required before treating this phase as ready for review. The real school workbook remains an external acceptance fixture until its binary Excel file is supplied. A real MarkItDown-generated `.md` from that workbook is also an acceptance fixture for the fallback path. Synthetic fixtures must remain the only repository test data.
+
+
+## External acceptance
+
+The real school workbook used for acceptance is kept outside the repository. The external verification on the supplied workbook confirmed the production-shaped workbook topology is compatible with the Phase 3 parser after the metadata/header compatibility fix.
+
+Observed external workbook shape:
+- 27 worksheets / class blocks.
+- 921 student rows.
+- One class per worksheet.
+- Academic year consistently represented as 2025/2026.
+- Real metadata labels include the `:` prefix form (for example `: القسم` and `: المستوى`) and the workbook uses `تاريخ الإزدياد` for the birth-date header.
+- The corresponding MarkItDown output preserved the same 27 sheets, 27 classes, and 921 student rows.
+- The Excel and Markdown representations matched on class metadata and student identity/date fields except for three source-conversion differences: two numeric `137` birth-place cells became `NaN` in Markdown, and one last-name cell collapsed an internal double space to a single space.
+
+Real student data must not be committed to the repository. The repository test suite continues to use synthetic fixtures only.
