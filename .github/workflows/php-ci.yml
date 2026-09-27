@@ -200,7 +200,7 @@ jobs:
       - name: Install PHP 8.3 and MySQL extensions
         run: |
           apt-get update
-          apt-get install -y php8.3-cli php8.3-mysql php8.3-mbstring curl
+          apt-get install -y php8.3-cli php8.3-mysql php8.3-mbstring php8.3-xml php8.3-zip php8.3-gd curl
 
       - name: Verify PHP runtime
         run: php -v
