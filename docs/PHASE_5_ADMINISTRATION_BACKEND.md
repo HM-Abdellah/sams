@@ -87,3 +87,36 @@ Admin only. Remove a teacher-class assignment.
 - Audit endpoints never expose passwords or password hashes.
 - Dashboard and teacher endpoints do not expose password hashes.
 - Existing legacy endpoints remain untouched as compatibility surfaces.
+
+## Final verification evidence
+
+### RED
+- The canonical administration services were absent before implementation; the Phase 5 integration suite failed at the first missing service as expected.
+- The RED fixture was kept synthetic and contains no real school data.
+
+### GREEN
+- Administration integration passed against isolated synthetic MariaDB fixtures.
+- Verified academic-year list/create/activate and overlap protection.
+- Verified class list/create/update/activation/deactivation, duplicate protection, and atomic rollback.
+- Verified user list/create/update/password reset/unlock, session-version invalidation, duplicate protection, self-deactivation protection, and last-active-admin protection.
+- Verified teacher directory, subject create/update, teaching assignment idempotence/conflict handling, and automatic class-level access preservation.
+- Verified teacher-class assignment/list/unassignment idempotence.
+- Verified dashboard summary/absence attention data and absence of Massar codes in the response.
+- Verified audit search and mutation audit coverage.
+- Authenticated v1 admin HTTP smoke passed for dashboard/classes/users/teachers/academic-years/audit.
+- Admin mutation without CSRF was rejected with 419; authenticated class creation returned 201.
+- Counselor academic-year read remained 200 while admin-class access remained 403.
+- User and teacher administration responses did not expose password hashes.
+- Existing attendance and school-import regression tests remained green.
+
+### VERIFY
+- Final CI run #563 passed PHP, JavaScript, and Playwright E2E.
+- In #563, the PHP job passed lint, legacy service tests, backend unit tests, migration verification, MariaDB integration, school-import integration, attendance integration, administration integration, and API HTTP smoke.
+- No real school/PII data was used in Phase 5.
+- Phase 5 temporary database/test infrastructure was removed from the Codespace after verification.
+- The legacy administration endpoints remain available as compatibility paths.
+- React/frontend work is intentionally deferred to the later frontend phase.
+
+### Phase 5 status
+
+🏁 Administration Backend — CLOSED after final verification and cleanup.
