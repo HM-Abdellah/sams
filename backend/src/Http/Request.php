@@ -6,9 +6,12 @@ namespace SAMS\Http;
 
 use InvalidArgumentException;
 use JsonException;
+use SAMS\Exceptions\RequestPayloadTooLargeException;
 
 final class Request
 {
+    public const MAX_JSON_BODY_SIZE = 1_000_000;
+
     public function __construct(
         private readonly string $method,
         private readonly string $path,
@@ -105,6 +108,10 @@ final class Request
     {
         if (trim($this->rawBody) === '') {
             return [];
+        }
+
+        if (strlen($this->rawBody) > self::MAX_JSON_BODY_SIZE) {
+            throw new RequestPayloadTooLargeException('JSON payload is too large.');
         }
 
         try {
