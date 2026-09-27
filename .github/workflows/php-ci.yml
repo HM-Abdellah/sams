@@ -6,9 +6,9 @@ concurrency:
 
 on:
   push:
-    branches: [main, refactor/phase-2-backend-foundation, feat/phase-3-school-import-v2, feat/phase-4-teacher-attendance-backend, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures]
+    branches: [main, refactor/phase-2-backend-foundation, feat/phase-3-school-import-v2, feat/phase-4-teacher-attendance-backend, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-7-security-reliability]
   pull_request:
-    branches: [main, refactor/phase-2-backend-foundation, feat/phase-5-administration-backend]
+    branches: [main, refactor/phase-2-backend-foundation, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures]
 
 jobs:
   php:
@@ -122,6 +122,16 @@ jobs:
         shell: sh
         run: php tests/phase6_archive_reports_signatures_integration.php
 
+      - name: Run security and reliability integration tests
+        shell: sh
+        run: php tests/phase7_security_reliability_integration.php
+
+      - name: Audit tracked secrets and local config paths
+        shell: sh
+        run: |
+          tracked_sensitive=$(git ls-files | grep -E '(^|/)(\.env$|\.env\.[^/]+$|config/(app|database)\.php$)' | grep -vE '(^|/)\.env\.example$' || true)
+          test -z "$tracked_sensitive"
+
       - name: Run API HTTP smoke tests
         shell: sh
         run: |
@@ -152,6 +162,13 @@ jobs:
           test "$health_status" = "200"
           grep -q '"success":true' /tmp/sams-health.json
           grep -q '"api_version":"v1"' /tmp/sams-health.json
+          curl -sS -D /tmp/sams-health-headers.txt -o /dev/null http://127.0.0.1:8090/api/v1/health
+          grep -qi '^X-Content-Type-Options: nosniff' /tmp/sams-health-headers.txt
+          grep -qi '^Referrer-Policy: same-origin' /tmp/sams-health-headers.txt
+          grep -qi '^X-Frame-Options: DENY' /tmp/sams-health-headers.txt
+          grep -qi '^Content-Security-Policy: default-src '"'"'none'"'"'; frame-ancestors '"'"'none'"'"'; base-uri '"'"'none'"'"'' /tmp/sams-health-headers.txt
+          grep -qi '^Permissions-Policy: camera=(), geolocation=(), microphone=()' /tmp/sams-health-headers.txt
+          ! grep -qi '^Strict-Transport-Security:' /tmp/sams-health-headers.txt
 
           method_status=$(curl -sS -o /tmp/sams-method.json -w "%{http_code}" -X POST http://127.0.0.1:8090/api/v1/health)
           test "$method_status" = "405"
@@ -246,6 +263,11 @@ jobs:
           signature_delete_status=$(curl -sS -o /tmp/sams-signature-delete.json -w "%{http_code}" -X DELETE -b "SAMS_SESSION=$teacher_sid" -H 'X-CSRF-Token: phase5-ci-token' http://127.0.0.1:8090/api/v1/classes/1/signature)
           test "$signature_delete_status" = "200"
           grep -q '"changed":true' /tmp/sams-signature-delete.json
+
+          oversized_json=$(php -r 'echo json_encode(["entries" => [], "padding" => str_repeat("x", 1000000)]);')
+          oversized_json_status=$(curl -sS -o /tmp/sams-oversized-json.json -w "%{http_code}" -X POST -b "SAMS_SESSION=$teacher_sid" -H 'X-CSRF-Token: phase5-ci-token' -H 'Content-Type: application/json' --data "$oversized_json" http://127.0.0.1:8090/api/v1/classes/1/attendance/bulk)
+          test "$oversized_json_status" = "413"
+          grep -q 'too large' /tmp/sams-oversized-json.json
 
           no_csrf_class_status=$(curl -sS -o /tmp/sams-admin-no-csrf.json -w "%{http_code}" -X POST -b "SAMS_SESSION=$admin_sid" -H 'Content-Type: application/json' --data '{"action":"create","name":"HTTP CSRF MUST FAIL"}' http://127.0.0.1:8090/api/v1/admin/classes)
           test "$no_csrf_class_status" = "419"
