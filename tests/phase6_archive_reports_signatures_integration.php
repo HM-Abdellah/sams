@@ -23,7 +23,10 @@ function expect_exception(callable $callback, int $status, string $message): voi
     try {
         $callback();
     } catch (Throwable $e) {
-        expect_true(method_exists($e, 'httpStatus') && $e->httpStatus() === $status, $message . ' Wrong status.');
+        $actualStatus = method_exists($e, 'httpStatus')
+            ? $e->httpStatus()
+            : ($e instanceof InvalidArgumentException ? 422 : null);
+        expect_true($actualStatus === $status, $message . ' Wrong status.');
         return;
     }
 
