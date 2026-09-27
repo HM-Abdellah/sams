@@ -6,6 +6,7 @@ namespace SAMS\Tests\Unit\Http;
 
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use SAMS\Exceptions\RequestPayloadTooLargeException;
 use SAMS\Http\Request;
 
 final class RequestTest extends TestCase
@@ -35,6 +36,24 @@ final class RequestTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
 
         $request->jsonBody();
+    }
+
+    public function testJsonBodyRejectsOversizedPayload(): void
+    {
+        $request = new Request(
+            'POST',
+            '/example',
+            [],
+            [],
+            str_repeat('x', Request::MAX_JSON_BODY_SIZE + 1)
+        );
+
+        try {
+            $request->jsonBody();
+            self::fail('Expected an oversized JSON payload exception.');
+        } catch (RequestPayloadTooLargeException $e) {
+            self::assertSame(413, $e->httpStatus());
+        }
     }
 
     public function testWithPathPreservesRequestData(): void
