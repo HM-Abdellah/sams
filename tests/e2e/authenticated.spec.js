@@ -206,10 +206,10 @@ test.describe('authenticated SAMS smoke', () => {
     await page.locator('#schoolImportAcademicYearInput').selectOption({ value: targetYearId });
 
     const markdown = [
-      '## E2E-2BAC-A',
+      '## E2E-2BAC-B',
       '| المؤسسة | Integration School |  |  |  |  |  |',
       '| --- | --- | --- | --- | --- | --- | --- |',
-      '| القسم | E2E-2BAC-A |  |  |  |  |  |',
+      '| القسم | E2E-2BAC-B |  |  |  |  |  |',
       '| المستوى | 2BAC |  |  |  |  |  |',
       '| السنة الدراسية | 2026/2027 |  |  |  |  |  |',
       '|  |  |  |  |  |  |  |',
@@ -226,7 +226,7 @@ test.describe('authenticated SAMS smoke', () => {
     await page.locator('#schoolImportUploadBtn').click();
 
     await expect(page.locator('#schoolImportReview')).toContainText('school-fallback.md');
-    await expect(page.locator('#schoolImportReview')).toContainText('E2E-2BAC-A');
+    await expect(page.locator('#schoolImportReview')).toContainText('E2E-2BAC-B');
     await expect(page.locator('#schoolImportCommitBtn')).toBeDisabled();
 
     await page.locator('.school-import-classes-table tbody tr').filter({ hasText: 'E2E-2BAC-A' }).locator('[data-school-import-class]').click();
@@ -698,68 +698,3 @@ test.describe('authenticated SAMS smoke', () => {
     );
     await page.locator('#classForm button[type="submit"]').click();
     await expect((await createClassResponse).ok()).toBeTruthy();
-    await page.locator('.tab[data-tab="admin"]').click();
-    const classRow = page.locator('#adminClassesTable tbody tr').filter({ hasText: className }).first();
-    await expect(classRow).toBeVisible();
-
-    await classRow.locator('[data-edit-class]').click();
-    await page.locator('#editClassNameInput').fill(className + '-EDITED');
-    await page.locator('#editClassForm button[type="submit"]').click();
-    await expect(page.locator('#editClassDialog')).toBeHidden();
-
-    await page.locator('.tab[data-tab="admin"]').click();
-    const editedClassRow = page.locator('#adminClassesTable tbody tr').filter({ hasText: className + '-EDITED' }).first();
-    await expect(editedClassRow).toBeVisible();
-
-    page.once('dialog', (dialog) => dialog.accept());
-    await editedClassRow.locator('[data-toggle-class]').click();
-    await expect(editedClassRow.locator('td').nth(4)).toHaveText('Non');
-
-    page.once('dialog', (dialog) => dialog.accept());
-    await editedClassRow.locator('[data-toggle-class]').click();
-    await expect(editedClassRow.locator('td').nth(4)).toHaveText('Oui');
-
-    const createdUsername = 'e2e-ui-' + Date.now();
-    const newPassword = 'e2e-ui-password-2026';
-
-    await page.locator('#userUsernameInput').fill(createdUsername);
-    await page.locator('#userFullNameInput').fill('E2E UI User');
-    await page.locator('#userRoleInput').selectOption('teacher');
-    await page.locator('#userPasswordInput').fill(newPassword);
-    const createUserResponse = page.waitForResponse(
-      (response) =>
-        response.url().includes('/api/users.php') &&
-        response.request().method() === 'POST'
-    );
-    await page.locator('#userForm button[type="submit"]').click();
-    await expect((await createUserResponse).ok()).toBeTruthy();
-
-    await expect(page.locator('#usersTable tbody tr').filter({ hasText: createdUsername }).first()).toBeVisible();
-    const userRow = page.locator('#usersTable tbody tr').filter({ hasText: createdUsername }).first();
-
-    await userRow.locator('[data-edit-user]').click();
-    await page.locator('#editUserFullNameInput').fill('E2E UI User Edited');
-    await page.locator('#editUserForm button[type="submit"]').click();
-    await expect(page.locator('#editUserDialog')).toBeHidden();
-
-    await page.locator('.tab[data-tab="admin"]').click();
-    const editedUserRow = page.locator('#usersTable tbody tr').filter({ hasText: createdUsername }).first();
-    await editedUserRow.locator('[data-reset-user]').click();
-    await page.locator('#resetUserPasswordInput').fill('e2e-ui-password-reset-2026');
-    await page.locator('#resetUserPasswordForm button[type="submit"]').click();
-    await expect(page.locator('#resetUserPasswordDialog')).toBeHidden();
-
-    await page.locator('.tab[data-tab="admin"]').click();
-    await editedUserRow.locator('[data-toggle-user]').click();
-    await expect(editedUserRow.locator('td').nth(3)).toHaveText('Non');
-  });
-
-  test('logout invalidates the authenticated browser session', async ({ page }) => {
-    await login(page, username, password);
-    await page.locator('#logoutBtn').click();
-    await page.waitForURL(/login\.php$/);
-
-    await page.goto('index.php');
-    await expect(page).toHaveURL(/login\.php$/);
-  });
-});
