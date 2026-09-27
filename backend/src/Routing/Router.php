@@ -22,6 +22,11 @@ final class Router
         $this->add('POST', $pattern, $handler);
     }
 
+    public function delete(string $pattern, callable $handler): void
+    {
+        $this->add('DELETE', $pattern, $handler);
+    }
+
     public function add(string $method, string $pattern, callable $handler): void
     {
         $method = strtoupper(trim($method));
