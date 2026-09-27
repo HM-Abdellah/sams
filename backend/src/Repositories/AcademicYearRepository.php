@@ -17,6 +17,46 @@ final class AcademicYearRepository
         )->fetchAll();
     }
 
+    public function findActive(): ?array
+    {
+        $stmt = Database::connection()->query(
+            'SELECT id, name, starts_on, ends_on, is_active, created_at
+             FROM academic_years
+             WHERE is_active = 1
+             ORDER BY id DESC
+             LIMIT 1'
+        );
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    public function activeForUpdate(): array
+    {
+        return Database::connection()->query(
+            'SELECT id
+             FROM academic_years
+             WHERE is_active = 1
+             ORDER BY id
+             FOR UPDATE'
+        )->fetchAll();
+    }
+
+    public function findForUpdate(int $id): ?array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT id, name, starts_on, ends_on, is_active, created_at
+             FROM academic_years
+             WHERE id = ?
+             LIMIT 1
+             FOR UPDATE'
+        );
+        $stmt->execute([$id]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
     public function find(int $id): ?array
     {
         $stmt = Database::connection()->prepare(
