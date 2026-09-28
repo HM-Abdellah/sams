@@ -95,16 +95,31 @@ final class StudentEnrollmentRepository
 
     public function currentForStudent(int $studentId): ?array
     {
-        $stmt = Database::connection()->prepare(
-            'SELECT id, student_id, class_id, starts_on, ends_on, created_at, updated_at
-             FROM student_enrollments
-             WHERE student_id = ?
-               AND ends_on IS NULL
-             ORDER BY starts_on DESC, id DESC
-             LIMIT 1'
-        );
+        return $this->currentForStudentInternal($studentId, false);
+    }
+
+    public function currentForStudentForUpdate(int $studentId): ?array
+    {
+        return $this->currentForStudentInternal($studentId, true);
+    }
+
+    private function currentForStudentInternal(int $studentId, bool $forUpdate): ?array
+    {
+        $sql = 'SELECT id, student_id, class_id, starts_on, ends_on, created_at, updated_at
+                FROM student_enrollments
+                WHERE student_id = ?
+                  AND ends_on IS NULL
+                ORDER BY starts_on DESC, id DESC
+                LIMIT 1';
+
+        if ($forUpdate) {
+            $sql .= ' FOR UPDATE';
+        }
+
+        $stmt = Database::connection()->prepare($sql);
         $stmt->execute([$studentId]);
         $row = $stmt->fetch();
+
         return $row ?: null;
     }
 

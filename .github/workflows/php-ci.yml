@@ -11,7 +11,7 @@ permissions:
 
 on:
   push:
-    branches: [main, refactor/phase-2-backend-foundation, feat/phase-3-school-import-v2, feat/phase-4-teacher-attendance-backend, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-7-security-reliability, feat/phase-8-ci-base-v2, feat/phase-8-final-gate-v4, feat/phase-9-clean-school-acceptance]
+    branches: [main, feat/phase-11-final-review, refactor/phase-2-backend-foundation, feat/phase-3-school-import-v2, feat/phase-4-teacher-attendance-backend, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-7-security-reliability, feat/phase-8-ci-base-v2, feat/phase-8-final-gate-v4, feat/phase-9-clean-school-acceptance]
   pull_request:
     branches: [main, refactor/phase-2-backend-foundation, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-8-ci-base-v2]
 
@@ -48,7 +48,7 @@ jobs:
         shell: sh
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends git libxml2-dev libonig-dev libzip-dev libfreetype6-dev libjpeg62-turbo-dev libpng-dev libwebp-dev curl unzip
+          apt-get install -y --no-install-recommends git libxml2-dev libonig-dev libzip-dev libfreetype6-dev libjpeg62-turbo-dev libpng-dev libwebp-dev curl unzip mariadb-client
           docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp
           docker-php-ext-install dom gd mbstring pdo_mysql xml xmlwriter zip
 
@@ -66,6 +66,14 @@ jobs:
         working-directory: backend
         shell: sh
         run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Verify locked dependency graph
+        working-directory: backend
+        shell: sh
+        run: |
+          composer validate --no-check-publish
+          composer check-platform-reqs --no-dev
+          composer audit --locked --no-dev
 
       - name: Configure backend database
         shell: sh
@@ -115,9 +123,17 @@ jobs:
         shell: sh
         run: php tests/school_import_final_integration.php
 
+      - name: Run XLSX resource-limit integration tests
+        shell: sh
+        run: php tests/xlsx_resource_limits_integration.php
+
       - name: Run teacher attendance integration tests
         shell: sh
         run: php tests/attendance_backend_integration.php
+
+      - name: Run concurrency regression suite
+        shell: sh
+        run: php tests/concurrency_regression.php
 
       - name: Run administration integration tests
         shell: sh
@@ -130,6 +146,10 @@ jobs:
       - name: Run security and reliability integration tests
         shell: sh
         run: php tests/phase7_security_reliability_integration.php
+
+      - name: Run backup and restore integration test
+        shell: sh
+        run: php tests/backup_restore_integration.php
 
       - name: Audit tracked secrets and local config paths
         shell: sh
@@ -329,6 +349,128 @@ jobs:
         run: |
           find public/assets/js tests/e2e -type f -name '*.js' -print0 | xargs -0 -n1 node --check
 
+  apache:
+    runs-on: ubuntu-latest
+    container:
+      image: php:8.3-apache-bookworm
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install Apache runtime dependencies
+        shell: bash
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends git curl unzip libzip-dev libxml2-dev libonig-dev libfreetype6-dev libjpeg62-turbo-dev libpng-dev libwebp-dev
+          docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp
+          docker-php-ext-install dom gd mbstring pdo_mysql xml xmlwriter zip
+
+          EXPECTED_CHECKSUM="$(curl -fsSL https://composer.github.io/installer.sig)"
+          curl -fsSL https://getcomposer.org/installer -o composer-setup.php
+          echo "${EXPECTED_CHECKSUM}  composer-setup.php" | sha384sum -c -
+          php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+          rm composer-setup.php
+
+      - name: Install backend dependencies
+        working-directory: backend
+        shell: bash
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Configure local application runtime
+        shell: bash
+        run: |
+          cat > backend/config/app.php <<'PHP'
+          <?php
+          return [
+              'name' => 'SAMS',
+              'environment' => 'test',
+              'debug' => true,
+              'base_path' => '/sams/public',
+              'session_name' => 'SAMS_APACHE_SESSION',
+              'session_lifetime' => 3600,
+              'session_idle_timeout' => 3600,
+              'session_absolute_timeout' => 43200,
+              'login_max_attempts' => 5,
+              'login_lock_minutes' => 15,
+          ];
+          PHP
+
+          cat > backend/config/database.php <<'PHP'
+          <?php
+          return [
+              'host' => '127.0.0.1',
+              'port' => 3306,
+              'database' => 'sams',
+              'username' => 'root',
+              'password' => 'root',
+              'charset' => 'utf8mb4',
+          ];
+          PHP
+
+      - name: Configure Apache overrides
+        shell: bash
+        run: |
+          a2enmod rewrite headers
+          cat > /etc/apache2/conf-enabled/sams.conf <<'APACHE'
+          <Directory /var/www/html>
+              AllowOverride All
+              Require all granted
+          </Directory>
+          APACHE
+          printf '%s\n' 'ServerName localhost' > /etc/apache2/conf-enabled/server-name.conf
+          apachectl -t
+
+      - name: Start Apache and run production-path smoke tests
+        shell: bash
+        run: |
+          apache2-foreground > /tmp/sams-apache.log 2>&1 &
+          apache_pid=$!
+
+          cleanup() {
+            kill "$apache_pid" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1/sams/public/login.php > /dev/null 2>&1; then
+              break
+            fi
+            if ! kill -0 "$apache_pid" 2>/dev/null; then
+              cat /tmp/sams-apache.log
+              exit 1
+            fi
+            sleep 1
+          done
+
+          root_headers=/tmp/sams-apache-root.headers
+          curl -sS -D "$root_headers" -o /dev/null http://127.0.0.1/sams/
+          grep -qi '^HTTP/.* 302' "$root_headers"
+          grep -qi '^Location: http://127.0.0.1/sams/public/' "$root_headers"
+
+          login_status=$(curl -sS -o /tmp/sams-apache-login.html -w "%{http_code}" http://127.0.0.1/sams/public/login.php)
+          test "$login_status" = "200"
+
+          health_headers=/tmp/sams-apache-health.headers
+          health_status=$(curl -sS -D "$health_headers" -o /tmp/sams-apache-health.json -w "%{http_code}" http://127.0.0.1/sams/api/v1/health)
+          test "$health_status" = "200"
+          grep -q '"success":true' /tmp/sams-apache-health.json
+          grep -q '"api_version":"v1"' /tmp/sams-apache-health.json
+          grep -qi '^X-Content-Type-Options: nosniff' "$health_headers"
+          grep -qi '^X-Frame-Options: DENY' "$health_headers"
+          grep -qi '^Referrer-Policy: same-origin' "$health_headers"
+
+          private_status=$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1/sams/backend/src/Helpers/Auth.php)
+          test "$private_status" = "403"
+
+          config_status=$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1/sams/backend/config/database.php)
+          test "$config_status" = "403"
+
+          source_status=$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1/sams/backend/src/Services/TeacherAttendanceService.php)
+          test "$source_status" = "403"
+
+          echo "[PASS] Apache 2.4 production-path smoke: /sams/ redirect, PHP execution, /api/v1 routing, security headers, and private-path denial"
+
   e2e:
     runs-on: ubuntu-latest
     container:
@@ -398,7 +540,7 @@ jobs:
         run: php scripts/e2e_seed.php
 
       - name: Install Node dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Run Playwright E2E
         id: phase8_e2e
@@ -598,7 +740,7 @@ jobs:
 
       - name: Install Node dependencies
         shell: bash
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Run clean-school browser acceptance
         id: phase9_acceptance

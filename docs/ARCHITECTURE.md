@@ -95,9 +95,11 @@ Docker Compose is development/CI convenience only. School deployment must not de
 
 ## 3. API routing strategy
 
-Use a single same-origin REST/JSON surface under `/api/v1/`.
+The target architecture uses a single same-origin REST/JSON surface under `/api/v1/`.
 
-Examples:
+**Release-candidate migration boundary:** the repository still contains legacy `/api/*.php` endpoints used by the current frontend. The canonical `/api/v1/*` router is not yet a complete replacement for every legacy endpoint. In particular, the target `/api/v1/auth/*` routes are not implemented in this release candidate.
+
+Examples of the target canonical surface:
 
 ```
 POST /api/v1/auth/login

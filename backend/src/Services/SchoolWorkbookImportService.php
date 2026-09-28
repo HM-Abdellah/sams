@@ -15,6 +15,7 @@ final class SchoolWorkbookImportService
     public const MAX_FILE_SIZE = 20_000_000;
     public const MAX_SHEETS = 100;
     public const MAX_STUDENT_ROWS = 50_000;
+    public const MAX_TOTAL_WORKSHEET_ROWS = 60_000;
 
     private const CLASS_LABELS = ['القسم'];
     private const LEVEL_LABELS = ['المستوى'];
@@ -49,7 +50,23 @@ final class SchoolWorkbookImportService
                 : 'Xlsx';
             $reader = IOFactory::createReader($readerType);
             $reader->setReadDataOnly(true);
+
+            $worksheetInfo = $reader->listWorksheetInfo($path);
+            if (count($worksheetInfo) > self::MAX_SHEETS) {
+                throw new InvalidArgumentException('The workbook contains too many worksheets.');
+            }
+
+            $totalWorksheetRows = 0;
+            foreach ($worksheetInfo as $info) {
+                $totalWorksheetRows += (int)($info['totalRows'] ?? 0);
+                if ($totalWorksheetRows > self::MAX_TOTAL_WORKSHEET_ROWS) {
+                    throw new InvalidArgumentException('The workbook contains too many worksheet rows.');
+                }
+            }
+
             $workbook = $reader->load($path);
+        } catch (InvalidArgumentException $e) {
+            throw $e;
         } catch (Throwable $e) {
             throw new InvalidArgumentException('Unable to read the Excel workbook.', 0, $e);
         }

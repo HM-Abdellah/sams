@@ -114,13 +114,6 @@ final class TeacherAttendanceService
             throw new AttendanceWorkflowException('Academic year not found.', 422);
         }
 
-        $allowedStudents = [];
-        foreach ($this->students->forClass($classId) as $student) {
-            if ((string)$student['status'] === 'active') {
-                $allowedStudents[(int)$student['id']] = true;
-            }
-        }
-
         $normalized = [];
         $seen = [];
         $minDate = null;
@@ -136,9 +129,6 @@ final class TeacherAttendanceService
             $period = (int)($entry['period'] ?? 0);
             $action = (string)($entry['action'] ?? 'upsert');
 
-            if (!isset($allowedStudents[$studentId])) {
-                throw new AttendanceWorkflowException('Student not found.', 404);
-            }
             try {
                 $this->validator->validateKey($studentId, $date, $period);
             } catch (\InvalidArgumentException $e) {
@@ -196,6 +186,23 @@ final class TeacherAttendanceService
 
             if (!$this->classes->hasAccess($userId, $role, $classId)) {
                 throw new AttendanceWorkflowException('Forbidden.', 403);
+            }
+
+            $studentIds = array_values(array_unique(array_map(
+                static fn(array $entry): int => (int)$entry['student_id'],
+                $normalized
+            )));
+            sort($studentIds, SORT_NUMERIC);
+
+            foreach ($studentIds as $studentId) {
+                $student = $this->students->findByIdForUpdate($studentId);
+                if (
+                    $student === null
+                    || (int)$student['class_id'] !== $classId
+                    || (string)$student['status'] !== 'active'
+                ) {
+                    throw new AttendanceWorkflowException('Student not found.', 404);
+                }
             }
 
             $existingRows = $this->attendance->forClassRange(

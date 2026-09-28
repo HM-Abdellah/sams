@@ -6,6 +6,7 @@ Options -Indexes
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    RewriteBase /sams/
 
     # /sams/ -> /sams/public/
     RewriteRule ^$ public/ [R=302,L]

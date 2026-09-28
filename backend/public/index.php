@@ -24,7 +24,17 @@ use SAMS\Routing\Router;
 
 try {
     $request = Request::fromGlobals();
-    $prefix = '/api/v1';
+
+    $configuredBasePath = trim((string)($GLOBALS['appConfig']['base_path'] ?? ''), '/');
+    $siteBasePath = $configuredBasePath === ''
+        ? ''
+        : '/' . trim(dirname('/' . $configuredBasePath), '/');
+
+    if ($siteBasePath === '/') {
+        $siteBasePath = '';
+    }
+
+    $prefix = $siteBasePath . '/api/v1';
     $path = $request->path();
 
     if ($path !== $prefix && !str_starts_with($path, $prefix . '/')) {

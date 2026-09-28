@@ -130,52 +130,98 @@ try {
     $weekCounts = null;
     $submission = null;
 
-    if ($action === 'sign_period') {
-        $existingPeriod = $signoffs->findPeriod($classId, $date, $period);
-        if ($existingPeriod !== null && (int)$existingPeriod['teacher_id'] !== (int)$user['id']) {
-            Response::error('This lesson is already signed by another teacher.', 409);
-        }
-    } elseif ($action === 'reopen_period') {
-        $existingPeriod = $signoffs->findPeriod($classId, $date, $period);
-        if ($existingPeriod === null) {
-            Response::success(['changed' => false]);
-        }
-        if ($isTeacher && (int)$existingPeriod['teacher_id'] !== (int)$user['id']) {
-            Response::error('Only the signing teacher can reopen this lesson.', 403);
-        }
-    } elseif ($action === 'sign_week') {
-        $existingWeekSignature = $signoffs->findWeekSignature($classId, (int)$user['id'], $weekStart);
-        $weekCounts = $signoffs->countTeacherPeriodSignoffs($classId, (int)$user['id'], $weekStart, $weekEnd);
-        if ((int)$weekCounts['signed_lessons'] < 1) {
-            Response::error('Sign at least one lesson before signing the week.', 422);
-        }
-        if ((int)$weekCounts['needs_resign'] > 0) {
-            Response::error('Correct and re-sign all changed lessons before signing the week.', 422);
-        }
-    } elseif ($action === 'receive_week') {
-        $teachers = $signoffs->teachersForClass($classId);
-        $weeklyRows = $signoffs->weekSignatures($classId, $weekStart);
-        $weeklyByTeacher = [];
-        foreach ($weeklyRows as $row) {
-            $weeklyByTeacher[(int)$row['teacher_id']] = $row;
-        }
-        if ($teachers === [] || count($weeklyByTeacher) < count($teachers)) {
-            Response::error('All assigned teachers must sign the week before administration can receive it.', 422);
-        }
-        foreach ($teachers as $teacher) {
-            $row = $weeklyByTeacher[(int)$teacher['id']] ?? null;
-            if ($row === null || (string)$row['status'] !== 'signed') {
-                Response::error('All assigned teachers must sign the week before administration can receive it.', 422);
-            }
-        }
-        $submission = $signoffs->findSubmission($classId, $weekStart);
-    }
-
     $pdo = Database::connection();
     $audit = new AuditLogRepository();
     $pdo->beginTransaction();
 
     try {
+        $lockedClass = $classes->findForUpdate($classId);
+        if ($lockedClass === null) {
+            throw new \SAMS\Exceptions\AttendanceWorkflowException('Class not found.', 404);
+        }
+
+        if (!$classes->hasAccess((int)$user['id'], (string)$user['role'], $classId)) {
+            throw new \SAMS\Exceptions\AttendanceWorkflowException('Forbidden.', 403);
+        }
+
+        $class = $lockedClass;
+
+        $signature = $signatureRepo->findByTeacherAndClass((int)$user['id'], $classId);
+        if (in_array($action, ['sign_period', 'sign_week'], true) && $signature === null) {
+            throw new \SAMS\Exceptions\AttendanceWorkflowException(
+                'Save your class signature before signing attendance.',
+                422
+            );
+        }
+
+        if ($action === 'sign_period') {
+            $existingPeriod = $signoffs->findPeriod($classId, $date, $period);
+            if ($existingPeriod !== null && (int)$existingPeriod['teacher_id'] !== (int)$user['id']) {
+                throw new \SAMS\Exceptions\AttendanceWorkflowException(
+                    'This lesson is already signed by another teacher.',
+                    409
+                );
+            }
+        } elseif ($action === 'reopen_period') {
+            $existingPeriod = $signoffs->findPeriod($classId, $date, $period);
+            if ($existingPeriod === null) {
+                $pdo->commit();
+                Response::success(['changed' => false]);
+            }
+            if ($isTeacher && (int)$existingPeriod['teacher_id'] !== (int)$user['id']) {
+                throw new \SAMS\Exceptions\AttendanceWorkflowException(
+                    'Only the signing teacher can reopen this lesson.',
+                    403
+                );
+            }
+        } elseif ($action === 'sign_week') {
+            $existingWeekSignature = $signoffs->findWeekSignature(
+                $classId,
+                (int)$user['id'],
+                $weekStart
+            );
+            $weekCounts = $signoffs->countTeacherPeriodSignoffs(
+                $classId,
+                (int)$user['id'],
+                $weekStart,
+                $weekEnd
+            );
+            if ((int)$weekCounts['signed_lessons'] < 1) {
+                throw new \SAMS\Exceptions\AttendanceWorkflowException(
+                    'Sign at least one lesson before signing the week.',
+                    422
+                );
+            }
+            if ((int)$weekCounts['needs_resign'] > 0) {
+                throw new \SAMS\Exceptions\AttendanceWorkflowException(
+                    'Correct and re-sign all changed lessons before signing the week.',
+                    422
+                );
+            }
+        } elseif ($action === 'receive_week') {
+            $teachers = $signoffs->teachersForClass($classId);
+            $weeklyRows = $signoffs->weekSignatures($classId, $weekStart);
+            $weeklyByTeacher = [];
+            foreach ($weeklyRows as $row) {
+                $weeklyByTeacher[(int)$row['teacher_id']] = $row;
+            }
+            if ($teachers === [] || count($weeklyByTeacher) < count($teachers)) {
+                throw new \SAMS\Exceptions\AttendanceWorkflowException(
+                    'All assigned teachers must sign the week before administration can receive it.',
+                    422
+                );
+            }
+            foreach ($teachers as $teacher) {
+                $row = $weeklyByTeacher[(int)$teacher['id']] ?? null;
+                if ($row === null || (string)$row['status'] !== 'signed') {
+                    throw new \SAMS\Exceptions\AttendanceWorkflowException(
+                        'All assigned teachers must sign the week before administration can receive it.',
+                        422
+                    );
+                }
+            }
+            $submission = $signoffs->findSubmission($classId, $weekStart);
+        }
         if ($action === 'sign_period') {
             $signoffs->upsertPeriod($classId, (int)$user['id'], $date, $period, (string)$signature['signature_data']);
             $audit->record(
@@ -241,6 +287,8 @@ try {
     }
 
     Response::error('Invalid attendance sign-off action.', 422);
+} catch (\SAMS\Exceptions\AttendanceWorkflowException $e) {
+    Response::error($e->getMessage(), $e->httpStatus());
 } catch (\InvalidArgumentException $e) {
     Response::error($e->getMessage(), 422);
 } catch (Throwable $e) {

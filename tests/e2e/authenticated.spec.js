@@ -211,6 +211,7 @@ test.describe('authenticated SAMS smoke', () => {
     await expect(reopenedMark).toHaveText('');
 
     await page.locator('#attendanceWorkflow [data-sign-period]').click();
+    await expect(page.locator('#attendanceWorkflow .attendance-seal')).toContainText(/Validée par|Certified by|تمت المصادقة/);
     await page.locator('#weeklyTeacherSignatures [data-sign-week]').click();
     await expect(page.locator('#weeklyTeacherSignatures .weekly-teacher-status.signed')).toHaveCount(1);
     await expect(page.locator('#weeklyTeacherSignatures')).toContainText('1/1');

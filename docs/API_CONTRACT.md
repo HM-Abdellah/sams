@@ -2,6 +2,15 @@
 
 This document is the frontend/backend contract for the release candidate.
 
+## API surface status
+
+This release candidate intentionally has a migration boundary between the current legacy API and the target canonical API.
+
+- **Current legacy surface — `/api/*.php`:** authoritative for the existing Vanilla JS frontend, including authentication and several operational/admin endpoints. These routes remain supported during the migration.
+- **Canonical surface — `/api/v1/*`:** authoritative only for endpoints already migrated through `backend/public/index.php`.
+- The `/api/v1/auth/*` routes described by the target architecture are **not implemented in this release candidate**. Do not assume they exist until the authentication migration is completed and verified.
+- Documentation below uses the actual current route for legacy endpoints unless explicitly marked as a target/canonical route.
+
 ## Global contract
 
 - All APIs return JSON with either `success: true` and `data`, or `success: false` and `error`.
@@ -14,7 +23,9 @@ This document is the frontend/backend contract for the release candidate.
 - Canonical v1 JSON request bodies are capped at 1,000,000 bytes and return HTTP 413 when exceeded.
 - JSON API responses include baseline security headers; HSTS is emitted only when the request is HTTPS.
 
-## Authentication
+## Authentication — current legacy surface
+
+The current release uses the legacy authentication endpoint. The canonical `/api/v1/auth/*` routes remain a target-architecture item and are not yet part of this release contract.
 
 ### GET `api/auth.php?action=session`
 

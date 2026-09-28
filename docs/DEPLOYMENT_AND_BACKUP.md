@@ -153,14 +153,17 @@ Service/integration verification:
     php tests/run.php
     php tests/integration.php
     php tests/school_import_final_integration.php
+    php tests/xlsx_resource_limits_integration.php
     php tests/attendance_backend_integration.php
+    php tests/concurrency_regression.php
     php tests/administration_backend_integration.php
     php tests/phase6_archive_reports_signatures_integration.php
     php tests/phase7_security_reliability_integration.php
+    php tests/backup_restore_integration.php
 
 Browser verification:
 
-    npm install --no-audit --no-fund
+    npm ci --no-audit --no-fund
     npm run test:e2e
 
 The database-dependent tests expect `SAMS_TEST_DB_HOST`, `SAMS_TEST_DB_PORT`, `SAMS_TEST_DB_NAME`, `SAMS_TEST_DB_USER`, and `SAMS_TEST_DB_PASS` for the isolated test database. CI supplies these values and also runs the clean-school acceptance gate.
