@@ -179,8 +179,26 @@ try {
     $debugAttendance->execute([$firstStudentId]);
     $debugRow = $debugAttendance->fetch();
 
+    $debugCurrentEnrollment = $pdo->prepare(
+        'SELECT id, class_id, starts_on, ends_on
+         FROM student_enrollments
+         WHERE student_id = ? AND ends_on IS NULL
+         ORDER BY starts_on DESC, id DESC
+         LIMIT 1'
+    );
+    $debugCurrentEnrollment->execute([$firstStudentId]);
+    $debugEnrollment = $debugCurrentEnrollment->fetch();
+
+    $debugOnOrAfter = $pdo->prepare(
+        'SELECT COUNT(*)
+         FROM attendance
+         WHERE enrollment_id = ? AND attendance_date >= ?'
+    );
+    $debugOnOrAfter->execute([(int)$debugEnrollment['id'], '2026-10-01']);
+
     echo "[PASS] E2E school bootstrap: admin={$adminId}, teacher={$teacherId}, classes={$classA},{$classB}" . PHP_EOL;
     echo "[E2E DEBUG] E2E001 attendance rows={$debugRow['row_count']} min={$debugRow['min_date']} max={$debugRow['max_date']}" . PHP_EOL;
+    echo "[E2E DEBUG] current enrollment id={$debugEnrollment['id']} class={$debugEnrollment['class_id']} starts={$debugEnrollment['starts_on']} ends=" . ($debugEnrollment['ends_on'] ?? 'NULL') . " on_or_after_2026-10-01=" . $debugOnOrAfter->fetchColumn() . PHP_EOL;
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
