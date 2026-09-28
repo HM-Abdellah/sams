@@ -408,6 +408,9 @@ jobs:
           SAMS_E2E_TEACHER_USERNAME: teacher.e2e
         shell: bash
         run: |
+          : > /tmp/phase8-playwright.log
+          exec > >(tee -a /tmp/phase8-playwright.log) 2>&1
+
           php -S 0.0.0.0:8080 scripts/dev_router.php > /tmp/sams-server.log 2>&1 &
           server_pid=$!
 
@@ -443,7 +446,6 @@ jobs:
 
           trap 'kill "$server_pid" 2>/dev/null || true'
 
-          : > /tmp/phase8-playwright.log
           overall_status=0
 
           run_e2e_group() {
@@ -498,7 +500,12 @@ jobs:
             const failures = [...log.matchAll(/\[FAIL\] ([^\n]+)/g)].map((m) => m[1]);
             const outcome = '${{ steps.phase8_e2e.outcome }}';
             const state = outcome === 'success' ? 'success' : 'failure';
-            const description = (failures.length ? 'Failed groups: ' + failures.join('; ') : 'All Phase 8 E2E groups passed.').slice(0, 140);
+            const tail = log.trim().slice(-70).replace(/\s+/g, ' ');
+            const description = (failures.length
+              ? 'Failed groups: ' + failures.join('; ')
+              : outcome === 'success'
+                ? 'All Phase 8 E2E groups passed.'
+                : 'E2E preflight/runner failed: ' + tail).slice(0, 140);
             const sha = context.payload.pull_request?.head?.sha || context.sha;
             await github.rest.repos.createCommitStatus({
               owner: context.repo.owner,
@@ -508,19 +515,3 @@ jobs:
               context: 'phase8/e2e-groups',
               description
             });
-      - name: Publish Phase 8 Playwright diagnostics
-        if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const logPath = '/tmp/phase8-playwright.log';
-            const log = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8') : 'No Playwright log was generated.';
-            const bounded = log.length > 14000 ? log.slice(0, 7000) + '\n...<truncated>...\n' + log.slice(-7000) : log;
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: 'Phase 8 Playwright diagnostics\n\n' + bounded,
-            });
-
