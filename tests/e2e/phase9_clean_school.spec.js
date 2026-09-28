@@ -138,7 +138,7 @@ async function assignTeacher(page, username, className) {
   const verification = await page.request.get(verifyUrl);
   expect(verification.ok()).toBeTruthy();
   const payload = await verification.json();
-  expect(payload.teachers.some((teacher) => teacher.username === username)).toBe(true);
+  expect(payload.data?.teachers?.some((teacher) => teacher.username === username)).toBe(true);
 }
 
 async function stageAndImport(page, filename, { correctFirstBatchRow = false } = {}) {
