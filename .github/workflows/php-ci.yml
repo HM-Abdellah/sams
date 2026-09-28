@@ -1,4 +1,3 @@
-
 name: SAMS PHP CI
 
 concurrency:
@@ -415,6 +414,3 @@ jobs:
           test_status=$?
           kill "$server_pid" 2>/dev/null || true
           exit "$test_status"
-
-
-[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]
