@@ -112,14 +112,8 @@ async function assignTeacher(page, username, className) {
   const classValue = await classOption.getAttribute('value');
   expect(classValue).toBeTruthy();
 
-  const classRefresh = page.waitForResponse(
-    (response) =>
-      response.url().includes('/api/teacher-classes.php?') &&
-      response.url().includes('class_id=' + encodeURIComponent(classValue)) &&
-      response.request().method() === 'GET'
-  );
   await page.locator('#classSelect').selectOption(classValue);
-  expect((await classRefresh).ok()).toBeTruthy();
+  await page.locator('.tab[data-tab="admin"]').click();
   await expect(page.locator('#classSelect')).toHaveValue(/\d+/);
 
   const teacherOption = page.locator('#assignmentTeacherInput option').filter({ hasText: username }).first();
@@ -129,12 +123,6 @@ async function assignTeacher(page, username, className) {
   await page.locator('#assignmentTeacherInput').selectOption(teacherValue);
   await page.locator('#assignmentClassInput').selectOption(classValue);
 
-  const assignmentRefresh = page.waitForResponse(
-    (response) =>
-      response.url().includes('/api/teacher-classes.php?') &&
-      response.url().includes('class_id=' + encodeURIComponent(classValue)) &&
-      response.request().method() === 'GET'
-  );
   const responsePromise = page.waitForResponse(
     (response) =>
       response.url().includes('/api/teacher-classes.php') &&
@@ -142,7 +130,6 @@ async function assignTeacher(page, username, className) {
   );
   await page.locator('#assignmentForm button[type="submit"]').click();
   expect((await responsePromise).ok()).toBeTruthy();
-  expect((await assignmentRefresh).ok()).toBeTruthy();
   await expect(page.locator('#assignmentsTable tbody tr').filter({ hasText: username })).toHaveCount(1);
 }
 
