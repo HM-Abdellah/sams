@@ -219,24 +219,8 @@ Auth::login([
 $pdo->exec("UPDATE users SET is_active = 0 WHERE id = 1");
 p7_expect(Auth::user() === null, 'An inactive existing user session remained authenticated.');
 
-// Repository-wide tracked secret/config path audit. Local runtime configs must stay ignored.
-$repoRoot = dirname(__DIR__);
-$trackedLines = [];
-$gitExitCode = 0;
-exec(
-    'git -C ' . escapeshellarg($repoRoot)
-    . ' ls-files -- ' . escapeshellarg('.env')
-    . ' ' . escapeshellarg('.env.*')
-    . ' ' . escapeshellarg('config/app.php')
-    . ' ' . escapeshellarg('config/database.php')
-    . ' ' . escapeshellarg('backend/config/app.php')
-    . ' ' . escapeshellarg('backend/config/database.php')
-    . ' ' . escapeshellarg(':(exclude).env.example'),
-    $trackedLines,
-    $gitExitCode
-);
-p7_expect($gitExitCode === 0, 'Unable to audit tracked secret/config paths with Git.');
-p7_expect(trim(implode("\\n", $trackedLines)) === '', 'Tracked local secret/config file detected: ' . trim(implode("\\n", $trackedLines)));
+// Git-tracked secret/config paths are audited by the CI workflow's dedicated
+// repository-tree check. Keep this runtime regression independent of CI container Git metadata.
 
 // Clean the synthetic session state before the test exits.
 Auth::logout();
