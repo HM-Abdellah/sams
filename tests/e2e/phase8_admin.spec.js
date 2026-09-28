@@ -101,8 +101,8 @@ test.describe.serial('Phase 8 administration journeys', () => {
     await row.locator('[data-unassign-teacher]').click();
     expect((await removeA).ok()).toBeTruthy();
 
-    await page.locator('#assignmentTeacherInput').selectOption({ label: /E2E Teacher/ });
-    await page.locator('#assignmentClassInput').selectOption({ label: /E2E-2BAC-B/ });
+    await page.locator('#assignmentTeacherInput').selectOption({ value: '2' });
+    await page.locator('#assignmentClassInput').selectOption({ value: '2' });
 
     const assignB = page.waitForResponse(
       (response) => response.url().includes('/api/teacher-classes.php') && response.request().method() === 'POST'
@@ -123,8 +123,8 @@ test.describe.serial('Phase 8 administration journeys', () => {
     ).toBeGreaterThanOrEqual(3);
     await page.locator('.tab[data-tab="admin"]').click();
 
-    await page.locator('#assignmentTeacherInput').selectOption({ label: /E2E Teacher/ });
-    await page.locator('#assignmentClassInput').selectOption({ label: /E2E-2BAC-A/ });
+    await page.locator('#assignmentTeacherInput').selectOption({ value: '2' });
+    await page.locator('#assignmentClassInput').selectOption({ value: '1' });
     const restoreA = page.waitForResponse(
       (response) => response.url().includes('/api/teacher-classes.php') && response.request().method() === 'POST'
     );
