@@ -183,7 +183,11 @@ jobs:
           server_pid=$!
 
           cleanup() {
+            status=$?
+            trap - EXIT
             kill "$server_pid" 2>/dev/null || true
+            wait "$server_pid" 2>/dev/null || true
+            exit "$status"
           }
           trap cleanup EXIT
 
