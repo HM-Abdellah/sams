@@ -108,7 +108,7 @@ async function createClass(page, name) {
 
 async function assignTeacher(page, username, className) {
   await page.locator('#classSelect').selectOption({ label: className });
-  await expect(page.locator('#classSelect')).toHaveValue(/\\d+/);
+  await expect(page.locator('#classSelect')).toHaveValue(/\d+/);
   const teacherOption = page.locator('#assignmentTeacherInput option').filter({ hasText: username }).first();
   await expect(teacherOption).toBeVisible();
   const teacherValue = await teacherOption.getAttribute('value');
