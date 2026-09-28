@@ -349,6 +349,12 @@ test('Phase 9 — clean-school acceptance scenario', async ({ page }) => {
   await expect(page.locator('#studentsList .student-card').filter({ hasText: 'E2EIMP001' })).toHaveCount(1);
   const attendanceToggle = page.locator('#attendanceTable tbody tr').filter({ hasText: 'Import Valid' }).locator('[data-attendance-toggle]').first();
   await expect(attendanceToggle).toBeVisible();
+  const attendanceStudentId = await attendanceToggle.getAttribute('data-student');
+  console.log('PHASE9_ATTENDANCE_STUDENT_ID', attendanceStudentId);
+  const rosterCheck = await page.request.get(
+    'api/students.php?class_id=' + await page.locator('#classSelect').inputValue()
+  );
+  console.log('PHASE9_ATTENDANCE_ROSTER', await rosterCheck.text());
   await selectAttendanceDay(page);
 
   await toggleAttendanceAndSave(page);
