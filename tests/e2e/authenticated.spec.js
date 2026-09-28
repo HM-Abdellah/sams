@@ -32,9 +32,27 @@ test.describe('authenticated SAMS smoke', () => {
     }
 
     await page.waitForURL(/index\.php$/);
-    await expect.poll(
-      async () => page.locator('#classSelect option:not([disabled])').count()
-    ).toBeGreaterThan(0);
+    await expect(page.locator('#attendanceMobileList .attendance-student-card').first()).toBeVisible();
+  }
+
+  async function setWeek(page, weekStart) {
+    const attendanceResponse = page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/attendance.php?class_id=') &&
+        response.url().includes('week_start=' + weekStart) &&
+        response.request().method() === 'GET'
+    );
+    const signoffResponse = page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/attendance-signoffs.php?class_id=') &&
+        response.url().includes('week_start=' + weekStart) &&
+        response.request().method() === 'GET'
+    );
+
+    await page.locator('#weekStart').fill(weekStart);
+    await page.locator('#weekStart').press('Tab');
+    await Promise.all([attendanceResponse, signoffResponse]);
+    await expect(page.locator('#weekStart')).toHaveValue(weekStart);
   }
 
   async function expectLoginFailure(page, user, pass) {
@@ -94,6 +112,7 @@ test.describe('authenticated SAMS smoke', () => {
     await login(page, username, password);
 
     await expect(page.locator('#attendanceMobileList .attendance-student-card').first()).toBeVisible();
+    await setWeek(page, '2026-10-19');
     await page.locator('#periods [data-select-period="1"]').click();
 
     const statusButtons = page.locator('#attendanceMobileList [data-attendance-toggle]');
@@ -112,7 +131,6 @@ test.describe('authenticated SAMS smoke', () => {
     await statusButtons.nth(2).click();
 
     const bulkResponse = await bulkResponsePromise;
-    console.log('PHASE8_BULK_RESPONSE', bulkResponse.status(), await bulkResponse.text());
     expect(bulkResponse.ok()).toBeTruthy();
 
     const requestBody = bulkResponse.request().postDataJSON();
@@ -125,6 +143,7 @@ test.describe('authenticated SAMS smoke', () => {
     expect(payload.data?.changed).toBe(3);
 
     await page.reload();
+    await setWeek(page, '2026-10-19');
     await expect(page.locator('#attendanceMobileList [data-attendance-toggle]').nth(0)).toHaveText('X');
     await expect(page.locator('#attendanceMobileList [data-attendance-toggle]').nth(1)).toHaveText('X');
     await expect(page.locator('#attendanceMobileList [data-attendance-toggle]').nth(2)).toHaveText('X');
@@ -155,9 +174,13 @@ test.describe('authenticated SAMS smoke', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await login(page, teacherUsername, teacherPassword);
     await expect(page.locator('#attendanceMobileList')).toBeVisible();
+    await expect(page.locator('#classSelect')).toBeVisible();
+    await page.locator('#classSelect').selectOption({ label: 'E2E-2BAC-A' });
+    await expect.poll(
+      async () => page.locator('#attendanceMobileList .attendance-student-card').count()
+    ).toBeGreaterThanOrEqual(3);
     await expect(page.locator('#weekDays .week-day-btn')).toHaveCount(6);
     await expect(page.locator('#periods .period-btn')).toHaveCount(8);
-    await expect(page.locator('#attendanceMobileList .attendance-student-card')).toHaveCount(3);
     await expect(page.locator('.tab[data-tab="admin"]')).toHaveCount(0);
     await expect(page.locator('.tab[data-tab="archive"]')).toHaveCount(0);
   });
@@ -663,6 +686,7 @@ test.describe('authenticated SAMS smoke', () => {
 
     await page.setViewportSize({ width: 390, height: 844 });
     await login(page, teacherUsername, teacherPassword);
+    await setWeek(page, '2026-11-02');
     await page.locator('#periods [data-select-period="1"]').click();
     await page.locator('#attendanceMobileList [data-attendance-toggle]').first().click();
     await page.locator('#attendanceWorkflow [data-sign-period]').click();
@@ -684,10 +708,18 @@ test.describe('authenticated SAMS smoke', () => {
     await page.locator('#reportBtn').click();
     await expect(page.locator('#weeklyPrintSheet')).toContainText('Mathematics');
 
+    const receiveResponse = page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/attendance-signoffs.php?class_id=') &&
+        response.request().method() === 'POST'
+    );
     await page.locator('#weeklyTeacherSignatures [data-receive-week]').click();
+    const received = await receiveResponse;
+    expect(received.ok()).toBeTruthy();
     await expect(page.locator('#weeklyTeacherSignatures .register-receipt.received')).toBeVisible();
 
     await page.reload();
+    await setWeek(page, '2026-11-02');
     await expect(page.locator('#weeklyTeacherSignatures .register-receipt.received')).toBeVisible();
     await expect(page.locator('#weeklyTeacherSignatures [data-receive-week]')).toHaveCount(0);
 
