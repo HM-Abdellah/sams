@@ -121,6 +121,10 @@ async function assignTeacher(page, username, className) {
   expect(teacherValue).toBeTruthy();
   await page.locator('#assignmentTeacherInput').selectOption(teacherValue);
   await page.locator('#assignmentClassInput').selectOption(classValue);
+  await expect.poll(
+    async () => page.locator('#assignmentClassInput').inputValue(),
+    { timeout: 10000 }
+  ).toBe(classValue);
 
   const responsePromise = page.waitForResponse(
     (response) =>
