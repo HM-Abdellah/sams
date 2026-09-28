@@ -1,6 +1,6 @@
 # SAMS — Layered Completion Plan
 
-This is the execution order for finishing the release candidate. The existing application architecture stays in place; layers describe delivery and verification order, not a forced rewrite.
+This is the execution order for finishing the release candidate. The existing application architecture stays in place; phases describe delivery and verification order, not a forced rewrite.
 
 ## Layer 0 — Baseline / Freeze Scope
 
@@ -86,7 +86,7 @@ Gate:
 - No known critical auth/integrity blocker.
 - Security regression tests are green.
 
-## Layer 5 — Playwright E2E
+## Phase 8 — Playwright E2E
 
 Goal: prove real user workflows instead of only endpoint behavior.
 
@@ -109,7 +109,7 @@ Gate:
 - Authenticated E2E runs without being skipped.
 - Critical desktop and mobile workflows are green.
 
-## Layer 6 — Clean-School Acceptance
+## Phase 9 — Clean-School Acceptance
 
 Goal: validate the system from a fresh-school state.
 
@@ -132,7 +132,7 @@ Gate:
 - Historical attendance survives enrollment/class transitions.
 - No manual database repair is required during the scenario.
 
-## Layer 7 — Deployment and Documentation
+## Phase 10 — Deployment and Documentation
 
 Goal: make the release reproducible outside the developer machine.
 
@@ -150,7 +150,7 @@ Gate:
 - A new environment can be configured from the documented steps.
 - CI remains green after documentation/deployment changes.
 
-## Layer 8 — Final Review
+## Phase 11 — Final Review
 
 Goal: review the completed system, not redesign it.
 
