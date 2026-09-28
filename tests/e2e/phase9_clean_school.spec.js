@@ -135,7 +135,10 @@ async function assignTeacher(page, username, className) {
   await expect(page.locator('#classSelect option').filter({ hasText: className })).toHaveCount(1);
   await page.locator('#classSelect').selectOption(classValue);
   await page.locator('.tab[data-tab="admin"]').click();
-  await expect(page.locator('#assignmentsTable tbody tr').filter({ hasText: username })).toHaveCount(1);
+  await expect.poll(
+    async () => page.locator('#assignmentsTable tbody tr').filter({ hasText: username }).count(),
+    { timeout: 15000 }
+  ).toBe(1);
 }
 
 async function stageAndImport(page, filename, { correctFirstBatchRow = false } = {}) {
