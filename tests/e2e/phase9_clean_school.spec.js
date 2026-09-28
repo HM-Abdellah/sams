@@ -131,12 +131,6 @@ async function assignTeacher(page, username, className) {
   await page.locator('#assignmentForm button[type="submit"]').click();
   expect((await responsePromise).ok()).toBeTruthy();
 
-  const assignmentState = await page.request.get(
-    'api/teacher-classes.php?class_id=' + encodeURIComponent(classValue)
-  );
-  console.log('PHASE9_ASSIGNMENT_STATE', await assignmentState.text());
-  console.log('PHASE9_ASSIGNMENTS_DOM', await page.locator('#assignmentsTable tbody').innerText());
-
   await expect(page.locator('#assignmentsTable tbody tr').filter({ hasText: username })).toHaveCount(1);
 }
 
@@ -159,9 +153,9 @@ async function stageAndImport(page, filename, { correctFirstBatchRow = false } =
     await row.locator('[data-edit-import]').click();
     await expect(page.locator('#importCorrectionDialog')).toBeVisible();
 
-    const invalidRow = page.locator('#importCorrectionRows .import-correction-row').filter({
-      hasText: 'E2EIMP002',
-    }).first();
+    const invalidRow = page.locator(
+      '#importCorrectionRows .import-correction-row:has(input[name="massar_code"][value="E2EIMP002"])'
+    ).first();
     await expect(invalidRow).toBeVisible();
     const invalidDate = invalidRow.locator('input[name="birth_date"]');
     await expect(invalidDate).toHaveValue('');
