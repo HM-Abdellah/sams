@@ -622,7 +622,11 @@ test.describe('authenticated SAMS smoke', () => {
     await page.locator('#transferStudentForm button[type="submit"]').click();
     const transferHttp = await transferResponse;
     const transferBody = await transferHttp.text();
-    expect(transferHttp.ok(), `Student transfer response HTTP ${transferHttp.status()}: ${transferBody}`).toBeTruthy();
+    const transferRequestBody = transferHttp.request().postDataJSON();
+    expect(
+      transferHttp.ok(),
+      `Student transfer response HTTP ${transferHttp.status()}: ${transferBody}; request=${JSON.stringify(transferRequestBody)}; input_date=${await page.locator('#transferEffectiveDateInput').inputValue()}`
+    ).toBeTruthy();
     await expect(page.locator('#transferStudentDialog')).toBeHidden();
 
     await page.locator('.tab[data-tab="admin"]').click();
