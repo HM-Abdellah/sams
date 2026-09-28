@@ -80,7 +80,7 @@ The Codespace runtime is not the release authority when required PHP extensions 
 
 ## VERIFY
 
-Final CI validation Run #716 (`36450288290`) passed on exact commit `8ad689d022a5b858ae976e5eb6134947fa8ff9f3`.
+Final CI validation Run #718 (`36450579005`) passed on exact commit `82ce84c99e007014c3c63e148a28d6e8f1e011fb`.
 
 - JavaScript syntax job: PASS.
 - PHP regression/unit/integration/API smoke job: PASS.
