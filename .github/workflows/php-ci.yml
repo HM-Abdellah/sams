@@ -96,16 +96,16 @@ jobs:
         shell: sh
         run: vendor/bin/phpunit --configuration phpunit.xml
 
-      - name: Checkout Phase 2 schema for migration verification
+      - name: Checkout release baseline schema for migration verification
         uses: actions/checkout@v6
         with:
-          ref: refactor/phase-2-backend-foundation
-          path: phase2-base
+          ref: 4daaeb492923a7cdfb909b13c72ae39fb63d0e48
+          path: release-baseline
 
       - name: Verify migration 005 upgrade path
         shell: sh
         run: |
-          SAMS_MIGRATION_BASE_SCHEMA=phase2-base/database/schema.sql php tests/migration_005_integration.php
+          SAMS_MIGRATION_BASE_SCHEMA=release-baseline/database/schema.sql php tests/migration_005_integration.php
 
       - name: Run MariaDB integration tests
         shell: sh
