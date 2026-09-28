@@ -665,4 +665,3 @@ jobs:
           expected=$'1\t4\t2\t2\t1\t6\t5\t1\t6'
           test "$result" = "$expected"
           echo "[PASS] Clean-school persisted state matches acceptance scenario."
-
