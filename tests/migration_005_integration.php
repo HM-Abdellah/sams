@@ -55,7 +55,7 @@ $pdo->exec(
 try {
     $baseSchema = file_get_contents($baseSchemaPath);
     if ($baseSchema === false) {
-        throw new RuntimeException('Unable to read Phase 2 base schema.');
+        throw new RuntimeException('Unable to read release baseline schema.');
     }
 
     $migration = file_get_contents($migrationPath);
