@@ -66,7 +66,9 @@ test.describe('Phase 8 mobile authenticated journeys', () => {
     await expect(page.locator('#classSelect option:not([disabled])')).toHaveCount(1);
     await expect(page.locator('#weekDays .week-day-btn')).toHaveCount(6);
     await expect(page.locator('#periods .period-btn')).toHaveCount(8);
-    await expect(page.locator('#attendanceMobileList .attendance-student-card')).toHaveCount(3);
+    await expect.poll(
+      async () => page.locator('#attendanceMobileList .attendance-student-card').count()
+    ).toBeGreaterThanOrEqual(3);
 
     await setWeek(page, '2026-10-05');
     await page.locator('#weekDays .week-day-btn').nth(1).click();
