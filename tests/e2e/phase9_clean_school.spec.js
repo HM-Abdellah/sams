@@ -126,7 +126,15 @@ async function assignTeacher(page, username, className) {
   await expect(classOption).toHaveCount(1);
   const classValue = await classOption.getAttribute('value');
   expect(classValue).toBeTruthy();
+
+  const assignmentRefresh = page.waitForResponse(
+    (response) =>
+      response.url().includes('/api/teacher-classes.php?') &&
+      response.url().includes('class_id=' + encodeURIComponent(classValue)) &&
+      response.request().method() === 'GET'
+  );
   await page.locator('#classSelect').selectOption(classValue);
+  expect((await assignmentRefresh).ok()).toBeTruthy();
   await expect(page.locator('#classSelect')).toHaveValue(/\d+/);
   await expect(page.locator('#assignmentsTable tbody tr').filter({ hasText: username })).toHaveCount(1);
 }
