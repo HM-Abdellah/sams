@@ -135,7 +135,7 @@ Local execution on the developer Codespace also exposed environment limitations:
 CLOSED after exact-head CI validation.
 
 Evidence:
-- CI run #665 on head `087d0d1` completed successfully.
+- CI run #666 on head `befc7f9` completed successfully.
 - PHP regression job: SUCCESS.
 - JavaScript syntax job: SUCCESS.
 - Playwright E2E job: SUCCESS.
@@ -162,5 +162,5 @@ The validation base branch is CI-only and is based on the closed Phase 7 head; i
 
 - CI run #644 validated the previous head `37824d1` and reported failures only in `history-and-signatures` and `phase8-admin`.
 - The following head changes were then applied on this Phase 8 branch: removal of invalid single-class assumptions and deterministic per-group E2E database reset.
-- The final validated head is `087d0d1`; validation PR #22 tracks this branch against `feat/phase-8-ci-base-v2`.
-- CI run #665 is the final exact-head browser gate recorded for this phase.
+- The final validated head is `befc7f9`; validation PR #22 tracks this branch against `feat/phase-8-ci-base-v2`.
+- CI run #666 is the final exact-head browser gate recorded for this phase.
