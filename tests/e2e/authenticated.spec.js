@@ -32,7 +32,9 @@ test.describe('authenticated SAMS smoke', () => {
     }
 
     await page.waitForURL(/index\.php$/);
-    await expect(page.locator('#attendanceMobileList .attendance-student-card').first()).toBeVisible();
+    await expect.poll(
+      async () => page.locator('#classSelect option:not([disabled])').count()
+    ).toBeGreaterThan(0);
   }
 
   async function setWeek(page, weekStart) {
