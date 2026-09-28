@@ -90,6 +90,20 @@ function c_reset_transfer(PDO $pdo): void
         VALUES (1, 1, '2026-09-01')");
 }
 
+function c_reset_deactivation(PDO $pdo): void
+{
+    $pdo->exec('DELETE FROM attendance');
+    $pdo->exec("UPDATE students SET class_id = 1, status = 'active' WHERE id = 1");
+
+    $enrollmentId = (int)$pdo->query(
+        "SELECT id FROM student_enrollments
+         WHERE student_id = 1 AND class_id = 1 AND ends_on IS NULL
+         ORDER BY id DESC LIMIT 1"
+    )->fetchColumn();
+
+    c_expect($enrollmentId > 0, 'R-004 setup: missing active enrollment.');
+}
+
 function c_reset_certification(PDO $pdo): void
 {
     $pdo->exec('DELETE FROM attendance_week_submissions');
@@ -163,6 +177,10 @@ function c_child(string $mode, string $gate): never
                 );
                 break;
 
+            case 'r1-deactivate':
+                c_deactivate_transaction();
+                break;
+
             case 'r2-invalidate':
                 c_invalidate_signed_lesson();
                 break;
@@ -195,6 +213,32 @@ function c_child(string $mode, string $gate): never
         fwrite(STDERR, get_class($e) . ': ' . $e->getMessage() . "\n");
         exit(1);
     }
+}
+
+function c_deactivate_transaction(): void
+{
+    $pdo = Database::connection();
+
+    $pdo->beginTransaction();
+
+    $lock = $pdo->prepare('SELECT id, is_active FROM classes WHERE id = ? FOR UPDATE');
+    $lock->execute([1]);
+    if ($lock->fetch() === false) {
+        throw new RuntimeException('Class lock failed.');
+    }
+
+    $student = (new SAMS\Repositories\StudentRepository())->findByIdForUpdate(1);
+    if ($student === null || (int)$student['class_id'] !== 1) {
+        throw new RuntimeException('EXPECTED_REJECT: student missing from class');
+    }
+
+    if ((string)$student['status'] === 'inactive') {
+        $pdo->commit();
+        return;
+    }
+
+    (new SAMS\Repositories\StudentRepository())->deactivate(1, 1);
+    $pdo->commit();
 }
 
 function c_invalidate_signed_lesson(): void
@@ -360,6 +404,43 @@ function c_verify_transfer(PDO $pdo, int $round): void
     }
 }
 
+function c_verify_deactivation(PDO $pdo, int $round): void
+{
+    $student = $pdo->query(
+        "SELECT status FROM students WHERE id = 1"
+    )->fetchColumn();
+    $attendanceCount = (int)$pdo->query(
+        "SELECT COUNT(*) FROM attendance
+         WHERE student_id = 1 AND attendance_date = '2026-09-15' AND period = 1"
+    )->fetchColumn();
+
+    c_expect((string)$student === 'inactive',
+        "R-004 round {$round}: deactivation did not complete.");
+    c_expect($attendanceCount <= 1,
+        "R-004 round {$round}: duplicate attendance was created.");
+
+    // An attendance row together with an inactive student is valid only when
+    // attendance committed first and deactivation committed afterward.
+    if ($attendanceCount === 1) {
+        $attendance = $pdo->query(
+            "SELECT a.enrollment_id, e.class_id, e.starts_on, e.ends_on
+             FROM attendance a
+             INNER JOIN student_enrollments e ON e.id = a.enrollment_id
+             WHERE a.student_id = 1
+               AND a.attendance_date = '2026-09-15'
+               AND a.period = 1
+             LIMIT 1"
+        )->fetch();
+
+        c_expect(is_array($attendance), "R-004 round {$round}: attendance row disappeared.");
+        c_expect((int)$attendance['class_id'] === 1,
+            "R-004 round {$round}: attendance moved outside the student's class.");
+        c_expect((string)$attendance['starts_on'] <= '2026-09-15'
+            && ($attendance['ends_on'] === null || (string)$attendance['ends_on'] >= '2026-09-15'),
+            "R-004 round {$round}: attendance is outside the enrollment interval.");
+    }
+}
+
 function c_verify_certification(PDO $pdo, int $round): void
 {
     $status = $pdo->query(
@@ -424,6 +505,11 @@ for ($round = 1; $round <= $rounds; ++$round) {
     $results = c_pair('r1-transfer', 'r1-attendance');
     c_verify_transfer($pdo, $round);
     printf("[PASS] R-001 concurrency round %d\n", $round);
+
+    c_reset_deactivation($pdo);
+    c_pair('r1-deactivate', 'r1-attendance');
+    c_verify_deactivation($pdo, $round);
+    printf("[PASS] R-004 deactivation concurrency round %d\n", $round);
 
     c_reset_certification($pdo);
     c_pair('r2-sign', 'r2-invalidate');

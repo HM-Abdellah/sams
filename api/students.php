@@ -147,17 +147,25 @@ try {
 
         if ($studentId < 1) Response::error('Invalid student.', 422);
 
-        $student = $repo->findInClass($studentId, $classId);
-        if ($student === null) Response::error('Student not found.', 404);
-
-        if ((string)$student['status'] === 'inactive') {
-            Response::success(['changed' => false]);
-        }
-
         $pdo = Database::connection();
         $pdo->beginTransaction();
 
         try {
+            $lockedClass = $classes->findForUpdate($classId);
+            if ($lockedClass === null || !(bool)$lockedClass['is_active']) {
+                throw new StudentWorkflowException('Class not found.', 404);
+            }
+
+            $student = $repo->findByIdForUpdate($studentId);
+            if ($student === null || (int)$student['class_id'] !== $classId) {
+                throw new StudentWorkflowException('Student not found.', 404);
+            }
+
+            if ((string)$student['status'] === 'inactive') {
+                $pdo->commit();
+                Response::success(['changed' => false]);
+            }
+
             $repo->deactivate($studentId, $classId);
             $audit->record(
                 (int)$user['id'],
