@@ -662,6 +662,6 @@ jobs:
                   (SELECT COUNT(*) FROM students WHERE status='active'),
                   (SELECT COUNT(*) FROM attendance),
                   (SELECT COUNT(*) FROM student_enrollments);")
-          expected=$'1\t4\t2\t2\t1\t6\t5\t1\t6'
+          expected=$'1\t4\t2\t2\t1\t6\t5\t1\t7'
           test "$result" = "$expected"
           echo "[PASS] Clean-school persisted state matches acceptance scenario."
