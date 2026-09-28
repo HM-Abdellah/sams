@@ -604,10 +604,13 @@ test.describe('authenticated SAMS smoke', () => {
   });
 
   test('admin can transfer a student without losing historical attendance', async ({ page }) => {
-    const attendancePosts = [];
+    const mutationRequests = [];
     page.on('request', (request) => {
-      if (request.url().includes('/api/attendance.php') && request.method() === 'POST') {
-        attendancePosts.push(request.postDataJSON());
+      if (request.method() === 'POST') {
+        mutationRequests.push({
+          url: request.url(),
+          body: request.postDataJSON(),
+        });
       }
     });
 
@@ -641,11 +644,7 @@ test.describe('authenticated SAMS smoke', () => {
     const transferRequestBody = transferHttp.request().postDataJSON();
     expect(
       transferHttp.ok(),
-      `Pre-transfer attendance API: ${preTransferAttendance.status} ${preTransferAttendance.body}; attendance POSTs before transfer: ${JSON.stringify(attendancePosts)}`
-    ).toBeTruthy();
-    expect(
-      transferHttp.ok(),
-      `Student transfer response HTTP ${transferHttp.status()}: ${transferBody}; request=${JSON.stringify(transferRequestBody)}; input_date=${await page.locator('#transferEffectiveDateInput').inputValue()}`
+      `Pre-transfer attendance API: ${preTransferAttendance.status} ${preTransferAttendance.body}; mutations=${JSON.stringify(mutationRequests)}; Student transfer response HTTP ${transferHttp.status()}: ${transferBody}; request=${JSON.stringify(transferRequestBody)}; input_date=${await page.locator('#transferEffectiveDateInput').inputValue()}`
     ).toBeTruthy();
     await expect(page.locator('#transferStudentDialog')).toBeHidden();
 
