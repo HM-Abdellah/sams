@@ -134,3 +134,11 @@ OPEN pending:
 - review of CI evidence and final diff.
 
 No merge is part of this phase gate.
+
+
+## CI execution note
+
+The full browser gate is executed as separate Playwright subprocesses for the smoke suite, authenticated journey groups, administration lifecycle, authentication lifecycle, and mobile suite. This preserves the complete test set while preventing a single long-lived browser process from accumulating memory.
+
+The validation base branch is CI-only and is based on the closed Phase 7 head; it is not a product release branch and must not be merged.
+
