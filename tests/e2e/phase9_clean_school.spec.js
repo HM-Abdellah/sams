@@ -515,6 +515,8 @@ test('Phase 9 — clean-school acceptance scenario', async ({ page }) => {
   await expect(archiveDay).toBeVisible();
   await archiveDay.locator('[data-archive-day]').click();
   await expect(page.locator('#archiveDayDialog')).toContainText('Import Valid');
+  await page.locator('#archiveDayDialog [data-close-dialog="archiveDayDialog"]').click();
+  await expect(page.locator('#archiveDayDialog')).toBeHidden();
 
   const monthResponsePromise = page.waitForResponse(
     (response) =>
