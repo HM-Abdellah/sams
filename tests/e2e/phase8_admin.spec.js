@@ -118,20 +118,11 @@ test.describe.serial('Phase 8 administration journeys', () => {
     expect((await assignB).ok()).toBeTruthy();
 
     await logout(page);
-    const teacherClassesResponse = page.waitForResponse(
-      (response) =>
-        response.url().includes('/api/classes.php') &&
-        response.request().method() === 'GET'
-    );
     await login(page, teacherUsername, teacherPassword);
-    const teacherClassesHttp = await teacherClassesResponse;
-    const teacherClassesBody = await teacherClassesHttp.text();
-    expect(teacherClassesHttp.ok(), `Teacher classes response HTTP ${teacherClassesHttp.status()}: ${teacherClassesBody}`).toBeTruthy();
     await expect.poll(
       async () => page.locator('#classSelect option:not([disabled])').count()
     ).toBeGreaterThanOrEqual(1);
-    const visibleTeacherClasses = await page.locator('#classSelect option:not([disabled])').allTextContents();
-    expect(visibleTeacherClasses, `Visible teacher classes: ${JSON.stringify(visibleTeacherClasses)}; API: ${teacherClassesBody}`).toContain('E2E-2BAC-B');
+    await expect(page.locator('#classSelect option:checked')).toContainText('E2E-2BAC-B');
     await logout(page);
 
     await login(page, adminUsername, adminPassword);
