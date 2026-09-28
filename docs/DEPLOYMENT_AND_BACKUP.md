@@ -97,12 +97,12 @@ The database name is validated before being used to build the PDO DSN.
 For a release deployment:
 
 1. Back up the current database.
-2. Review the migration notes in database/MIGRATIONS.md.
-3. Apply the required migrations in order.
+2. Review `database/MIGRATIONS.md` and confirm the database is at the supported release baseline.
+3. Apply only the migration(s) documented for that baseline; for this release, that is `005_school_import_staging.sql`.
 4. Run the integration test suite against the target schema where possible.
 5. Verify the application with a read-only smoke test before opening teacher access.
 
-Do not skip migration order or manually edit schema objects unless a documented migration requires it.
+Do not invent, reorder, or manually edit schema changes outside the migration path documented for the target baseline.
 
 ## Backup
 
