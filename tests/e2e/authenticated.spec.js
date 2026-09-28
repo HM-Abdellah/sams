@@ -32,6 +32,7 @@ test.describe('authenticated SAMS smoke', () => {
     }
 
     await page.waitForURL(/index\.php$/);
+    await expect.poll(\n      async () => page.locator('#classSelect option:not([disabled])').count()\n    ).toBeGreaterThan(0);
   }
 
   async function expectLoginFailure(page, user, pass) {
