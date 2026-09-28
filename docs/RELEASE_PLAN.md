@@ -113,6 +113,8 @@ Gate status: CLOSED — final exact-head CI run #667 passed with 29/29 browser t
 
 ## Phase 9 — Clean-School Acceptance
 
+Status: CLOSED — final functional validation Run #711 passed on exact commit `487fb57463d32a9e552b9b741755855f40912b66`, including clean-school browser acceptance and persisted-state verification.
+
 Goal: validate the system from a fresh-school state.
 
 Dataset:
@@ -140,6 +142,8 @@ Gate:
 
 Gate status: CLOSED.
 ## Phase 10 — Deployment and Documentation
+
+Status: IN PROGRESS — deployment/documentation audit and reproducibility work are being completed on `feat/phase-10-deployment-documentation`.
 
 Goal: make the release reproducible outside the developer machine.
 
