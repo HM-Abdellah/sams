@@ -289,6 +289,8 @@ try {
     Response::error('Invalid attendance sign-off action.', 422);
 } catch (\SAMS\Exceptions\AttendanceWorkflowException $e) {
     Response::error($e->getMessage(), $e->httpStatus());
+} catch (\SAMS\Exceptions\RequestPayloadTooLargeException $e) {
+    Response::error($e->getMessage(), $e->httpStatus());
 } catch (\InvalidArgumentException $e) {
     Response::error($e->getMessage(), 422);
 } catch (Throwable $e) {

@@ -40,25 +40,25 @@ final class TeacherClassAdministrationService
             throw new \InvalidArgumentException('Invalid teacher or class.');
         }
 
-        $teacher = $this->users->findById($teacherId);
-        $class = $this->classes->find($classId);
-
-        if (
-            $teacher === null
-            || (string)$teacher['role'] !== 'teacher'
-            || !(bool)$teacher['is_active']
-        ) {
-            throw new AdministrationException('Teacher not found or inactive.', 404);
-        }
-
-        if ($class === null || !(bool)$class['is_active']) {
-            throw new AdministrationException('Class not found or inactive.', 404);
-        }
-
         $pdo = Database::connection();
         $pdo->beginTransaction();
 
         try {
+            $teacher = $this->users->findByIdForUpdate($teacherId);
+            $class = $this->classes->findForUpdate($classId);
+
+            if (
+                $teacher === null
+                || (string)$teacher['role'] !== 'teacher'
+                || !(bool)$teacher['is_active']
+            ) {
+                throw new AdministrationException('Teacher not found or inactive.', 404);
+            }
+
+            if ($class === null || !(bool)$class['is_active']) {
+                throw new AdministrationException('Class not found or inactive.', 404);
+            }
+
             if ($this->repository->exists($teacherId, $classId)) {
                 $pdo->rollBack();
                 return false;

@@ -161,9 +161,28 @@ if (!function_exists('sams_json_body')) {
             throw new \SAMS\Exceptions\RequestPayloadTooLargeException('Request payload is too large.');
         }
 
-        $raw = file_get_contents('php://input');
+        $contentType = strtolower((string)($_SERVER['CONTENT_TYPE'] ?? ''));
+        if (str_starts_with($contentType, 'multipart/form-data')) {
+            return [];
+        }
 
-        if (!is_string($raw) || trim($raw) === '') {
+        $stream = fopen('php://input', 'rb');
+        if ($stream === false) {
+            throw new \InvalidArgumentException('Unable to read request payload.');
+        }
+
+        $raw = stream_get_contents($stream, \SAMS\Http\Request::MAX_JSON_BODY_SIZE + 1);
+        fclose($stream);
+
+        if ($raw === false) {
+            throw new \InvalidArgumentException('Unable to read request payload.');
+        }
+
+        if (strlen($raw) > \SAMS\Http\Request::MAX_JSON_BODY_SIZE) {
+            throw new \SAMS\Exceptions\RequestPayloadTooLargeException('Request payload is too large.');
+        }
+
+        if (trim($raw) === '') {
             return [];
         }
 

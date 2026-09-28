@@ -60,17 +60,33 @@ final class Request
             ?? $_SERVER['CONTENT_TYPE']
             ?? ''
         ));
+        $isMultipart = str_starts_with($contentType, 'multipart/form-data');
         if (
             ctype_digit($contentLength)
             && (int)$contentLength > self::MAX_JSON_BODY_SIZE
-            && !str_starts_with($contentType, 'multipart/form-data')
+            && !$isMultipart
         ) {
             throw new RequestPayloadTooLargeException('Request payload is too large.');
         }
 
-        $rawBody = file_get_contents('php://input');
-        if ($rawBody === false) {
-            throw new InvalidArgumentException('Unable to read request payload.');
+        if ($isMultipart) {
+            $rawBody = '';
+        } else {
+            $stream = fopen('php://input', 'rb');
+            if ($stream === false) {
+                throw new InvalidArgumentException('Unable to read request payload.');
+            }
+
+            $rawBody = stream_get_contents($stream, self::MAX_JSON_BODY_SIZE + 1);
+            fclose($stream);
+
+            if ($rawBody === false) {
+                throw new InvalidArgumentException('Unable to read request payload.');
+            }
+
+            if (strlen($rawBody) > self::MAX_JSON_BODY_SIZE) {
+                throw new RequestPayloadTooLargeException('Request payload is too large.');
+            }
         }
 
         return new self(

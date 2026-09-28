@@ -82,6 +82,11 @@ try {
         $pdo->beginTransaction();
 
         try {
+            $lockedClass = $classes->findForUpdate($classId);
+            if ($lockedClass === null || !(bool)$lockedClass['is_active']) {
+                throw new StudentWorkflowException('Class not found.', 404);
+            }
+
             if ($action === 'create') {
                 $id = $repo->create(
                     $classId,
@@ -107,8 +112,13 @@ try {
             $studentId = (int)($body['id'] ?? 0);
             if ($studentId < 1) Response::error('Invalid student.', 422);
 
-            $existing = $repo->findInClass($studentId, $classId);
-            if ($existing === null) Response::error('Student not found.', 404);
+            $existing = $repo->findByIdForUpdate($studentId);
+            if ($existing === null || (int)$existing['class_id'] !== $classId) {
+                throw new StudentWorkflowException('Student not found.', 404);
+            }
+            if ((string)$existing['status'] !== 'active') {
+                throw new StudentWorkflowException('Student not found.', 404);
+            }
 
             $repo->update(
                 $studentId,
@@ -185,6 +195,8 @@ try {
 
     Response::error('Unknown action.', 400);
 } catch (StudentWorkflowException $e) {
+    Response::error($e->getMessage(), $e->httpStatus());
+} catch (\SAMS\Exceptions\RequestPayloadTooLargeException $e) {
     Response::error($e->getMessage(), $e->httpStatus());
 } catch (InvalidArgumentException $e) {
     Response::error($e->getMessage(), 422);

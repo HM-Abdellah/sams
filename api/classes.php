@@ -6,16 +6,14 @@ require_once dirname(__DIR__) . '/app/bootstrap.php';
 
 use SAMS\Helpers\Auth;
 use SAMS\Helpers\Csrf;
-use SAMS\Helpers\Database;
 use SAMS\Helpers\Response;
-use SAMS\Repositories\AuditLogRepository;
 use SAMS\Repositories\ClassRepository;
-use SAMS\Services\ClassService;
+use SAMS\Services\ClassAdministrationService;
 
 try {
     $user = Auth::requireLogin();
     $repo = new ClassRepository();
-    $audit = new AuditLogRepository();
+    $adminService = new ClassAdministrationService();
     $method = sams_method();
 
     if ($method === 'GET') {
@@ -43,134 +41,47 @@ try {
 
     $body = sams_json_body();
     $action = (string)($body['action'] ?? 'create');
-    $service = new ClassService();
-    $pdo = Database::connection();
 
     if ($action === 'create') {
-        $name = $service->normalizeName((string)($body['name'] ?? ''));
-        $level = $service->optionalText(
+        $id = $adminService->create(
+            (int)$user['id'],
+            (string)($body['name'] ?? ''),
             isset($body['level']) ? (string)$body['level'] : null,
-            50
+            isset($body['branch']) ? (string)$body['branch'] : null
         );
-        $branch = $service->optionalText(
-            isset($body['branch']) ? (string)$body['branch'] : null,
-            100
-        );
-
-        $yearId = (int)$pdo->query(
-            'SELECT id FROM academic_years
-             WHERE is_active = 1
-             ORDER BY id DESC
-             LIMIT 1'
-        )->fetchColumn();
-
-        if ($yearId < 1) {
-            Response::error('No active academic year configured.', 422);
-        }
-
-        $pdo->beginTransaction();
-        try {
-            $id = $repo->create($yearId, $name, $level, $branch);
-            $audit->record(
-                (int)$user['id'],
-                'class.create',
-                'class',
-                $id,
-                ['academic_year_id' => $yearId]
-            );
-            $pdo->commit();
-        } catch (PDOException $e) {
-            if ($pdo->inTransaction()) $pdo->rollBack();
-
-            if ((int)($e->errorInfo[1] ?? 0) === 1062) {
-                Response::error(
-                    'A class with this name already exists for the active academic year.',
-                    409
-                );
-            }
-
-            throw $e;
-        }
 
         Response::success(['id' => $id], 201);
     }
 
     if ($action === 'update') {
         $classId = (int)($body['id'] ?? 0);
-        if ($classId < 1) Response::error('Invalid class.', 422);
-
-        $existing = $repo->find($classId);
-        if ($existing === null) Response::error('Class not found.', 404);
-
-        $name = $service->normalizeName(
-            isset($body['name']) ? (string)$body['name'] : (string)$existing['name']
-        );
-        $level = $service->optionalText(
-            isset($body['level']) ? (string)$body['level'] : (string)($existing['level'] ?? ''),
-            50
-        );
-        $branch = $service->optionalText(
-            isset($body['branch']) ? (string)$body['branch'] : (string)($existing['branch'] ?? ''),
-            100
+        $id = $adminService->update(
+            (int)$user['id'],
+            $classId,
+            array_key_exists('name', $body) ? (string)$body['name'] : null,
+            array_key_exists('level', $body) ? (string)$body['level'] : null,
+            array_key_exists('branch', $body) ? (string)$body['branch'] : null
         );
 
-        $pdo->beginTransaction();
-        try {
-            $repo->update($classId, $name, $level, $branch);
-            $audit->record(
-                (int)$user['id'],
-                'class.update',
-                'class',
-                $classId
-            );
-            $pdo->commit();
-        } catch (PDOException $e) {
-            if ($pdo->inTransaction()) $pdo->rollBack();
-
-            if ((int)($e->errorInfo[1] ?? 0) === 1062) {
-                Response::error(
-                    'A class with this name already exists for the academic year.',
-                    409
-                );
-            }
-
-            throw $e;
-        }
-
-        Response::success(['id' => $classId]);
+        Response::success(['id' => $id]);
     }
 
     if ($action === 'deactivate' || $action === 'activate') {
         $classId = (int)($body['id'] ?? 0);
-        if ($classId < 1) Response::error('Invalid class.', 422);
+        $changed = $adminService->setActive(
+            (int)$user['id'],
+            $classId,
+            $action === 'activate'
+        );
 
-        $existing = $repo->find($classId);
-        if ($existing === null) Response::error('Class not found.', 404);
-
-        $active = $action === 'activate';
-        if ((bool)$existing['is_active'] === $active) {
-            Response::success(['changed' => false]);
-        }
-
-        $pdo->beginTransaction();
-        try {
-            $repo->setActive($classId, $active);
-            $audit->record(
-                (int)$user['id'],
-                $active ? 'class.activate' : 'class.deactivate',
-                'class',
-                $classId
-            );
-            $pdo->commit();
-        } catch (Throwable $e) {
-            if ($pdo->inTransaction()) $pdo->rollBack();
-            throw $e;
-        }
-
-        Response::success(['changed' => true]);
+        Response::success(['changed' => $changed]);
     }
 
     Response::error('Unknown action.', 400);
+} catch (\SAMS\Exceptions\AdministrationException $e) {
+    Response::error($e->getMessage(), $e->httpStatus());
+} catch (\SAMS\Exceptions\RequestPayloadTooLargeException $e) {
+    Response::error($e->getMessage(), $e->httpStatus());
 } catch (\InvalidArgumentException $e) {
     Response::error($e->getMessage(), 422);
 } catch (\Throwable $e) {

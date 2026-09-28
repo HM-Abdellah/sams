@@ -6,18 +6,14 @@ require_once dirname(__DIR__) . '/app/bootstrap.php';
 
 use SAMS\Helpers\Auth;
 use SAMS\Helpers\Csrf;
-use SAMS\Helpers\Database;
 use SAMS\Helpers\Response;
-use SAMS\Helpers\Security;
-use SAMS\Repositories\AuditLogRepository;
 use SAMS\Repositories\UserRepository;
-use SAMS\Services\UserService;
-use SAMS\Services\TeacherService;
+use SAMS\Services\UserAdministrationService;
 
 try {
     $admin = Auth::requireRole('admin');
     $repo = new UserRepository();
-    $audit = new AuditLogRepository();
+    $adminService = new UserAdministrationService();
     $method = sams_method();
 
     if ($method === 'GET') {
@@ -34,116 +30,34 @@ try {
 
     $body = sams_json_body();
     $action = (string)($body['action'] ?? '');
-    $service = new UserService();
-    $teacherService = new TeacherService();
-    $pdo = Database::connection();
 
     if ($action === 'create') {
-        $username = $service->validateUsername((string)($body['username'] ?? ''));
-        $fullName = $service->validateFullName((string)($body['full_name'] ?? ''));
-        $role = $service->validateRole((string)($body['role'] ?? ''));
-        $password = $service->validatePassword((string)($body['password'] ?? ''));
-        $employeeId = null;
-        $phone = null;
-        if ($role === 'teacher') {
-            $employeeId = $teacherService->validateEmployeeId((string)($body['employee_id'] ?? $username));
-            $phone = $teacherService->validatePhone(isset($body['phone']) ? (string)$body['phone'] : null);
-        }
-
-        $pdo->beginTransaction();
-        try {
-            $id = $repo->create(
-                $username,
-                $fullName,
-                Security::hashPassword($password),
-                $role,
-                $employeeId,
-                $phone
-            );
-
-            $audit->record(
-                (int)$admin['id'],
-                'user.create',
-                'user',
-                $id,
-                ['role' => $role]
-            );
-
-            $pdo->commit();
-        } catch (PDOException $e) {
-            if ($pdo->inTransaction()) $pdo->rollBack();
-
-            if ((int)($e->errorInfo[1] ?? 0) === 1062) {
-                Response::error('Username or employee ID already exists.', 409);
-            }
-
-            throw $e;
-        }
+        $id = $adminService->create(
+            (int)$admin['id'],
+            (string)($body['username'] ?? ''),
+            (string)($body['full_name'] ?? ''),
+            (string)($body['role'] ?? ''),
+            (string)($body['password'] ?? ''),
+            array_key_exists('employee_id', $body) ? (string)$body['employee_id'] : null,
+            array_key_exists('phone', $body) ? (string)$body['phone'] : null
+        );
 
         Response::success(['id' => $id], 201);
     }
 
     if ($action === 'update') {
         $userId = (int)($body['id'] ?? 0);
-        if ($userId < 1) Response::error('Invalid user.', 422);
-
-        $existing = $repo->findById($userId);
-        if ($existing === null) Response::error('User not found.', 404);
-
-        $fullName = $service->validateFullName(
-            isset($body['full_name']) ? (string)$body['full_name'] : (string)$existing['full_name']
+        $id = $adminService->update(
+            (int)$admin['id'],
+            $userId,
+            array_key_exists('full_name', $body) ? (string)$body['full_name'] : null,
+            array_key_exists('role', $body) ? (string)$body['role'] : null,
+            array_key_exists('is_active', $body) ? (bool)$body['is_active'] : null,
+            array_key_exists('employee_id', $body) ? (string)$body['employee_id'] : null,
+            array_key_exists('phone', $body) ? (string)$body['phone'] : null
         );
-        $role = $service->validateRole(
-            isset($body['role']) ? (string)$body['role'] : (string)$existing['role']
-        );
-        $isActive = array_key_exists('is_active', $body)
-            ? (bool)$body['is_active']
-            : (bool)$existing['is_active'];
-        $employeeId = (string)$existing['employee_id'] !== '' ? (string)$existing['employee_id'] : null;
-        $phone = (string)$existing['phone'] !== '' ? (string)$existing['phone'] : null;
-        if ($role === 'teacher') {
-            $employeeId = $teacherService->validateEmployeeId((string)($body['employee_id'] ?? $employeeId ?? $existing['username']));
-            $phone = $teacherService->validatePhone(array_key_exists('phone', $body) ? (string)$body['phone'] : $phone);
-        } elseif (array_key_exists('employee_id', $body)) {
-            $employeeId = $teacherService->validateEmployeeId((string)$body['employee_id']);
-        }
 
-        $removingAdminAccess =
-            (string)$existing['role'] === 'admin' && $role !== 'admin';
-        $deactivatingAdmin =
-            (string)$existing['role'] === 'admin' && !$isActive;
-
-        if ($userId === (int)$admin['id'] && !$isActive) {
-            Response::error('You cannot deactivate your own account.', 409);
-        }
-
-        if ($removingAdminAccess || $deactivatingAdmin) {
-            if ($repo->countActiveAdmins() <= 1) {
-                Response::error(
-                    'The system must keep at least one active administrator.',
-                    409
-                );
-            }
-        }
-
-        $pdo->beginTransaction();
-        try {
-            $usernameForUpdate = $role === 'teacher' ? (string)$employeeId : (string)$existing['username'];
-            $repo->updateProfile($userId, $fullName, $role, $isActive, $usernameForUpdate, $employeeId, $phone);
-            $audit->record(
-                (int)$admin['id'],
-                'user.update',
-                'user',
-                $userId,
-                ['role' => $role, 'is_active' => $isActive]
-            );
-            $pdo->commit();
-        } catch (\Throwable $e) {
-            if ($pdo->inTransaction()) $pdo->rollBack();
-            throw $e;
-        }
-
-        Response::success(['id' => $userId]);
+        Response::success(['id' => $id]);
     }
 
     if ($action === 'reset_password') {
@@ -202,6 +116,10 @@ try {
     }
 
     Response::error('Unknown action.', 400);
+} catch (\SAMS\Exceptions\AdministrationException $e) {
+    Response::error($e->getMessage(), $e->httpStatus());
+} catch (\SAMS\Exceptions\RequestPayloadTooLargeException $e) {
+    Response::error($e->getMessage(), $e->httpStatus());
 } catch (\InvalidArgumentException $e) {
     Response::error($e->getMessage(), 422);
 } catch (\Throwable $e) {

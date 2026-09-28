@@ -483,6 +483,8 @@ try {
     }
 
     Response::error('Method not allowed.', 405);
+} catch (\SAMS\Exceptions\RequestPayloadTooLargeException $e) {
+    Response::error($e->getMessage(), $e->httpStatus());
 } catch (InvalidArgumentException $e) {
     Response::error($e->getMessage(), 422);
 } catch (Throwable $e) {
