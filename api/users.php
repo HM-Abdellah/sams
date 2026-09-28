@@ -62,55 +62,18 @@ try {
 
     if ($action === 'reset_password') {
         $userId = (int)($body['id'] ?? 0);
-        if ($userId < 1) Response::error('Invalid user.', 422);
-        if ($repo->findById($userId) === null) {
-            Response::error('User not found.', 404);
-        }
-
-        $password = $service->validatePassword((string)($body['password'] ?? ''));
-
-        $pdo->beginTransaction();
-        try {
-            $repo->updatePasswordHash(
-                $userId,
-                Security::hashPassword($password)
-            );
-            $audit->record(
-                (int)$admin['id'],
-                'user.password_reset',
-                'user',
-                $userId
-            );
-            $pdo->commit();
-        } catch (\Throwable $e) {
-            if ($pdo->inTransaction()) $pdo->rollBack();
-            throw $e;
-        }
+        $adminService->resetPassword(
+            (int)$admin['id'],
+            $userId,
+            (string)($body['password'] ?? '')
+        );
 
         Response::success();
     }
 
     if ($action === 'unlock') {
         $userId = (int)($body['id'] ?? 0);
-        if ($userId < 1) Response::error('Invalid user.', 422);
-
-        $existing = $repo->findById($userId);
-        if ($existing === null) Response::error('User not found.', 404);
-
-        $pdo->beginTransaction();
-        try {
-            $repo->unlock($userId);
-            $audit->record(
-                (int)$admin['id'],
-                'user.unlock',
-                'user',
-                $userId
-            );
-            $pdo->commit();
-        } catch (Throwable $e) {
-            if ($pdo->inTransaction()) $pdo->rollBack();
-            throw $e;
-        }
+        $adminService->unlock((int)$admin['id'], $userId);
 
         Response::success(['id' => $userId]);
     }
