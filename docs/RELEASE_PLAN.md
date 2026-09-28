@@ -143,7 +143,7 @@ Gate:
 Gate status: CLOSED.
 ## Phase 10 — Deployment and Documentation
 
-Status: CLOSED — final CI validation Run #718 (`36450579005`) passed on exact commit `82ce84c99e007014c3c63e148a28d6e8f1e011fb`, covering JavaScript, PHP, clean-school acceptance/persistence, and Playwright E2E.
+Status: CLOSED — release-tree CI validation Run #720 (`36451293759`) passed on exact commit `7648929ab3e0a410a890a970670326658e2566d9`, covering JavaScript, PHP, clean-school acceptance/persistence, and Playwright E2E.
 
 Goal: make the release reproducible outside the developer machine.
 
@@ -160,7 +160,7 @@ Goal: make the release reproducible outside the developer machine.
 Gate:
 - A new environment can be configured from the documented steps.
 - CI remains green after documentation/deployment changes.
-- Final validation Run #718 passed on exact commit `82ce84c99e007014c3c63e148a28d6e8f1e011fb`.
+- Release-tree validation Run #720 passed on exact commit `7648929ab3e0a410a890a970670326658e2566d9`.
 
 Gate status: CLOSED.
 
