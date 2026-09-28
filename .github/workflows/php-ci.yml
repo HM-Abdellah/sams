@@ -446,10 +446,16 @@ jobs:
 
           overall_status=0
 
+          reset_e2e_school() {
+            php -r '$pdo = new PDO(sprintf("mysql:host=%s;port=%d;charset=utf8mb4", getenv("SAMS_TEST_DB_HOST"), (int)getenv("SAMS_TEST_DB_PORT")), getenv("SAMS_TEST_DB_USER"), getenv("SAMS_TEST_DB_PASS"), [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]); $db = getenv("SAMS_TEST_DB_NAME"); if (!preg_match("/^[A-Za-z0-9_]+$/", $db)) { throw new RuntimeException("Invalid E2E database name."); } $pdo->exec("DROP DATABASE " . $db); $pdo->exec("CREATE DATABASE " . $db);'
+            php scripts/e2e_seed.php
+          }
+
           run_e2e_group() {
             group_name="$1"
             shift
             echo "===== Phase 8 E2E: $group_name =====" | tee -a /tmp/phase8-playwright.log
+            reset_e2e_school
             set +e
             npx playwright test "$@" --reporter=line 2>&1 | tee -a /tmp/phase8-playwright.log
             group_status=${PIPESTATUS[0]}
