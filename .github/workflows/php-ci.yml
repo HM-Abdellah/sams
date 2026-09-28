@@ -434,7 +434,27 @@ jobs:
           fi
 
           find tests/e2e -type f -name '*.js' -print0 | xargs -0 -n1 node --check
-          npm run test:e2e
-          test_status=$?
-          kill "$server_pid" 2>/dev/null || true
-          exit "$test_status"
+
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+
+          npx playwright test tests/e2e/smoke.spec.js --reporter=line
+
+          npx playwright test tests/e2e/authenticated.spec.js \
+            --grep 'login, operational|attendance edits are sent|teacher cannot access historical|teacher sees only assigned|teacher can sign, reopen|teacher weekly attendance' \
+            --reporter=line
+
+          npx playwright test tests/e2e/authenticated.spec.js \
+            --grep 'admin can upload a Markdown|admin can upload a real XLSX|admin can review and explicitly confirm|admin can complete a CSV' \
+            --reporter=line
+
+          npx playwright test tests/e2e/authenticated.spec.js \
+            --grep 'admin can transfer a student|admin can view teachers|admin dashboard separates|admin can receive a fully signed' \
+            --reporter=line
+
+          npx playwright test tests/e2e/authenticated.spec.js \
+            --grep 'admin can manage a class and a user|logout invalidates the authenticated' \
+            --reporter=line
+
+          npx playwright test tests/e2e/phase8_admin.spec.js --reporter=line
+          npx playwright test tests/e2e/phase8_auth.spec.js --reporter=line
+          npx playwright test tests/e2e/phase8_mobile.mobile.spec.js --reporter=line
