@@ -551,7 +551,7 @@ test('Phase 9 — clean-school acceptance scenario', async ({ page }) => {
   const counselorClassId = await page.locator('#classSelect option').filter({ hasText: classA }).getAttribute('value');
   expect(counselorClassId).toBeTruthy();
   const counselorArchiveUrl = new URL(
-    'api/archive.php?class_id=' + counselorClassId + '&view=days&month=2026-10',
+    '../api/archive.php?class_id=' + counselorClassId + '&view=days&month=2026-10',
     page.url()
   ).toString();
   const counselorArchive = await page.evaluate(async (url) => {
