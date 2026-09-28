@@ -349,6 +349,9 @@ jobs:
       SAMS_TEST_DB_PASS: root
       SAMS_E2E_PASSWORD: e2e-admin-password-2026
       SAMS_E2E_TEACHER_PASSWORD: e2e-teacher-password-2026
+      SAMS_E2E_LIFECYCLE_USERNAME: e2e-lifecycle-user
+      SAMS_E2E_LIFECYCLE_PASSWORD: e2e-lifecycle-password-2026
+      SAMS_E2E_LIFECYCLE_RESET_PASSWORD: e2e-lifecycle-reset-2026
 
     steps:
       - name: Checkout repository
@@ -420,6 +423,17 @@ jobs:
             exit 1
           fi
 
+          if grep -RInE 'test\.(skip|fixme|only)|describe\.(skip|only)' tests/e2e; then
+            echo "Critical E2E suite contains skipped/focused tests."
+            exit 1
+          fi
+
+          if grep -RIn 'waitForTimeout' tests/e2e; then
+            echo "E2E suite must synchronize on observable behavior, not fixed sleeps."
+            exit 1
+          fi
+
+          find tests/e2e -type f -name '*.js' -print0 | xargs -0 -n1 node --check
           npm run test:e2e
           test_status=$?
           kill "$server_pid" 2>/dev/null || true
