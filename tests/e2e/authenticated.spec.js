@@ -112,6 +112,7 @@ test.describe('authenticated SAMS smoke', () => {
     await statusButtons.nth(2).click();
 
     const bulkResponse = await bulkResponsePromise;
+    console.log('PHASE8_BULK_RESPONSE', bulkResponse.status(), await bulkResponse.text());
     expect(bulkResponse.ok()).toBeTruthy();
 
     const requestBody = bulkResponse.request().postDataJSON();
