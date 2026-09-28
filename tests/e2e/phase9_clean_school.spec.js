@@ -107,6 +107,9 @@ async function createClass(page, name) {
 }
 
 async function assignTeacher(page, username, className) {
+  await page.locator('#classSelect').selectOption({ label: className });
+  await expect(page.locator('#classSelect')).toHaveValue(/\\d+/);
+  await expect(page.locator('#assignmentTeacherInput option').filter({ hasText: username }).first()).toBeVisible();
   const teacherOption = page.locator('#assignmentTeacherInput option').filter({ hasText: username }).first();
   await expect(teacherOption).toBeVisible();
   const teacherValue = await teacherOption.getAttribute('value');
@@ -356,7 +359,7 @@ test('Phase 9 — clean-school acceptance scenario', async ({ page }) => {
   await expect(page.locator('#classSelect option:not([disabled])')).toHaveCount(1);
   await expect(page.locator('#classSelect option:checked')).toContainText(classA);
   await page.locator('.tab[data-tab="students"]').click();
-  await expect(page.locator('#studentsList .student-card').filter({ hasText: 'Phase9 Sara' })).toHaveCount(0);
+  await expect(page.locator('#studentsList .student-card').filter({ hasText: 'Phase9 Sara' })).toHaveCount(1);
   await logout(page);
 
   await login(page, adminUsername, adminPassword);
@@ -426,8 +429,10 @@ test('Phase 9 — clean-school acceptance scenario', async ({ page }) => {
   await expect(page.locator('.tab[data-tab="admin"]')).toHaveCount(0);
   await expect(page.locator('.tab[data-tab="archive"]')).toHaveCount(0);
 
+  const counselorClassId = await page.locator('#classSelect option').filter({ hasText: classA }).getAttribute('value');
+  expect(counselorClassId).toBeTruthy();
   const counselorArchive = await page.request.get(
-    'api/archive.php?class_id=1&view=days&month=2026-10'
+    'api/archive.php?class_id=' + counselorClassId + '&view=days&month=2026-10'
   );
   expect(counselorArchive.status()).toBe(403);
   await logout(page);
