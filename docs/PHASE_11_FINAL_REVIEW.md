@@ -1,6 +1,6 @@
 # SAMS — Phase 11 Final Release Review
 
-Status: OPEN
+Status: CLOSED
 
 Branch: feat/phase-11-final-review
 
@@ -59,6 +59,7 @@ Static review must confirm:
 
 The local Codespace does not provide all production PHP extensions, so environment-complete acceptance remains a CI responsibility.
 
+
 ## Deployment evidence
 
 An isolated Apache smoke confirmed:
@@ -77,6 +78,34 @@ Attendance remained split across the two historical enrollment records (`1` row 
 
 One earlier Apache setup attempt failed because the Codespace container could not resolve Debian package repositories. That was an environment/network limitation; the package-free Apache routing test and the later `pdo_mysql` Apache+MariaDB test both completed successfully.
 
+## GREEN
+
+Targeted release verification passed:
+
+- exact release baseline → `005_school_import_staging.sql`: PASS;
+- synthetic backup → restore with historical attendance split across two enrollments: PASS;
+- Apache routing/static smoke: PASS;
+- Apache + MariaDB DB-backed smoke: PASS;
+- PHP syntax lint: PASS;
+- JavaScript syntax check: PASS;
+- `git diff --check`: PASS.
+
+GitHub Actions Run #723 (`36467396229`) passed on exact head `b2733b01a9144b36afc9c5b12b87f2d7e6ddc7d1`.
+Jobs `php`, `javascript`, `e2e`, and `clean-school-acceptance` all completed successfully.
+
+## REVIEW
+
+Phase 11 changed only release/deployment verification material:
+
+- `.github/workflows/php-ci.yml`
+- `database/MIGRATIONS.md`
+- `docs/DEPLOYMENT_AND_BACKUP.md`
+- `docs/PHASE_10_DEPLOYMENT_DOCUMENTATION.md`
+- `tests/migration_005_integration.php`
+- `docs/PHASE_11_FINAL_REVIEW.md`
+
+No backend domain implementation, database schema, attendance logic, authentication logic, or frontend behavior was changed.
+
 ## RELEASE GATE
 
-OPEN until the corrected migration contract passes targeted verification and the full CI/review evidence is recorded.
+CLOSED — no release-blocking issue remains in the reviewed release-tree after the migration-path correction and full CI validation.
