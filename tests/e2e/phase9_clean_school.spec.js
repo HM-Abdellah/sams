@@ -142,6 +142,36 @@ async function assignTeacher(page, username, className) {
   expect(payload.data?.teachers?.some((teacher) => teacher.username === username)).toBe(true);
 }
 
+async function selectOperationalClass(page, className) {
+  const option = page.locator('#classSelect option').filter({ hasText: className }).first();
+  await expect(option).toHaveCount(1);
+  const classValue = await option.getAttribute('value');
+  expect(classValue).toBeTruthy();
+
+  const studentsResponse = page.waitForResponse(
+    (response) =>
+      response.url().includes('/api/students.php?class_id=' + encodeURIComponent(classValue)) &&
+      response.request().method() === 'GET'
+  );
+  const attendanceResponse = page.waitForResponse(
+    (response) =>
+      response.url().includes('/api/attendance.php?class_id=' + encodeURIComponent(classValue)) &&
+      response.url().includes('week_start=') &&
+      response.request().method() === 'GET'
+  );
+  const signoffResponse = page.waitForResponse(
+    (response) =>
+      response.url().includes('/api/attendance-signoffs.php?class_id=' + encodeURIComponent(classValue)) &&
+      response.request().method() === 'GET'
+  );
+
+  await page.locator('#classSelect').selectOption(classValue);
+  await Promise.all([studentsResponse, attendanceResponse, signoffResponse]);
+  await expect(page.locator('#classSelect')).toHaveValue(classValue);
+
+  return classValue;
+}
+
 async function stageAndImport(page, filename, { correctFirstBatchRow = false } = {}) {
   await page.locator('.tab[data-tab="admin"]').click();
   await page.locator('#studentImportFile').setInputFiles(filename);
@@ -263,7 +293,7 @@ test('Phase 9 — clean-school acceptance scenario', async ({ page }) => {
   await assignTeacher(page, teacherAUsername, classA);
   await assignTeacher(page, teacherBUsername, classB);
 
-  await page.locator('#classSelect').selectOption({ label: classA });
+  await selectOperationalClass(page, classA);
   await stageAndImport(page, 'tests/fixtures/students-invalid.csv', {
     correctFirstBatchRow: true,
   });
@@ -312,11 +342,11 @@ test('Phase 9 — clean-school acceptance scenario', async ({ page }) => {
   await manualCard.locator('[data-delete-student]').click();
   expect((await manualDeactivateResponse).ok()).toBeTruthy();
 
-  await page.locator('#classSelect').selectOption({ label: classB });
+  await selectOperationalClass(page, classB);
   await stageAndImport(page, 'tests/fixtures/phase9-class-b.csv');
 
   await page.locator('.tab[data-tab="attendance"]').click();
-  await page.locator('#classSelect').selectOption({ label: classA });
+  await selectOperationalClass(page, classA);
   await expect(page.locator('#attendanceTable [data-attendance-toggle]').first()).toBeVisible();
   await selectAttendanceDay(page);
 
