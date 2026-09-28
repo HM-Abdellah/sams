@@ -93,15 +93,10 @@ function c_reset_transfer(PDO $pdo): void
 function c_reset_deactivation(PDO $pdo): void
 {
     $pdo->exec('DELETE FROM attendance');
+    $pdo->exec('DELETE FROM student_enrollments');
     $pdo->exec("UPDATE students SET class_id = 1, status = 'active' WHERE id = 1");
-
-    $enrollmentId = (int)$pdo->query(
-        "SELECT id FROM student_enrollments
-         WHERE student_id = 1 AND class_id = 1 AND ends_on IS NULL
-         ORDER BY id DESC LIMIT 1"
-    )->fetchColumn();
-
-    c_expect($enrollmentId > 0, 'R-004 setup: missing active enrollment.');
+    $pdo->exec("INSERT INTO student_enrollments (student_id, class_id, starts_on)
+        VALUES (1, 1, '2026-09-01')");
 }
 
 function c_reset_certification(PDO $pdo): void
