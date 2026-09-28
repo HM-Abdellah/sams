@@ -87,30 +87,37 @@ Perform a release-focused security and reliability pass over the existing SAMS a
 
 ### RED evidence
 
-- CI #598 failed the API HTTP smoke at the JSON-size contract: an oversized attendance request returned HTTP 422 instead of the documented 413.
-- The root cause was controller-level `InvalidArgumentException` handling catching `RequestPayloadTooLargeException` before its dedicated status could be returned.
-- The Phase 7 Git audit also emitted `not a git repository` and could false-pass because the test ignored the command failure.
+- CI #598 exposed a request-size contract defect: an oversized JSON attendance request returned HTTP 422 instead of the documented 413.
+- Root cause: `RequestPayloadTooLargeException` was caught after generic `InvalidArgumentException` in affected canonical controllers.
+- The initial Phase 7 repository audit could emit `not a git repository` inside the PHP service container and could false-pass because command failure was ignored.
+- A subsequent CI/E2E run exposed committed remote-tool wrapper metadata at the top of three canonical controllers and the Phase 7 integration test. This broke `declare(strict_types=1)` parsing when the v1 import path loaded those controllers.
 
 ### GREEN evidence
 
-- `RequestPayloadTooLargeException` is now handled before generic `InvalidArgumentException` in the JSON-bearing canonical controller paths.
-- Git tracked-path auditing is anchored to the repository path and fails closed when Git cannot execute.
-- Fresh synthetic HTTP smoke passes health, authentication, RBAC, CSRF, headers, signatures, and 413 request-size checks.
-- Backend PHPUnit: 33 tests / 130 assertions passed.
-- Legacy checks: 13 passed / 0 failed.
-- Phase 4, Phase 5, Phase 6, and Phase 7 MariaDB integration checks passed.
-- Synthetic workbook/CSV size and row-limit rejection checks passed.
-- Controlled DB failure returned generic HTTP 500 without SQL/internal-path leakage.
-- JavaScript syntax checks passed.
+- The request-size catch order was corrected in `AttendanceController`, `SignatureController`, and `AdminApiController`/signature handling so oversized JSON returns HTTP 413.
+- The contaminated controller/test files were restored to valid PHP source while preserving the Phase 7 behavior changes.
+- The runtime Phase 7 integration no longer depends on `.git` metadata inside the CI service container.
+- The dedicated CI secret/config audit now checks the tracked tree for the exact CI commit through the GitHub repository tree API, rejecting tracked `.env*` files (except `.env.example`) and local config files.
+- Local verification on the final code head reported: full PHP lint PASS, JavaScript syntax PASS, YAML parse PASS, wrapper/metadata scan clean, and `git diff --check` PASS.
+- CI push run **#36366650663** on commit `00a9323` passed **PHP + JavaScript + Playwright E2E**.
+- CI pull-request run **#36366654735** on commit `00a9323` passed **PHP + JavaScript + Playwright E2E**.
+- The passing PHP CI job verified the legacy suite, backend PHPUnit, migration 005, MariaDB integration, whole-school import, teacher attendance, administration, Phase 6 archive/reports/signatures, Phase 7 security/reliability integration, tracked-secret audit, and API HTTP smoke.
+- Playwright E2E verified the real Markdown fallback upload and real XLSX upload through the authenticated v1 import path in addition to the existing authenticated flows.
+- Existing targeted evidence also covers 413 body limits, import file/row limits, generic DB-down 500 behavior, CSRF, RBAC/resource isolation, inactive-user/session invalidation, prepared PDO mode, transactions, duplicate/conflict handling, and security headers.
+- No real-school PII was added to the repository; repository fixtures remain synthetic.
 
 ### Current gate status
 
-**OPEN — CI run #599 failed before creating any jobs/check-runs; local verification is green, but the CI gate is not yet satisfied.**
+**CLOSED on the verified code head `00a9323`: no known critical authentication blocker, no known critical authorization blocker, no known critical data-integrity blocker, security regression green, existing regression green, and both push/PR CI workflows green.**
 
-### CI trigger verification
+The branch remains unmerged; no automatic PR merge was performed. This gate is based on automated regression/security coverage and code review, not on a formal external penetration test or an absolute security certification.
 
-- Commit `0dcd4b5` is the current branch head.
-- A fresh push-triggered workflow run is still required before the Phase 7 gate can close.
+### Final CI record
+
+- Push: `36366650663` — SUCCESS.
+- Pull request: `36366654735` — SUCCESS.
+- Verified code head: `00a932350ae3597e63c36b1986c9bbdff7c8ff32`.
+
 
 ## Exit gate
 
