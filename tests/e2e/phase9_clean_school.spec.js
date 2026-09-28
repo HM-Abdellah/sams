@@ -273,6 +273,30 @@ async function toggleAttendanceAndSave(page) {
   return button;
 }
 
+async function saveClassSignature(page) {
+  const canvas = page.locator('#signatureCanvas');
+  await expect(canvas).toBeVisible();
+
+  const responsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes('/api/signatures.php?class_id=') &&
+      response.request().method() === 'POST'
+  );
+
+  const box = await canvas.boundingBox();
+  expect(box).not.toBeNull();
+
+  await page.mouse.move(box.x + 180, box.y + 150);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 280, box.y + 110);
+  await page.mouse.move(box.x + 380, box.y + 170);
+  await page.mouse.up();
+
+  await page.locator('#saveSignatureBtn').click();
+  const response = await responsePromise;
+  expect(response.ok()).toBeTruthy();
+}
+
 async function signLesson(page) {
   const responsePromise = page.waitForResponse(
     (response) =>
@@ -383,6 +407,7 @@ test('Phase 9 — clean-school acceptance scenario', async ({ page }) => {
   await page.locator('.tab[data-tab="attendance"]').click();
   await selectOperationalClass(page, classA);
   await selectAttendanceDay(page);
+  await saveClassSignature(page);
 
   const attendanceToggle = page.locator('#attendanceTable tbody tr').filter({ hasText: 'Import Valid' }).locator('[data-attendance-toggle]').first();
   await expect(attendanceToggle).toBeVisible();
