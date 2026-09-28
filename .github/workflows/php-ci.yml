@@ -652,7 +652,7 @@ jobs:
       - name: Verify persisted clean-school state
         shell: bash
         run: |
-          result=$(mariadb --protocol=tcp             -h "$SAMS_TEST_DB_HOST"             -P "$SAMS_TEST_DB_PORT"             -u "$SAMS_TEST_DB_USER"             -p"$SAMS_TEST_DB_PASS"             -N -B             -e "SELECT
+          result=$(mariadb --protocol=tcp             -h "$SAMS_TEST_DB_HOST"             -P "$SAMS_TEST_DB_PORT"             -u "$SAMS_TEST_DB_USER"             -p"$SAMS_TEST_DB_PASS"             -D "$SAMS_TEST_DB_NAME"             -N -B             -e "SELECT
                   (SELECT COUNT(*) FROM academic_years),
                   (SELECT COUNT(*) FROM users),
                   (SELECT COUNT(*) FROM classes),
