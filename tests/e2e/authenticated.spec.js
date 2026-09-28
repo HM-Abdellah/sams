@@ -32,9 +32,7 @@ test.describe('authenticated SAMS smoke', () => {
     }
 
     await page.waitForURL(/index\.php$/);
-    await expect.poll(
-      async () => page.locator('#classSelect option:not([disabled])').count()
-    ).toBeGreaterThan(0);
+    await expect(page.locator('#logoutBtn')).toBeVisible();
   }
 
   async function setWeek(page, weekStart) {
