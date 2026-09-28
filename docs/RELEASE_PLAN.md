@@ -109,6 +109,8 @@ Gate:
 - Authenticated E2E runs without being skipped.
 - Critical desktop and mobile workflows are green.
 
+Gate status: CLOSED — final exact-head CI run #665 passed with 29/29 browser tests, alongside green PHP and JavaScript jobs.
+
 ## Phase 9 — Clean-School Acceptance
 
 Goal: validate the system from a fresh-school state.

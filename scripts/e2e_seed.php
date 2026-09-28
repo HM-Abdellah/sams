@@ -171,7 +171,6 @@ try {
 
     $pdo->commit();
 
-
     echo "[PASS] E2E school bootstrap: admin={$adminId}, teacher={$teacherId}, classes={$classA},{$classB}" . PHP_EOL;
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) {

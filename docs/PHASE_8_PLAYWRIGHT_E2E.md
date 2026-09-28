@@ -1,8 +1,8 @@
 # SAMS — Phase 8 Playwright E2E
 
-Status: OPEN
+Status: CLOSED
 
-Validation cycle: final CI gate pending.
+Validation cycle: final exact-head CI gate passed.
 
 Validation base: feat/phase-8-ci-base-v2.
 
@@ -130,16 +130,25 @@ Local execution on the developer Codespace also exposed environment limitations:
 - Kept real XLSX/Markdown/CSV import paths already present in the suite.
 - Kept existing mocked whole-school reconciliation coverage explicitly supplemental.
 
-## Current gate
+## Final gate
 
-OPEN pending:
-- final Playwright CI execution on the Phase 8 branch,
-- desktop green,
-- mobile green,
-- zero skipped critical workflow,
-- review of CI evidence and final diff.
+CLOSED after exact-head CI validation.
 
-No merge is part of this phase gate.
+Evidence:
+- CI run #665 on head `087d0d1` completed successfully.
+- PHP regression job: SUCCESS.
+- JavaScript syntax job: SUCCESS.
+- Playwright E2E job: SUCCESS.
+- All nine E2E groups passed: smoke 2/2, teacher-core-1 4/4, teacher-core-2 2/2, imports 4/4, history-and-signatures 4/4, admin-and-logout 2/2, phase8-admin 3/3, phase8-auth 3/3, phase8-mobile 5/5.
+- Total browser gate: 29/29 passed.
+- Critical-suite static guards passed: no skipped/focused tests and no `waitForTimeout`.
+- No application/backend domain behavior was changed to bypass a failing assertion.
+
+Release-blocking fixes verified during the validation cycle:
+- CI now resets the synthetic E2E database before every journey group, preventing cross-group attendance state leakage.
+- The teacher-assignment browser journey now waits for the server-backed assignment refresh before selecting the next class, removing the observed UI refresh race.
+
+No merge is part of this phase gate. Validation PR #22 remains open and validation-only.
 
 
 ## CI execution note
@@ -153,5 +162,5 @@ The validation base branch is CI-only and is based on the closed Phase 7 head; i
 
 - CI run #644 validated the previous head `37824d1` and reported failures only in `history-and-signatures` and `phase8-admin`.
 - The following head changes were then applied on this Phase 8 branch: removal of invalid single-class assumptions and deterministic per-group E2E database reset.
-- Current Phase 8 head is `f45aaf1`; validation PR #22 tracks this exact head against `feat/phase-8-ci-base-v2`.
-- The Phase 8 gate remains OPEN until CI evidence is recorded for the current head and confirms critical authenticated journeys, desktop, mobile, zero skipped critical workflow, and the final diff/documentation review.
+- The final validated head is `087d0d1`; validation PR #22 tracks this branch against `feat/phase-8-ci-base-v2`.
+- CI run #665 is the final exact-head browser gate recorded for this phase.
