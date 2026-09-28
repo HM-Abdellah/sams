@@ -2,6 +2,8 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests/e2e',
+  forbidOnly: true,
+
   timeout: 30_000,
   expect: { timeout: 5_000 },
   fullyParallel: false,
@@ -14,10 +16,14 @@ export default defineConfig({
     video: 'retain-on-failure'
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    {
+      name: 'chromium',
+      testIgnore: ['**/*.mobile.spec.js'],
+      use: { ...devices['Desktop Chrome'] }
+    },
     {
       name: 'mobile',
-      testIgnore: ['**/authenticated.spec.js'],
+      testMatch: ['**/*.mobile.spec.js'],
       use: { ...devices['Pixel 5'] }
     }
   ]
