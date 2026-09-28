@@ -6,9 +6,9 @@ concurrency:
 
 on:
   push:
-    branches: [main, refactor/phase-2-backend-foundation, feat/phase-3-school-import-v2, feat/phase-4-teacher-attendance-backend, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-7-security-reliability]
+    branches: [main, refactor/phase-2-backend-foundation, feat/phase-3-school-import-v2, feat/phase-4-teacher-attendance-backend, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-7-security-reliability, feat/phase-8-playwright-e2e]
   pull_request:
-    branches: [main, refactor/phase-2-backend-foundation, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures]
+    branches: [main, refactor/phase-2-backend-foundation, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-7-security-reliability]
 
 jobs:
   php:
