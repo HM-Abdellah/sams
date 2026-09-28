@@ -143,7 +143,7 @@ Gate:
 Gate status: CLOSED.
 ## Phase 10 — Deployment and Documentation
 
-Status: IN PROGRESS — deployment/documentation audit and reproducibility work are being completed on `feat/phase-10-deployment-documentation`.
+Status: CLOSED — final CI validation Run #716 (`36450288290`) passed on exact commit `8ad689d022a5b858ae976e5eb6134947fa8ff9f3`, covering JavaScript, PHP, clean-school acceptance/persistence, and Playwright E2E.
 
 Goal: make the release reproducible outside the developer machine.
 
@@ -160,6 +160,9 @@ Goal: make the release reproducible outside the developer machine.
 Gate:
 - A new environment can be configured from the documented steps.
 - CI remains green after documentation/deployment changes.
+- Final validation Run #716 passed on exact commit `8ad689d022a5b858ae976e5eb6134947fa8ff9f3`.
+
+Gate status: CLOSED.
 
 ## Phase 11 — Final Review
 
