@@ -128,12 +128,9 @@ jobs:
 
       - name: Audit tracked secrets and local config paths
         shell: sh
-        env:
-          GITHUB_TOKEN: \${{ github.token }}
         run: |
           tree_json=$(curl -fsSL \
             -H 'Accept: application/vnd.github+json' \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
             "https://api.github.com/repos/$GITHUB_REPOSITORY/git/trees/$GITHUB_SHA?recursive=1")
           printf '%s' "$tree_json" | php -r '
           $tree = json_decode(stream_get_contents(STDIN), true, 512, JSON_THROW_ON_ERROR);
