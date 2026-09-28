@@ -1,6 +1,6 @@
 # SAMS — Phase 9 Clean-School Acceptance
 
-Status: IN PROGRESS
+Status: CLOSED
 
 Branch: feat/phase-9-clean-school-acceptance
 
@@ -58,25 +58,34 @@ Initial release-blocking assertions:
 9. Counselor sees both operational classes but no admin/archive controls; authenticated archive access is rejected with HTTP 403.
 10. Logout leaves the protected dashboard inaccessible.
 
-## Current implementation
+## Final implementation
 
-The first acceptance test and a dedicated synthetic Class B CSV fixture are added on this branch.
+The clean-school acceptance workflow is wired into CI and runs from a database rebuilt from `database/schema.sql`, followed by first-admin creation through `scripts/create_admin.php`. The browser journey uses only synthetic data and the production UI; no manual database repair is performed.
 
-The acceptance workflow itself is intentionally not yet wired into CI. That is the next implementation step so the first full run can act as the RED/GREEN discovery gate on a genuinely clean database.
+The final functional validation run was Run #711 on the exact commit `487fb57463d32a9e552b9b741755855f40912b66`. It passed:
 
-## Evidence expected
+- clean-school browser acceptance;
+- persisted-state verification;
+- PHP regression suite;
+- JavaScript syntax check;
+- the existing Playwright E2E suite.
 
-- exact commit SHA;
-- clean-school acceptance result;
-- PHP regression result;
-- JavaScript syntax result;
-- Playwright result;
-- no skipped/focused tests;
-- no waitForTimeout;
-- no manual database mutation inside the browser journey.
+The clean-school acceptance itself completed with 1 passed test and no skipped/focused tests or `waitForTimeout` usage.
+
+## Evidence
+
+- Functional validation Run #711: `36441910211`.
+- Exact functional-validation commit: `487fb57463d32a9e552b9b741755855f40912b66`.
+- Clean-school browser acceptance: PASS.
+- Persisted clean-school state verification: PASS.
+- PHP regression suite: PASS.
+- JavaScript syntax check: PASS.
+- Playwright E2E suite: PASS.
+- No skipped/focused tests and no `waitForTimeout` in the Phase 9 acceptance test.
+- No manual database mutation inside the browser journey.
 
 ## Gate
 
-CLOSED only when the complete clean-school scenario passes from a database rebuilt from database/schema.sql, the first admin is created through the real scripts/create_admin.php path, historical attendance survives transfer, and no manual database repair is required.
+CLOSED. The complete clean-school scenario passes from a database rebuilt from `database/schema.sql`; the first administrator is created through the real `scripts/create_admin.php` path; historical attendance survives transfer and remains visible through archive/history; role isolation and logout are verified; persisted database state matches the expected scenario; and no manual database repair is required.
 
 No release merge is part of this phase.
