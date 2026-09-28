@@ -346,10 +346,12 @@ test('Phase 9 — clean-school acceptance scenario', async ({ page }) => {
 
   await page.locator('.tab[data-tab="attendance"]').click();
   await selectOperationalClass(page, classA);
-  await expect(page.locator('#attendanceTable [data-attendance-toggle]').first()).toBeVisible();
+  await expect(page.locator('#studentsList .student-card').filter({ hasText: 'E2EIMP001' })).toHaveCount(1);
+  const attendanceToggle = page.locator('#attendanceTable tbody tr').filter({ hasText: 'Import Valid' }).locator('[data-attendance-toggle]').first();
+  await expect(attendanceToggle).toBeVisible();
   await selectAttendanceDay(page);
 
-  const attendanceToggle = await toggleAttendanceAndSave(page);
+  await toggleAttendanceAndSave(page);
   await expect(attendanceToggle).toHaveText('X');
   await signLesson(page);
 
@@ -431,7 +433,7 @@ test('Phase 9 — clean-school acceptance scenario', async ({ page }) => {
   expect((await transferResponsePromise).ok()).toBeTruthy();
   await expect(page.locator('#transferStudentDialog')).toBeHidden();
 
-  await page.locator('#classSelect').selectOption({ label: classA });
+  await selectOperationalClass(page, classA);
   await expect(page.locator('#studentsList .student-card').filter({ hasText: 'E2EIMP001' })).toHaveCount(0);
 
   await page.locator('.tab[data-tab="archive"]').click();
