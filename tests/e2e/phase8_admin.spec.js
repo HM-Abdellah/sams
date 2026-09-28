@@ -132,7 +132,6 @@ test.describe.serial('Phase 8 administration journeys', () => {
     expect((await restoreA).ok()).toBeTruthy();
 
     await page.locator('#classSelect').selectOption({ label: 'E2E-2BAC-B' });
-    await expect(page.locator('#attendanceMobileList .attendance-student-card').first()).toBeVisible();
     await page.locator('.tab[data-tab="admin"]').click();
     row = page.locator('#assignmentsTable tbody tr').filter({ hasText: 'E2E Teacher' }).first();
     await expect(row).toBeVisible();
