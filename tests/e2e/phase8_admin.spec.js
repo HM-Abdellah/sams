@@ -186,7 +186,11 @@ test.describe.serial('Phase 8 administration journeys', () => {
     );
     await row.locator('[data-activate-year]').click();
     expect((await reactivateCurrent).ok()).toBeTruthy();
-    await expect(page.locator('#classSelect option:not([disabled])')).toHaveCount(2);
+    await expect.poll(
+      async () => page.locator('#classSelect option:not([disabled])').count()
+    ).toBeGreaterThanOrEqual(2);
+    await expect(page.locator('#classSelect option').filter({ hasText: 'E2E-2BAC-A' })).toHaveCount(1);
+    await expect(page.locator('#classSelect option').filter({ hasText: 'E2E-2BAC-B' })).toHaveCount(1);
 
     await logout(page);
   });
