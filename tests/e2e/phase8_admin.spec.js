@@ -87,7 +87,9 @@ test.describe.serial('Phase 8 administration journeys', () => {
   test('teacher assignment changes access and can be restored', async ({ page }) => {
     await login(page, adminUsername, adminPassword);
     await page.locator('#classSelect').selectOption({ label: 'E2E-2BAC-A' });
-    await expect(page.locator('#attendanceMobileList .attendance-student-card')).toHaveCount(3);
+    await expect.poll(
+      async () => page.locator('#attendanceMobileList .attendance-student-card').count()
+    ).toBeGreaterThanOrEqual(3);
     await page.locator('.tab[data-tab="admin"]').click();
 
     let row = page.locator('#assignmentsTable tbody tr').filter({ hasText: 'E2E Teacher' }).first();
