@@ -4,6 +4,10 @@ concurrency:
   group: sams-ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  issues: write
+
 on:
   push:
     branches: [main, refactor/phase-2-backend-foundation, feat/phase-3-school-import-v2, feat/phase-4-teacher-attendance-backend, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-7-security-reliability]
@@ -435,26 +439,63 @@ jobs:
 
           find tests/e2e -type f -name '*.js' -print0 | xargs -0 -n1 node --check
 
-          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          trap 'kill "$server_pid" 2>/dev/null || true'
 
-          npx playwright test tests/e2e/smoke.spec.js --reporter=line
+          : > /tmp/phase8-playwright.log
+          overall_status=0
 
-          npx playwright test tests/e2e/authenticated.spec.js \
-            --grep 'login, operational|attendance edits are sent|teacher cannot access historical|teacher sees only assigned|teacher can sign, reopen|teacher weekly attendance' \
-            --reporter=line
+          run_e2e_group() {
+            group_name="$1"
+            shift
+            echo "===== Phase 8 E2E: $group_name =====" | tee -a /tmp/phase8-playwright.log
+            set +e
+            npx playwright test "$@" --reporter=line 2>&1 | tee -a /tmp/phase8-playwright.log
+            group_status=${PIPESTATUS[0]}
+            set -e
+            if [ "$group_status" -ne 0 ]; then
+              echo "[FAIL] $group_name (exit $group_status)" | tee -a /tmp/phase8-playwright.log
+              overall_status=1
+            else
+              echo "[PASS] $group_name" | tee -a /tmp/phase8-playwright.log
+            fi
+          }
 
-          npx playwright test tests/e2e/authenticated.spec.js \
-            --grep 'admin can upload a Markdown|admin can upload a real XLSX|admin can review and explicitly confirm|admin can complete a CSV' \
-            --reporter=line
+          run_e2e_group "smoke" tests/e2e/smoke.spec.js
 
-          npx playwright test tests/e2e/authenticated.spec.js \
-            --grep 'admin can transfer a student|admin can view teachers|admin dashboard separates|admin can receive a fully signed' \
-            --reporter=line
+          run_e2e_group "teacher-core-1" tests/e2e/authenticated.spec.js \
+            --grep 'login, operational|attendance edits are sent|teacher cannot access historical|teacher sees only assigned'
 
-          npx playwright test tests/e2e/authenticated.spec.js \
-            --grep 'admin can manage a class and a user|logout invalidates the authenticated' \
-            --reporter=line
+          run_e2e_group "teacher-core-2" tests/e2e/authenticated.spec.js \
+            --grep 'teacher can sign, reopen|teacher weekly attendance'
 
-          npx playwright test tests/e2e/phase8_admin.spec.js --reporter=line
-          npx playwright test tests/e2e/phase8_auth.spec.js --reporter=line
-          npx playwright test tests/e2e/phase8_mobile.mobile.spec.js --reporter=line
+          run_e2e_group "imports" tests/e2e/authenticated.spec.js \
+            --grep 'admin can upload a Markdown|admin can upload a real XLSX|admin can review and explicitly confirm|admin can complete a CSV'
+
+          run_e2e_group "history-and-signatures" tests/e2e/authenticated.spec.js \
+            --grep 'admin can transfer a student|admin can view teachers|admin dashboard separates|admin can receive a fully signed'
+
+          run_e2e_group "admin-and-logout" tests/e2e/authenticated.spec.js \
+            --grep 'admin can manage a class and a user|logout invalidates the authenticated'
+
+          run_e2e_group "phase8-admin" tests/e2e/phase8_admin.spec.js
+          run_e2e_group "phase8-auth" tests/e2e/phase8_auth.spec.js
+          run_e2e_group "phase8-mobile" tests/e2e/phase8_mobile.mobile.spec.js
+
+          exit "$overall_status"
+
+      - name: Publish Phase 8 Playwright diagnostics
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const logPath = '/tmp/phase8-playwright.log';
+            const log = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8') : 'No Playwright log was generated.';
+            const bounded = log.length > 14000 ? log.slice(0, 7000) + '\n...<truncated>...\n' + log.slice(-7000) : log;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: 'Phase 8 Playwright diagnostics\n\n' + bounded,
+            });
+
