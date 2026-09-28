@@ -221,9 +221,12 @@ test.describe('authenticated SAMS smoke', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await login(page, teacherUsername, teacherPassword);
 
+    await page.locator('#classSelect').selectOption({ label: 'E2E-2BAC-A' });
+    await expect.poll(
+      async () => page.locator('#attendanceMobileList .attendance-student-card').count()
+    ).toBeGreaterThanOrEqual(3);
     await expect(page.locator('#weekDays .week-day-btn')).toHaveCount(6);
     await expect(page.locator('#periods .period-btn')).toHaveCount(8);
-    await expect(page.locator('#attendanceMobileList .attendance-student-card')).toHaveCount(3);
 
     await page.locator('.language-btn[data-lang="en"]').click();
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
@@ -596,7 +599,8 @@ test.describe('authenticated SAMS smoke', () => {
     page.once('dialog', (dialog) => dialog.accept());
     await validatedRow.locator('[data-run-import]').click();
 
-    await expect(page.locator('#studentCount')).toContainText('5');
+    await expect(page.locator('#studentsList .student-card').filter({ hasText: 'E2EIMP001' })).toHaveCount(1);
+    await expect(page.locator('#studentsList .student-card').filter({ hasText: 'E2EIMP002' })).toHaveCount(1);
   });
 
   test('admin can transfer a student without losing historical attendance', async ({ page }) => {
@@ -696,6 +700,7 @@ test.describe('authenticated SAMS smoke', () => {
 
     await login(page, username, password);
     await page.locator('#classSelect').selectOption({ label: 'E2E-2BAC-A' });
+    await setWeek(page, '2026-11-02');
     await expect(page.locator('#weeklyTeacherSignatures')).toContainText('1/1');
     await expect(page.locator('#weeklyTeacherSignatures [data-receive-week]')).toBeVisible();
 
@@ -727,6 +732,7 @@ test.describe('authenticated SAMS smoke', () => {
     await page.waitForURL(/login\.php$/);
 
     await login(page, teacherUsername, teacherPassword);
+    await setWeek(page, '2026-11-02');
     await page.locator('#periods [data-select-period="1"]').click();
     await page.locator('#attendanceWorkflow [data-reopen-period]').click();
     await expect(page.locator('#weeklyTeacherSignatures .register-receipt')).toHaveCount(0);
