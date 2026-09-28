@@ -68,9 +68,18 @@ test.describe.serial('Phase 8 administration journeys', () => {
     const deactivateResponse = page.waitForResponse(
       (response) => response.url().includes('/api/students.php') && response.request().method() === 'POST'
     );
+    const refreshResponse = page.waitForResponse(
+      (response) => response.url().includes('/api/students.php?class_id=') && response.request().method() === 'GET'
+    );
     await page.locator('#studentsList .student-card').filter({ hasText: 'E2ELIFE001' }).first().locator('[data-delete-student]').click();
     expect((await deactivateResponse).ok()).toBeTruthy();
-    await expect(page.locator('#studentsList .student-card').filter({ hasText: 'E2ELIFE001' })).toHaveCount(0);
+
+    const refreshPayload = await refreshResponse.json();
+    const refreshedStudent = refreshPayload.data?.students?.find(
+      (student) => student.massar_code === 'E2ELIFE001'
+    );
+    expect(refreshedStudent?.status).toBe('inactive');
+    await expect(page.locator('#studentsList .student-card').filter({ hasText: 'E2ELIFE001' })).toHaveCount(1);
     await logout(page);
   });
 
