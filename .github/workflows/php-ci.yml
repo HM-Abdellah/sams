@@ -485,6 +485,7 @@ jobs:
           run_e2e_group "phase8-auth" tests/e2e/phase8_auth.spec.js
           run_e2e_group "phase8-mobile" tests/e2e/phase8_mobile.mobile.spec.js
 
+          kill "$server_pid" 2>/dev/null || true
           exit "$overall_status"
 
       - name: Publish Phase 8 Playwright status
