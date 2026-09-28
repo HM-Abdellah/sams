@@ -34,10 +34,22 @@ try {
         $siteBasePath = '';
     }
 
-    $prefix = $siteBasePath . '/api/v1';
     $path = $request->path();
+    $prefixes = ['/api/v1'];
+    $mountedPrefix = $siteBasePath . '/api/v1';
+    if ($mountedPrefix !== '/api/v1') {
+        array_unshift($prefixes, $mountedPrefix);
+    }
 
-    if ($path !== $prefix && !str_starts_with($path, $prefix . '/')) {
+    $prefix = null;
+    foreach ($prefixes as $candidate) {
+        if ($path === $candidate || str_starts_with($path, $candidate . '/')) {
+            $prefix = $candidate;
+            break;
+        }
+    }
+
+    if ($prefix === null) {
         Response::json([
             'success' => false,
             'error' => 'API route not found.',
