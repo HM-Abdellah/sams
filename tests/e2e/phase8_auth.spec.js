@@ -24,7 +24,9 @@ async function login(page, user, pass, { waitForRoster = false } = {}) {
   if (!response.ok()) throw new Error(`Login API failed: HTTP ${response.status()}`);
   await page.waitForURL(/index\.php$/);
   if (waitForRoster) {
-    await expect(page.locator('#attendanceMobileList .attendance-student-card').first()).toBeVisible();
+    await expect.poll(
+      async () => page.locator('#classSelect option:not([disabled])').count()
+    ).toBeGreaterThan(0);
   }
 }
 
