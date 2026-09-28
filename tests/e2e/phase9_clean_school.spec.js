@@ -130,6 +130,13 @@ async function assignTeacher(page, username, className) {
   );
   await page.locator('#assignmentForm button[type="submit"]').click();
   expect((await responsePromise).ok()).toBeTruthy();
+
+  const assignmentState = await page.request.get(
+    'api/teacher-classes.php?class_id=' + encodeURIComponent(classValue)
+  );
+  console.log('PHASE9_ASSIGNMENT_STATE', await assignmentState.text());
+  console.log('PHASE9_ASSIGNMENTS_DOM', await page.locator('#assignmentsTable tbody').innerText());
+
   await expect(page.locator('#assignmentsTable tbody tr').filter({ hasText: username })).toHaveCount(1);
 }
 
