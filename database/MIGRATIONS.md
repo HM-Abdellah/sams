@@ -2,52 +2,58 @@
 
 ## Fresh installation
 
-For a new school installation, use:
+For a new school installation, use the current release schema:
 
-1. `database/schema.sql`
-2. `database/seed.sql`
-3. create the first local administrator with `scripts/create_admin.php`
+1. Import `database/schema.sql` into an empty database.
+2. Do not run `database/seed.sql` on production; it is for local/demo environments.
+3. Create the first administrator with `scripts/create_admin.php`.
 
-The fresh schema already contains the final tables for the current release candidate.
+`database/schema.sql` is the complete schema for the release candidate, including the whole-school import staging tables.
 
-## Existing installation
+## Supported in-place upgrade for this release
 
-For an existing SAMS database that predates the current schema, apply migrations in numeric order:
+The supported existing-installation upgrade path is intentionally narrow and verified:
 
-1. `001_student_identity.sql`
-2. `002_user_session_version.sql`
-3. `003_student_enrollment_history.sql`
-4. `004_student_import_staging.sql`
+`SAMS main baseline` → `005_school_import_staging.sql`
 
-Back up the database before applying migrations.
+The baseline is the `database/schema.sql` from `main` commit `4daaeb492923a7cdfb909b13c72ae39fb63d0e48`.
+That baseline already contains the schema changes represented by the historical 001–004 migrations, teacher management, and attendance sign-off/administration-receipt tables.
 
-## Migration 003 — enrollment history
+For a database at that baseline:
 
-Migration 003 changes attendance from depending only on `students.class_id` to an explicit `student_enrollments` record.
+1. Take and verify a full backup.
+2. Apply `database/migrations/005_school_import_staging.sql`.
+3. Run the isolated regression/integration checks.
+4. Perform a read-only smoke test before returning the system to teacher use.
 
-The migration seeds an initial enrollment from the student's current class and academic year, then backfills attendance using that current class.
+Do not apply `database/schema.sql` to an existing database containing real data.
+Do not apply historical migrations 001–004 or the other legacy migration files to this baseline.
 
-**Important:** this is lossless only when historical class transfers were not already performed before migration 003. When transfers happened earlier, reconcile the historical attendance/class relationship before running the migration.
+## Historical migration files
 
-After migration 003, verify:
+The files below describe schema changes that are already included in the supported `main` baseline:
 
-- every student has the expected enrollment history;
-- every attendance row has a valid `enrollment_id`;
-- transferred students keep historical attendance attached to the correct enrollment;
-- no attendance row points to an unrelated class.
+- `001_student_identity.sql`
+- `002_user_session_version.sql`
+- `002_teacher_management.sql`
+- `003_student_enrollment_history.sql`
+- `003_attendance_register_signoffs.sql`
+- `004_student_import_staging.sql`
 
-## Migration 004 — student import staging
+They are retained as historical artifacts. They are not a linear upgrade sequence for the current release.
 
-Migration 004 adds staging tables for the controlled student-import flow.
+Running one of these files against the current baseline can fail with duplicate-column, duplicate-index, or duplicate-table errors.
 
-The import pipeline is:
+## Pre-baseline installations
 
-`Select file → Parse → Normalize → Validate → Preview → Correct → Revalidate → Import`
+This release does not provide a verified automated upgrade path from schemas older than the supported `main` baseline.
 
-Only a completely valid batch can create production student records.
+Do not guess a migration order and do not rebuild a real database with `database/schema.sql`.
 
-## Release rule
+For an older installation, take a verified backup and perform a dedicated migration/reconciliation assessment before enabling the release. Historical attendance and enrollment relationships must be verified explicitly.
 
-Do not apply the fresh `schema.sql` to an installation containing real data; it is a rebuild script and intentionally drops/recreates the application tables.
+## Migration 005 verification
 
-Do not skip migration numbers on an existing installation.
+CI executes `tests/migration_005_integration.php` against the supported pre-005 schema and verifies creation and referential integrity of all three whole-school staging tables.
+
+That check is part of the release CI gate.
