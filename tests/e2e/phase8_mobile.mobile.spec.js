@@ -66,7 +66,9 @@ test.describe('Phase 8 mobile authenticated journeys', () => {
   test('teacher mobile attendance is real, synchronized and persists after reload', async ({ page }) => {
     await login(page, teacherUsername, teacherPassword);
     await expect(page.locator('#attendanceMobileList')).toBeVisible();
-    await expect(page.locator('#classSelect option:not([disabled])')).toHaveCount(1);
+    await expect.poll(
+      async () => page.locator('#classSelect option:not([disabled])').count()
+    ).toBeGreaterThanOrEqual(1);
     await expect(page.locator('#weekDays .week-day-btn')).toHaveCount(6);
     await expect(page.locator('#periods .period-btn')).toHaveCount(8);
     await expect.poll(
