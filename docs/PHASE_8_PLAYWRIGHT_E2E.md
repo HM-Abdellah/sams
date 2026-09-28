@@ -135,7 +135,7 @@ Local execution on the developer Codespace also exposed environment limitations:
 CLOSED after exact-head CI validation.
 
 Evidence:
-- CI run #666 on head `befc7f9` completed successfully.
+- CI run #667 on head `010270f` completed successfully.
 - PHP regression job: SUCCESS.
 - JavaScript syntax job: SUCCESS.
 - Playwright E2E job: SUCCESS.
@@ -150,17 +150,15 @@ Release-blocking fixes verified during the validation cycle:
 
 No merge is part of this phase gate. Validation PR #22 remains open and validation-only.
 
-
 ## CI execution note
 
 The full browser gate is executed as separate Playwright subprocesses for the smoke suite, authenticated journey groups, administration lifecycle, authentication lifecycle, and mobile suite. This preserves the complete test set while preventing a single long-lived browser process from accumulating memory.
 
 The validation base branch is CI-only and is based on the closed Phase 7 head; it is not a product release branch and must not be merged.
 
-
 ## Latest validation cycle
 
 - CI run #644 validated the previous head `37824d1` and reported failures only in `history-and-signatures` and `phase8-admin`.
 - The following head changes were then applied on this Phase 8 branch: removal of invalid single-class assumptions and deterministic per-group E2E database reset.
-- The final validated head is `befc7f9`; validation PR #22 tracks this branch against `feat/phase-8-ci-base-v2`.
-- CI run #666 is the final exact-head browser gate recorded for this phase.
+- The final validated head is `010270f`; validation PR #22 tracks this branch against `feat/phase-8-ci-base-v2`.
+- CI run #667 is the final exact-head browser gate recorded for this phase.
