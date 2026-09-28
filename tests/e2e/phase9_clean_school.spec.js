@@ -554,11 +554,14 @@ test('Phase 9 — clean-school acceptance scenario', async ({ page }) => {
     'api/archive.php?class_id=' + counselorClassId + '&view=days&month=2026-10',
     page.url()
   ).toString();
-  const counselorArchive = await page.request.get(counselorArchiveUrl);
-  if (counselorArchive.status() !== 403) {
+  const counselorArchive = await page.evaluate(async (url) => {
+    const response = await fetch(url, { credentials: 'same-origin' });
+    return { status: response.status, body: await response.text() };
+  }, counselorArchiveUrl);
+  if (counselorArchive.status !== 403) {
     throw new Error(
       'Phase 9 counselor archive access check failed: HTTP ' +
-      counselorArchive.status() + ' ' + await counselorArchive.text() +
+      counselorArchive.status + ' ' + counselorArchive.body +
       ' URL=' + counselorArchiveUrl
     );
   }
