@@ -186,6 +186,9 @@ Review order:
 Gate:
 - Only release-blocking fixes are applied.
 - No architecture rewrite or unrelated feature expansion.
+- Phase 11 review PR #25 passes the full CI gate before release integration.
+
+Gate status: CLOSED — Run #723 (`36467396229`) passed on exact commit `b2733b01a9144b36afc9c5b12b87f2d7e6ddc7d1`.
 
 ## Post-Release Backlog
 
