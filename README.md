@@ -55,6 +55,9 @@ See:
 - docs/PHASE_1_ARCHITECTURE_PLAN.md — Phase 1 plan
 - docs/PHASE_2_BACKEND_FOUNDATION.md — Phase 2 implementation record
 - docs/API_CONTRACT.md — current API contract during migration
+- docs/DEPLOYMENT_AND_BACKUP.md — deployment, migrations, backup/restore, and release verification
+- docs/PHASE_9_CLEAN_SCHOOL_ACCEPTANCE.md — clean-school acceptance evidence
+- docs/PHASE_10_DEPLOYMENT_DOCUMENTATION.md — reproducible deployment and documentation gate
 
 ## Product rules
 
