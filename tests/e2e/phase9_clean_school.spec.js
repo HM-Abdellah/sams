@@ -351,9 +351,11 @@ test('Phase 9 — clean-school acceptance scenario', async ({ page }) => {
   await expect(attendanceToggle).toBeVisible();
   const attendanceStudentId = await attendanceToggle.getAttribute('data-student');
   console.log('PHASE9_ATTENDANCE_STUDENT_ID', attendanceStudentId);
+  const currentClassId = await page.locator('#classSelect').inputValue();
   const rosterCheck = await page.request.get(
-    'api/students.php?class_id=' + await page.locator('#classSelect').inputValue()
+    new URL('../api/students.php?class_id=' + encodeURIComponent(currentClassId), page.url()).toString()
   );
+  console.log('PHASE9_ATTENDANCE_CLASS_ID', currentClassId);
   console.log('PHASE9_ATTENDANCE_ROSTER', await rosterCheck.text());
   await selectAttendanceDay(page);
 
