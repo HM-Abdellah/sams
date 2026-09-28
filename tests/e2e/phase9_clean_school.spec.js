@@ -203,7 +203,9 @@ async function toggleAttendanceAndSave(page) {
   );
   await button.click();
   const response = await responsePromise;
-  expect(response.ok()).toBeTruthy();
+  if (!response.ok()) {
+    throw new Error('Phase 9 attendance save failed: HTTP ' + response.status() + ' ' + await response.text());
+  }
   const payload = await response.json();
   expect(payload.success).toBe(true);
   expect(payload.data?.changed).toBe(1);
