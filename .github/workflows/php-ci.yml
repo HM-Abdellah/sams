@@ -11,7 +11,7 @@ permissions:
 
 on:
   push:
-    branches: [main, refactor/phase-2-backend-foundation, feat/phase-3-school-import-v2, feat/phase-4-teacher-attendance-backend, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-7-security-reliability, feat/phase-8-ci-base-v2, feat/phase-8-final-gate-v4]
+    branches: [main, refactor/phase-2-backend-foundation, feat/phase-3-school-import-v2, feat/phase-4-teacher-attendance-backend, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-7-security-reliability, feat/phase-8-ci-base-v2, feat/phase-8-final-gate-v4, feat/phase-9-clean-school-acceptance]
   pull_request:
     branches: [main, refactor/phase-2-backend-foundation, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-8-ci-base-v2]
 
@@ -520,3 +520,149 @@ jobs:
               context: 'phase8/e2e-groups',
               description
             });
+
+  clean-school-acceptance:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+
+    services:
+      db:
+        image: mariadb:11.4
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: sams
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      SAMS_TEST_DB_HOST: db
+      SAMS_TEST_DB_PORT: 3306
+      SAMS_TEST_DB_NAME: sams
+      SAMS_TEST_DB_USER: root
+      SAMS_TEST_DB_PASS: root
+      SAMS_ACCEPTANCE_ADMIN_USERNAME: admin
+      SAMS_ACCEPTANCE_ADMIN_PASSWORD: acceptance-admin-password-2026
+      SAMS_ACCEPTANCE_COUNSELOR_PASSWORD: acceptance-counselor-password-2026
+      SAMS_ACCEPTANCE_TEACHER_A_PASSWORD: acceptance-teacher-a-password-2026
+      SAMS_ACCEPTANCE_TEACHER_B_PASSWORD: acceptance-teacher-b-password-2026
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install PHP 8.3, MySQL client, and extensions
+        shell: bash
+        run: |
+          apt-get update
+          apt-get install -y php8.3-cli php8.3-mysql php8.3-mbstring php8.3-xml php8.3-zip php8.3-gd mariadb-client curl
+
+      - name: Verify PHP runtime
+        shell: bash
+        run: php -v
+
+      - name: Install Composer and backend dependencies
+        shell: bash
+        run: |
+          apt-get install -y composer
+          cd backend
+          composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Configure clean-school database
+        shell: bash
+        run: |
+          cat > config/database.php <<'PHP'
+          <?php
+          return [
+              'host' => getenv('SAMS_TEST_DB_HOST') ?: 'db',
+              'port' => (int)(getenv('SAMS_TEST_DB_PORT') ?: 3306),
+              'database' => getenv('SAMS_TEST_DB_NAME') ?: 'sams',
+              'username' => getenv('SAMS_TEST_DB_USER') ?: 'root',
+              'password' => getenv('SAMS_TEST_DB_PASS') ?: 'root',
+              'charset' => 'utf8mb4',
+          ];
+          PHP
+
+      - name: Rebuild database from empty schema
+        shell: bash
+        run: |
+          mariadb --protocol=tcp             -h "$SAMS_TEST_DB_HOST"             -P "$SAMS_TEST_DB_PORT"             -u "$SAMS_TEST_DB_USER"             -p"$SAMS_TEST_DB_PASS"             < database/schema.sql
+
+      - name: Create first administrator through bootstrap CLI
+        shell: bash
+        run: |
+          printf '%s\n' "$SAMS_ACCEPTANCE_ADMIN_PASSWORD" | php scripts/create_admin.php
+
+      - name: Install Node dependencies
+        shell: bash
+        run: npm install --no-audit --no-fund
+
+      - name: Run clean-school browser acceptance
+        id: phase9_acceptance
+        shell: bash
+        env:
+          SAMS_BASE_URL: http://127.0.0.1:8080/public/
+        run: |
+          : > /tmp/phase9-acceptance.log
+          exec > >(tee -a /tmp/phase9-acceptance.log) 2>&1
+
+          php -S 0.0.0.0:8080 scripts/dev_router.php > /tmp/sams-phase9-server.log 2>&1 &
+          server_pid=$!
+
+          cleanup() {
+            kill "$server_pid" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8080/public/login.php > /dev/null 2>&1; then
+              break
+            fi
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              echo "PHP server exited before becoming ready."
+              cat /tmp/sams-phase9-server.log
+              exit 1
+            fi
+            sleep 1
+          done
+
+          if ! curl -fsS http://127.0.0.1:8080/public/login.php > /dev/null 2>&1; then
+            echo "PHP server did not become ready."
+            cat /tmp/sams-phase9-server.log
+            exit 1
+          fi
+
+          if grep -RInE 'test\.(skip|fixme|only)|describe\.(skip|only)' tests/e2e/phase9_clean_school.spec.js; then
+            echo "Phase 9 acceptance contains skipped/focused tests."
+            exit 1
+          fi
+
+          if grep -RIn 'waitForTimeout' tests/e2e/phase9_clean_school.spec.js; then
+            echo "Phase 9 acceptance must synchronize on observable behavior, not fixed sleeps."
+            exit 1
+          fi
+
+          node --check tests/e2e/phase9_clean_school.spec.js
+
+          npx playwright test tests/e2e/phase9_clean_school.spec.js --project=chromium --reporter=line
+
+      - name: Verify persisted clean-school state
+        shell: bash
+        run: |
+          result=$(mariadb --protocol=tcp             -h "$SAMS_TEST_DB_HOST"             -P "$SAMS_TEST_DB_PORT"             -u "$SAMS_TEST_DB_USER"             -p"$SAMS_TEST_DB_PASS"             -N -B             -e "SELECT
+                  (SELECT COUNT(*) FROM academic_years),
+                  (SELECT COUNT(*) FROM users),
+                  (SELECT COUNT(*) FROM classes),
+                  (SELECT COUNT(*) FROM users WHERE role='teacher' AND is_active=1),
+                  (SELECT COUNT(*) FROM users WHERE role='counselor' AND is_active=1),
+                  (SELECT COUNT(*) FROM students),
+                  (SELECT COUNT(*) FROM students WHERE status='active'),
+                  (SELECT COUNT(*) FROM attendance),
+                  (SELECT COUNT(*) FROM student_enrollments);")
+          expected=$'1\t4\t2\t2\t1\t6\t5\t1\t6'
+          test "$result" = "$expected"
+          echo "[PASS] Clean-school persisted state matches acceptance scenario."
+
