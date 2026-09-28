@@ -107,6 +107,11 @@ Perform a release-focused security and reliability pass over the existing SAMS a
 
 **OPEN — CI run #599 failed before creating any jobs/check-runs; local verification is green, but the CI gate is not yet satisfied.**
 
+### CI trigger verification
+
+- Commit `0dcd4b5` is the current branch head.
+- A fresh push-triggered workflow run is still required before the Phase 7 gate can close.
+
 ## Exit gate
 
 Phase 7 closes only when no known critical authentication/integrity blocker remains, security regression coverage is green, CI is green, and the branch is clean.
