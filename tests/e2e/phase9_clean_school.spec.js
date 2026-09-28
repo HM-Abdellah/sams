@@ -307,7 +307,7 @@ test('Phase 9 — clean-school acceptance scenario', async ({ page }) => {
 
   await page.locator('.tab[data-tab="attendance"]').click();
   await page.locator('#classSelect').selectOption({ label: classA });
-  await expect(page.locator('#attendanceMobileList .attendance-student-card').first()).toBeVisible();
+  await expect(page.locator('#attendanceTable [data-attendance-toggle]').first()).toBeVisible();
   await selectAttendanceDay(page);
 
   const attendanceToggle = await toggleAttendanceAndSave(page);
