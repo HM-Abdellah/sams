@@ -135,6 +135,7 @@ async function assignTeacher(page, username, className) {
 }
 
 async function stageAndImport(page, filename, { correctFirstBatchRow = false } = {}) {
+  await page.locator('.tab[data-tab="admin"]').click();
   await page.locator('#studentImportFile').setInputFiles(filename);
 
   const stageResponsePromise = page.waitForResponse(
