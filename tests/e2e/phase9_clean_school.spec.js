@@ -107,7 +107,7 @@ async function createClass(page, name) {
 }
 
 async function assignTeacher(page, username, className) {
-  await page.locator('.tab[data-tab="admin"]').click();
+  await expect(page.locator('#assignmentForm')).toBeVisible();
 
   const classOption = page.locator('#assignmentClassInput option').filter({ hasText: className }).first();
   await expect(classOption).toHaveCount(1);
@@ -288,9 +288,8 @@ test('Phase 9 — clean-school acceptance scenario', async ({ page }) => {
 
   await createAcademicYear(page);
   await createClass(page, classA);
-  await createClass(page, classB);
-
   await assignTeacher(page, teacherAUsername, classA);
+  await createClass(page, classB);
   await assignTeacher(page, teacherBUsername, classB);
 
   await selectOperationalClass(page, classA);
