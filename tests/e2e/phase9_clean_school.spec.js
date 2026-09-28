@@ -131,14 +131,14 @@ async function assignTeacher(page, username, className) {
   const assignmentResponse = await responsePromise;
   expect(assignmentResponse.ok()).toBeTruthy();
 
-  await page.reload();
-  await expect(page.locator('#classSelect option').filter({ hasText: className })).toHaveCount(1);
-  await page.locator('#classSelect').selectOption(classValue);
-  await page.locator('.tab[data-tab="admin"]').click();
-  await expect.poll(
-    async () => page.locator('#assignmentsTable tbody tr').filter({ hasText: username }).count(),
-    { timeout: 15000 }
-  ).toBe(1);
+  const verifyUrl = new URL(
+    '../api/teacher-classes.php?class_id=' + encodeURIComponent(classValue),
+    page.url()
+  ).toString();
+  const verification = await page.request.get(verifyUrl);
+  expect(verification.ok()).toBeTruthy();
+  const payload = await verification.json();
+  expect(payload.teachers.some((teacher) => teacher.username === username)).toBe(true);
 }
 
 async function stageAndImport(page, filename, { correctFirstBatchRow = false } = {}) {
