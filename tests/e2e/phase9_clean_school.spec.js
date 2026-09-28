@@ -274,6 +274,7 @@ async function toggleAttendanceAndSave(page) {
 }
 
 async function saveClassSignature(page) {
+  await page.locator('.tab[data-tab="signature"]').click();
   const canvas = page.locator('#signatureCanvas');
   await expect(canvas).toBeVisible();
 
