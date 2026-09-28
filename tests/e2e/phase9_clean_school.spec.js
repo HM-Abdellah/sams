@@ -231,16 +231,39 @@ async function selectAttendanceDay(page) {
 }
 
 async function toggleAttendanceAndSave(page) {
-  const button = page.locator('#attendanceTable [data-attendance-toggle]').first();
+  const expectedClassId = await page.locator('#classSelect').inputValue();
+  const button = page.locator('#attendanceTable tbody tr').filter({ hasText: 'Import Valid' }).locator('[data-attendance-toggle]').first();
   await expect(button).toBeVisible();
+  const expectedStudentId = await button.getAttribute('data-student');
 
+  const requestPromise = page.waitForRequest(
+    (request) =>
+      request.url().includes('/api/attendance.php?class_id=') &&
+      request.method() === 'POST'
+  );
   const responsePromise = page.waitForResponse(
     (response) =>
-      response.url().includes('/api/attendance.php') &&
+      response.url().includes('/api/attendance.php?class_id=') &&
       response.request().method() === 'POST'
   );
+
   await button.click();
+
+  const request = await requestPromise;
   const response = await responsePromise;
+  const requestUrl = new URL(request.url());
+  const body = request.postDataJSON();
+  const requestClassId = requestUrl.searchParams.get('class_id') || '';
+  const requestStudentId = String(body.entries?.[0]?.student_id || '');
+  if (requestClassId !== String(expectedClassId) || requestStudentId !== String(expectedStudentId)) {
+    throw new Error(
+      'Phase 9 attendance request mismatch: selected class=' + expectedClassId
+      + ' request class=' + requestClassId
+      + ' request student=' + requestStudentId
+      + ' button student=' + String(expectedStudentId || '')
+    );
+  }
+
   if (!response.ok()) {
     throw new Error('Phase 9 attendance save failed: HTTP ' + response.status() + ' ' + await response.text());
   }
