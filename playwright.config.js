@@ -11,7 +11,7 @@ export default defineConfig({
   reporter: [['html', { open: 'never' }], ['list']],
   use: {
     baseURL: process.env.SAMS_BASE_URL || 'http://localhost/sams/public/',
-    trace: 'retain-on-failure',
+    trace: 'off',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure'
   },
