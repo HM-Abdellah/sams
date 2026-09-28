@@ -21,7 +21,7 @@ async function login(page, user, pass) {
   );
   await page.locator('#loginBtn').click();
   const response = await responsePromise;
-  if (!response.ok()) throw new Error(\`Login API failed: HTTP \${response.status()}\`);
+  if (!response.ok()) throw new Error(`Login API failed: HTTP ${response.status()}`);
   await page.waitForURL(/index\.php$/);
 }
 
