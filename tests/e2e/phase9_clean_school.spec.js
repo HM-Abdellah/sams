@@ -113,7 +113,6 @@ async function assignTeacher(page, username, className) {
   expect(classValue).toBeTruthy();
 
   await page.locator('#classSelect').selectOption(classValue);
-  await page.locator('.tab[data-tab="admin"]').click();
   await expect(page.locator('#classSelect')).toHaveValue(/\d+/);
 
   const teacherOption = page.locator('#assignmentTeacherInput option').filter({ hasText: username }).first();
@@ -129,8 +128,13 @@ async function assignTeacher(page, username, className) {
       response.request().method() === 'POST'
   );
   await page.locator('#assignmentForm button[type="submit"]').click();
-  expect((await responsePromise).ok()).toBeTruthy();
+  const assignmentResponse = await responsePromise;
+  expect(assignmentResponse.ok()).toBeTruthy();
 
+  await page.reload();
+  await expect(page.locator('#classSelect option').filter({ hasText: className })).toHaveCount(1);
+  await page.locator('#classSelect').selectOption(classValue);
+  await page.locator('.tab[data-tab="admin"]').click();
   await expect(page.locator('#assignmentsTable tbody tr').filter({ hasText: username })).toHaveCount(1);
 }
 
