@@ -2,6 +2,8 @@
 
 Status: OPEN
 
+Validation cycle: final CI gate pending.
+
 Phase numbering in the current release execution plan:
 - Phase 8 — Playwright E2E
 - Phase 9 — Clean-School Acceptance
