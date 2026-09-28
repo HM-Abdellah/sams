@@ -74,7 +74,8 @@ test.describe.serial('Phase 8 administration journeys', () => {
     await page.locator('#studentsList .student-card').filter({ hasText: 'E2ELIFE001' }).first().locator('[data-delete-student]').click();
     expect((await deactivateResponse).ok()).toBeTruthy();
 
-    const refreshPayload = JSON.parse(await refreshResponse.text());
+    const refresh = await refreshResponse;
+    const refreshPayload = JSON.parse(await refresh.text());
     const refreshedStudent = refreshPayload.data?.students?.find(
       (student) => student.massar_code === 'E2ELIFE001'
     );
