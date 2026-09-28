@@ -6,6 +6,8 @@ Validation cycle: final CI gate pending.
 
 Validation base: feat/phase-8-ci-base-v2.
 
+Deterministic isolation: CI resets the synthetic E2E database before each journey group.
+
 Phase numbering in the current release execution plan:
 - Phase 8 — Playwright E2E
 - Phase 9 — Clean-School Acceptance
