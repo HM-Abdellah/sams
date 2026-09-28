@@ -1,6 +1,6 @@
 # SAMS — Phase 10 Deployment and Documentation
 
-Status: IN PROGRESS
+Status: CLOSED
 
 Branch: feat/phase-10-deployment-documentation
 
@@ -78,6 +78,17 @@ Phase 10 documentation was audited against the repository's actual config resolu
 
 The Codespace runtime is not the release authority when required PHP extensions are missing locally. CI provides the reproducible PHP/MariaDB environment for final acceptance.
 
+## VERIFY
+
+Final CI validation Run #716 (`36450288290`) passed on exact commit `8ad689d022a5b858ae976e5eb6134947fa8ff9f3`.
+
+- JavaScript syntax job: PASS.
+- PHP regression/unit/integration/API smoke job: PASS.
+- Clean-school acceptance and persisted-state verification: PASS.
+- Existing Playwright E2E suite: PASS.
+
+Codespace validation also passed `git diff --check`, Phase 9 Playwright syntax validation, and PHP syntax lint across the repository. The Codespace PHP runtime was missing `pdo_mysql`, `gd`, and `zip`, so CI remains the authoritative full-environment verification for this gate.
+
 ## Gate
 
-PENDING — final deployment/documentation changes must pass CI on the exact commit before Phase 10 is marked CLOSED.
+CLOSED — deployment and documentation changes passed CI on the exact final commit; the deployment guide now documents prerequisites, configuration, fresh-install versus migration paths, backup/restore, isolated verification, and demo-data separation.
