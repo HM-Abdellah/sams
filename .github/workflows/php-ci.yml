@@ -11,9 +11,9 @@ permissions:
 
 on:
   push:
-    branches: [main, refactor/phase-2-backend-foundation, feat/phase-3-school-import-v2, feat/phase-4-teacher-attendance-backend, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-7-security-reliability]
+    branches: [main, refactor/phase-2-backend-foundation, feat/phase-3-school-import-v2, feat/phase-4-teacher-attendance-backend, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-7-security-reliability, feat/phase-8-ci-base-v2]
   pull_request:
-    branches: [main, refactor/phase-2-backend-foundation, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures]
+    branches: [main, refactor/phase-2-backend-foundation, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-8-ci-base-v2]
 
 jobs:
   php:
@@ -443,8 +443,6 @@ jobs:
           fi
 
           find tests/e2e -type f -name '*.js' -print0 | xargs -0 -n1 node --check
-
-          trap 'kill "$server_pid" 2>/dev/null || true'
 
           overall_status=0
 
