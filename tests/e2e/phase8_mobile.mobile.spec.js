@@ -48,7 +48,8 @@ test.describe('Phase 8 mobile authenticated journeys', () => {
     await expect(page.locator('#periods .period-btn')).toHaveCount(8);
     await expect(page.locator('#attendanceMobileList .attendance-student-card')).toHaveCount(3);
 
-    await page.locator('#periods [data-select-period="1"]').click();
+    await page.locator('#weekDays .week-day-btn').nth(1).click();
+    await page.locator('#periods [data-select-period="7"]').click();
     const toggle = page.locator('#attendanceMobileList [data-attendance-toggle]').first();
     await expect(toggle).toHaveText('');
 
@@ -71,9 +72,8 @@ test.describe('Phase 8 mobile authenticated journeys', () => {
   test('teacher mobile signature workflow supports correction and weekly certification', async ({ page }) => {
     await login(page, teacherUsername, teacherPassword);
 
-    const saturday = await page.locator('#weekDays .week-day-btn').nth(5).getAttribute('data-select-day');
-    await page.locator('#weekDays [data-select-day="' + saturday + '"]').click();
-    await page.locator('#periods [data-select-period="8"]').click();
+    await page.locator('#weekDays .week-day-btn').nth(5).click();
+    await page.locator('#periods [data-select-period="7"]').click();
 
     const toggle = page.locator('#attendanceMobileList [data-attendance-toggle]').first();
     await expect(toggle).toBeVisible();
