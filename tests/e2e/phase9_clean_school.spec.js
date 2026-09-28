@@ -370,19 +370,22 @@ test('Phase 9 — clean-school acceptance scenario', async ({ page }) => {
   await page.locator('.tab[data-tab="attendance"]').click();
   await selectOperationalClass(page, classA);
   await expect(page.locator('#studentsList .student-card').filter({ hasText: 'E2EIMP001' })).toHaveCount(1);
-  const attendanceToggle = page.locator('#attendanceTable tbody tr').filter({ hasText: 'Import Valid' }).locator('[data-attendance-toggle]').first();
-  await expect(attendanceToggle).toBeVisible();
-  const attendanceStudentId = await attendanceToggle.getAttribute('data-student');
-  console.log('PHASE9_ATTENDANCE_STUDENT_ID', attendanceStudentId);
-  const currentClassId = await page.locator('#classSelect').inputValue();
-  const rosterCheck = await page.request.get(
-    new URL('../api/students.php?class_id=' + encodeURIComponent(currentClassId), page.url()).toString()
-  );
-  console.log('PHASE9_ATTENDANCE_CLASS_ID', currentClassId);
-  console.log('PHASE9_ATTENDANCE_ROSTER', await rosterCheck.text());
+  const adminAttendanceToggle = page.locator('#attendanceTable tbody tr').filter({ hasText: 'Import Valid' }).locator('[data-attendance-toggle]').first();
+  await expect(adminAttendanceToggle).toBeVisible();
+  await selectAttendanceDay(page);
+  await toggleAttendanceAndSave(page);
+  await expect(adminAttendanceToggle).toHaveText('X');
+
+  await logout(page);
+  await login(page, teacherAUsername, teacherAPassword);
+  await expect(page.locator('#classSelect option:not([disabled])')).toHaveCount(1);
+  await expect(page.locator('#classSelect option:checked')).toContainText(classA);
+  await page.locator('.tab[data-tab="attendance"]').click();
+  await selectOperationalClass(page, classA);
   await selectAttendanceDay(page);
 
-  await toggleAttendanceAndSave(page);
+  const attendanceToggle = page.locator('#attendanceTable tbody tr').filter({ hasText: 'Import Valid' }).locator('[data-attendance-toggle]').first();
+  await expect(attendanceToggle).toBeVisible();
   await expect(attendanceToggle).toHaveText('X');
   await signLesson(page);
 
@@ -428,6 +431,7 @@ test('Phase 9 — clean-school acceptance scenario', async ({ page }) => {
   await expect(page.locator('#weeklyPrintSheet')).toContainText(classA);
   await expect(page.locator('#weeklyPrintSheet')).toContainText('Import Valid');
 
+  
   await logout(page);
 
   await login(page, teacherBUsername, teacherBPassword);
