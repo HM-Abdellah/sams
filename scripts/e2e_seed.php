@@ -171,34 +171,6 @@ try {
 
     $pdo->commit();
 
-    $debugAttendance = $pdo->prepare(
-        'SELECT COUNT(*) AS row_count, MIN(attendance_date) AS min_date, MAX(attendance_date) AS max_date
-         FROM attendance
-         WHERE student_id = ?'
-    );
-    $debugAttendance->execute([$firstStudentId]);
-    $debugRow = $debugAttendance->fetch();
-
-    $debugCurrentEnrollment = $pdo->prepare(
-        'SELECT id, class_id, starts_on, ends_on
-         FROM student_enrollments
-         WHERE student_id = ? AND ends_on IS NULL
-         ORDER BY starts_on DESC, id DESC
-         LIMIT 1'
-    );
-    $debugCurrentEnrollment->execute([$firstStudentId]);
-    $debugEnrollment = $debugCurrentEnrollment->fetch();
-
-    $debugOnOrAfter = $pdo->prepare(
-        'SELECT COUNT(*)
-         FROM attendance
-         WHERE enrollment_id = ? AND attendance_date >= ?'
-    );
-    $debugOnOrAfter->execute([(int)$debugEnrollment['id'], '2026-10-01']);
-
-    require_once __DIR__ . '/../backend/src/bootstrap.php';
-    $debugRepository = new \SAMS\Repositories\StudentEnrollmentRepository();
-    $debugRepositoryResult = $debugRepository->hasAttendanceOnOrAfter((int)$debugEnrollment['id'], '2026-10-01');
 
     echo "[PASS] E2E school bootstrap: admin={$adminId}, teacher={$teacherId}, classes={$classA},{$classB}" . PHP_EOL;
     echo "[E2E DEBUG] E2E001 attendance rows={$debugRow['row_count']} min={$debugRow['min_date']} max={$debugRow['max_date']}" . PHP_EOL;
