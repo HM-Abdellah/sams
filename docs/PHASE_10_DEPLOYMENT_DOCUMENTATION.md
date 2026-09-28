@@ -41,8 +41,8 @@ Never run the fresh `schema.sql` rebuild against an existing production database
 ## Existing installation
 
 1. Create and verify a database backup before changes.
-2. Review `database/MIGRATIONS.md`.
-3. Apply migrations strictly in numeric order.
+2. Review `database/MIGRATIONS.md` and confirm the database is at the supported release baseline.
+3. Apply only the migration(s) documented for that baseline; for this release, that is `005_school_import_staging.sql`.
 4. Run the isolated regression/integration verification.
 5. Perform a read-only smoke test before returning the system to teacher use.
 
