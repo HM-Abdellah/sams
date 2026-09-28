@@ -48,17 +48,23 @@ foreach ($configPaths as $candidate) {
 
 $usingExampleConfig = false;
 if ($appConfigPath === null && getenv('SAMS_ALLOW_EXAMPLE_CONFIG') === '1') {
-    $examplePath = $projectRoot . '/config/app.example.php';
+    $examplePaths = [
+        $backendRoot . '/config/app.example.php',
+        $projectRoot . '/config/app.example.php',
+    ];
 
-    if (is_file($examplePath)) {
-        $appConfigPath = $examplePath;
-        $usingExampleConfig = true;
+    foreach ($examplePaths as $examplePath) {
+        if (is_file($examplePath)) {
+            $appConfigPath = $examplePath;
+            $usingExampleConfig = true;
+            break;
+        }
     }
 }
 
 if ($appConfigPath === null) {
     throw new RuntimeException(
-        'Missing application configuration. Copy config/app.example.php to config/app.php and configure it before starting SAMS.'
+        'Missing application configuration. Copy backend/config/app.example.php to backend/config/app.php and configure it before starting SAMS.'
     );
 }
 

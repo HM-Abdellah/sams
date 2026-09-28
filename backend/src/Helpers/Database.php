@@ -37,7 +37,7 @@ final class Database
 
         if ($path === null) {
             throw new RuntimeException(
-                'Missing database configuration. Copy config/database.example.php to config/database.php and configure it before starting SAMS.'
+                'Missing database configuration. Copy backend/config/database.example.php to backend/config/database.php and configure it before starting SAMS.'
             );
         }
 
