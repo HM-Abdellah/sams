@@ -1,5 +1,3 @@
-[Reading 251 lines from start (total: 251 lines, 0 remaining)]
-
 <?php
 
 declare(strict_types=1);
@@ -251,5 +249,3 @@ if (is_dir($sessionDir)) {
 }
 
 echo "Phase 7 security/reliability integration: PASS\n";
-
-[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

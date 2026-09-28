@@ -1,5 +1,3 @@
-[Reading 69 lines from start (total: 69 lines, 0 remaining)]
-
 <?php
 
 declare(strict_types=1);
