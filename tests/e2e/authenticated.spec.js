@@ -621,7 +621,8 @@ test.describe('authenticated SAMS smoke', () => {
     );
     await page.locator('#transferStudentForm button[type="submit"]').click();
     const transferHttp = await transferResponse;
-    expect(transferHttp.ok()).toBeTruthy();
+    const transferBody = await transferHttp.text();
+    expect(transferHttp.ok(), `Student transfer response HTTP ${transferHttp.status()}: ${transferBody}`).toBeTruthy();
     await expect(page.locator('#transferStudentDialog')).toBeHidden();
 
     await page.locator('.tab[data-tab="admin"]').click();
