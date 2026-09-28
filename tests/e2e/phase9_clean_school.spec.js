@@ -107,25 +107,27 @@ async function createClass(page, name) {
 }
 
 async function assignTeacher(page, username, className) {
+  const classOption = page.locator('#classSelect option').filter({ hasText: className }).first();
+  await expect(classOption).toHaveCount(1);
+  const classValue = await classOption.getAttribute('value');
+  expect(classValue).toBeTruthy();
+
+  const classRefresh = page.waitForResponse(
+    (response) =>
+      response.url().includes('/api/teacher-classes.php?') &&
+      response.url().includes('class_id=' + encodeURIComponent(classValue)) &&
+      response.request().method() === 'GET'
+  );
+  await page.locator('#classSelect').selectOption(classValue);
+  expect((await classRefresh).ok()).toBeTruthy();
+  await expect(page.locator('#classSelect')).toHaveValue(/\d+/);
+
   const teacherOption = page.locator('#assignmentTeacherInput option').filter({ hasText: username }).first();
   await expect(teacherOption).toHaveCount(1);
   const teacherValue = await teacherOption.getAttribute('value');
   expect(teacherValue).toBeTruthy();
   await page.locator('#assignmentTeacherInput').selectOption(teacherValue);
-  await page.locator('#assignmentClassInput').selectOption({ label: className });
-
-  const responsePromise = page.waitForResponse(
-    (response) =>
-      response.url().includes('/api/teacher-classes.php') &&
-      response.request().method() === 'POST'
-  );
-  await page.locator('#assignmentForm button[type="submit"]').click();
-  expect((await responsePromise).ok()).toBeTruthy();
-
-  const classOption = page.locator('#classSelect option').filter({ hasText: className }).first();
-  await expect(classOption).toHaveCount(1);
-  const classValue = await classOption.getAttribute('value');
-  expect(classValue).toBeTruthy();
+  await page.locator('#assignmentClassInput').selectOption(classValue);
 
   const assignmentRefresh = page.waitForResponse(
     (response) =>
@@ -133,9 +135,14 @@ async function assignTeacher(page, username, className) {
       response.url().includes('class_id=' + encodeURIComponent(classValue)) &&
       response.request().method() === 'GET'
   );
-  await page.locator('#classSelect').selectOption(classValue);
+  const responsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes('/api/teacher-classes.php') &&
+      response.request().method() === 'POST'
+  );
+  await page.locator('#assignmentForm button[type="submit"]').click();
+  expect((await responsePromise).ok()).toBeTruthy();
   expect((await assignmentRefresh).ok()).toBeTruthy();
-  await expect(page.locator('#classSelect')).toHaveValue(/\d+/);
   await expect(page.locator('#assignmentsTable tbody tr').filter({ hasText: username })).toHaveCount(1);
 }
 
