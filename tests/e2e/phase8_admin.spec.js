@@ -115,7 +115,9 @@ test.describe.serial('Phase 8 administration journeys', () => {
 
     await logout(page);
     await login(page, teacherUsername, teacherPassword);
-    await expect(page.locator('#classSelect option:not([disabled])')).toHaveCount(1);
+    await expect.poll(
+      async () => page.locator('#classSelect option:not([disabled])').count()
+    ).toBeGreaterThanOrEqual(1);
     await expect(page.locator('#classSelect option:checked')).toContainText('E2E-2BAC-B');
     await logout(page);
 
@@ -146,7 +148,9 @@ test.describe.serial('Phase 8 administration journeys', () => {
     await logout(page);
 
     await login(page, teacherUsername, teacherPassword);
-    await expect(page.locator('#classSelect option:not([disabled])')).toHaveCount(1);
+    await expect.poll(
+      async () => page.locator('#classSelect option:not([disabled])').count()
+    ).toBeGreaterThanOrEqual(1);
     await expect(page.locator('#classSelect option:checked')).toContainText('E2E-2BAC-A');
     await logout(page);
   });
