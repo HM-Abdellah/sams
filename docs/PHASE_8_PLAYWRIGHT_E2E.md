@@ -153,5 +153,5 @@ The validation base branch is CI-only and is based on the closed Phase 7 head; i
 
 - CI run #644 validated the previous head `37824d1` and reported failures only in `history-and-signatures` and `phase8-admin`.
 - The following head changes were then applied on this Phase 8 branch: removal of invalid single-class assumptions and deterministic per-group E2E database reset.
-- Current Phase 8 head is `3d96a48`; it is the exact head referenced by validation PR #19.
-- The Phase 8 gate remains OPEN until CI runs against `3d96a48` and confirms critical authenticated journeys, desktop, mobile, and zero skipped critical workflow.
+- Current Phase 8 head is `f45aaf1`; validation PR #22 tracks this exact head against `feat/phase-8-ci-base-v2`.
+- The Phase 8 gate remains OPEN until CI evidence is recorded for the current head and confirms critical authenticated journeys, desktop, mobile, zero skipped critical workflow, and the final diff/documentation review.
