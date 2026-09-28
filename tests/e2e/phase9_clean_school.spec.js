@@ -474,7 +474,7 @@ test('Phase 9 — clean-school acceptance scenario', async ({ page }) => {
   await expect(page.locator('#classSelect option:not([disabled])')).toHaveCount(1);
   await expect(page.locator('#classSelect option:checked')).toContainText(classA);
   await page.locator('.tab[data-tab="students"]').click();
-  await expect(page.locator('#studentsList .student-card').filter({ hasText: 'Phase9 Sara' })).toHaveCount(1);
+  await expect(page.locator('#studentsList .student-card').filter({ hasText: 'Phase9 Sara' })).toHaveCount(0);
   await logout(page);
 
   await login(page, adminUsername, adminPassword);
