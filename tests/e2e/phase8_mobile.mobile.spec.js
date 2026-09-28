@@ -22,7 +22,9 @@ async function login(page, user, pass) {
   const response = await responsePromise;
   if (!response.ok()) throw new Error(`Login API failed: HTTP ${response.status()}`);
   await page.waitForURL(/index\.php$/);
-  await expect.poll(\n    async () => page.locator('#classSelect option:not([disabled])').count()\n  ).toBeGreaterThan(0);
+  await expect.poll(
+    async () => page.locator('#classSelect option:not([disabled])').count()
+  ).toBeGreaterThan(0);
 }
 
 async function setWeek(page, weekStart) {
