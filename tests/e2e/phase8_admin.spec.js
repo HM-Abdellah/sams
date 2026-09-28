@@ -74,7 +74,7 @@ test.describe.serial('Phase 8 administration journeys', () => {
     await page.locator('#studentsList .student-card').filter({ hasText: 'E2ELIFE001' }).first().locator('[data-delete-student]').click();
     expect((await deactivateResponse).ok()).toBeTruthy();
 
-    const refreshPayload = await refreshResponse.json();
+    const refreshPayload = JSON.parse(await refreshResponse.text());
     const refreshedStudent = refreshPayload.data?.students?.find(
       (student) => student.massar_code === 'E2ELIFE001'
     );
@@ -86,6 +86,7 @@ test.describe.serial('Phase 8 administration journeys', () => {
   test('teacher assignment changes access and can be restored', async ({ page }) => {
     await login(page, adminUsername, adminPassword);
     await page.locator('#classSelect').selectOption({ label: 'E2E-2BAC-A' });
+    await expect(page.locator('#attendanceMobileList .attendance-student-card')).toHaveCount(3);
     await page.locator('.tab[data-tab="admin"]').click();
 
     let row = page.locator('#assignmentsTable tbody tr').filter({ hasText: 'E2E Teacher' }).first();
@@ -114,6 +115,7 @@ test.describe.serial('Phase 8 administration journeys', () => {
 
     await login(page, adminUsername, adminPassword);
     await page.locator('#classSelect').selectOption({ label: 'E2E-2BAC-A' });
+    await expect(page.locator('#attendanceMobileList .attendance-student-card')).toHaveCount(3);
     await page.locator('.tab[data-tab="admin"]').click();
 
     await page.locator('#assignmentTeacherInput').selectOption({ label: /E2E Teacher/ });
@@ -125,8 +127,10 @@ test.describe.serial('Phase 8 administration journeys', () => {
     expect((await restoreA).ok()).toBeTruthy();
 
     await page.locator('#classSelect').selectOption({ label: 'E2E-2BAC-B' });
+    await expect(page.locator('#attendanceMobileList .attendance-student-card')).toHaveCount(1);
     await page.locator('.tab[data-tab="admin"]').click();
     row = page.locator('#assignmentsTable tbody tr').filter({ hasText: 'E2E Teacher' }).first();
+    await expect(row).toBeVisible();
     const removeB = page.waitForResponse(
       (response) => response.url().includes('/api/teacher-classes.php') && response.request().method() === 'DELETE'
     );
