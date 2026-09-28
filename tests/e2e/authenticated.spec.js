@@ -604,8 +604,24 @@ test.describe('authenticated SAMS smoke', () => {
   });
 
   test('admin can transfer a student without losing historical attendance', async ({ page }) => {
+    const attendancePosts = [];
+    page.on('request', (request) => {
+      if (request.url().includes('/api/attendance.php') && request.method() === 'POST') {
+        attendancePosts.push(request.postDataJSON());
+      }
+    });
+
     await login(page, username, password);
     await page.locator('.tab[data-tab="students"]').click();
+
+    const preTransferAttendance = await page.evaluate(async () => {
+      const classId = document.querySelector('#classSelect')?.value;
+      const response = await fetch('../api/attendance.php?class_id=' + encodeURIComponent(classId) + '&week_start=2026-09-28', {
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json' },
+      });
+      return { status: response.status, body: await response.text() };
+    });
 
     const studentCard = page.locator('#studentsList .student-card').filter({ hasText: 'E2E001' }).first();
     await expect(studentCard).toBeVisible();
@@ -623,6 +639,10 @@ test.describe('authenticated SAMS smoke', () => {
     const transferHttp = await transferResponse;
     const transferBody = await transferHttp.text();
     const transferRequestBody = transferHttp.request().postDataJSON();
+    expect(
+      transferHttp.ok(),
+      `Pre-transfer attendance API: ${preTransferAttendance.status} ${preTransferAttendance.body}; attendance POSTs before transfer: ${JSON.stringify(attendancePosts)}`
+    ).toBeTruthy();
     expect(
       transferHttp.ok(),
       `Student transfer response HTTP ${transferHttp.status()}: ${transferBody}; request=${JSON.stringify(transferRequestBody)}; input_date=${await page.locator('#transferEffectiveDateInput').inputValue()}`
