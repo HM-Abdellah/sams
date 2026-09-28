@@ -89,6 +89,9 @@ test.describe('Phase 8 mobile authenticated journeys', () => {
     expect(requestBody.entries[0]?.status).toBe('absent');
 
     await page.reload();
+    await setWeek(page, '2026-10-05');
+    await page.locator('#weekDays .week-day-btn').nth(1).click();
+    await page.locator('#periods [data-select-period="7"]').click();
     const persistedToggle = page.locator('#attendanceMobileList [data-attendance-toggle]').first();
     await expect(persistedToggle).toHaveAttribute('aria-pressed', 'true');
     await expect(persistedToggle).toHaveClass(/absent/);
