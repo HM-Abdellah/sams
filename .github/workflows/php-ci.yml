@@ -408,6 +408,13 @@ jobs:
           ];
           PHP
 
+      - name: Mount repository at Apache site root
+        shell: bash
+        run: |
+          rm -rf /var/www/html/sams
+          mkdir -p /var/www/html/sams
+          cp -a "$GITHUB_WORKSPACE/." /var/www/html/sams/
+
       - name: Configure Apache overrides
         shell: bash
         run: |
