@@ -614,7 +614,14 @@ test.describe('authenticated SAMS smoke', () => {
     await expect(page.locator('#transferStudentDialog')).toBeVisible();
     await page.locator('#transferTargetClassInput').selectOption({ label: 'E2E-2BAC-B' });
     await page.locator('#transferEffectiveDateInput').fill('2026-10-01');
+    const transferResponse = page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/students.php?class_id=') &&
+        response.request().method() === 'POST'
+    );
     await page.locator('#transferStudentForm button[type="submit"]').click();
+    const transferHttp = await transferResponse;
+    expect(transferHttp.ok()).toBeTruthy();
     await expect(page.locator('#transferStudentDialog')).toBeHidden();
 
     await page.locator('.tab[data-tab="admin"]').click();
