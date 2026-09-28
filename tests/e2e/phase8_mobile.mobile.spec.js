@@ -89,7 +89,9 @@ test.describe('Phase 8 mobile authenticated journeys', () => {
     expect(requestBody.entries[0]?.status).toBe('absent');
 
     await page.reload();
-    await expect(page.locator('#attendanceMobileList [data-attendance-toggle]').first()).toHaveText('X');
+    const persistedToggle = page.locator('#attendanceMobileList [data-attendance-toggle]').first();
+    await expect(persistedToggle).toHaveAttribute('aria-pressed', 'true');
+    await expect(persistedToggle).toHaveClass(/absent/);
   });
 
   test('teacher mobile signature workflow supports correction and weekly certification', async ({ page }) => {
