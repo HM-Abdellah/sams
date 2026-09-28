@@ -533,6 +533,8 @@ test('Phase 9 — clean-school acceptance scenario', async ({ page }) => {
   await expect(page.locator('#studentHistoryDialog')).toContainText(
     /absent|Absence|Absent/
   );
+  await page.locator('#studentHistoryDialog [data-close-dialog="studentHistoryDialog"]').click();
+  await expect(page.locator('#studentHistoryDialog')).toBeHidden();
 
   await page.locator('.tab[data-tab="admin"]').click();
   await expect(page.locator('#usersTable tbody tr').filter({ hasText: counselorUsername })).toHaveCount(1);
