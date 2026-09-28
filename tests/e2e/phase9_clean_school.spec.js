@@ -184,7 +184,7 @@ async function selectAttendanceDay(page) {
 }
 
 async function toggleAttendanceAndSave(page) {
-  const button = page.locator('#attendanceMobileList [data-attendance-toggle]').first();
+  const button = page.locator('#attendanceTable [data-attendance-toggle]').first();
   await expect(button).toBeVisible();
 
   const responsePromise = page.waitForResponse(
