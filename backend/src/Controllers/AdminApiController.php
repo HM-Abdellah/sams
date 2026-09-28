@@ -1,3 +1,5 @@
+[Reading 64 lines from start (total: 64 lines, 0 remaining)]
+
 <?php
 
 declare(strict_types=1);
@@ -48,7 +50,9 @@ abstract class AdminApiController
     {
         $status = $e instanceof \SAMS\Exceptions\AdministrationException
             ? $e->httpStatus()
-            : ($e instanceof \InvalidArgumentException ? 422 : 500);
+            : ($e instanceof \SAMS\Exceptions\RequestPayloadTooLargeException
+                ? $e->httpStatus()
+                : ($e instanceof \InvalidArgumentException ? 422 : 500));
 
         if ($status >= 500) {
             error_log('[SAMS admin] ' . $e->getMessage());

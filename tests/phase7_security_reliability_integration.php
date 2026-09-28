@@ -1,3 +1,5 @@
+[Reading 251 lines from start (total: 251 lines, 0 remaining)]
+
 <?php
 
 declare(strict_types=1);
@@ -220,8 +222,23 @@ $pdo->exec("UPDATE users SET is_active = 0 WHERE id = 1");
 p7_expect(Auth::user() === null, 'An inactive existing user session remained authenticated.');
 
 // Repository-wide tracked secret/config path audit. Local runtime configs must stay ignored.
-$tracked = shell_exec("git ls-files | grep -E '(^|/)(\.env$|\.env\\.[^/]+$|config/(app|database)\\.php$)' || true");
-p7_expect(trim((string)$tracked) === '', 'Tracked local secret/config file detected: ' . trim((string)$tracked));
+$repoRoot = dirname(__DIR__);
+$trackedLines = [];
+$gitExitCode = 0;
+exec(
+    'git -C ' . escapeshellarg($repoRoot)
+    . ' ls-files -- ' . escapeshellarg('.env')
+    . ' ' . escapeshellarg('.env.*')
+    . ' ' . escapeshellarg('config/app.php')
+    . ' ' . escapeshellarg('config/database.php')
+    . ' ' . escapeshellarg('backend/config/app.php')
+    . ' ' . escapeshellarg('backend/config/database.php')
+    . ' ' . escapeshellarg(':(exclude).env.example'),
+    $trackedLines,
+    $gitExitCode
+);
+p7_expect($gitExitCode === 0, 'Unable to audit tracked secret/config paths with Git.');
+p7_expect(trim(implode("\\n", $trackedLines)) === '', 'Tracked local secret/config file detected: ' . trim(implode("\\n", $trackedLines)));
 
 // Clean the synthetic session state before the test exits.
 Auth::logout();
@@ -234,3 +251,5 @@ if (is_dir($sessionDir)) {
 }
 
 echo "Phase 7 security/reliability integration: PASS\n";
+
+[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

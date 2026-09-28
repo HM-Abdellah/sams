@@ -1,3 +1,5 @@
+[Reading 112 lines from start (total: 112 lines, 0 remaining)]
+
 # Phase 7 — Security and Reliability
 
 Date: 2026-09-27
@@ -82,6 +84,30 @@ Perform a release-focused security and reliability pass over the existing SAMS a
 - No frontend redesign.
 - No new analytics or post-release features.
 - No real school data.
+
+## Verification record
+
+### RED evidence
+
+- CI #598 failed the API HTTP smoke at the JSON-size contract: an oversized attendance request returned HTTP 422 instead of the documented 413.
+- The root cause was controller-level `InvalidArgumentException` handling catching `RequestPayloadTooLargeException` before its dedicated status could be returned.
+- The Phase 7 Git audit also emitted `not a git repository` and could false-pass because the test ignored the command failure.
+
+### GREEN evidence
+
+- `RequestPayloadTooLargeException` is now handled before generic `InvalidArgumentException` in the JSON-bearing canonical controller paths.
+- Git tracked-path auditing is anchored to the repository path and fails closed when Git cannot execute.
+- Fresh synthetic HTTP smoke passes health, authentication, RBAC, CSRF, headers, signatures, and 413 request-size checks.
+- Backend PHPUnit: 33 tests / 130 assertions passed.
+- Legacy checks: 13 passed / 0 failed.
+- Phase 4, Phase 5, Phase 6, and Phase 7 MariaDB integration checks passed.
+- Synthetic workbook/CSV size and row-limit rejection checks passed.
+- Controlled DB failure returned generic HTTP 500 without SQL/internal-path leakage.
+- JavaScript syntax checks passed.
+
+### Current gate status
+
+**OPEN — awaiting post-fix CI green, final diff review, and clean working tree.**
 
 ## Exit gate
 

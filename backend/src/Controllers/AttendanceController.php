@@ -1,3 +1,5 @@
+[Reading 126 lines from start (total: 126 lines, 0 remaining)]
+
 <?php
 
 declare(strict_types=1);
@@ -107,6 +109,11 @@ final class AttendanceController
                 ),
             ]);
         } catch (AttendanceWorkflowException $e) {
+            return Response::json([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], $e->httpStatus());
+        } catch (\SAMS\Exceptions\RequestPayloadTooLargeException $e) {
             return Response::json([
                 'success' => false,
                 'error' => $e->getMessage(),

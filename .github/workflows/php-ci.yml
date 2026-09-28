@@ -1,3 +1,5 @@
+[Reading 416 lines from start (total: 416 lines, 0 remaining)]
+
 name: SAMS PHP CI
 
 concurrency:
@@ -129,7 +131,14 @@ jobs:
       - name: Audit tracked secrets and local config paths
         shell: sh
         run: |
-          tracked_sensitive=$(git ls-files | grep -E '(^|/)(\.env$|\.env\.[^/]+$|config/(app|database)\.php$)' | grep -vE '(^|/)\.env\.example$' || true)
+          tracked_sensitive=$(git -C "$GITHUB_WORKSPACE" ls-files -- \
+            '.env' \
+            '.env.*' \
+            'config/app.php' \
+            'config/database.php' \
+            'backend/config/app.php' \
+            'backend/config/database.php' \
+            ':(exclude).env.example')
           test -z "$tracked_sensitive"
 
       - name: Run API HTTP smoke tests
@@ -269,6 +278,14 @@ jobs:
           oversized_json_status=$(curl -sS -o /tmp/sams-oversized-json.json -w "%{http_code}" -X POST -b "SAMS_SESSION=$teacher_sid" -H 'X-CSRF-Token: phase5-ci-token' -H 'Content-Type: application/json' --data-binary @/tmp/sams-oversized-json-request.json http://127.0.0.1:8090/api/v1/classes/1/attendance/bulk)
           test "$oversized_json_status" = "413"
           grep -q 'too large' /tmp/sams-oversized-json.json
+
+          oversized_admin_status=$(curl -sS -o /tmp/sams-oversized-admin.json -w "%{http_code}" -X POST -b "SAMS_SESSION=$admin_sid" -H 'X-CSRF-Token: phase5-ci-token' -H 'Content-Type: application/json' --data-binary @/tmp/sams-oversized-json-request.json http://127.0.0.1:8090/api/v1/admin/classes)
+          test "$oversized_admin_status" = "413"
+          grep -q 'too large' /tmp/sams-oversized-admin.json
+
+          oversized_signature_status=$(curl -sS -o /tmp/sams-oversized-signature.json -w "%{http_code}" -X POST -b "SAMS_SESSION=$teacher_sid" -H 'X-CSRF-Token: phase5-ci-token' -H 'Content-Type: application/json' --data-binary @/tmp/sams-oversized-json-request.json http://127.0.0.1:8090/api/v1/classes/1/signature)
+          test "$oversized_signature_status" = "413"
+          grep -q 'too large' /tmp/sams-oversized-signature.json
 
           no_csrf_class_status=$(curl -sS -o /tmp/sams-admin-no-csrf.json -w "%{http_code}" -X POST -b "SAMS_SESSION=$admin_sid" -H 'Content-Type: application/json' --data '{"action":"create","name":"HTTP CSRF MUST FAIL"}' http://127.0.0.1:8090/api/v1/admin/classes)
           test "$no_csrf_class_status" = "419"

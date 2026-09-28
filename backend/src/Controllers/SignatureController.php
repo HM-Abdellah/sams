@@ -1,3 +1,5 @@
+[Reading 69 lines from start (total: 69 lines, 0 remaining)]
+
 <?php
 
 declare(strict_types=1);
@@ -49,6 +51,8 @@ final class SignatureController
             $body = $request->jsonBody();
             $saved = $this->service->save((int)$user['id'], $classId, (string)($body['signature_data'] ?? ''));
             return Response::json(['success' => true, 'data' => ['signature' => $saved]]);
+        } catch (\SAMS\Exceptions\RequestPayloadTooLargeException $e) {
+            return Response::json(['success' => false, 'error' => $e->getMessage()], $e->httpStatus());
         } catch (\InvalidArgumentException $e) {
             return Response::json(['success' => false, 'error' => $e->getMessage()], 422);
         } catch (\Throwable $e) {
