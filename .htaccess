@@ -14,8 +14,8 @@ Options -Indexes
     # Centralized API surface.
     RewriteRule ^api/v1(?:/|$) backend/public/index.php [L,QSA]
 
-    # Never expose private application directories through Apache.
-    RewriteRule ^(?:app|backend/(?:src|config|database|storage|scripts|tests|vendor)|config|database|storage|scripts|tests)(?:/|$) - [F,L,NC]
+    # Never expose repository metadata or private application directories through Apache.
+    RewriteRule ^(?:\.git|\.github|app|backend/(?:src|config|database|storage|scripts|tests|vendor)|config|database|storage|scripts|tests)(?:/|$) - [F,L,NC]
     RewriteRule \.(?:sql|log|env|ini|bak|old|dist)$ - [F,L,NC]
 </IfModule>
 

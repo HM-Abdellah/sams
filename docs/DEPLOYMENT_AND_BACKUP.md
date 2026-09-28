@@ -25,17 +25,18 @@ Keep the database and the web application on the same trusted server unless ther
 4. Create the SAMS database by importing `database/schema.sql` only for a fresh installation with no existing SAMS data.
 5. For an existing installation, back up the database and apply the documented migrations in `database/MIGRATIONS.md` instead of rebuilding the schema.
 6. Import `database/seed.sql` only for development/demo environments.
-7. Copy `backend/config/database.example.php` to `backend/config/database.php`.
-8. Set the database host, port, database name, username, and password in that local file.
-9. Install backend dependencies from the repository root with:
+7. Copy `backend/config/app.example.php` to `backend/config/app.php` and set `environment=production`, `debug=false`, the production base path, and the required session/login settings.
+8. Copy `backend/config/database.example.php` to `backend/config/database.php`.
+9. Set the database host, port, database name, username, and password in that local file.
+10. Install backend dependencies from the repository root with:
 
        cd backend
        composer install --no-dev --no-interaction --prefer-dist --no-progress
        composer check-platform-reqs --no-dev
 
-10. Create the first administrator with:
+11. Create the first administrator with:
    C:\xampp\php\php.exe scripts\create_admin.php
-11. Open the public application entry point:
+12. Open the public application entry point:
    http://server-name-or-ip/sams/public/
 
 Do not place database credentials in Git.

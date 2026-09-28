@@ -30,11 +30,12 @@ The documented setup must match repository behavior, not an assumed framework or
 1. Place the repository in the Apache web root.
 2. Ensure Apache allows the repository root `.htaccess` (`AllowOverride All`).
 3. Create the database from `database/schema.sql` only when the installation is empty.
-4. Copy `backend/config/database.example.php` to `backend/config/database.php` and fill in environment-specific credentials.
-5. From `backend/`, run `composer install --no-dev --no-interaction --prefer-dist --no-progress`.
-6. Run `composer check-platform-reqs --no-dev`.
-7. Create the first administrator with `php scripts/create_admin.php` and enter a unique password interactively.
-8. Open `/sams/public/` through Apache.
+4. Copy `backend/config/app.example.php` to `backend/config/app.php` and set `environment=production`, `debug=false`, and the production base path.
+5. Copy `backend/config/database.example.php` to `backend/config/database.php` and fill in environment-specific credentials.
+6. From `backend/`, run `composer install --no-dev --no-interaction --prefer-dist --no-progress`.
+7. Run `composer check-platform-reqs --no-dev` and stop if any required PHP extension is missing.
+8. Create the first administrator with `php scripts/create_admin.php` and enter a unique password interactively.
+9. Open `/sams/public/` through Apache.
 
 Never run the fresh `schema.sql` rebuild against an existing production database.
 

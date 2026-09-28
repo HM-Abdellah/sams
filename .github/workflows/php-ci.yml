@@ -485,6 +485,12 @@ jobs:
           private_status=$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1/sams/backend/src/Helpers/Auth.php)
           test "$private_status" = "403"
 
+          git_status=$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1/sams/.git/config)
+          test "$git_status" = "403"
+
+          github_status=$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1/sams/.github/workflows/php-ci.yml)
+          test "$github_status" = "403"
+
           config_status=$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1/sams/backend/config/database.php)
           test "$config_status" = "403"
 
