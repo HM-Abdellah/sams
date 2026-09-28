@@ -112,23 +112,7 @@ try {
         }
 
         if ($enrollments->hasAttendanceOnOrAfter((int)$currentEnrollment['id'], $effectiveDate)) {
-            $debugStmt = Database::connection()->prepare(
-                'SELECT attendance_date, period, student_id, enrollment_id
-                 FROM attendance
-                 WHERE enrollment_id = ?
-                 ORDER BY attendance_date DESC, period DESC
-                 LIMIT 20'
-            );
-            $debugStmt->execute([(int)$currentEnrollment['id']]);
-            Response::error(
-                'Attendance already exists on or after the transfer date.',
-                409,
-                [
-                    'debug_enrollment_id' => (int)$currentEnrollment['id'],
-                    'debug_student_class_id' => (int)$student['class_id'],
-                    'debug_rows' => $debugStmt->fetchAll(),
-                ]
-            );
+            Response::error('Attendance already exists on or after the transfer date.', 409);
         }
 
         if ($enrollments->hasOverlappingEnrollment(
