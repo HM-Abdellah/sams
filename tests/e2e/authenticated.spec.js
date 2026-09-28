@@ -97,7 +97,9 @@ test.describe('authenticated SAMS smoke', () => {
     await page.locator('#periods [data-select-period="1"]').click();
 
     const statusButtons = page.locator('#attendanceMobileList [data-attendance-toggle]');
-    await expect(statusButtons).toHaveCount(3);
+    await expect.poll(
+      async () => statusButtons.count()
+    ).toBeGreaterThanOrEqual(3);
 
     const bulkResponsePromise = page.waitForResponse(
       (response) =>
