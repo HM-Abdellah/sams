@@ -171,7 +171,16 @@ try {
 
     $pdo->commit();
 
+    $debugAttendance = $pdo->prepare(
+        'SELECT COUNT(*) AS row_count, MIN(attendance_date) AS min_date, MAX(attendance_date) AS max_date
+         FROM attendance
+         WHERE student_id = ?'
+    );
+    $debugAttendance->execute([$firstStudentId]);
+    $debugRow = $debugAttendance->fetch();
+
     echo "[PASS] E2E school bootstrap: admin={$adminId}, teacher={$teacherId}, classes={$classA},{$classB}" . PHP_EOL;
+    echo "[E2E DEBUG] E2E001 attendance rows={$debugRow['row_count']} min={$debugRow['min_date']} max={$debugRow['max_date']}" . PHP_EOL;
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
