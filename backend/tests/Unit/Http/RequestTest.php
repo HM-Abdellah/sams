@@ -56,6 +56,41 @@ final class RequestTest extends TestCase
         }
     }
 
+    public function testFromGlobalsRejectsOversizedNonMultipartBodyBeforeReadingIt(): void
+    {
+        $originalServer = $_SERVER;
+
+        try {
+            $_SERVER['REQUEST_URI'] = '/api/v1/example';
+            $_SERVER['REQUEST_METHOD'] = 'POST';
+            $_SERVER['CONTENT_LENGTH'] = (string)(Request::MAX_JSON_BODY_SIZE + 1);
+            $_SERVER['CONTENT_TYPE'] = 'application/json';
+
+            $this->expectException(RequestPayloadTooLargeException::class);
+            Request::fromGlobals();
+        } finally {
+            $_SERVER = $originalServer;
+        }
+    }
+
+    public function testFromGlobalsAllowsLargerMultipartBodyAndNormalizesContentType(): void
+    {
+        $originalServer = $_SERVER;
+
+        try {
+            $_SERVER['REQUEST_URI'] = '/api/v1/example';
+            $_SERVER['REQUEST_METHOD'] = 'POST';
+            $_SERVER['CONTENT_LENGTH'] = '20000000';
+            $_SERVER['CONTENT_TYPE'] = 'multipart/form-data; boundary=test';
+
+            $request = Request::fromGlobals();
+
+            self::assertSame('multipart/form-data; boundary=test', $request->header('Content-Type'));
+        } finally {
+            $_SERVER = $originalServer;
+        }
+    }
+
     public function testWithPathPreservesRequestData(): void
     {
         $request = new Request(

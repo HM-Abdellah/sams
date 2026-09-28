@@ -151,6 +151,16 @@ $GLOBALS['appConfig'] = $appConfig;
 if (!function_exists('sams_json_body')) {
     function sams_json_body(): array
     {
+        $contentLength = (string)($_SERVER['CONTENT_LENGTH'] ?? '');
+        $contentType = strtolower((string)($_SERVER['CONTENT_TYPE'] ?? ''));
+        if (
+            ctype_digit($contentLength)
+            && (int)$contentLength > \SAMS\Http\Request::MAX_JSON_BODY_SIZE
+            && !str_starts_with($contentType, 'multipart/form-data')
+        ) {
+            throw new \SAMS\Exceptions\RequestPayloadTooLargeException('Request payload is too large.');
+        }
+
         $raw = file_get_contents('php://input');
 
         if (!is_string($raw) || trim($raw) === '') {

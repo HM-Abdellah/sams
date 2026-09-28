@@ -47,12 +47,38 @@ final class Request
             }
         }
 
+        foreach (['CONTENT_TYPE' => 'content-type', 'CONTENT_LENGTH' => 'content-length'] as $serverName => $headerName) {
+            $value = $_SERVER[$serverName] ?? null;
+            if (is_string($value) && $value !== '' && !isset($headers[$headerName])) {
+                $headers[$headerName] = $value;
+            }
+        }
+
+        $contentLength = (string)($_SERVER['CONTENT_LENGTH'] ?? '');
+        $contentType = strtolower((string)(
+            $headers['content-type']
+            ?? $_SERVER['CONTENT_TYPE']
+            ?? ''
+        ));
+        if (
+            ctype_digit($contentLength)
+            && (int)$contentLength > self::MAX_JSON_BODY_SIZE
+            && !str_starts_with($contentType, 'multipart/form-data')
+        ) {
+            throw new RequestPayloadTooLargeException('Request payload is too large.');
+        }
+
+        $rawBody = file_get_contents('php://input');
+        if ($rawBody === false) {
+            throw new InvalidArgumentException('Unable to read request payload.');
+        }
+
         return new self(
             strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')),
             $path === '' ? '/' : $path,
             $_GET,
             $headers,
-            (string)(file_get_contents('php://input') ?: ''),
+            $rawBody,
             is_array($_POST) ? $_POST : [],
             is_array($_FILES) ? $_FILES : []
         );
