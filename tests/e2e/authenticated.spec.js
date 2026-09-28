@@ -699,9 +699,28 @@ test.describe('authenticated SAMS smoke', () => {
     await login(page, teacherUsername, teacherPassword);
     await setWeek(page, '2026-11-02');
     await page.locator('#periods [data-select-period="1"]').click();
-    await page.locator('#attendanceMobileList [data-attendance-toggle]').first().click();
+    const attendanceToggle = page.locator('#attendanceMobileList [data-attendance-toggle]').first();
+    await attendanceToggle.click();
+
+    const periodSignResponse = page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/attendance-signoffs.php?class_id=') &&
+        response.request().method() === 'POST'
+    );
     await page.locator('#attendanceWorkflow [data-sign-period]').click();
+    const periodSign = await periodSignResponse;
+    expect(periodSign.ok()).toBeTruthy();
+    await expect(page.locator('#attendanceWorkflow .attendance-seal')).toContainText(/Validée par|Certified by|تمت المصادقة/);
+
+    const weeklySignResponse = page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/attendance-signoffs.php?class_id=') &&
+        response.request().method() === 'POST'
+    );
     await page.locator('#weeklyTeacherSignatures [data-sign-week]').click();
+    const weeklySign = await weeklySignResponse;
+    expect(weeklySign.ok()).toBeTruthy();
+    await expect(page.locator('#weeklyTeacherSignatures .weekly-teacher-status.signed')).toHaveCount(1);
     await page.locator('#logoutBtn').click();
     await page.waitForURL(/login\.php$/);
 
