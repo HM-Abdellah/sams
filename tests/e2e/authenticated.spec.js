@@ -6,6 +6,11 @@ const teacherUsername = process.env.SAMS_E2E_TEACHER_USERNAME;
 const teacherPassword = process.env.SAMS_E2E_TEACHER_PASSWORD;
 
 test.describe('authenticated SAMS smoke', () => {
+  test.beforeAll(() => {
+    if (![username, password, teacherUsername, teacherPassword].every(Boolean)) {
+      throw new Error('Authenticated E2E credentials must be set; tests must never be skipped.');
+    }
+  });
   async function login(page, user, pass) {
     await page.goto('login.php');
     await page.locator('#username').fill(user);
@@ -29,7 +34,24 @@ test.describe('authenticated SAMS smoke', () => {
     await page.waitForURL(/index\.php$/);
   }
 
-  test.skip(!username || !password, 'Set SAMS_E2E_USERNAME and SAMS_E2E_PASSWORD to run authenticated E2E tests.');
+  async function expectLoginFailure(page, user, pass) {
+    await page.goto('login.php');
+    await page.locator('#username').fill(user);
+    await page.locator('#password').fill(pass);
+
+    const responsePromise = page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/auth.php?action=login') &&
+        response.request().method() === 'POST'
+    );
+
+    await page.locator('#loginBtn').click();
+
+    const response = await responsePromise;
+    expect(response.ok()).toBeFalsy();
+    await expect(page.locator('#loginError')).toBeVisible();
+    await expect(page.locator('#loginError')).not.toHaveText('');
+  }
 
   test('login, operational roster and archive are reachable', async ({ page }) => {
     await login(page, username, password);
@@ -64,49 +86,45 @@ test.describe('authenticated SAMS smoke', () => {
     }
   });
 
-  test('attendance edits are sent as one bulk request', async ({ page }) => {
-    const batches = [];
-
-    await page.route('**/api/attendance.php*', async (route) => {
-      if (route.request().method() !== 'POST') {
-        await route.continue();
-        return;
-      }
-
-      const body = route.request().postDataJSON();
-      batches.push(body);
-
-      const total = Array.isArray(body?.entries) ? body.entries.length : 0;
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          success: true,
-          data: { changed: total, unchanged: 0, total }
-        })
-      });
-    });
-
+  test('attendance edits are sent as one real bulk request', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await login(page, username, password);
+
     await expect(page.locator('#attendanceMobileList .attendance-student-card').first()).toBeVisible();
     await page.locator('#periods [data-select-period="1"]').click();
+
     const statusButtons = page.locator('#attendanceMobileList [data-attendance-toggle]');
     await expect(statusButtons).toHaveCount(3);
+
+    const bulkResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/attendance.php') &&
+        response.request().method() === 'POST'
+    );
+
     await statusButtons.nth(0).click();
     await statusButtons.nth(1).click();
     await statusButtons.nth(2).click();
 
-    await page.waitForTimeout(800);
+    const bulkResponse = await bulkResponsePromise;
+    expect(bulkResponse.ok()).toBeTruthy();
 
-    expect(batches).toHaveLength(1);
-    expect(batches[0]?.action).toBe('bulk');
-    expect(batches[0]?.entries).toHaveLength(3);
-    expect(batches[0].entries.every((entry) => entry.action === 'upsert' && entry.status === 'absent')).toBe(true);
+    const requestBody = bulkResponse.request().postDataJSON();
+    expect(requestBody?.action).toBe('bulk');
+    expect(requestBody?.entries).toHaveLength(3);
+    expect(requestBody.entries.every((entry) => entry.action === 'upsert' && entry.status === 'absent')).toBe(true);
+
+    const payload = await bulkResponse.json();
+    expect(payload.success).toBe(true);
+    expect(payload.data?.changed).toBe(3);
+
+    await page.reload();
+    await expect(page.locator('#attendanceMobileList [data-attendance-toggle]').nth(0)).toHaveText('X');
+    await expect(page.locator('#attendanceMobileList [data-attendance-toggle]').nth(1)).toHaveText('X');
+    await expect(page.locator('#attendanceMobileList [data-attendance-toggle]').nth(2)).toHaveText('X');
   });
 
   test('teacher cannot access historical archive and weekly sheet supports all three languages', async ({ page }) => {
-    test.skip(!teacherUsername || !teacherPassword, 'Set teacher E2E credentials to run teacher isolation tests.');
 
     await login(page, teacherUsername, teacherPassword);
 
@@ -127,7 +145,6 @@ test.describe('authenticated SAMS smoke', () => {
   });
 
   test('teacher sees only assigned classes', async ({ page }) => {
-    test.skip(!teacherUsername || !teacherPassword, 'Set teacher E2E credentials to run teacher isolation tests.');
 
     await page.setViewportSize({ width: 390, height: 844 });
     await login(page, teacherUsername, teacherPassword);
@@ -140,7 +157,6 @@ test.describe('authenticated SAMS smoke', () => {
   });
 
   test('teacher can sign, reopen, correct and re-sign a lesson, then certify the week', async ({ page }) => {
-    test.skip(!teacherUsername || !teacherPassword, 'Set teacher E2E credentials to run teacher isolation tests.');
 
     await page.setViewportSize({ width: 390, height: 844 });
     await login(page, teacherUsername, teacherPassword);
@@ -172,7 +188,6 @@ test.describe('authenticated SAMS smoke', () => {
   });
 
   test('teacher weekly attendance is touch-friendly and weekly print is populated', async ({ page }) => {
-    test.skip(!teacherUsername || !teacherPassword, 'Set teacher E2E credentials to run teacher isolation tests.');
 
     await page.setViewportSize({ width: 390, height: 844 });
     await login(page, teacherUsername, teacherPassword);
@@ -639,7 +654,6 @@ test.describe('authenticated SAMS smoke', () => {
   });
 
   test('admin can receive a fully signed weekly register', async ({ page }) => {
-    test.skip(!teacherUsername || !teacherPassword, 'Set teacher E2E credentials to run weekly receipt isolation tests.');
 
     await page.setViewportSize({ width: 390, height: 844 });
     await login(page, teacherUsername, teacherPassword);
@@ -686,7 +700,7 @@ test.describe('authenticated SAMS smoke', () => {
     await page.locator('.tab[data-tab="admin"]').click();
     await expect(page.locator('#adminClassesTable')).toBeVisible();
 
-    const className = 'E2E-UI-' + Date.now();
+    const className = 'E2E-UI-CLASS';
     await page.locator('#addClassBtn').click();
     await page.locator('#classNameInput').fill(className);
     await page.locator('#classLevelInput').fill('2BAC');
@@ -719,7 +733,7 @@ test.describe('authenticated SAMS smoke', () => {
     await editedClassRow.locator('[data-toggle-class]').click();
     await expect(editedClassRow.locator('td').nth(4)).toHaveText('Oui');
 
-    const createdUsername = 'e2e-ui-' + Date.now();
+    const createdUsername = 'e2e-ui-user';
     const newPassword = 'e2e-ui-password-2026';
 
     await page.locator('#userUsernameInput').fill(createdUsername);
