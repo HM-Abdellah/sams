@@ -5,6 +5,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
+  statuses: write
   contents: read
   issues: write
 
@@ -400,6 +401,7 @@ jobs:
         run: npm install --no-audit --no-fund
 
       - name: Run Playwright E2E
+        id: phase8_e2e
         env:
           SAMS_BASE_URL: http://127.0.0.1:8080/public/
           SAMS_E2E_USERNAME: admin
@@ -483,6 +485,29 @@ jobs:
 
           exit "$overall_status"
 
+      - name: Publish Phase 8 Playwright status
+        if: always()
+        continue-on-error: true
+        uses: actions/github-script@v7
+        env:
+          PHASE8_LOG_PATH: /tmp/phase8-playwright.log
+        with:
+          script: |
+            const fs = require('fs');
+            const log = fs.existsSync(process.env.PHASE8_LOG_PATH) ? fs.readFileSync(process.env.PHASE8_LOG_PATH, 'utf8') : '';
+            const failures = [...log.matchAll(/\[FAIL\] ([^\n]+)/g)].map((m) => m[1]);
+            const outcome = '${{ steps.phase8_e2e.outcome }}';
+            const state = outcome === 'success' ? 'success' : 'failure';
+            const description = (failures.length ? 'Failed groups: ' + failures.join('; ') : 'All Phase 8 E2E groups passed.').slice(0, 140);
+            const sha = context.payload.pull_request?.head?.sha || context.sha;
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha,
+              state,
+              context: 'phase8/e2e-groups',
+              description
+            });
       - name: Publish Phase 8 Playwright diagnostics
         if: failure()
         uses: actions/github-script@v7
