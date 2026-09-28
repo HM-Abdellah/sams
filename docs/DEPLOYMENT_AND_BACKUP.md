@@ -1,5 +1,15 @@
 # SAMS — Deployment and Backup Guide
 
+## Production prerequisites
+
+The supported release deployment assumes Apache 2.4+, PHP 8.3, MariaDB/MySQL, and Composer 2.
+
+PHP must provide these extensions used by the release candidate and PhpSpreadsheet: `pdo_mysql`, `mbstring`, `dom`, `xml`, `xmlwriter`, `zip`, and `gd`.
+
+Apache must allow the repository root `.htaccess` to run (`AllowOverride All` for the SAMS directory) and must provide `mod_rewrite` and `mod_headers`.
+
+Node.js is not required by the production runtime. It is only needed for JavaScript/Playwright release verification.
+
 ## Production topology
 
 The intended school deployment is a central Windows machine running Apache/PHP and MariaDB/MySQL. Teachers access SAMS from phones, tablets, or laptops over the school LAN.
@@ -10,14 +20,22 @@ Keep the database and the web application on the same trusted server unless ther
 
 1. Place the repository under the Apache web root, for example:
    C:\xampp\htdocs\sams
-2. Start Apache and MySQL/MariaDB.
-3. Create the SAMS database by importing database/schema.sql.
-4. Import database/seed.sql only for development/demo environments.
-5. Copy config/database.example.php to config/database.php.
-6. Set the database host, port, database name, username, and password.
-7. Create the first administrator with:
+2. Enable Apache `mod_rewrite` and `mod_headers`, and allow `.htaccess` overrides for the SAMS directory (`AllowOverride All`).
+3. Start Apache and MySQL/MariaDB.
+4. Create the SAMS database by importing `database/schema.sql` only for a fresh installation with no existing SAMS data.
+5. For an existing installation, back up the database and apply the documented migrations in `database/MIGRATIONS.md` instead of rebuilding the schema.
+6. Import `database/seed.sql` only for development/demo environments.
+7. Copy `backend/config/database.example.php` to `backend/config/database.php`.
+8. Set the database host, port, database name, username, and password in that local file.
+9. Install backend dependencies from the repository root with:
+
+       cd backend
+       composer install --no-dev --no-interaction --prefer-dist --no-progress
+       composer check-platform-reqs --no-dev
+
+10. Create the first administrator with:
    C:\xampp\php\php.exe scripts\create_admin.php
-8. Open the public application entry point:
+11. Open the public application entry point:
    http://server-name-or-ip/sams/public/
 
 Do not place database credentials in Git.
@@ -38,7 +56,7 @@ This is for development/testing. The router exposes only public/ and api/ and ke
 
 For a clean local/demo database in CS50.dev:
 
-    cp config/database.example.php config/database.php
+    cp backend/config/database.example.php backend/config/database.php
     sudo service mariadb start
     mysql -u root < database/schema.sql
     mysql -u root sams < database/seed.sql
@@ -62,13 +80,15 @@ The demo seed creates the 2026/2027 academic year, two demo classes, a teacher-c
 
 ## Configuration
 
-The application expects:
+The application prefers:
 
-    config/database.php
+    backend/config/database.php
+
+The compatibility path `config/database.php` is also supported while the backend migration remains in progress. For new installations, use the backend path.
 
 The file is intentionally local-only. Start from:
 
-    config/database.example.php
+    backend/config/database.example.php
 
 The database name is validated before being used to build the PDO DSN.
 
@@ -119,14 +139,31 @@ Never test a restore by overwriting the only production copy.
 
 ## Release verification
 
-Run:
+Run the full verification only against an isolated test database, never against production data.
+
+Backend dependencies:
+
+    cd backend
+    composer install --no-interaction --prefer-dist --no-progress
+    composer check-platform-reqs --no-dev
+    cd ..
+
+Service/integration verification:
 
     php tests/run.php
     php tests/integration.php
-    npm install
+    php tests/school_import_final_integration.php
+    php tests/attendance_backend_integration.php
+    php tests/administration_backend_integration.php
+    php tests/phase6_archive_reports_signatures_integration.php
+    php tests/phase7_security_reliability_integration.php
+
+Browser verification:
+
+    npm install --no-audit --no-fund
     npm run test:e2e
 
-The CI pipeline also runs these checks against a clean MariaDB school dataset.
+The database-dependent tests expect `SAMS_TEST_DB_HOST`, `SAMS_TEST_DB_PORT`, `SAMS_TEST_DB_NAME`, `SAMS_TEST_DB_USER`, and `SAMS_TEST_DB_PASS` for the isolated test database. CI supplies these values and also runs the clean-school acceptance gate.
 
 ## Demo / presentation data
 
