@@ -1296,6 +1296,8 @@ function wire() {
             const classes = await API.classes();
             setOperationalClasses(classes.classes || []);
             ui.classes();
+            await loadAdmin();
+            renderAll();
             ui.toast(t('class_created'));
         } catch (error) { ui.toast(error.message || t('app_error'), true); }
     });
