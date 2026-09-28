@@ -13,7 +13,7 @@ export default defineConfig({
     baseURL: process.env.SAMS_BASE_URL || 'http://localhost/sams/public/',
     trace: 'off',
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure'
+    video: 'off'
   },
   projects: [
     {
