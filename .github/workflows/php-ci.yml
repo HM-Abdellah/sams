@@ -39,6 +39,7 @@ jobs:
       SAMS_TEST_DB_NAME: sams
       SAMS_TEST_DB_USER: root
       SAMS_TEST_DB_PASS: root
+      SAMS_ALLOW_EXAMPLE_CONFIG: 1
 
     steps:
       - name: Checkout repository
@@ -74,6 +75,16 @@ jobs:
           composer validate --no-check-publish
           composer check-platform-reqs --no-dev
           composer audit --locked --no-dev
+
+      - name: Verify application configuration fails closed
+        shell: sh
+        run: |
+          if SAMS_ALLOW_EXAMPLE_CONFIG=0 php -r 'require "backend/src/bootstrap.php";'; then
+            echo "Application bootstrap unexpectedly accepted missing application configuration."
+            exit 1
+          fi
+          SAMS_ALLOW_EXAMPLE_CONFIG=1 php -r 'require "backend/src/bootstrap.php";'
+          echo "[PASS] Application bootstrap requires explicit configuration outside test/development fallback."
 
       - name: Configure backend database
         shell: sh
@@ -505,6 +516,7 @@ jobs:
       SAMS_TEST_DB_NAME: sams
       SAMS_TEST_DB_USER: root
       SAMS_TEST_DB_PASS: root
+      SAMS_ALLOW_EXAMPLE_CONFIG: 1
       SAMS_E2E_PASSWORD: e2e-admin-password-2026
       SAMS_E2E_TEACHER_PASSWORD: e2e-teacher-password-2026
       SAMS_E2E_LIFECYCLE_USERNAME: e2e-lifecycle-user
@@ -697,6 +709,7 @@ jobs:
       SAMS_TEST_DB_NAME: sams
       SAMS_TEST_DB_USER: root
       SAMS_TEST_DB_PASS: root
+      SAMS_ALLOW_EXAMPLE_CONFIG: 1
       SAMS_ACCEPTANCE_ADMIN_USERNAME: admin
       SAMS_ACCEPTANCE_ADMIN_PASSWORD: acceptance-admin-password-2026
       SAMS_ACCEPTANCE_COUNSELOR_PASSWORD: acceptance-counselor-password-2026

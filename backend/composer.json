@@ -4,6 +4,12 @@
     "type": "project",
     "require": {
         "php": "~8.3.0",
+        "ext-fileinfo": "*",
+        "ext-gd": "*",
+        "ext-mbstring": "*",
+        "ext-pdo_mysql": "*",
+        "ext-xml": "*",
+        "ext-zip": "*",
         "phpoffice/phpspreadsheet": "^5.10"
     },
     "require-dev": {

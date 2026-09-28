@@ -33,18 +33,33 @@ if (is_file($composerAutoload)) {
     });
 }
 
-$appConfigPath = $backendRoot . '/config/app.php';
+$configPaths = [
+    $backendRoot . '/config/app.php',
+    $projectRoot . '/config/app.php',
+];
 
-if (!is_file($appConfigPath)) {
-    $appConfigPath = $projectRoot . '/config/app.php';
+$appConfigPath = null;
+foreach ($configPaths as $candidate) {
+    if (is_file($candidate)) {
+        $appConfigPath = $candidate;
+        break;
+    }
 }
 
-if (!is_file($appConfigPath)) {
-    $appConfigPath = $backendRoot . '/config/app.example.php';
+$usingExampleConfig = false;
+if ($appConfigPath === null && getenv('SAMS_ALLOW_EXAMPLE_CONFIG') === '1') {
+    $examplePath = $projectRoot . '/config/app.example.php';
+
+    if (is_file($examplePath)) {
+        $appConfigPath = $examplePath;
+        $usingExampleConfig = true;
+    }
 }
 
-if (!is_file($appConfigPath)) {
-    throw new RuntimeException('Missing application configuration.');
+if ($appConfigPath === null) {
+    throw new RuntimeException(
+        'Missing application configuration. Copy config/app.example.php to config/app.php and configure it before starting SAMS.'
+    );
 }
 
 $appConfig = require $appConfigPath;
@@ -52,6 +67,78 @@ $appConfig = require $appConfigPath;
 if (!is_array($appConfig)) {
     throw new RuntimeException('Invalid application configuration.');
 }
+
+$environment = strtolower(trim((string)($appConfig['environment'] ?? '')));
+if (!in_array($environment, ['development', 'test', 'production'], true)) {
+    throw new RuntimeException('Invalid application environment. Use development, test, or production.');
+}
+
+$runtimeEnvironment = getenv('SAMS_ENV');
+if ($runtimeEnvironment !== false && strtolower(trim($runtimeEnvironment)) !== $environment) {
+    throw new RuntimeException('SAMS_ENV does not match the application configuration environment.');
+}
+
+$debug = $appConfig['debug'] ?? null;
+if (!is_bool($debug)) {
+    throw new RuntimeException('Invalid application debug setting. It must be boolean.');
+}
+
+if ($environment === 'production' && $debug) {
+    throw new RuntimeException('Production configuration must have debug=false.');
+}
+
+if ($environment === 'production' && $usingExampleConfig) {
+    throw new RuntimeException('The example application configuration cannot be used in production.');
+}
+
+$name = trim((string)($appConfig['name'] ?? ''));
+if ($name === '' || mb_strlen($name) > 100) {
+    throw new RuntimeException('Invalid application name.');
+}
+
+$basePath = trim((string)($appConfig['base_path'] ?? ''), '/');
+if ($basePath !== '' && !preg_match('#^[A-Za-z0-9._~/-]+$#', $basePath)) {
+    throw new RuntimeException('Invalid application base_path.');
+}
+
+$sessionName = (string)($appConfig['session_name'] ?? 'SAMS_SESSION');
+if (!preg_match('/^[A-Za-z0-9_-]+$/', $sessionName)) {
+    throw new RuntimeException('Invalid session_name.');
+}
+
+$sessionLifetime = (int)($appConfig['session_lifetime'] ?? 3600);
+$idleTimeout = (int)($appConfig['session_idle_timeout'] ?? $sessionLifetime);
+$absoluteTimeout = (int)($appConfig['session_absolute_timeout'] ?? 43200);
+$loginMaxAttempts = (int)($appConfig['login_max_attempts'] ?? 5);
+$loginLockMinutes = (int)($appConfig['login_lock_minutes'] ?? 15);
+
+if ($sessionLifetime < 300 || $sessionLifetime > 604800) {
+    throw new RuntimeException('Invalid session_lifetime.');
+}
+if ($idleTimeout < 300 || $idleTimeout > 604800) {
+    throw new RuntimeException('Invalid session_idle_timeout.');
+}
+if ($absoluteTimeout < $idleTimeout || $absoluteTimeout > 2592000) {
+    throw new RuntimeException('Invalid session_absolute_timeout.');
+}
+if ($loginMaxAttempts < 1 || $loginMaxAttempts > 100) {
+    throw new RuntimeException('Invalid login_max_attempts.');
+}
+if ($loginLockMinutes < 1 || $loginLockMinutes > 1440) {
+    throw new RuntimeException('Invalid login_lock_minutes.');
+}
+
+$appConfig['name'] = $name;
+$appConfig['environment'] = $environment;
+$appConfig['debug'] = $debug;
+$appConfig['base_path'] = $basePath === '' ? '' : '/' . $basePath;
+$appConfig['session_name'] = $sessionName;
+$appConfig['session_lifetime'] = $sessionLifetime;
+$appConfig['session_idle_timeout'] = $idleTimeout;
+$appConfig['session_absolute_timeout'] = $absoluteTimeout;
+$appConfig['login_max_attempts'] = $loginMaxAttempts;
+$appConfig['login_lock_minutes'] = $loginLockMinutes;
+$appConfig['_using_example_config'] = $usingExampleConfig;
 
 $GLOBALS['appConfig'] = $appConfig;
 

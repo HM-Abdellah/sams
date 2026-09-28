@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/** Local/development configuration template. */
+/** Local/development configuration template. The backend will only use this file when SAMS_ALLOW_EXAMPLE_CONFIG=1 is explicitly set. */
 
 return [
     'name' => 'SAMS',
