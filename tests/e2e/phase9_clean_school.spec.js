@@ -409,6 +409,9 @@ test('Phase 9 — clean-school acceptance scenario', async ({ page }) => {
   await selectOperationalClass(page, classA);
   await selectAttendanceDay(page);
   await saveClassSignature(page);
+  await page.locator('.tab[data-tab="attendance"]').click();
+  await selectOperationalClass(page, classA);
+  await selectAttendanceDay(page);
 
   const attendanceToggle = page.locator('#attendanceTable tbody tr').filter({ hasText: 'Import Valid' }).locator('[data-attendance-toggle]').first();
   await expect(attendanceToggle).toBeVisible();
