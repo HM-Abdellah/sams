@@ -121,19 +121,24 @@ Dataset:
 - 1 counselor.
 - 2 teachers.
 - 2 active classes.
-- Realistic student rosters.
+- Realistic synthetic student rosters.
 - One active academic year.
 - Separate presentation/test data from real records.
 
 Scenario:
 
-fresh install -> create admin -> configure school -> assign teachers -> import students -> mark attendance -> correct attendance -> sign sheet -> generate report -> inspect archive/history -> logout -> verify access control.
+fresh install -> create admin -> configure school -> assign teachers -> import students -> mark attendance -> correct attendance -> save teacher signature -> sign lesson -> reopen and correct -> sign week -> generate report -> inspect archive/history -> transfer student -> verify role isolation -> logout -> verify access control.
 
 Gate:
-- Scenario succeeds from a clean database.
-- Historical attendance survives enrollment/class transitions.
+- Scenario succeeds from a database rebuilt from database/schema.sql.
+- First administrator is created through the real scripts/create_admin.php path.
+- Historical attendance survives enrollment/class transitions and remains accessible through archive/history.
+- Teacher class isolation and counselor archive denial are verified.
+- Persisted database counts match the completed clean-school scenario.
 - No manual database repair is required during the scenario.
+- Functional validation Run #711 (36441910211) passed on commit 487fb57463d32a9e552b9b741755855f40912b66.
 
+Gate status: CLOSED.
 ## Phase 10 — Deployment and Documentation
 
 Goal: make the release reproducible outside the developer machine.
