@@ -109,7 +109,6 @@ async function createClass(page, name) {
 async function assignTeacher(page, username, className) {
   await page.locator('#classSelect').selectOption({ label: className });
   await expect(page.locator('#classSelect')).toHaveValue(/\\d+/);
-  await expect(page.locator('#assignmentTeacherInput option').filter({ hasText: username }).first()).toBeVisible();
   const teacherOption = page.locator('#assignmentTeacherInput option').filter({ hasText: username }).first();
   await expect(teacherOption).toBeVisible();
   const teacherValue = await teacherOption.getAttribute('value');
@@ -146,9 +145,11 @@ async function stageAndImport(page, filename, { correctFirstBatchRow = false } =
     await row.locator('[data-edit-import]').click();
     await expect(page.locator('#importCorrectionDialog')).toBeVisible();
 
-    const invalidDate = page.locator(
-      '#importCorrectionRows .import-correction-row input[name="birth_date"]'
-    ).first();
+    const invalidRow = page.locator('#importCorrectionRows .import-correction-row').filter({
+      hasText: 'E2EIMP002',
+    }).first();
+    await expect(invalidRow).toBeVisible();
+    const invalidDate = invalidRow.locator('input[name="birth_date"]');
     await expect(invalidDate).toHaveValue('');
     await invalidDate.fill('2010-03-15');
 
