@@ -90,7 +90,7 @@ test.describe.serial('Phase 8 authentication lifecycle', () => {
       await expectLoginFailure(page, lifecycleUsername, lifecyclePassword + '-invalid');
     }
 
-    await login(page, adminUsername, adminPassword);
+    await login(page, adminUsername, adminPassword, true);
     await page.locator('.tab[data-tab="admin"]').click();
     const lockedRow = page.locator('#usersTable tbody tr').filter({ hasText: lifecycleUsername }).first();
 
