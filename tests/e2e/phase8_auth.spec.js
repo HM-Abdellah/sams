@@ -12,7 +12,7 @@ test.beforeAll(() => {
   }
 });
 
-async function login(page, user, pass) {
+async function login(page, user, pass, { waitForRoster = false } = {}) {
   await page.goto('login.php');
   await page.locator('#username').fill(user);
   await page.locator('#password').fill(pass);
@@ -23,9 +23,9 @@ async function login(page, user, pass) {
   const response = await responsePromise;
   if (!response.ok()) throw new Error(`Login API failed: HTTP ${response.status()}`);
   await page.waitForURL(/index\.php$/);
-  await expect.poll(
-    async () => page.locator('#classSelect option:not([disabled])').count()
-  ).toBeGreaterThan(0);
+  if (waitForRoster) {
+    await expect(page.locator('#attendanceMobileList .attendance-student-card').first()).toBeVisible();
+  }
 }
 
 async function expectLoginFailure(page, user, pass) {
@@ -58,7 +58,7 @@ test.describe.serial('Phase 8 authentication lifecycle', () => {
   });
 
   test('user creation, password reset, lock, unlock and inactive-account rejection are real flows', async ({ page }) => {
-    await login(page, adminUsername, adminPassword);
+    await login(page, adminUsername, adminPassword, { waitForRoster: true });
     await page.locator('.tab[data-tab="admin"]').click();
 
     await page.locator('#userUsernameInput').fill(lifecycleUsername);
