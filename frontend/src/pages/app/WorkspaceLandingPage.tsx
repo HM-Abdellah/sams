@@ -7,11 +7,11 @@ export function WorkspaceLandingPage() {
   if (session.user === null) return null
 
   if (session.user.role === 'admin') {
-    return <Navigate to="/app/admin" replace />
+    return <Navigate to="/app/admin/dashboard" replace />
   }
 
   if (session.user.role === 'teacher') {
-    return <Navigate to="/app/teacher" replace />
+    return <Navigate to="/app/attendance" replace />
   }
 
   return (

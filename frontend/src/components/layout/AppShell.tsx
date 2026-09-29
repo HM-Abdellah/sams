@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router'
 import { useSession } from '../../features/auth/useSession.ts'
+import { navigationForRole } from '../../routes/route-config.ts'
 
 export function AppShell() {
   const session = useSession()
@@ -9,11 +10,7 @@ export function AppShell() {
 
   if (session.user === null) return null
 
-  const links = session.user.role === 'admin'
-    ? [{ to: '/app/admin', label: 'Administration' }]
-    : session.user.role === 'teacher'
-      ? [{ to: '/app/teacher', label: 'Teacher workspace' }]
-      : []
+  const links = navigationForRole(session.user.role)
 
   return (
     <div className="min-h-screen">
@@ -45,8 +42,8 @@ export function AppShell() {
         <div className="mx-auto flex max-w-6xl gap-4 px-6 py-3">
           {links.map((link) => (
             <NavLink
-              key={link.to}
-              to={link.to}
+              key={link.path}
+              to={link.path}
               className={({ isActive }) => isActive ? 'font-medium underline' : 'text-neutral-600'}
             >
               {link.label}
