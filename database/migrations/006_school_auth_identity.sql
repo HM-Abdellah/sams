@@ -161,11 +161,9 @@ SELECT
     CURRENT_TIMESTAMP
 FROM users;
 
-INSERT INTO school_onboarding_codes (school_id, code_hash)
-VALUES (
-    @sams_school_id,
-    SHA2(CONCAT('SAMS-001-', @sams_school_id), 256)
-);-- Audit entries must retain tenant ownership even if the actor is later removed.
+-- No onboarding code is seeded here. The first admin onboarding action must generate a cryptographically random bearer code and store only its hash.
+
+-- Audit entries must retain tenant ownership even if the actor is later removed.
 ALTER TABLE audit_logs
     ADD COLUMN school_id BIGINT UNSIGNED NULL AFTER user_id,
     ADD KEY idx_audit_school_date (school_id, created_at),
