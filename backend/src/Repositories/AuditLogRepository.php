@@ -19,6 +19,23 @@ final class AuditLogRepository
     ): void {
         $action = Audit::actionName($action);
 
+        // Tenant ownership is derived from the actor's stable identity, never from request input.
+        $schoolId = null;
+        if ($userId !== null) {
+            $schoolStmt = Database::connection()->prepare(
+                'SELECT school_id FROM users WHERE id = ? LIMIT 1'
+            );
+            $schoolStmt->execute([$userId]);
+            $schoolId = $schoolStmt->fetchColumn();
+            if ($schoolId === false) {
+                throw new \InvalidArgumentException('Invalid audit user.');
+            }
+            $schoolId = $schoolId === null ? null : (int)$schoolId;
+            if ($schoolId !== null && $schoolId < 1) {
+                throw new \InvalidArgumentException('Invalid audit school.');
+            }
+        }
+
         if ($entityType !== null) {
             $entityType = trim($entityType);
             if (
@@ -40,12 +57,13 @@ final class AuditLogRepository
 
         $stmt = Database::connection()->prepare(
             'INSERT INTO audit_logs
-                (user_id, action, entity_type, entity_id, ip_address, user_agent, metadata)
-             VALUES (?, ?, ?, ?, ?, ?, ?)'
+                (user_id, school_id, action, entity_type, entity_id, ip_address, user_agent, metadata)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
         );
 
         $stmt->execute([
             $userId,
+            $schoolId,
             $action,
             $entityType,
             $entityId,
@@ -62,7 +80,8 @@ final class AuditLogRepository
         ?string $fromDate,
         ?string $toDate,
         int $page = 1,
-        int $perPage = 50
+        int $perPage = 50,
+        ?int $schoolId = null
     ): array {
         $page = max(1, $page);
         $perPage = max(1, min(100, $perPage));
@@ -70,6 +89,14 @@ final class AuditLogRepository
 
         $where = [];
         $params = [];
+
+        if ($schoolId !== null) {
+            if ($schoolId < 1) {
+                throw new \InvalidArgumentException('Invalid audit school.');
+            }
+            $where[] = 'a.school_id = ?';
+            $params[] = $schoolId;
+        }
 
         if ($userId !== null) {
             $where[] = 'a.user_id = ?';

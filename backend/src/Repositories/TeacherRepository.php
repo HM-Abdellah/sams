@@ -65,12 +65,12 @@ final class TeacherRepository
                 INNER JOIN subjects s ON s.id = tt.subject_id
                 INNER JOIN classes c ON c.id = tt.class_id
                 INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-                WHERE c.is_active = 1 AND ay.is_active = 1 AND u.school_id = ay.school_id';
+                WHERE c.is_active = 1 AND ay.is_active = 1';
         $params = [];
 
         if ($schoolId !== null) {
             $this->assertSchoolId($schoolId);
-            $sql .= ' AND ay.school_id = ?';
+            $sql .= ' AND u.school_id = ay.school_id AND ay.school_id = ?';
             $params[] = $schoolId;
         }
 
@@ -137,12 +137,13 @@ final class TeacherRepository
                 INNER JOIN users u ON u.id = tt.teacher_id
                 INNER JOIN classes c ON c.id = tt.class_id
                 INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-                WHERE tt.id = ? AND u.school_id = ay.school_id';
+                WHERE tt.id = ?';
         $params = [$teachingId];
 
         if ($schoolId !== null) {
             $this->assertSchoolId($schoolId);
-            $sql .= ' AND ay.school_id = ?';
+            $sql .= ' AND u.school_id = ay.school_id
+                      AND ay.school_id = ?';
             $params[] = $schoolId;
         }
 

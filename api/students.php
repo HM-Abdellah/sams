@@ -84,7 +84,7 @@ try {
         $pdo->beginTransaction();
 
         try {
-            $lockedClass = $classes->findForUpdate($classId);
+            $lockedClass = $classes->findForUpdate($classId, (int)$user['school_id']);
             if ($lockedClass === null || !(bool)$lockedClass['is_active']) {
                 throw new StudentWorkflowException('Class not found.', 404);
             }
@@ -163,7 +163,7 @@ try {
         $pdo->beginTransaction();
 
         try {
-            $lockedClass = $classes->findForUpdate($classId);
+            $lockedClass = $classes->findForUpdate($classId, (int)$user['school_id']);
             if ($lockedClass === null || !(bool)$lockedClass['is_active']) {
                 throw new StudentWorkflowException('Class not found.', 404);
             }

@@ -40,31 +40,31 @@ final class AdminDashboardRepository
                  INNER JOIN student_enrollments e ON e.id = a.enrollment_id
                  INNER JOIN classes c ON c.id = e.class_id
                  INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-                 WHERE c.is_active = 1 AND ay.is_active = 1 AND a.attendance_date = CURDATE()) AS today_records,
+                 WHERE c.is_active = 1 AND ay.is_active = 1{$yearScope} AND a.attendance_date = CURDATE()) AS today_records,
                 (SELECT COALESCE(SUM(a.status = 'present'), 0)
                  FROM attendance a
                  INNER JOIN student_enrollments e ON e.id = a.enrollment_id
                  INNER JOIN classes c ON c.id = e.class_id
                  INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-                 WHERE c.is_active = 1 AND ay.is_active = 1 AND a.attendance_date = CURDATE()) AS today_present,
+                 WHERE c.is_active = 1 AND ay.is_active = 1{$yearScope} AND a.attendance_date = CURDATE()) AS today_present,
                 (SELECT COALESCE(SUM(a.status = 'absent'), 0)
                  FROM attendance a
                  INNER JOIN student_enrollments e ON e.id = a.enrollment_id
                  INNER JOIN classes c ON c.id = e.class_id
                  INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-                 WHERE c.is_active = 1 AND ay.is_active = 1 AND a.attendance_date = CURDATE()) AS today_absent,
+                 WHERE c.is_active = 1 AND ay.is_active = 1{$yearScope} AND a.attendance_date = CURDATE()) AS today_absent,
                 (SELECT COALESCE(SUM(a.status = 'late'), 0)
                  FROM attendance a
                  INNER JOIN student_enrollments e ON e.id = a.enrollment_id
                  INNER JOIN classes c ON c.id = e.class_id
                  INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-                 WHERE c.is_active = 1 AND ay.is_active = 1 AND a.attendance_date = CURDATE()) AS today_late,
+                 WHERE c.is_active = 1 AND ay.is_active = 1{$yearScope} AND a.attendance_date = CURDATE()) AS today_late,
                 (SELECT COALESCE(SUM(a.status = 'excused'), 0)
                  FROM attendance a
                  INNER JOIN student_enrollments e ON e.id = a.enrollment_id
                  INNER JOIN classes c ON c.id = e.class_id
                  INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-                 WHERE c.is_active = 1 AND ay.is_active = 1 AND a.attendance_date = CURDATE()) AS today_excused"
+                 WHERE c.is_active = 1 AND ay.is_active = 1{$yearScope} AND a.attendance_date = CURDATE()) AS today_excused"
         )->fetch();
 
         $todayTotal = (int)($summary['today_records'] ?? 0);
@@ -185,7 +185,7 @@ final class AdminDashboardRepository
         $schoolId = $this->normalizeSchoolId($schoolId);
         $auditScope = $schoolId === null ? '' : ' WHERE a.school_id = ' . $schoolId;
         return Database::connection()->query(
-            'SELECT
+            "SELECT
                 a.id,
                 a.action,
                 a.entity_type,
@@ -194,9 +194,9 @@ final class AdminDashboardRepository
                 u.full_name,
                 u.username
              FROM audit_logs a
-             LEFT JOIN users u ON u.id = a.user_id{$auditScope}
+             LEFT JOIN users u ON u.id = a.user_id$auditScope
              ORDER BY a.id DESC
-             LIMIT 8'
+             LIMIT 8"
         )->fetchAll();
     }
 

@@ -19,6 +19,7 @@ try {
     $users = new UserRepository();
     $classes = new ClassRepository();
     $audit = new AuditLogRepository();
+    $schoolId = (int)$admin['school_id'];
     $method = sams_method();
 
     if ($method === 'GET') {
@@ -26,11 +27,11 @@ try {
         $teacherId = (int)($_GET['teacher_id'] ?? 0);
 
         if ($classId > 0) {
-            Response::success(['teachers' => $repo->forClass($classId)]);
+            Response::success(['teachers' => $repo->forClass($classId, $schoolId)]);
         }
 
         if ($teacherId > 0) {
-            Response::success(['classes' => $repo->forTeacher($teacherId)]);
+            Response::success(['classes' => $repo->forTeacher($teacherId, $schoolId)]);
         }
 
         Response::error('Provide class_id or teacher_id.', 422);
@@ -48,8 +49,8 @@ try {
         Response::error('Invalid teacher or class.', 422);
     }
 
-    $teacher = $users->findById($teacherId);
-    $class = $classes->find($classId);
+    $teacher = $users->findById($teacherId, $schoolId);
+    $class = $classes->find($classId, $schoolId);
 
     if ($teacher === null || (string)$teacher['role'] !== 'teacher' || !(bool)$teacher['is_active']) {
         Response::error('Teacher not found or inactive.', 404);

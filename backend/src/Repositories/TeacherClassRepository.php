@@ -15,12 +15,12 @@ final class TeacherClassRepository
                 INNER JOIN users u ON u.id = tc.teacher_id
                 INNER JOIN classes c ON c.id = tc.class_id
                 INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-                WHERE tc.class_id = ? AND u.role = 'teacher' AND u.school_id = ay.school_id";
+                WHERE tc.class_id = ? AND u.role = 'teacher'";
         $params = [$classId];
 
         if ($schoolId !== null) {
             if ($schoolId < 1) throw new \InvalidArgumentException('Invalid school.');
-            $sql .= ' AND ay.school_id = ?';
+            $sql .= ' AND u.school_id = ay.school_id AND ay.school_id = ?';
             $params[] = $schoolId;
         }
 
@@ -37,12 +37,12 @@ final class TeacherClassRepository
                 INNER JOIN classes c ON c.id = tc.class_id
                 INNER JOIN academic_years ay ON ay.id = c.academic_year_id
                 INNER JOIN users u ON u.id = tc.teacher_id
-                WHERE tc.teacher_id = ? AND u.school_id = ay.school_id';
+                WHERE tc.teacher_id = ?';
         $params = [$teacherId];
 
         if ($schoolId !== null) {
             if ($schoolId < 1) throw new \InvalidArgumentException('Invalid school.');
-            $sql .= ' AND ay.school_id = ?';
+            $sql .= ' AND u.school_id = ay.school_id AND ay.school_id = ?';
             $params[] = $schoolId;
         }
 
@@ -59,12 +59,12 @@ final class TeacherClassRepository
                 INNER JOIN users u ON u.id = tc.teacher_id
                 INNER JOIN classes c ON c.id = tc.class_id
                 INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-                WHERE tc.teacher_id = ? AND tc.class_id = ? AND u.school_id = ay.school_id';
+                WHERE tc.teacher_id = ? AND tc.class_id = ?';
         $params = [$teacherId, $classId];
 
         if ($schoolId !== null) {
             if ($schoolId < 1) throw new \InvalidArgumentException('Invalid school.');
-            $sql .= ' AND ay.school_id = ?';
+            $sql .= ' AND u.school_id = ay.school_id AND ay.school_id = ?';
             $params[] = $schoolId;
         }
 

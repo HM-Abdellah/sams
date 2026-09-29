@@ -18,6 +18,7 @@ use SAMS\Services\StudentService;
 try {
     $user = Auth::requireLogin();
     $role = (string)$user['role'];
+    $schoolId = (int)$user['school_id'];
 
     if (!in_array($role, ['admin', 'teacher'], true)) {
         Response::error('Forbidden.', 403);
@@ -34,11 +35,11 @@ try {
         $classId = (int)($_GET['class_id'] ?? 0);
 
         if ($batchId > 0) {
-            $batch = $imports->findBatch($batchId);
+            $batch = $imports->findBatch($batchId, $schoolId);
             if ($batch === null) Response::error('Import batch not found.', 404);
 
             $classId = (int)$batch['class_id'];
-            if (!$classes->hasAccess((int)$user['id'], $role, $classId)) {
+            if (!$classes->hasAccess((int)$user['id'], $role, $classId, $schoolId)) {
                 Response::error('Forbidden.', 403);
             }
 
@@ -52,7 +53,7 @@ try {
             Response::error('Provide class_id or batch_id.', 422);
         }
 
-        if (!$classes->hasAccess((int)$user['id'], $role, $classId)) {
+        if (!$classes->hasAccess((int)$user['id'], $role, $classId, $schoolId)) {
             Response::error('Forbidden.', 403);
         }
 
@@ -80,7 +81,7 @@ try {
             $classId = (int)($_POST['class_id'] ?? 0);
             if ($classId < 1) Response::error('Invalid class.', 422);
 
-            if (!$classes->hasAccess((int)$user['id'], $role, $classId)) {
+            if (!$classes->hasAccess((int)$user['id'], $role, $classId, $schoolId)) {
                 Response::error('Forbidden.', 403);
             }
 
@@ -205,11 +206,11 @@ try {
         $batchId = (int)($body['batch_id'] ?? 0);
         if ($batchId < 1) Response::error('Invalid import batch.', 422);
 
-        $batch = $imports->findBatch($batchId);
+        $batch = $imports->findBatch($batchId, $schoolId);
         if ($batch === null) Response::error('Import batch not found.', 404);
 
         $classId = (int)$batch['class_id'];
-        if (!$classes->hasAccess((int)$user['id'], $role, $classId)) {
+        if (!$classes->hasAccess((int)$user['id'], $role, $classId, $schoolId)) {
             Response::error('Forbidden.', 403);
         }
 
@@ -309,7 +310,7 @@ try {
             $pdo->beginTransaction();
 
             try {
-                $lockedBatch = $imports->findBatchForUpdate($batchId);
+                $lockedBatch = $imports->findBatchForUpdate($batchId, $schoolId);
                 if ($lockedBatch === null) Response::error('Import batch not found.', 404);
 
                 $rows = $imports->forBatch($batchId);
@@ -368,7 +369,7 @@ try {
             $pdo->beginTransaction();
 
             try {
-                $lockedBatch = $imports->findBatchForUpdate($batchId);
+                $lockedBatch = $imports->findBatchForUpdate($batchId, $schoolId);
                 if ($lockedBatch === null) Response::error('Import batch not found.', 404);
 
                 $service->assertImportable($lockedBatch);

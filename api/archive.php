@@ -33,12 +33,13 @@ try {
     }
 
     $classes = new ClassRepository();
-    if (!$classes->hasHistoricalAccess((int)$user['id'], (string)$user['role'], $classId)) {
+    $schoolId = (int)$user['school_id'];
+    if (!$classes->hasHistoricalAccess((int)$user['id'], (string)$user['role'], $classId, $schoolId)) {
         Response::error('Forbidden.', 403);
     }
 
     $archive = new ArchiveRepository();
-    $class = $archive->classInfo($classId);
+    $class = $archive->classInfo($classId, $schoolId);
     if ($class === null) {
         Response::error('Class not found.', 404);
     }

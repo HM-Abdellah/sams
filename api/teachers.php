@@ -17,13 +17,14 @@ try {
     $admin = Auth::requireRole('admin');
     $repo = new TeacherRepository();
     $service = new TeacherService();
+    $schoolId = (int)$admin['school_id'];
     $method = sams_method();
 
     if ($method === 'GET') {
         Response::success([
-            'teachers' => $repo->all(),
+            'teachers' => $repo->all($schoolId),
             'subjects' => $repo->subjects(),
-            'teachings' => $repo->teachings(),
+            'teachings' => $repo->teachings($schoolId),
             'online_window_seconds' => TeacherRepository::ONLINE_WINDOW_SECONDS,
         ]);
     }
@@ -45,9 +46,9 @@ try {
         if ($teacherId < 1 || $subjectId < 1 || $classId < 1) {
             Response::error('Invalid teaching assignment.', 422);
         }
-        if (!$repo->teacherExists($teacherId)) Response::error('Teacher not found.', 404);
+        if (!$repo->teacherExists($teacherId, $schoolId)) Response::error('Teacher not found.', 404);
         if (!$repo->subjectExistsActive($subjectId)) Response::error('Subject not found or inactive.', 404);
-        if (!$repo->classExistsActive($classId)) Response::error('Class not found or inactive.', 404);
+        if (!$repo->classExistsActive($classId, $schoolId)) Response::error('Class not found or inactive.', 404);
 
         $pdo->beginTransaction();
         try {
@@ -73,10 +74,14 @@ try {
         $id = (int)($body['id'] ?? 0);
         if ($id < 1) Response::error('Invalid teaching assignment.', 422);
 
-        $stmt = $pdo->prepare('SELECT teacher_id, subject_id, class_id FROM teacher_teachings WHERE id = ? LIMIT 1');
-        $stmt->execute([$id]);
-        $existing = $stmt->fetch();
+        $existing = $repo->findTeachingById($id);
         if (!$existing) Response::error('Teaching assignment not found.', 404);
+        if (
+            !$repo->teacherExists((int)$existing['teacher_id'], $schoolId)
+            || !$repo->classExistsActive((int)$existing['class_id'], $schoolId)
+        ) {
+            Response::error('Teaching assignment not found.', 404);
+        }
 
         $pdo->beginTransaction();
         try {

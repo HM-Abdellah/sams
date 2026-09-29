@@ -19,7 +19,8 @@ try {
     if ($classId < 1) Response::error('Invalid class.', 422);
 
     $classes = new ClassRepository();
-    if (!$classes->hasAccess((int)$user['id'], (string)$user['role'], $classId)) {
+    $schoolId = (int)$user['school_id'];
+    if (!$classes->hasAccess((int)$user['id'], (string)$user['role'], $classId, $schoolId)) {
         Response::error('Forbidden.', 403);
     }
 
@@ -30,7 +31,7 @@ try {
         $weekStart = (string)($_GET['week_start'] ?? '');
         if ($weekStart !== '') {
             [$start, $end] = (new ReportService())->weekRange($weekStart);
-            $class = $classes->find($classId);
+            $class = $classes->find($classId, $schoolId);
             if ($class === null) Response::error('Class not found.', 404);
 
             if (
@@ -79,7 +80,8 @@ try {
             (int)$user['id'],
             (string)$user['role'],
             $classId,
-            $body['entries'] ?? []
+            $body['entries'] ?? [],
+            $schoolId
         );
 
         Response::success($result);
@@ -104,7 +106,8 @@ try {
             'period' => $period,
             'action' => $entryAction,
             ...(($entryAction === 'upsert') ? ['status' => (string)($body['status'] ?? '')] : []),
-        ]]
+        ]],
+        $schoolId
     );
 
     Response::success(['changed' => (int)($result['changed'] ?? 0) > 0]);

@@ -20,12 +20,13 @@ try {
     if ($classId < 1) Response::error('Invalid class.', 422);
 
     $classes = new ClassRepository();
-    if (!$classes->hasAccess((int)$user['id'], (string)$user['role'], $classId)) {
+    $schoolId = (int)$user['school_id'];
+    if (!$classes->hasAccess((int)$user['id'], (string)$user['role'], $classId, $schoolId)) {
         Response::error('Forbidden.', 403);
     }
 
     $signoffs = new AttendanceSignoffRepository();
-    $class = $classes->find($classId);
+    $class = $classes->find($classId, $schoolId);
     if ($class === null) Response::error('Class not found.', 404);
 
     $method = sams_method();
@@ -135,12 +136,12 @@ try {
     $pdo->beginTransaction();
 
     try {
-        $lockedClass = $classes->findForUpdate($classId);
+        $lockedClass = $classes->findForUpdate($classId, $schoolId);
         if ($lockedClass === null) {
             throw new \SAMS\Exceptions\AttendanceWorkflowException('Class not found.', 404);
         }
 
-        if (!$classes->hasAccess((int)$user['id'], (string)$user['role'], $classId)) {
+        if (!$classes->hasAccess((int)$user['id'], (string)$user['role'], $classId, $schoolId)) {
             throw new \SAMS\Exceptions\AttendanceWorkflowException('Forbidden.', 403);
         }
 

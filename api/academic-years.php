@@ -18,10 +18,11 @@ try {
 
     $repo = new AcademicYearRepository();
     $adminService = new AcademicYearAdministrationService();
+    $schoolId = (int)$user['school_id'];
     $method = sams_method();
 
     if ($method === 'GET') {
-        Response::success(['academic_years' => $repo->all()]);
+        Response::success(['academic_years' => $repo->all($schoolId)]);
     }
 
     Auth::requireRole('admin');
@@ -39,7 +40,8 @@ try {
             (string)($body['name'] ?? ''),
             (string)($body['starts_on'] ?? ''),
             (string)($body['ends_on'] ?? ''),
-            !empty($body['activate'])
+            !empty($body['activate']),
+            $schoolId
         );
 
         Response::success(['id' => $id], 201);
@@ -47,7 +49,7 @@ try {
 
     if ($action === 'activate') {
         $id = (int)($body['id'] ?? 0);
-        $adminService->activate((int)$user['id'], $id);
+        $adminService->activate((int)$user['id'], $id, $schoolId);
         Response::success(['id' => $id]);
     }
 

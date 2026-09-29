@@ -97,6 +97,7 @@ require_once __DIR__ . '/../backend/vendor/autoload.php';
 use SAMS\Repositories\AcademicYearRepository;
 use SAMS\Repositories\ClassRepository;
 use SAMS\Repositories\AdminDashboardRepository;
+use SAMS\Repositories\AuditLogRepository;
 use SAMS\Repositories\TeacherRepository;
 use SAMS\Repositories\UserRepository;
 use SAMS\Repositories\SchoolImportRepository;
@@ -131,6 +132,43 @@ tenant_assert(
     count($dashboardStats) === 1 && (int)$dashboardStats[0]['id'] === $classA,
     'Admin dashboard class stats leaked another tenant.'
 );
+
+$studentStmt = $pdo->prepare(
+    'INSERT INTO students (class_id, massar_code, first_name, last_name)
+     VALUES (?, ?, ?, ?)'
+);
+$studentStmt->execute([$classB, 'TEN-B-STUDENT', 'Tenant', 'B Student']);
+$studentB = (int)$pdo->lastInsertId();
+
+$enrollmentStmt = $pdo->prepare(
+    'INSERT INTO student_enrollments (student_id, class_id, starts_on)
+     VALUES (?, ?, CURDATE())'
+);
+$enrollmentStmt->execute([$studentB, $classB]);
+$enrollmentB = (int)$pdo->lastInsertId();
+
+$attendanceStmt = $pdo->prepare(
+    "INSERT INTO attendance
+        (student_id, enrollment_id, attendance_date, period, status, recorded_by)
+     VALUES (?, ?, CURDATE(), 1, 'present', ?)"
+);
+$attendanceStmt->execute([$studentB, $enrollmentB, $adminB]);
+
+$summaryA = $dashboard->summary($schoolA);
+tenant_assert((int)$summaryA['today_records'] === 0, 'Admin dashboard daily totals leaked another tenant.');
+
+$audit = new AuditLogRepository();
+$audit->record($adminA, 'tenant.test', 'tenant', null, ['school' => 'A']);
+$audit->record($adminB, 'tenant.test', 'tenant', null, ['school' => 'B']);
+
+$auditRows = $audit->search(null, 'tenant.test', null, null, null, 1, 50, $schoolA);
+tenant_assert($auditRows['total'] === 1, 'School-scoped audit search leaked another tenant.');
+tenant_assert((int)$auditRows['items'][0]['user_id'] === $adminA, 'School-scoped audit search returned another tenant actor.');
+
+$auditSchool = $pdo->query(
+    "SELECT school_id FROM audit_logs WHERE user_id = {$adminA} AND action = 'tenant.test' ORDER BY id DESC LIMIT 1"
+)->fetchColumn();
+tenant_assert((int)$auditSchool === $schoolA, 'New audit records did not retain tenant ownership.');
 
 $imports = new SchoolImportRepository();
 $batchB = $imports->createBatch(

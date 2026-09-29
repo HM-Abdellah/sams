@@ -17,7 +17,7 @@ final class AdminAuditController extends AdminApiController
 
     public function __invoke(Request $request, array $params = []): Response
     {
-        $this->requireAdmin();
+        $user = $this->requireAdmin();
 
         if ($request->method() !== 'GET') {
             return Response::json([
@@ -61,7 +61,8 @@ final class AdminAuditController extends AdminApiController
                     $from,
                     $to,
                     $page,
-                    $perPage
+                    $perPage,
+                    (int)$user['school_id']
                 ),
             ]);
         } catch (\Throwable $e) {

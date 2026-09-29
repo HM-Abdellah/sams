@@ -14,10 +14,11 @@ try {
     $admin = Auth::requireRole('admin');
     $repo = new UserRepository();
     $adminService = new UserAdministrationService();
+    $schoolId = (int)$admin['school_id'];
     $method = sams_method();
 
     if ($method === 'GET') {
-        Response::success(['users' => $repo->forAdmin()]);
+        Response::success(['users' => $repo->forAdmin($schoolId)]);
     }
 
     if ($method !== 'POST') {
@@ -39,7 +40,8 @@ try {
             (string)($body['role'] ?? ''),
             (string)($body['password'] ?? ''),
             array_key_exists('employee_id', $body) ? (string)$body['employee_id'] : null,
-            array_key_exists('phone', $body) ? (string)$body['phone'] : null
+            array_key_exists('phone', $body) ? (string)$body['phone'] : null,
+            $schoolId
         );
 
         Response::success(['id' => $id], 201);
@@ -54,7 +56,8 @@ try {
             array_key_exists('role', $body) ? (string)$body['role'] : null,
             array_key_exists('is_active', $body) ? (bool)$body['is_active'] : null,
             array_key_exists('employee_id', $body) ? (string)$body['employee_id'] : null,
-            array_key_exists('phone', $body) ? (string)$body['phone'] : null
+            array_key_exists('phone', $body) ? (string)$body['phone'] : null,
+            $schoolId
         );
 
         Response::success(['id' => $id]);
@@ -65,7 +68,8 @@ try {
         $adminService->resetPassword(
             (int)$admin['id'],
             $userId,
-            (string)($body['password'] ?? '')
+            (string)($body['password'] ?? ''),
+            $schoolId
         );
 
         Response::success();
@@ -73,7 +77,7 @@ try {
 
     if ($action === 'unlock') {
         $userId = (int)($body['id'] ?? 0);
-        $adminService->unlock((int)$admin['id'], $userId);
+        $adminService->unlock((int)$admin['id'], $userId, $schoolId);
 
         Response::success(['id' => $userId]);
     }
