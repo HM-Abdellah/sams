@@ -501,7 +501,9 @@ CREATE TABLE schools (
 ) ENGINE=InnoDB;
 
 ALTER TABLE academic_years
+    DROP INDEX uq_academic_years_name,
     ADD COLUMN school_id BIGINT UNSIGNED NULL AFTER id,
+    ADD UNIQUE KEY uq_academic_years_school_name (school_id, name),
     ADD KEY idx_academic_years_school_active (school_id, is_active),
     ADD CONSTRAINT fk_academic_years_school
         FOREIGN KEY (school_id) REFERENCES schools(id)
