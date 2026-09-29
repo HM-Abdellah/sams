@@ -3,10 +3,14 @@ import { NavLink, Outlet, useNavigate } from 'react-router'
 import { useSession } from '../../features/auth/useSession.ts'
 import { navigationForRole } from '../../routes/route-config.ts'
 import { Button } from '../ui/Button.tsx'
+import { LanguageSelect } from '../ui/LanguageSelect.tsx'
+import { useI18n } from '../../features/i18n/useI18n.ts'
+import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
 
 export function AppShell() {
   const session = useSession()
   const navigate = useNavigate()
+  const { t } = useI18n()
   const [loggingOut, setLoggingOut] = useState(false)
 
   if (session.user === null) return null
@@ -21,12 +25,14 @@ export function AppShell() {
             <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">SAMS</p>
             <p className="font-medium">{session.user.full_name}</p>
           </div>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            loading={loggingOut}
-            onClick={async () => {
+          <div className="flex items-center gap-2">
+            <LanguageSelect />
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              loading={loggingOut}
+              onClick={async () => {
               setLoggingOut(true)
               try {
                 await session.logout()
@@ -35,12 +41,13 @@ export function AppShell() {
                 setLoggingOut(false)
               }
             }}
-          >
-            Sign out
-          </Button>
+              >
+                {t(TRANSLATION_KEYS.app.signOut)}
+              </Button>
+          </div>
         </div>
       </header>
-      <nav aria-label="Application" className="border-b bg-white dark:bg-neutral-950">
+      <nav aria-label={t(TRANSLATION_KEYS.app.application)} className="border-b bg-white dark:bg-neutral-950">
         <div className="mx-auto flex max-w-6xl gap-4 px-6 py-3">
           {links.map((link) => (
             <NavLink
@@ -48,7 +55,7 @@ export function AppShell() {
               to={link.path}
               className={({ isActive }) => isActive ? 'font-medium underline' : 'text-neutral-600'}
             >
-              {link.label}
+              {t(link.label)}
             </NavLink>
           ))}
         </div>

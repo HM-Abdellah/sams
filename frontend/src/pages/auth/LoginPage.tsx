@@ -4,7 +4,10 @@ import { ApiError } from '../../services/api/errors.ts'
 import { useSession } from '../../features/auth/useSession.ts'
 import { Button } from '../../components/ui/Button.tsx'
 import { Input } from '../../components/ui/Input.tsx'
+import { LanguageSelect } from '../../components/ui/LanguageSelect.tsx'
 import { StatusMessage } from '../../components/ui/Feedback.tsx'
+import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
+import { useI18n } from '../../features/i18n/useI18n.ts'
 
 export function LoginPage() {
   const session = useSession()
@@ -14,13 +17,14 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const { t } = useI18n()
 
   const from = typeof location.state?.from === 'string' && location.state.from.startsWith('/')
     ? location.state.from
     : '/app'
 
   if (session.status === 'loading') {
-    return <div className="grid min-h-screen place-items-center p-6">Loading…</div>
+    return <div className="grid min-h-screen place-items-center p-6">{t(TRANSLATION_KEYS.auth.loading)}</div>
   }
 
   if (session.status === 'authenticated') return null
@@ -28,9 +32,12 @@ export function LoginPage() {
   return (
     <main className="grid min-h-screen place-items-center p-6">
       <section className="w-full max-w-md rounded-xl border bg-white p-6 shadow-sm">
-        <p className="text-sm font-semibold tracking-wide text-neutral-500">SAMS</p>
-        <h1 className="mt-1 text-2xl font-semibold">Sign in</h1>
-        <p className="mt-2 text-sm text-neutral-600">Use your SAMS Code and password.</p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-semibold tracking-wide text-neutral-500">SAMS</p>
+          <LanguageSelect />
+        </div>
+        <h1 className="mt-1 text-2xl font-semibold">{t(TRANSLATION_KEYS.auth.signIn)}</h1>
+        <p className="mt-2 text-sm text-neutral-600">{t(TRANSLATION_KEYS.auth.signInHint)}</p>
         <form
           className="mt-6 space-y-4"
           onSubmit={async (event) => {
@@ -41,14 +48,14 @@ export function LoginPage() {
               await session.login(samsCode, password)
               navigate(from, { replace: true })
             } catch (cause) {
-              setError(cause instanceof ApiError ? cause.message : 'Unable to sign in. Try again.')
+              setError(cause instanceof ApiError ? cause.message : t(TRANSLATION_KEYS.auth.genericError))
             } finally {
               setSubmitting(false)
             }
           }}
         >
           <label className="block text-sm font-medium">
-            SAMS Code
+            {t(TRANSLATION_KEYS.auth.samsCode)}
             <Input
               autoComplete="username"
               value={samsCode}
@@ -58,7 +65,7 @@ export function LoginPage() {
             />
           </label>
           <label className="block text-sm font-medium">
-            Password
+            {t(TRANSLATION_KEYS.auth.password)}
             <Input
               type="password"
               autoComplete="current-password"
@@ -76,7 +83,7 @@ export function LoginPage() {
             className="w-full"
             loading={submitting}
           >
-            Sign in
+            {t(TRANSLATION_KEYS.auth.signIn)}
           </Button>
         </form>
       </section>
