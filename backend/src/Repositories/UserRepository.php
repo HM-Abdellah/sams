@@ -91,7 +91,7 @@ final class UserRepository
     public function forAdmin(): array
     {
         return Database::connection()->query(
-            'SELECT id, username, employee_id, full_name, phone, phone_verified, role, is_active, failed_login_attempts,
+            'SELECT id, school_id, username, employee_id, full_name, phone, phone_verified, role, account_status, is_active, failed_login_attempts,
                     locked_until, last_login_at, last_seen_at, created_at, updated_at
              FROM users
              ORDER BY full_name, username, id'
@@ -159,7 +159,7 @@ final class UserRepository
     public function findSecurityById(int $userId): ?array
     {
         $stmt = Database::connection()->prepare(
-            'SELECT id, password_hash, session_version
+            'SELECT id, school_id, password_hash, session_version, account_status
              FROM users
              WHERE id = ? AND is_active = 1
              LIMIT 1'
