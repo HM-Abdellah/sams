@@ -126,6 +126,26 @@ try {
 
     assert_true((int)$year === (int)$school['id'], 'Academic year was not assigned to the migrated school.');
 
+    $academicYearColumn = $pdo->query(
+        "SELECT IS_NULLABLE
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = " . $pdo->quote($database) . "
+           AND TABLE_NAME = 'academic_years'
+           AND COLUMN_NAME = 'school_id'"
+    )->fetchColumn();
+
+    assert_true($academicYearColumn === 'NO', 'Migrated academic years must require a school.');
+
+    $globalYearIndex = (int)$pdo->query(
+        "SELECT COUNT(*)
+         FROM information_schema.STATISTICS
+         WHERE TABLE_SCHEMA = " . $pdo->quote($database) . "
+           AND TABLE_NAME = 'academic_years'
+           AND INDEX_NAME = 'uq_academic_years_name'"
+    )->fetchColumn();
+
+    assert_true($globalYearIndex === 0, 'The global academic-year uniqueness constraint was not removed.');
+
     $codeCount = (int)$pdo->query(
         "SELECT COUNT(*) FROM sams_login_codes WHERE user_id = {$userId} AND revoked_at IS NULL"
     )->fetchColumn();
