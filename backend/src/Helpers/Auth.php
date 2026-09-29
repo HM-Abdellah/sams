@@ -96,6 +96,7 @@ final class Auth
         $user = (new UserRepository())->findActiveById((int)$id);
         if (
             $user === null
+            || (string)($user['account_status'] ?? 'active') !== 'active'
             || (int)($user['session_version'] ?? 0) !== (int)$sessionVersion
         ) {
             Security::clearSessionState();
@@ -104,9 +105,11 @@ final class Auth
 
         return [
             'id' => (int)$user['id'],
+            'school_id' => isset($user['school_id']) ? (int)$user['school_id'] : null,
             'employee_id' => (string)($user['employee_id'] ?? $user['username'] ?? ''),
             'full_name' => (string)$user['full_name'],
             'role' => (string)$user['role'],
+            'account_status' => (string)($user['account_status'] ?? ($user['is_active'] ? 'active' : 'deactivated')),
         ];
     }
 
