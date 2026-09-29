@@ -126,6 +126,11 @@ jobs:
         run: |
           SAMS_MIGRATION_BASE_SCHEMA=release-baseline/database/schema.sql php tests/migration_005_integration.php
 
+      - name: Verify migration 006 upgrade path
+        shell: sh
+        run: |
+          SAMS_MIGRATION_BASE_SCHEMA=release-baseline/database/schema.sql php tests/migration_006_integration.php
+
       - name: Run MariaDB integration tests
         shell: sh
         run: php tests/integration.php
