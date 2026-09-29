@@ -156,7 +156,7 @@ try {
         "SELECT COUNT(*) FROM school_onboarding_codes WHERE school_id = {$school['id']} AND revoked_at IS NULL"
     )->fetchColumn();
 
-    assert_true($onboardingCodeCount === 1, 'Exactly one migrated onboarding code was not created.');
+    assert_true($onboardingCodeCount === 0, 'Migration must not seed a predictable onboarding bearer code.');
 
     $auditSchool = $pdo->query(
         "SELECT school_id FROM audit_logs WHERE user_id = {$userId} ORDER BY id DESC LIMIT 1"
