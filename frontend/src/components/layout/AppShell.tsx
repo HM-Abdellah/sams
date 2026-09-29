@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router'
 import { useSession } from '../../features/auth/useSession.ts'
 import { navigationForRole } from '../../routes/route-config.ts'
+import { Button } from '../ui/Button.tsx'
 
 export function AppShell() {
   const session = useSession()
@@ -20,10 +21,11 @@ export function AppShell() {
             <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">SAMS</p>
             <p className="font-medium">{session.user.full_name}</p>
           </div>
-          <button
+          <Button
             type="button"
-            className="rounded-md border px-3 py-2 text-sm disabled:opacity-50"
-            disabled={loggingOut}
+            variant="secondary"
+            size="sm"
+            loading={loggingOut}
             onClick={async () => {
               setLoggingOut(true)
               try {
@@ -34,8 +36,8 @@ export function AppShell() {
               }
             }}
           >
-            {loggingOut ? 'Signing out…' : 'Sign out'}
-          </button>
+            Sign out
+          </Button>
         </div>
       </header>
       <nav aria-label="Application" className="border-b bg-white dark:bg-neutral-950">

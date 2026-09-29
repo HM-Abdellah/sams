@@ -1,10 +1,28 @@
 @import "tailwindcss";
 
 :root {
+  --sams-background: #f5f5f5;
+  --sams-surface: #ffffff;
+  --sams-muted-surface: #f5f5f5;
+  --sams-text: #171717;
+  --sams-muted: #737373;
+  --sams-border: #d4d4d4;
+  --sams-action: #171717;
+  --sams-action-foreground: #ffffff;
+  --sams-focus: #2563eb;
+  --sams-danger: #b91c1c;
+  --sams-danger-surface: #fef2f2;
+  --sams-success: #166534;
+  --sams-success-surface: #f0fdf4;
+  --sams-warning: #a16207;
+  --sams-warning-surface: #fefce8;
+  --sams-info: #1d4ed8;
+  --sams-info-surface: #eff6ff;
+
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif;
-  color: #171717;
-  background: #f5f5f5;
+  color: var(--sams-text);
+  background: var(--sams-background);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -17,7 +35,7 @@
 
 html {
   min-width: 320px;
-  background: #f5f5f5;
+  background: var(--sams-background);
 }
 
 body {

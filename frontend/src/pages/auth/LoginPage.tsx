@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 import { ApiError } from '../../services/api/errors.ts'
 import { useSession } from '../../features/auth/useSession.ts'
+import { Button } from '../../components/ui/Button.tsx'
+import { Input } from '../../components/ui/Input.tsx'
+import { StatusMessage } from '../../components/ui/Feedback.tsx'
 
 export function LoginPage() {
   const session = useSession()
@@ -46,37 +49,35 @@ export function LoginPage() {
         >
           <label className="block text-sm font-medium">
             SAMS Code
-            <input
+            <Input
               autoComplete="username"
               value={samsCode}
               onChange={(event) => setSamsCode(event.target.value)}
-              className="mt-1 block w-full rounded-md border px-3 py-2"
+              className="mt-1"
               required
             />
           </label>
           <label className="block text-sm font-medium">
             Password
-            <input
+            <Input
               type="password"
               autoComplete="current-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="mt-1 block w-full rounded-md border px-3 py-2"
+              className="mt-1"
               required
             />
           </label>
           {error !== null && (
-            <p role="alert" className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800">
-              {error}
-            </p>
+            <StatusMessage variant="danger">{error}</StatusMessage>
           )}
-          <button
+          <Button
             type="submit"
-            className="w-full rounded-md border px-4 py-2 font-medium disabled:opacity-50"
-            disabled={submitting}
+            className="w-full"
+            loading={submitting}
           >
-            {submitting ? 'Signing in…' : 'Sign in'}
-          </button>
+            Sign in
+          </Button>
         </form>
       </section>
     </main>
