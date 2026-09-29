@@ -245,6 +245,118 @@ final class UserAdministrationService
         }
     }
 
+    public function setStatus(
+        int $adminId,
+        int $userId,
+        string $status,
+        ?int $schoolId = null
+    ): array {
+        $this->assertAdminId($adminId);
+        $schoolId = $this->requireSchoolId($schoolId);
+        if ($userId < 1) throw new \InvalidArgumentException('Invalid user.');
+        if (!in_array($status, ['active', 'suspended', 'deactivated'], true)) {
+            throw new \InvalidArgumentException('Invalid account status.');
+        }
+
+        $pdo = Database::connection();
+        $pdo->beginTransaction();
+        try {
+            $existing = $this->repository->findByIdForUpdate($userId, $schoolId);
+            if ($existing === null) {
+                throw new AdministrationException('User not found.', 404);
+            }
+
+            $isActivating = $status === 'active';
+            if ($userId === $adminId && !$isActivating) {
+                throw new AdministrationException('You cannot disable your own account.', 409);
+            }
+
+            if ((string)($existing['account_status'] ?? '') === $status) {
+                $pdo->commit();
+                return [
+                    'id' => $userId,
+                    'status' => $status,
+                    'session_version' => (int)$existing['session_version'],
+                ];
+            }
+
+            if (
+                (string)$existing['role'] === 'admin'
+                && !$isActivating
+            ) {
+                $activeAdmins = $this->repository->activeAdminIdsForUpdate($schoolId);
+                if (count($activeAdmins) <= 1) {
+                    throw new AdministrationException(
+                        'The system must keep at least one active administrator.',
+                        409
+                    );
+                }
+            }
+
+            $version = $this->repository->setAccountStatus($userId, $status, $schoolId);
+            $this->audit->record(
+                $adminId,
+                'user.status_change',
+                'user',
+                $userId,
+                ['status' => $status, 'session_revoked' => true]
+            );
+            $pdo->commit();
+
+            return [
+                'id' => $userId,
+                'status' => $status,
+                'session_version' => $version,
+            ];
+        } catch (AdministrationException $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    public function revokeSessions(
+        int $adminId,
+        int $userId,
+        ?int $schoolId = null
+    ): array {
+        $this->assertAdminId($adminId);
+        $schoolId = $this->requireSchoolId($schoolId);
+        if ($userId < 1) throw new \InvalidArgumentException('Invalid user.');
+
+        $pdo = Database::connection();
+        $pdo->beginTransaction();
+        try {
+            $existing = $this->repository->findByIdForUpdate($userId, $schoolId);
+            if ($existing === null) {
+                throw new AdministrationException('User not found.', 404);
+            }
+
+            $version = $this->repository->bumpSessionVersion($userId, $schoolId);
+            $this->repository->clearPresence($userId);
+            $this->audit->record(
+                $adminId,
+                'user.sessions_revoked',
+                'user',
+                $userId
+            );
+            $pdo->commit();
+
+            return [
+                'id' => $userId,
+                'session_version' => $version,
+            ];
+        } catch (AdministrationException $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        }
+    }
+
     public function unlock(
         int $adminId,
         int $userId,

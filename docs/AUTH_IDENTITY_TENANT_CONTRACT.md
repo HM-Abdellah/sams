@@ -63,10 +63,12 @@ No new endpoint may grant class access independently of a valid teaching assignm
 
 ## Recovery
 
-- Reissuing a SAMS Code keeps the same users.id.
-- Password reset keeps the same users.id.
-- Password reset/reissue/revocation increments session_version.
+- Reissuing a SAMS Code keeps the same users.id and revokes the previous active code.
+- Password reset keeps the same users.id and increments session_version.
+- Explicit session revocation increments session_version and clears presence.
+- Account suspension/deactivation invalidates existing sessions through session_version; reactivation also creates a fresh session boundary.
 - Historical attendance and audit references therefore remain intact.
+- Self-service email/SMS password recovery and per-device session management remain outside this foundation; the current recovery primitive is authenticated school-admin recovery plus global session_version revocation.
 
 ## API direction
 

@@ -156,6 +156,11 @@ jobs:
         run: |
           php tests/onboarding_integration.php
 
+      - name: Verify Recovery and Account Lifecycle
+        shell: sh
+        run: |
+          php tests/recovery_lifecycle_integration.php
+
       - name: Run MariaDB integration tests
         shell: sh
         run: php tests/integration.php

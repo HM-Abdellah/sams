@@ -165,8 +165,10 @@ JSON actions:
 
 - `create`: `username`, `full_name`, `role`, `password`; teacher accounts may also provide `employee_id` and `phone`
 - `update`: `id`, `full_name`, `role`, `is_active`; teacher accounts may also provide `employee_id` and `phone`
-- `reset_password`: `id`, `password`
+- `reset_password`: `id`, `password`; keeps the same `users.id` and increments `session_version`.
 - `unlock`: `id`
+- `set_status`: `id`, `status`; `status` is `active`, `suspended`, or `deactivated`, and every transition invalidates existing sessions.
+- `revoke_sessions`: `id`; invalidates all currently tracked PHP sessions for that user through `session_version`.
 
 Supported roles are exactly: `admin`, `teacher`, `counselor`.
 

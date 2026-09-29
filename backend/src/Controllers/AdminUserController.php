@@ -109,6 +109,33 @@ final class AdminUserController extends AdminApiController
                 ]);
             }
 
+            if ($action === 'set_status') {
+                $result = $this->service->setStatus(
+                    (int)$admin['id'],
+                    (int)($body['id'] ?? 0),
+                    (string)($body['status'] ?? ''),
+                    isset($admin['school_id']) ? (int)$admin['school_id'] : null
+                );
+
+                return Response::json([
+                    'success' => true,
+                    'data' => $result,
+                ]);
+            }
+
+            if ($action === 'revoke_sessions') {
+                $result = $this->service->revokeSessions(
+                    (int)$admin['id'],
+                    (int)($body['id'] ?? 0),
+                    isset($admin['school_id']) ? (int)$admin['school_id'] : null
+                );
+
+                return Response::json([
+                    'success' => true,
+                    'data' => $result,
+                ]);
+            }
+
             if ($action === 'reissue_sams_code') {
                 $schoolId = (int)($admin['school_id'] ?? 0);
                 if ($schoolId < 1) {

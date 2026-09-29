@@ -255,6 +255,34 @@ final class UserRepository
         return (int)$version->fetchColumn();
     }
 
+    public function setAccountStatus(int $userId, string $status, int $schoolId): int
+    {
+        $this->assertSchoolId($schoolId);
+        if (!in_array($status, ['active', 'suspended', 'deactivated'], true)) {
+            throw new \InvalidArgumentException('Invalid account status.');
+        }
+
+        $isActive = $status === 'active' ? 1 : 0;
+        $stmt = Database::connection()->prepare(
+            "UPDATE users
+             SET account_status = ?,
+                 is_active = ?,
+                 session_version = session_version + 1,
+                 last_seen_at = CASE WHEN ? = 1 THEN last_seen_at ELSE NULL END
+             WHERE id = ? AND school_id = ?"
+        );
+        $stmt->execute([$status, $isActive, $isActive, $userId, $schoolId]);
+        if ($stmt->rowCount() !== 1) {
+            throw new \InvalidArgumentException('User not found in the authenticated school.');
+        }
+
+        $version = Database::connection()->prepare(
+            'SELECT session_version FROM users WHERE id = ? AND school_id = ? LIMIT 1'
+        );
+        $version->execute([$userId, $schoolId]);
+        return (int)$version->fetchColumn();
+    }
+
     public function updatePasswordHash(int $userId, string $passwordHash, ?int $schoolId = null): void
     {
         $sql = 'UPDATE users
