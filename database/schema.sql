@@ -20,6 +20,10 @@ SET time_zone = '+00:00';
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- Drop in dependency order so a fresh install can safely rebuild every table.
+DROP TABLE IF EXISTS teacher_onboarding_requests;
+DROP TABLE IF EXISTS school_onboarding_codes;
+DROP TABLE IF EXISTS sams_login_codes;
+DROP TABLE IF EXISTS schools;
 DROP TABLE IF EXISTS school_import_rows;
 DROP TABLE IF EXISTS school_import_classes;
 DROP TABLE IF EXISTS school_import_batches;
@@ -483,3 +487,115 @@ CREATE TABLE student_import_rows (
 
 -- Business rule: the application must allow only one active academic year.
 -- This is enforced in the PHP service layer using a transaction.
+-- Multi-school identity foundation.
+CREATE TABLE schools (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    code VARCHAR(20) NOT NULL,
+    name VARCHAR(150) NOT NULL,
+    status ENUM('active', 'suspended', 'archived') NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_schools_code (code),
+    KEY idx_schools_status (status)
+) ENGINE=InnoDB;
+
+ALTER TABLE academic_years
+    ADD COLUMN school_id BIGINT UNSIGNED NULL AFTER id,
+    ADD KEY idx_academic_years_school_active (school_id, is_active),
+    ADD CONSTRAINT fk_academic_years_school
+        FOREIGN KEY (school_id) REFERENCES schools(id)
+        ON UPDATE CASCADE ON DELETE RESTRICT;
+
+ALTER TABLE users
+    ADD COLUMN school_id BIGINT UNSIGNED NULL AFTER id,
+    ADD COLUMN account_status ENUM('active', 'suspended', 'deactivated')
+        NOT NULL DEFAULT 'active' AFTER role,
+    MODIFY password_hash VARCHAR(255) NULL,
+    ADD KEY idx_users_school_role_status (school_id, role, account_status),
+    ADD CONSTRAINT fk_users_school
+        FOREIGN KEY (school_id) REFERENCES schools(id)
+        ON UPDATE CASCADE ON DELETE RESTRICT;ALTER TABLE teacher_teachings
+    ADD COLUMN status ENUM('active', 'inactive')
+        NOT NULL DEFAULT 'active' AFTER class_id,
+    ADD KEY idx_teacher_teachings_status (status);
+
+ALTER TABLE audit_logs
+    ADD COLUMN school_id BIGINT UNSIGNED NULL AFTER user_id,
+    ADD KEY idx_audit_school_date (school_id, created_at),
+    ADD CONSTRAINT fk_audit_school
+        FOREIGN KEY (school_id) REFERENCES schools(id)
+        ON UPDATE CASCADE ON DELETE SET NULL;
+
+CREATE TABLE sams_login_codes (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    user_id BIGINT UNSIGNED NOT NULL,
+    code_hash CHAR(64) NOT NULL,
+    issued_by BIGINT UNSIGNED NULL,
+    issued_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    revoked_at TIMESTAMP NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_sams_login_codes_hash (code_hash),
+    KEY idx_sams_login_codes_user_active (user_id, revoked_at),
+    CONSTRAINT fk_sams_login_codes_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_sams_login_codes_issuer
+        FOREIGN KEY (issued_by) REFERENCES users(id)
+        ON UPDATE CASCADE ON DELETE SET NULL
+) ENGINE=InnoDB;CREATE TABLE school_onboarding_codes (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    school_id BIGINT UNSIGNED NOT NULL,
+    code_hash CHAR(64) NOT NULL,
+    created_by BIGINT UNSIGNED NULL,
+    expires_at TIMESTAMP NULL,
+    revoked_at TIMESTAMP NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_school_onboarding_codes_hash (code_hash),
+    KEY idx_school_onboarding_codes_school_active (school_id, revoked_at, expires_at),
+    CONSTRAINT fk_school_onboarding_codes_school
+        FOREIGN KEY (school_id) REFERENCES schools(id)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_school_onboarding_codes_creator
+        FOREIGN KEY (created_by) REFERENCES users(id)
+        ON UPDATE CASCADE ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE teacher_onboarding_requests (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    school_id BIGINT UNSIGNED NOT NULL,
+    onboarding_code_id BIGINT UNSIGNED NOT NULL,
+    request_token_hash CHAR(64) NOT NULL,
+    full_name VARCHAR(120) NOT NULL,
+    employee_id VARCHAR(50) NULL,
+    phone VARCHAR(30) NULL,
+    status ENUM('pending', 'approved', 'rejected', 'expired')
+        NOT NULL DEFAULT 'pending',
+    expires_at TIMESTAMP NOT NULL,    reviewed_by BIGINT UNSIGNED NULL,
+    reviewed_at TIMESTAMP NULL,
+    rejection_reason VARCHAR(255) NULL,
+    created_user_id BIGINT UNSIGNED NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_teacher_onboarding_request_token (request_token_hash),
+    KEY idx_teacher_onboarding_school_status (school_id, status, created_at),
+    KEY idx_teacher_onboarding_expiry (status, expires_at),
+    KEY idx_teacher_onboarding_user (created_user_id),
+    CONSTRAINT fk_teacher_onboarding_school
+        FOREIGN KEY (school_id) REFERENCES schools(id)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_teacher_onboarding_code
+        FOREIGN KEY (onboarding_code_id) REFERENCES school_onboarding_codes(id)
+        ON UPDATE CASCADE ON DELETE RESTRICT,    CONSTRAINT fk_teacher_onboarding_reviewer
+        FOREIGN KEY (reviewed_by) REFERENCES users(id)
+        ON UPDATE CASCADE ON DELETE SET NULL,
+    CONSTRAINT fk_teacher_onboarding_user
+        FOREIGN KEY (created_user_id) REFERENCES users(id)
+        ON UPDATE CASCADE ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+-- Business rule: the application must keep at most one currently usable
+-- onboarding code per school. Rotation is enforced by the service layer.
