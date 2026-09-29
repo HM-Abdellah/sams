@@ -25,7 +25,7 @@ This release candidate intentionally has a migration boundary between the curren
 
 ## Authentication — current legacy surface
 
-The current release uses the legacy authentication endpoint. The canonical `/api/v1/auth/*` routes remain a target-architecture item and are not yet part of this release contract.
+The release retains the legacy authentication endpoint for the existing UI, and now also exposes the first canonical `/api/v1/auth/*` contract used by the React migration.
 
 ### GET `api/auth.php?action=session`
 
@@ -45,6 +45,29 @@ JSON body:
 ### POST `api/auth.php?action=logout`
 
 Ends the current session. Requires CSRF.
+
+### Canonical authentication — `/api/v1/auth/*`
+
+#### GET `/api/v1/auth/session`
+
+Starts the session envelope when needed and returns the current authentication state plus a CSRF token. Anonymous callers receive `authenticated: false` with a usable CSRF token.
+
+#### POST `/api/v1/auth/login`
+
+JSON body:
+
+```json
+{
+  "sams_code": "T123456",
+  "password": "..."
+}
+```
+
+The SAMS Code is case-insensitive and is a login identifier, not a password. Only active accounts with a valid password can authenticate. Successful login returns the internal user id, role, school scope, and CSRF/session state. Password hashes and SAMS Code hashes are never returned.
+
+#### POST `/api/v1/auth/logout`
+
+Requires an authenticated session and the current `X-CSRF-Token`. The session is destroyed after the logout audit event is recorded.
 
 ## Classes
 
@@ -121,6 +144,12 @@ JSON actions:
 - `unlock`: `id`
 
 Supported roles are exactly: `admin`, `teacher`, `counselor`.
+
+### POST `/api/v1/admin/users`
+
+Admin only. Requires CSRF.
+
+JSON action `reissue_sams_code`: `id`. The response contains the new plaintext SAMS Code exactly once. The previous active code is revoked and the target user's `session_version` is incremented; user identity is preserved.
 
 ## Teacher/class assignments
 

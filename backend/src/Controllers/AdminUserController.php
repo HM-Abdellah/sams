@@ -6,6 +6,7 @@ namespace SAMS\Controllers;
 
 use SAMS\Http\Request;
 use SAMS\Http\Response;
+use SAMS\Services\LoginCodeService;
 use SAMS\Services\UserAdministrationService;
 
 final class AdminUserController extends AdminApiController
@@ -105,6 +106,30 @@ final class AdminUserController extends AdminApiController
                 return Response::json([
                     'success' => true,
                     'data' => ['id' => $id],
+                ]);
+            }
+
+            if ($action === 'reissue_sams_code') {
+                $schoolId = (int)($admin['school_id'] ?? 0);
+                if ($schoolId < 1) {
+                    return Response::json([
+                        'success' => false,
+                        'error' => 'Invalid school scope.',
+                    ], 500);
+                }
+
+                $issued = (new LoginCodeService())->issueForUser(
+                    (int)$admin['id'],
+                    (int)($body['id'] ?? 0),
+                    $schoolId
+                );
+
+                return Response::json([
+                    'success' => true,
+                    'data' => [
+                        'user_id' => $issued['user_id'],
+                        'sams_code' => $issued['sams_code'],
+                    ],
                 ]);
             }
 

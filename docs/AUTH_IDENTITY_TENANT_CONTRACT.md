@@ -11,7 +11,8 @@ The legacy PHP UI/API remains supported during migration.
 - username remains a legacy compatibility field; it is not the future primary login identity.
 - A user belongs to exactly one school through users.school_id.
 - SAMS Code is a reissuable login identifier, not a password and not a database ID.
-- SAMS Codes are stored as SHA-256 hashes; plaintext is shown only at issuance/reissue time.
+- SAMS Codes are stored as SHA-256 hashes; plaintext is shown only at explicit issuance/reissue time.
+- The application issues role-prefixed random codes, revokes the previous active code on reissue, and increments the target user's session_version.
 - Account recovery never creates a second user record.
 - Existing session_version invalidation remains the global session-revocation primitive.
 

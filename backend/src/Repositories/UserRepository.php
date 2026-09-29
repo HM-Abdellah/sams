@@ -174,6 +174,27 @@ final class UserRepository
         $stmt->execute($params);
     }
 
+    public function bumpSessionVersion(int $userId, int $schoolId): int
+    {
+        $this->assertSchoolId($schoolId);
+        $stmt = Database::connection()->prepare(
+            'UPDATE users
+             SET session_version = session_version + 1
+             WHERE id = ? AND school_id = ?'
+        );
+        $stmt->execute([$userId, $schoolId]);
+
+        if ($stmt->rowCount() !== 1) {
+            throw new \InvalidArgumentException('User not found in the authenticated school.');
+        }
+
+        $version = Database::connection()->prepare(
+            'SELECT session_version FROM users WHERE id = ? AND school_id = ? LIMIT 1'
+        );
+        $version->execute([$userId, $schoolId]);
+        return (int)$version->fetchColumn();
+    }
+
     public function updatePasswordHash(int $userId, string $passwordHash, ?int $schoolId = null): void
     {
         $sql = 'UPDATE users

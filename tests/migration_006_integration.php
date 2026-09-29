@@ -150,7 +150,7 @@ try {
         "SELECT COUNT(*) FROM sams_login_codes WHERE user_id = {$userId} AND revoked_at IS NULL"
     )->fetchColumn();
 
-    assert_true($codeCount === 1, 'Exactly one initial SAMS Code was not issued to the migrated user.');
+    assert_true($codeCount === 0, 'Migration must not create a predictable SAMS Code.');
 
     $onboardingCodeCount = (int)$pdo->query(
         "SELECT COUNT(*) FROM school_onboarding_codes WHERE school_id = {$school['id']} AND revoked_at IS NULL"

@@ -20,10 +20,12 @@ final class Auth
         $id = (int)($user['id'] ?? 0);
         $role = (string)($user['role'] ?? '');
         $name = trim((string)($user['full_name'] ?? ''));
+        $schoolId = (int)($user['school_id'] ?? 0);
         $sessionVersion = (int)($user['session_version'] ?? 0);
 
         if (
             $id < 1
+            || $schoolId < 1
             || !in_array($role, self::ROLES, true)
             || $name === ''
             || $sessionVersion < 1
@@ -36,6 +38,7 @@ final class Auth
         Security::clearSessionState();
         $_SESSION[self::SESSION_USER] = [
             'id' => $id,
+            'school_id' => $schoolId,
             'session_version' => $sessionVersion,
         ];
         Csrf::rotate();
@@ -83,10 +86,13 @@ final class Auth
         if (!is_array($sessionUser)) return null;
 
         $id = $sessionUser['id'] ?? null;
+        $schoolId = $sessionUser['school_id'] ?? null;
         $sessionVersion = $sessionUser['session_version'] ?? null;
 
         if (
             (!is_int($id) && !ctype_digit((string)$id))
+            || (!is_int($schoolId) && !ctype_digit((string)$schoolId))
+            || (int)$schoolId < 1
             || (!is_int($sessionVersion) && !ctype_digit((string)$sessionVersion))
         ) {
             Security::clearSessionState();
@@ -96,6 +102,7 @@ final class Auth
         $user = (new UserRepository())->findActiveById((int)$id);
         if (
             $user === null
+            || (int)($user['school_id'] ?? 0) !== (int)$schoolId
             || (string)($user['account_status'] ?? 'active') !== 'active'
             || (int)($user['session_version'] ?? 0) !== (int)$sessionVersion
         ) {

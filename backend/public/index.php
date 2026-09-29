@@ -12,6 +12,7 @@ use SAMS\Controllers\AdminTeacherClassController;
 use SAMS\Controllers\AdminTeacherController;
 use SAMS\Controllers\AdminUserController;
 use SAMS\Controllers\ArchiveController;
+use SAMS\Controllers\AuthController;
 use SAMS\Controllers\AttendanceController;
 use SAMS\Controllers\HealthController;
 use SAMS\Controllers\ReportController;
@@ -62,6 +63,10 @@ try {
     $apiRequest = $request->withPath($apiPath);
 
     $router = new Router();
+
+    $auth = new AuthController();
+    $router->get('/auth/{action}', $auth);
+    $router->post('/auth/{action}', $auth);
 
     $router->get('/health', new HealthController());
     $attendance = new AttendanceController();

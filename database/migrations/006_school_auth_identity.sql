@@ -144,24 +144,10 @@ CREATE TABLE school_onboarding_codes (
         ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
-INSERT INTO sams_login_codes (user_id, code_hash, issued_at)
-SELECT
-    id,
-    SHA2(
-        CONCAT(
-            CASE role
-                WHEN 'teacher' THEN 'T'
-                WHEN 'admin' THEN 'A'
-                ELSE 'C'
-            END,
-            LPAD(id, 5, '0')
-        ),
-        256
-    ),
-    CURRENT_TIMESTAMP
-FROM users;
-
--- No onboarding code is seeded here. The first admin onboarding action must generate a cryptographically random bearer code and store only its hash.
+-- No SAMS Codes are seeded during migration.
+-- The application must issue a cryptographically random code and expose
+-- the plaintext only at explicit issuance/reissue time.
+-- This avoids creating a predictable credential from user id/role.
 
 -- Audit entries must retain tenant ownership even if the actor is later removed.
 ALTER TABLE audit_logs

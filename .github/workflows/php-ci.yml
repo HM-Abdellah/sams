@@ -131,10 +131,20 @@ jobs:
         run: |
           SAMS_MIGRATION_BASE_SCHEMA=release-baseline/database/schema.sql php tests/migration_006_integration.php
 
+      - name: Verify migration 007 credential cleanup
+        shell: sh
+        run: |
+          php tests/migration_007_integration.php
+
       - name: Verify tenant isolation boundaries
         shell: sh
         run: |
           php tests/tenant_isolation_integration.php
+
+      - name: Verify Auth Identity and SAMS Code flows
+        shell: sh
+        run: |
+          php tests/auth_identity_integration.php
 
       - name: Run MariaDB integration tests
         shell: sh
@@ -538,6 +548,9 @@ jobs:
       SAMS_E2E_LIFECYCLE_USERNAME: e2e-lifecycle-user
       SAMS_E2E_LIFECYCLE_PASSWORD: e2e-lifecycle-password-2026
       SAMS_E2E_LIFECYCLE_RESET_PASSWORD: e2e-lifecycle-reset-2026
+      SAMS_E2E_ADMIN_SAMS_CODE: A100001
+      SAMS_E2E_TEACHER_SAMS_CODE: T100002
+      SAMS_E2E_TEACHER_ID: 2
 
     steps:
       - name: Checkout repository
@@ -668,6 +681,7 @@ jobs:
 
           run_e2e_group "phase8-admin" tests/e2e/phase8_admin.spec.js
           run_e2e_group "phase8-auth" tests/e2e/phase8_auth.spec.js
+          run_e2e_group "canonical-auth" tests/e2e/canonical_auth.spec.js
           run_e2e_group "phase8-mobile" tests/e2e/phase8_mobile.mobile.spec.js
 
           kill "$server_pid" 2>/dev/null || true
