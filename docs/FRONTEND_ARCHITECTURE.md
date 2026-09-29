@@ -225,6 +225,25 @@ All transport selection is centralized in the API adapter layer.
 
 This allows backend endpoint migration later without a React architecture rewrite.
 
+## 5.1 Typed HTTP client contract
+
+The React foundation centralizes network transport in `services/api/client.ts`.
+
+The client owns:
+
+- same-origin credentials via `credentials: include`;
+- JSON request and response handling;
+- the shared `{ success, data }` / `{ success, error }` envelope;
+- CSRF header injection for protected mutations;
+- capture of the CSRF token returned by canonical auth responses;
+- conversion of HTTP/API failures into `ApiError` with a stable status code classification.
+
+Feature adapters are responsible only for endpoint paths and typed payload/response shapes. Pages and components must not know HTTP details.
+
+The current onboarding public POST endpoints are an explicit backend contract exception and therefore opt out of CSRF in their adapter rather than silently applying an invented client-side rule.
+
+The client also rejects non-JSON and malformed API envelopes before feature code receives them. Network-level failures remain distinct from backend HTTP errors so later UX layers can choose retry behavior without guessing.
+
 ## 6. Routing model
 
 Use React Router with browser history.

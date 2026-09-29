@@ -1,0 +1,36 @@
+export class ApiError extends Error {
+  readonly status: number
+  readonly code: string
+
+  constructor(status: number, message: string) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+    this.code = statusCode(status)
+  }
+}
+
+function statusCode(status: number): string {
+  switch (status) {
+    case 401:
+      return 'AUTHENTICATION_REQUIRED'
+    case 403:
+      return 'FORBIDDEN'
+    case 404:
+      return 'NOT_FOUND'
+    case 405:
+      return 'METHOD_NOT_ALLOWED'
+    case 409:
+      return 'CONFLICT'
+    case 419:
+      return 'CSRF_INVALID'
+    case 422:
+      return 'VALIDATION'
+    case 429:
+      return 'RATE_LIMITED'
+    case 413:
+      return 'PAYLOAD_TOO_LARGE'
+    default:
+      return status >= 500 ? 'SERVER_ERROR' : 'API_ERROR'
+  }
+}
