@@ -70,10 +70,10 @@ No new endpoint may grant class access independently of a valid teaching assignm
 - Historical attendance and audit references therefore remain intact.
 - Self-service email/SMS password recovery and per-device session management remain outside this foundation; the current recovery primitive is authenticated school-admin recovery plus global session_version revocation.
 
-## API direction
+## API direction / freeze
 
-Canonical React-facing auth endpoints will be introduced under /api/v1/auth.
-Legacy api/auth.php remains until React parity and E2E verification are complete.
+The canonical React-facing Auth and onboarding endpoints are now implemented under `/api/v1` and covered by integration/HTTP/Playwright gates. React must consume these contracts rather than recreate authentication or tenant rules in the browser.
+Legacy `api/auth.php` remains for the current PHP UI until React parity is complete; it is a compatibility surface, not the target identity model.
 
 Target login payload:
 { "sams_code": "T024", "password": "..." }
