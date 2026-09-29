@@ -72,6 +72,7 @@ $tables = $pdo->query(
 
 $expectedTables = [
     'academic_years',
+    'schools',
     'users',
     'classes',
     'teacher_classes',
@@ -90,6 +91,9 @@ $expectedTables = [
     'school_import_batches',
     'school_import_classes',
     'school_import_rows',
+    'sams_login_codes',
+    'school_onboarding_codes',
+    'teacher_onboarding_requests',
 ];
 
 sort($tables);
