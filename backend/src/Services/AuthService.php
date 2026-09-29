@@ -39,7 +39,11 @@ final class AuthService
             // each other's failure counters.
             $user = $this->users->findByUsernameForUpdate($username);
 
-            if (!$user || !(bool)$user['is_active']) {
+            if (
+                !$user
+                || !(bool)$user['is_active']
+                || (string)($user['account_status'] ?? 'active') !== 'active'
+            ) {
                 $pdo->commit();
                 throw new RuntimeException('Invalid credentials.');
             }
@@ -76,8 +80,10 @@ final class AuthService
 
             return [
                 'id' => (int)$user['id'],
+                'school_id' => isset($user['school_id']) ? (int)$user['school_id'] : null,
                 'full_name' => (string)$user['full_name'],
                 'role' => (string)$user['role'],
+                'account_status' => (string)($user['account_status'] ?? ($user['is_active'] ? 'active' : 'deactivated')),
                 'session_version' => $sessionVersion,
             ];
         } catch (Throwable $e) {
