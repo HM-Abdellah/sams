@@ -187,8 +187,10 @@ Gate:
 - Only release-blocking fixes are applied.
 - No architecture rewrite or unrelated feature expansion.
 - Phase 11 review PR #25 passes the full CI gate before release integration.
+- The final reviewed release head is `feat/phase-11-final-review` at `40497e75d116d480a91cec5aa87c9d1f250fde22`.
+- Final exact-head CI Run #751 (`36491415403`) passed: JavaScript, PHP, E2E, Apache, and clean-school acceptance.
 
-Gate status: CLOSED — Run #723 (`36467396229`) passed on exact commit `b2733b01a9144b36afc9c5b12b87f2d7e6ddc7d1`.
+Gate status: CLOSED on the final release branch. Release integration into `main` remains a separate explicit action.
 
 ## Post-Release Backlog
 
