@@ -97,7 +97,7 @@ Docker Compose is development/CI convenience only. School deployment must not de
 
 The target architecture uses a single same-origin REST/JSON surface under `/api/v1/`.
 
-**Release-candidate migration boundary:** the repository still contains legacy `/api/*.php` endpoints used by the current frontend. The canonical `/api/v1/*` router is not yet a complete replacement for every legacy endpoint. In particular, the target `/api/v1/auth/*` routes are not implemented in this release candidate.
+**Release-candidate migration boundary:** the repository still contains legacy `/api/*.php` endpoints used by the current frontend. The canonical `/api/v1/*` router is not yet a complete replacement for every legacy endpoint, but the canonical `/api/v1/auth/*` routes are implemented and verified and should be used by the React migration.
 
 Examples of the target canonical surface:
 

@@ -8,7 +8,7 @@ This release candidate intentionally has a migration boundary between the curren
 
 - **Current legacy surface — `/api/*.php`:** authoritative for the existing Vanilla JS frontend, including authentication and several operational/admin endpoints. These routes remain supported during the migration.
 - **Canonical surface — `/api/v1/*`:** authoritative only for endpoints already migrated through `backend/public/index.php`.
-- The `/api/v1/auth/*` routes described by the target architecture are **not implemented in this release candidate**. Do not assume they exist until the authentication migration is completed and verified.
+- The canonical `/api/v1/auth/*` routes are implemented and verified for the React migration. The broader `/api/v1/*` surface is still a partial migration boundary; do not assume every resource has moved off the legacy `/api/*.php` surface.
 - Documentation below uses the actual current route for legacy endpoints unless explicitly marked as a target/canonical route.
 
 ## Global contract
