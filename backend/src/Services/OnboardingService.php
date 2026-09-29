@@ -274,7 +274,19 @@ final class OnboardingService
                 $reused = $user !== null;
             }
 
-            if ($user === null) {
+            if ($user !== null) {
+                if (
+                    (bool)$user['is_active']
+                    && (string)($user['account_status'] ?? '') === 'active'
+                ) {
+                    throw new OnboardingWorkflowException(
+                        'A teacher account with this employee ID is already active.',
+                        409
+                    );
+                }
+
+                $userId = (int)$user['id'];
+            } else {
                 $username = 'onboard.' . $requestId . '.' . bin2hex(random_bytes(4));
                 $userId = $this->users->createPendingTeacher(
                     $schoolId,
@@ -283,8 +295,6 @@ final class OnboardingService
                     $employeeId !== '' ? $employeeId : null,
                     ($request['phone'] ?? null) !== null ? (string)$request['phone'] : null
                 );
-            } else {
-                $userId = (int)$user['id'];
             }
 
             $this->repository->approveRequest($requestId, $schoolId, $adminId, $userId);

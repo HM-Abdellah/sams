@@ -147,6 +147,20 @@ $authenticated = (new AuthService())->authenticateBySamsCode($activation['sams_c
 onboarding_assert((int)$authenticated['id'] === $pendingTeacherId, 'Activated teacher SAMS Code login returned the wrong identity.');
 onboarding_assert((int)$authenticated['school_id'] === $schoolA, 'Activated teacher SAMS Code login returned the wrong tenant.');
 
+$activeDuplicateRequest = $service->requestTeacher(
+    $issued['onboarding_code'],
+    'Duplicate Active Teacher',
+    'EMP-ONB-001',
+    null,
+    '198.51.100.40',
+    'SAMS-Test-Agent/1.0'
+);
+onboarding_expect_status(
+    static fn() => $service->review($adminA, (int)$activeDuplicateRequest['request_id'], 'approve', null, $schoolA),
+    409,
+    'Onboarding approval reused an already-active teacher identity.'
+);
+
 onboarding_expect_status(
     static fn() => $service->activate($secondRequest['request_token'], 'TeacherActivate123!'),
     409,
