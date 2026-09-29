@@ -14,6 +14,9 @@ import { WorkspaceLandingPage } from '../pages/app/WorkspaceLandingPage.tsx'
 import { PublicOnlyRoute } from './guards/PublicOnlyRoute.tsx'
 import { ProtectedRoute } from './guards/ProtectedRoute.tsx'
 import { RoleRoute } from './guards/RoleRoute.tsx'
+import { NotFoundPage } from '../pages/system/NotFoundPage.tsx'
+import { UnauthorizedPage } from '../pages/system/UnauthorizedPage.tsx'
+import { RouteErrorPage } from '../pages/system/RouteErrorPage.tsx'
 
 const adminPlaceholder = (title: string) => (
   <FeaturePlaceholderPage
@@ -24,6 +27,7 @@ const adminPlaceholder = (title: string) => (
 
 const router = createBrowserRouter([
   {
+    errorElement: <RouteErrorPage />,
     element: <PublicOnlyRoute />,
     children: [
       { path: '/login', element: <LoginPage /> },
@@ -33,8 +37,10 @@ const router = createBrowserRouter([
     ],
   },
   {
+    errorElement: <RouteErrorPage />,
     element: <ProtectedRoute />,
     children: [
+      { path: '/unauthorized', element: <UnauthorizedPage /> },
       {
         element: <AppShell />,
         children: [
@@ -69,7 +75,7 @@ const router = createBrowserRouter([
     ],
   },
   { path: '/', element: <Navigate to="/app" replace /> },
-  { path: '*', element: <Navigate to="/app" replace /> },
+  { path: '*', element: <NotFoundPage /> },
 ])
 
 export function AppRouter() {

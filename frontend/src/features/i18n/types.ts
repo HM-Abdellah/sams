@@ -48,6 +48,15 @@ export const TRANSLATION_KEYS = {
     archive: 'navigation.archive',
     audit: 'navigation.audit',
   },
+  system: {
+    notFound: 'system.notFound',
+    goToApp: 'system.goToApp',
+    unauthorizedTitle: 'system.unauthorizedTitle',
+    unauthorized: 'system.unauthorized',
+    errorTitle: 'system.errorTitle',
+    genericError: 'system.genericError',
+    reload: 'system.reload',
+  },
 } as const
 
 export type TranslationKey = {

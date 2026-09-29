@@ -17,5 +17,5 @@ export function RoleRoute({ roles }: RoleRouteProps) {
     return <Navigate to="/login" replace />
   }
 
-  return roles.includes(session.user.role) ? <Outlet /> : <Navigate to="/app" replace />
+  return roles.includes(session.user.role) ? <Outlet /> : <Navigate to="/unauthorized" replace />
 }

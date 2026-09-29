@@ -1,4 +1,4 @@
-# Frontend Phase 6 — Application Shell and Navigation
+# Frontend Phase 5 — Routing and Application Shell
 
 ## Objective
 
@@ -33,12 +33,26 @@ No client-side role check is treated as an authorization mechanism.
 - `git diff --check`: PASS.
 - Temporary test files and development servers were removed after verification.
 
+## Route boundary acceptance
+
+The shell now includes:
+
+- loading boundary while session bootstrap is pending;
+- session-unavailable error state with retry;
+- public/authenticated route separation;
+- role-aware protected routes;
+- explicit Unauthorized page for authenticated role mismatches;
+- explicit 404 page for unknown routes;
+- React Router error boundaries for route/render failures.
+
+React guards remain UX/navigation controls only. Backend authorization remains authoritative.
+
 ## Gate
 
-Phase 6 closes when route topology, role-aware navigation, and protected workspace boundaries are verified while final visual design remains replaceable.
+Phase 5 closes when routing, role-aware navigation, loading/error boundaries, 404 handling, and unauthorized handling are verified.
 
 **Status: PASS**
 
 ## Current project state
 
-Frontend engineering phases 1–6 are closed. The next phase continues on top of this shell without changing the backend contract or final visual direction.
+Official Phase 5 is PASS. The earlier implementation batch was labelled Phase 6 before the official roadmap was supplied; the file has been reconciled to the official numbering.
