@@ -28,13 +28,14 @@ The legacy PHP UI/API remains supported during migration.
 
 ## Teacher onboarding
 
-The target flow is:
+The implemented flow is:
 
-PENDING request -> ADMIN APPROVED request -> user activation -> ACTIVE account.
+school onboarding code -> PENDING request -> ADMIN APPROVED request -> user activation -> ACTIVE account -> initial SAMS Code.
 
 A request is not an account and never grants operational access.
-Approval creates/reuses exactly one teacher user.
-Activation sets the password and enables login.## Join mechanism
+Approval creates/reuses exactly one teacher user inside the request school.
+Activation sets the password, enables login, and issues the initial SAMS Code once.
+The implementation stores onboarding-code and request-token hashes only, rotates school onboarding codes, expires requests, records request origin metadata for rate limiting, and protects admin review actions with authenticated school scope + CSRF.## Join mechanism
 
 - A school may expose an onboarding QR/short code.
 - The join code is only a request-entry mechanism.

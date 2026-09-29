@@ -106,6 +106,61 @@ final class LoginCodeService
         }
     }
 
+    /** @return array{user_id:int,school_id:int,sams_code:string} */
+    public function issueInitialCode(int $userId, int $schoolId): array
+    {
+        if ($userId < 1 || $schoolId < 1) {
+            throw new \InvalidArgumentException('Invalid login-code context.');
+        }
+
+        $pdo = Database::connection();
+        $ownTransaction = !$pdo->inTransaction();
+        if ($ownTransaction) $pdo->beginTransaction();
+
+        try {
+            $user = $this->users->findByIdForUpdate($userId, $schoolId);
+            if ($user === null) {
+                throw new AdministrationException('User not found.', 404);
+            }
+            if (
+                !(bool)$user['is_active']
+                || (string)($user['account_status'] ?? 'active') !== 'active'
+            ) {
+                throw new AdministrationException('Only active accounts can receive a SAMS Code.', 409);
+            }
+
+            $prefix = self::PREFIXES[(string)$user['role']] ?? null;
+            if ($prefix === null) {
+                throw new AdministrationException('Unsupported user role.', 422);
+            }
+
+            $this->codes->revokeActiveForUser($userId, $schoolId);
+            $samsCode = null;
+            for ($attempt = 0; $attempt < 8; ++$attempt) {
+                $candidate = $prefix . str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+                try {
+                    $this->codes->create($userId, self::hashCode($candidate), null, $schoolId);
+                    $samsCode = $candidate;
+                    break;
+                } catch (\PDOException $e) {
+                    if ((int)($e->errorInfo[1] ?? 0) !== 1062 || $attempt === 7) throw $e;
+                }
+            }
+
+            if ($samsCode === null) throw new \RuntimeException('Unable to issue a unique SAMS Code.');
+            if ($ownTransaction) $pdo->commit();
+
+            return [
+                'user_id' => $userId,
+                'school_id' => $schoolId,
+                'sams_code' => $samsCode,
+            ];
+        } catch (\Throwable $e) {
+            if ($ownTransaction && $pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        }
+    }
+
     public static function normalize(string $value): string
     {
         $value = strtoupper(trim($value));

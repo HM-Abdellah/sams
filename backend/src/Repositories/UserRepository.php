@@ -174,6 +174,66 @@ final class UserRepository
         $stmt->execute($params);
     }
 
+    public function findTeacherByEmployeeIdForUpdate(string $employeeId, int $schoolId): ?array
+    {
+        $stmt = Database::connection()->prepare(
+            "SELECT id, school_id, username, employee_id, full_name, phone, password_hash,
+                    role, account_status, is_active, session_version
+             FROM users
+             WHERE employee_id = ? AND school_id = ? AND role = 'teacher'
+             LIMIT 1 FOR UPDATE"
+        );
+        $stmt->execute([$employeeId, $schoolId]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    public function createPendingTeacher(
+        int $schoolId,
+        string $username,
+        string $fullName,
+        ?string $employeeId,
+        ?string $phone
+    ): int {
+        $this->assertSchoolId($schoolId);
+        $stmt = Database::connection()->prepare(
+            "INSERT INTO users
+                (school_id, username, employee_id, full_name, phone, password_hash,
+                 role, account_status, is_active)
+             VALUES (?, ?, ?, ?, ?, NULL, 'teacher', 'deactivated', 0)"
+        );
+        $stmt->execute([$schoolId, $username, $employeeId, $fullName, $phone]);
+        return (int)Database::connection()->lastInsertId();
+    }
+
+    public function activateFromOnboarding(
+        int $userId,
+        string $passwordHash,
+        int $schoolId
+    ): int {
+        $this->assertSchoolId($schoolId);
+        $stmt = Database::connection()->prepare(
+            "UPDATE users
+             SET password_hash = ?,
+                 account_status = 'active',
+                 is_active = 1,
+                 failed_login_attempts = 0,
+                 locked_until = NULL,
+                 session_version = session_version + 1
+             WHERE id = ? AND school_id = ? AND role = 'teacher'"
+        );
+        $stmt->execute([$passwordHash, $userId, $schoolId]);
+        if ($stmt->rowCount() !== 1) {
+            throw new \InvalidArgumentException('Teacher account not found in the authenticated school.');
+        }
+
+        $version = Database::connection()->prepare(
+            'SELECT session_version FROM users WHERE id = ? AND school_id = ? LIMIT 1'
+        );
+        $version->execute([$userId, $schoolId]);
+        return (int)$version->fetchColumn();
+    }
+
     public function bumpSessionVersion(int $userId, int $schoolId): int
     {
         $this->assertSchoolId($schoolId);

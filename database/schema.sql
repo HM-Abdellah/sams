@@ -573,6 +573,8 @@ CREATE TABLE teacher_onboarding_requests (
     full_name VARCHAR(120) NOT NULL,
     employee_id VARCHAR(50) NULL,
     phone VARCHAR(30) NULL,
+    request_ip VARCHAR(45) NULL,
+    request_user_agent VARCHAR(512) NULL,
     status ENUM('pending', 'approved', 'rejected', 'expired')
         NOT NULL DEFAULT 'pending',
     expires_at TIMESTAMP NOT NULL,    reviewed_by BIGINT UNSIGNED NULL,
@@ -584,6 +586,7 @@ CREATE TABLE teacher_onboarding_requests (
     PRIMARY KEY (id),
     UNIQUE KEY uq_teacher_onboarding_request_token (request_token_hash),
     KEY idx_teacher_onboarding_school_status (school_id, status, created_at),
+    KEY idx_teacher_onboarding_rate_limit (request_ip, created_at, school_id),
     KEY idx_teacher_onboarding_expiry (status, expires_at),
     KEY idx_teacher_onboarding_user (created_user_id),
     CONSTRAINT fk_teacher_onboarding_school

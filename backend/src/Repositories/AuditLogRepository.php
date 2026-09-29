@@ -15,25 +15,34 @@ final class AuditLogRepository
         string $action,
         ?string $entityType = null,
         ?int $entityId = null,
-        array $metadata = []
+        array $metadata = [],
+        ?int $schoolId = null
     ): void {
         $action = Audit::actionName($action);
 
-        // Tenant ownership is derived from the actor's stable identity, never from request input.
-        $schoolId = null;
+        // Tenant ownership is derived from the actor when present. Anonymous events
+        // may provide a verified school scope from the workflow that created them.
+        if ($schoolId !== null && $schoolId < 1) {
+            throw new \InvalidArgumentException('Invalid audit school.');
+        }
+
         if ($userId !== null) {
             $schoolStmt = Database::connection()->prepare(
                 'SELECT school_id FROM users WHERE id = ? LIMIT 1'
             );
             $schoolStmt->execute([$userId]);
-            $schoolId = $schoolStmt->fetchColumn();
-            if ($schoolId === false) {
+            $actorSchoolId = $schoolStmt->fetchColumn();
+            if ($actorSchoolId === false) {
                 throw new \InvalidArgumentException('Invalid audit user.');
             }
-            $schoolId = $schoolId === null ? null : (int)$schoolId;
-            if ($schoolId !== null && $schoolId < 1) {
+            $actorSchoolId = $actorSchoolId === null ? null : (int)$actorSchoolId;
+            if ($actorSchoolId !== null && $actorSchoolId < 1) {
                 throw new \InvalidArgumentException('Invalid audit school.');
             }
+            if ($schoolId !== null && $actorSchoolId !== null && $schoolId !== $actorSchoolId) {
+                throw new \InvalidArgumentException('Audit school does not match the actor.');
+            }
+            $schoolId = $actorSchoolId;
         }
 
         if ($entityType !== null) {

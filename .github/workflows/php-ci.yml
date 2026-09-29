@@ -136,6 +136,11 @@ jobs:
         run: |
           php tests/migration_007_integration.php
 
+      - name: Verify migration 008 onboarding metadata
+        shell: sh
+        run: |
+          php tests/migration_008_integration.php
+
       - name: Verify tenant isolation boundaries
         shell: sh
         run: |
@@ -145,6 +150,11 @@ jobs:
         shell: sh
         run: |
           php tests/auth_identity_integration.php
+
+      - name: Verify Teacher Onboarding workflow
+        shell: sh
+        run: |
+          php tests/onboarding_integration.php
 
       - name: Run MariaDB integration tests
         shell: sh
@@ -682,6 +692,7 @@ jobs:
           run_e2e_group "phase8-admin" tests/e2e/phase8_admin.spec.js
           run_e2e_group "phase8-auth" tests/e2e/phase8_auth.spec.js
           run_e2e_group "canonical-auth" tests/e2e/canonical_auth.spec.js
+          run_e2e_group "canonical-onboarding" tests/e2e/canonical_onboarding.spec.js
           run_e2e_group "phase8-mobile" tests/e2e/phase8_mobile.mobile.spec.js
 
           kill "$server_pid" 2>/dev/null || true

@@ -48,6 +48,31 @@ Ends the current session. Requires CSRF.
 
 ### Canonical authentication — `/api/v1/auth/*`
 
+### Teacher onboarding — `/api/v1/onboarding/*`
+
+#### POST `/api/v1/onboarding/request`
+
+Public request-entry endpoint. JSON body: `onboarding_code`, `full_name`, optional `employee_id`, optional `phone`. The onboarding code is only a request-entry mechanism; it does not authenticate the teacher. A successful request returns a one-time request token and expiry.
+
+#### GET `/api/v1/onboarding/status?request_token=...`
+
+Bearer-token status endpoint. Returns only request state, expiry, and whether the linked teacher account has been activated.
+
+#### POST `/api/v1/onboarding/activate`
+
+JSON body: `request_token`, `password`. Only an approved request can activate. Activation creates/reuses exactly one teacher identity in the school, enables the account, issues the initial SAMS Code once, and preserves the same `users.id`.
+
+### Admin teacher onboarding — `/api/v1/admin/onboarding/*`
+
+Admin-only and CSRF-protected.
+
+- `GET /api/v1/admin/onboarding/requests` lists requests inside the authenticated school only.
+- `POST /api/v1/admin/onboarding/code` rotates the school's onboarding code and returns the new plaintext code once.
+- `POST /api/v1/admin/onboarding/{id}/review` accepts `decision=approve|reject` and an optional rejection `reason`.
+
+The onboarding code and request token are stored only as hashes. Requests are rate-limited by request IP and expire server-side.
+
+
 #### GET `/api/v1/auth/session`
 
 Starts the session envelope when needed and returns the current authentication state plus a CSRF token. Anonymous callers receive `authenticated: false` with a usable CSRF token.

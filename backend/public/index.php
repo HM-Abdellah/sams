@@ -8,7 +8,9 @@ use SAMS\Controllers\AdminAcademicYearController;
 use SAMS\Controllers\AdminAuditController;
 use SAMS\Controllers\AdminClassController;
 use SAMS\Controllers\AdminDashboardController;
+use SAMS\Controllers\AdminOnboardingController;
 use SAMS\Controllers\AdminTeacherClassController;
+use SAMS\Controllers\OnboardingController;
 use SAMS\Controllers\AdminTeacherController;
 use SAMS\Controllers\AdminUserController;
 use SAMS\Controllers\ArchiveController;
@@ -101,6 +103,15 @@ try {
     $adminUsers = new AdminUserController();
     $router->get('/admin/users', $adminUsers);
     $router->post('/admin/users', $adminUsers);
+
+    $onboarding = new OnboardingController();
+    $router->post('/onboarding/{action}', $onboarding);
+    $router->get('/onboarding/{action}', $onboarding);
+
+    $adminOnboarding = new AdminOnboardingController();
+    $router->get('/admin/onboarding/{action}', $adminOnboarding);
+    $router->post('/admin/onboarding/{action}', $adminOnboarding);
+    $router->post('/admin/onboarding/{id}/{action}', $adminOnboarding);
 
     $adminTeachers = new AdminTeacherController();
     $router->get('/admin/teachers', $adminTeachers);
