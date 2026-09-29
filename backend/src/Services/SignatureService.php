@@ -33,20 +33,22 @@ final class SignatureService
         return $data;
     }
 
-    public function get(int $teacherId, int $classId): ?array
+    public function get(int $teacherId, int $classId, int $schoolId): ?array
     {
-        return $this->signatures->findByTeacherAndClass($teacherId, $classId);
+        $this->assertSchoolId($schoolId);
+        return $this->signatures->findByTeacherAndClass($teacherId, $classId, $schoolId);
     }
 
-    public function save(int $teacherId, int $classId, string $data): array
+    public function save(int $teacherId, int $classId, string $data, int $schoolId): array
     {
+        $this->assertSchoolId($schoolId);
         $data = $this->validatePngDataUrl($data);
         $pdo = Database::connection();
         $pdo->beginTransaction();
 
         try {
-            $existing = $this->signatures->findByTeacherAndClass($teacherId, $classId);
-            $this->signatures->upsert($teacherId, $classId, $data);
+            $existing = $this->signatures->findByTeacherAndClass($teacherId, $classId, $schoolId);
+            $this->signatures->upsert($teacherId, $classId, $data, $schoolId);
             $this->audit->record(
                 $teacherId,
                 'signature.upsert',
@@ -62,21 +64,22 @@ final class SignatureService
             throw $e;
         }
 
-        $saved = $this->signatures->findByTeacherAndClass($teacherId, $classId);
+        $saved = $this->signatures->findByTeacherAndClass($teacherId, $classId, $schoolId);
         if ($saved === null) {
             throw new \RuntimeException('Signature was not persisted.');
         }
         return $saved;
     }
 
-    public function delete(int $teacherId, int $classId): bool
+    public function delete(int $teacherId, int $classId, int $schoolId): bool
     {
+        $this->assertSchoolId($schoolId);
         $pdo = Database::connection();
         $pdo->beginTransaction();
 
         try {
-            $existing = $this->signatures->findByTeacherAndClass($teacherId, $classId);
-            $this->signatures->delete($teacherId, $classId);
+            $existing = $this->signatures->findByTeacherAndClass($teacherId, $classId, $schoolId);
+            $this->signatures->delete($teacherId, $classId, $schoolId);
 
             if ($existing !== null) {
                 $this->audit->record(
@@ -95,6 +98,13 @@ final class SignatureService
                 $pdo->rollBack();
             }
             throw $e;
+        }
+    }
+
+    private function assertSchoolId(int $schoolId): void
+    {
+        if ($schoolId < 1) {
+            throw new InvalidArgumentException('Invalid school.');
         }
     }
 }

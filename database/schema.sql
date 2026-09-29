@@ -502,7 +502,7 @@ CREATE TABLE schools (
 
 ALTER TABLE academic_years
     DROP INDEX uq_academic_years_name,
-    ADD COLUMN school_id BIGINT UNSIGNED NULL AFTER id,
+    ADD COLUMN school_id BIGINT UNSIGNED NOT NULL AFTER id,
     ADD UNIQUE KEY uq_academic_years_school_name (school_id, name),
     ADD KEY idx_academic_years_school_active (school_id, is_active),
     ADD CONSTRAINT fk_academic_years_school
@@ -510,7 +510,7 @@ ALTER TABLE academic_years
         ON UPDATE CASCADE ON DELETE RESTRICT;
 
 ALTER TABLE users
-    ADD COLUMN school_id BIGINT UNSIGNED NULL AFTER id,
+    ADD COLUMN school_id BIGINT UNSIGNED NOT NULL AFTER id,
     ADD COLUMN account_status ENUM('active', 'suspended', 'deactivated')
         NOT NULL DEFAULT 'active' AFTER role,
     MODIFY password_hash VARCHAR(255) NULL,

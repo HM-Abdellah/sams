@@ -114,14 +114,16 @@ try {
     $db = br_pdo($source);
     $db->beginTransaction();
 
+    $db->exec("INSERT INTO schools (code, name) VALUES ('BACKUP-SCHOOL', 'Backup School')");
+
     $db->exec(
-        "INSERT INTO academic_years (name, starts_on, ends_on, is_active)
-         VALUES ('2026/2027', '2026-09-01', '2027-07-31', 1)"
+        "INSERT INTO academic_years (school_id, name, starts_on, ends_on, is_active)
+         VALUES (1, '2026/2027', '2026-09-01', '2027-07-31', 1)"
     );
     $db->exec(
-        "INSERT INTO users (username, employee_id, full_name, password_hash, role)
-         VALUES ('backup-admin', 'BA001', 'Backup Admin', 'synthetic-hash', 'admin'),
-                ('backup-teacher', 'BT001', 'Backup Teacher', 'synthetic-hash', 'teacher')"
+        "INSERT INTO users (school_id, username, employee_id, full_name, password_hash, role)
+         VALUES (1, 'backup-admin', 'BA001', 'Backup Admin', 'synthetic-hash', 'admin'),
+                (1, 'backup-teacher', 'BT001', 'Backup Teacher', 'synthetic-hash', 'teacher')"
     );
     $db->exec(
         "INSERT INTO classes (academic_year_id, name, level, branch, is_active)

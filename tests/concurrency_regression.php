@@ -63,11 +63,12 @@ function c_exec_schema(PDO $pdo): void
 
 function c_seed(PDO $pdo): void
 {
-    $pdo->exec("INSERT INTO academic_years (name, starts_on, ends_on, is_active)
-        VALUES ('2026-2027', '2026-09-01', '2027-07-31', 1)");
-    $pdo->exec("INSERT INTO users (username, full_name, password_hash, role)
-        VALUES ('concurrency-admin', 'Concurrency Admin', 'x', 'admin'),
-               ('concurrency-teacher', 'Concurrency Teacher', 'x', 'teacher')");
+    $pdo->exec("INSERT INTO schools (code, name) VALUES ('CONCURRENCY', 'Concurrency Test School')");
+    $pdo->exec("INSERT INTO academic_years (school_id, name, starts_on, ends_on, is_active)
+        VALUES (1, '2026-2027', '2026-09-01', '2027-07-31', 1)");
+    $pdo->exec("INSERT INTO users (school_id, username, full_name, password_hash, role)
+        VALUES (1, 'concurrency-admin', 'Concurrency Admin', 'x', 'admin'),
+               (1, 'concurrency-teacher', 'Concurrency Teacher', 'x', 'teacher')");
     $pdo->exec("INSERT INTO classes (academic_year_id, name, level, branch)
         VALUES (1, 'CONC-A', '2BAC', 'SP'),
                (1, 'CONC-B', '2BAC', 'SP')");
@@ -153,7 +154,7 @@ function c_child(string $mode, string $gate): never
         switch ($mode) {
             case 'r1-transfer':
                 (new StudentTransferService())->transfer(
-                    1, 'admin', 1, 1, 2, '2026-09-15'
+                    1, 'admin', 1, 1, 2, '2026-09-15', 1
                 );
                 break;
 
@@ -168,7 +169,8 @@ function c_child(string $mode, string $gate): never
                         'period' => 1,
                         'action' => 'upsert',
                         'status' => 'absent',
-                    ]]
+                    ]],
+                    1
                 );
                 break;
 

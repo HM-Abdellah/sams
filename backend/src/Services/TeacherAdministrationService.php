@@ -39,7 +39,7 @@ final class TeacherAdministrationService
         ?int $schoolId = null
     ): int {
         $this->assertAdminId($adminId);
-        $this->assertSchoolIdWhenProvided($schoolId);
+        $schoolId = $this->requireSchoolId($schoolId);
 
         if ($teacherId < 1 || $subjectId < 1 || $classId < 1) {
             throw new \InvalidArgumentException('Invalid teaching assignment.');
@@ -97,7 +97,7 @@ final class TeacherAdministrationService
     public function unassignTeaching(int $adminId, int $teachingId, ?int $schoolId = null): bool
     {
         $this->assertAdminId($adminId);
-        $this->assertSchoolIdWhenProvided($schoolId);
+        $schoolId = $this->requireSchoolId($schoolId);
         if ($teachingId < 1) {
             throw new \InvalidArgumentException('Invalid teaching assignment.');
         }
@@ -245,5 +245,14 @@ final class TeacherAdministrationService
         if ($schoolId !== null && $schoolId < 1) {
             throw new \InvalidArgumentException('Invalid school.');
         }
+    }
+
+    private function requireSchoolId(?int $schoolId): int
+    {
+        if ($schoolId === null || $schoolId < 1) {
+            throw new \InvalidArgumentException('Authenticated school scope is required.');
+        }
+
+        return $schoolId;
     }
 }

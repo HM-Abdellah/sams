@@ -102,7 +102,7 @@ try {
     }
 
     $signatureRepo = new SignatureRepository();
-    $signature = $signatureRepo->findByTeacherAndClass((int)$user['id'], $classId);
+    $signature = $signatureRepo->findByTeacherAndClass((int)$user['id'], $classId, $schoolId);
     if (in_array($action, ['sign_period', 'sign_week'], true) && $signature === null) {
         Response::error('Save your class signature before signing attendance.', 422);
     }
@@ -147,7 +147,7 @@ try {
 
         $class = $lockedClass;
 
-        $signature = $signatureRepo->findByTeacherAndClass((int)$user['id'], $classId);
+        $signature = $signatureRepo->findByTeacherAndClass((int)$user['id'], $classId, $schoolId);
         if (in_array($action, ['sign_period', 'sign_week'], true) && $signature === null) {
             throw new \SAMS\Exceptions\AttendanceWorkflowException(
                 'Save your class signature before signing attendance.',

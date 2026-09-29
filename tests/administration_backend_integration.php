@@ -71,18 +71,20 @@ foreach ($serviceClasses as $serviceClass) {
 }
 $today = (string)$pdo->query('SELECT CURDATE()')->fetchColumn();
 
-$pdo->exec("INSERT INTO academic_years (name, starts_on, ends_on, is_active)
-    VALUES ('2026-2027', '2026-09-01', '2027-07-31', 1)");
-$pdo->exec("INSERT INTO academic_years (name, starts_on, ends_on, is_active)
-    VALUES ('2025-2026', '2025-09-01', '2026-07-31', 0)");
+$pdo->exec("INSERT INTO schools (code, name) VALUES ('ADMIN-TEST', 'Administration Test School')");
 
-$pdo->exec("INSERT INTO users (username, employee_id, full_name, password_hash, role, is_active)
+$pdo->exec("INSERT INTO academic_years (school_id, name, starts_on, ends_on, is_active)
+    VALUES (1, '2026-2027', '2026-09-01', '2027-07-31', 1)");
+$pdo->exec("INSERT INTO academic_years (school_id, name, starts_on, ends_on, is_active)
+    VALUES (1, '2025-2026', '2025-09-01', '2026-07-31', 0)");
+
+$pdo->exec("INSERT INTO users (school_id, username, employee_id, full_name, password_hash, role, is_active)
     VALUES
-    ('admin.one', 'ADM001', 'Admin One', 'hash-admin-1', 'admin', 1),
-    ('teacher.one', 'TCH001', 'Teacher One', 'hash-teacher-1', 'teacher', 1),
-    ('teacher.two', 'TCH002', 'Teacher Two', 'hash-teacher-2', 'teacher', 1),
-    ('counselor.one', 'CNS001', 'Counselor One', 'hash-counselor', 'counselor', 1),
-    ('admin.two', 'ADM002', 'Admin Two', 'hash-admin-2', 'admin', 1)");
+    (1, 'admin.one', 'ADM001', 'Admin One', 'hash-admin-1', 'admin', 1),
+    (1, 'teacher.one', 'TCH001', 'Teacher One', 'hash-teacher-1', 'teacher', 1),
+    (1, 'teacher.two', 'TCH002', 'Teacher Two', 'hash-teacher-2', 'teacher', 1),
+    (1, 'counselor.one', 'CNS001', 'Counselor One', 'hash-counselor', 'counselor', 1),
+    (1, 'admin.two', 'ADM002', 'Admin Two', 'hash-admin-2', 'admin', 1)");
 
 $pdo->exec("INSERT INTO classes (academic_year_id, name, level, branch, is_active)
     VALUES
@@ -122,7 +124,7 @@ $teachers = new TeacherAdministrationService();
 $teacherClasses = new TeacherClassAdministrationService();
 $dashboard = new AdminDashboardService();
 $audit = new AuditAdministrationService();
-$yearList = $academicYears->list();
+$yearList = $academicYears->list(1);
 expect_true(count($yearList) === 2, 'Academic-year administration list is incomplete.');
 
 expect_throw(
@@ -131,7 +133,8 @@ expect_throw(
         '2026-overlap',
         '2026-06-01',
         '2027-01-01',
-        false
+        false,
+        1
     ),
     'Overlapping academic year was accepted.'
 );
@@ -141,18 +144,19 @@ $newYearId = $academicYears->create(
     '2027-2028',
     '2027-09-01',
     '2028-07-31',
-    false
+    false,
+    1
 );
 expect_true($newYearId > 0, 'New academic year was not created.');
 
 $classList = $classes->list();
 expect_true(count($classList) === 4, 'Admin class list must include inactive and historical classes.');
 
-$newClassId = $classes->create(1, '2BAC SP D', '2BAC', 'SP');
+$newClassId = $classes->create(1, '2BAC SP D', '2BAC', 'SP', 1);
 expect_true($newClassId > 0, 'Class creation failed.');
 
 expect_throw(
-    static fn() => $classes->create(1, '2BAC SP D', '2BAC', 'SP'),
+    static fn() => $classes->create(1, '2BAC SP D', '2BAC', 'SP', 1),
     'Duplicate active-year class was accepted.'
 );
 
@@ -164,7 +168,7 @@ BEGIN
 END");
 
 expect_throw(
-    static fn() => $classes->create(1, '2BAC ROLLBACK', '2BAC', 'SP'),
+    static fn() => $classes->create(1, '2BAC ROLLBACK', '2BAC', 'SP', 1),
     'Forced administration failure did not abort class creation.'
 );
 $pdo->exec('DROP TRIGGER fail_admin_class_audit');
@@ -174,11 +178,11 @@ expect_true(
     'Failed administration class creation was not rolled back.'
 );
 
-$updatedClassId = $classes->update(1, 1, '2BAC SP A+', '2BAC', 'SP');
+$updatedClassId = $classes->update(1, 1, '2BAC SP A+', '2BAC', 'SP', 1);
 expect_true($updatedClassId === 1, 'Class update returned the wrong class id.');
-expect_true($classes->setActive(1, $newClassId, false) === true, 'Class deactivation did not report a change.');
-expect_true($classes->setActive(1, $newClassId, false) === false, 'Class deactivation no-op was not idempotent.');
-expect_true($classes->setActive(1, $newClassId, true) === true, 'Class activation failed.');
+expect_true($classes->setActive(1, $newClassId, false, 1) === true, 'Class deactivation did not report a change.');
+expect_true($classes->setActive(1, $newClassId, false, 1) === false, 'Class deactivation no-op was not idempotent.');
+expect_true($classes->setActive(1, $newClassId, true, 1) === true, 'Class activation failed.');
 $adminList = $users->list();
 expect_true(count($adminList) === 5, 'Admin user list is incomplete.');
 foreach ($adminList as $listedUser) {
@@ -192,7 +196,8 @@ $newTeacherId = $users->create(
     'teacher',
     'SecurePassword123!',
     'A-NEW',
-    '0611223344'
+    '0611223344',
+    1
 );
 expect_true($newTeacherId > 0, 'Teacher user creation failed.');
 
@@ -200,15 +205,15 @@ $beforeResetVersion = (int)$pdo->query(
     "SELECT session_version FROM users WHERE id = {$newTeacherId}"
 )->fetchColumn();
 
-$users->resetPassword(1, $newTeacherId, 'NewSecurePassword123!');
-$users->unlock(1, $newTeacherId);
+$users->resetPassword(1, $newTeacherId, 'NewSecurePassword123!', 1);
+$users->unlock(1, $newTeacherId, 1);
 
 $afterResetVersion = (int)$pdo->query(
     "SELECT session_version FROM users WHERE id = {$newTeacherId}"
 )->fetchColumn();
 expect_true($afterResetVersion === $beforeResetVersion + 2, 'Password reset/unlock did not advance session version.');
 
-$users->update(1, $newTeacherId, 'Teacher Three Updated', 'teacher', true, 'A-NEW', '0611334455');
+$users->update(1, $newTeacherId, 'Teacher Three Updated', 'teacher', true, 'A-NEW', '0611334455', 1);
 expect_true(
     (string)$pdo->query("SELECT full_name FROM users WHERE id = {$newTeacherId}")->fetchColumn()
         === 'Teacher Three Updated',
@@ -223,20 +228,21 @@ expect_throw(
         'teacher',
         'DUP001',
         null,
-        null
+        null,
+        1
     ),
     'Duplicate username was accepted.'
 );
 
 expect_throw(
-    static fn() => $users->update(1, 1, 'Admin One', 'admin', false, 'ADM001', null),
+    static fn() => $users->update(1, 1, 'Admin One', 'admin', false, 'ADM001', null, 1),
     'Administrator was allowed to deactivate their own account.'
 );
 
-$users->update(1, 5, 'Admin Two', 'admin', false, 'ADM002', null);
+$users->update(1, 5, 'Admin Two', 'admin', false, 'ADM002', null, 1);
 
 expect_throw(
-    static fn() => $users->update(1, 1, 'Admin One', 'admin', false, 'ADM001', null),
+    static fn() => $users->update(1, 1, 'Admin One', 'admin', false, 'ADM001', null, 1),
     'Last active administrator was allowed to be deactivated.'
 );
 $teacherList = $teachers->list();
@@ -274,7 +280,7 @@ $teachers->updateSubject(
     true
 );
 
-$teachingId = $teachers->assignTeaching(1, 2, $subjectId, 1);
+$teachingId = $teachers->assignTeaching(1, 2, $subjectId, 1, 1);
 expect_true($teachingId > 0, 'Teaching assignment failed.');
 
 expect_true(
@@ -283,12 +289,12 @@ expect_true(
 );
 
 expect_throw(
-    static fn() => $teachers->assignTeaching(1, 2, $subjectId, 1),
+    static fn() => $teachers->assignTeaching(1, 2, $subjectId, 1, 1),
     'Duplicate teaching assignment was accepted.'
 );
 
-expect_true($teachers->unassignTeaching(1, $teachingId) === true, 'Teaching unassignment failed.');
-$assignmentChanged = $teacherClasses->assign(1, 3, 2);
+expect_true($teachers->unassignTeaching(1, $teachingId, 1) === true, 'Teaching unassignment failed.');
+$assignmentChanged = $teacherClasses->assign(1, 3, 2, 1);
 expect_true($assignmentChanged === true, 'Teacher-class assignment failed.');
 
 expect_true(
@@ -301,21 +307,21 @@ expect_true(
 );
 
 expect_true(
-    $teacherClasses->assign(1, 3, 2) === false,
+    $teacherClasses->assign(1, 3, 2, 1) === false,
     'Duplicate teacher-class assignment was not idempotent.'
 );
 
 expect_true(
-    $teacherClasses->unassign(1, 3, 2) === true,
+    $teacherClasses->unassign(1, 3, 2, 1) === true,
     'Teacher-class unassignment failed.'
 );
 
 expect_true(
-    $teacherClasses->unassign(1, 3, 2) === false,
+    $teacherClasses->unassign(1, 3, 2, 1) === false,
     'Teacher-class unassignment no-op was not idempotent.'
 );
 
-$dashboardData = $dashboard->snapshot();
+$dashboardData = $dashboard->snapshot(1);
 expect_true(($dashboardData['summary']['active_classes'] ?? 0) >= 2, 'Dashboard active class summary is incorrect.');
 expect_true(($dashboardData['summary']['active_students'] ?? 0) === 1, 'Dashboard active student summary is incorrect.');
 expect_true(count($dashboardData['attention_students']) === 1, 'Dashboard absence attention list is incorrect.');
@@ -335,14 +341,15 @@ $auditData = $audit->search(
     null,
     null,
     1,
-    100
+    100,
+    1
 );
 expect_true(($auditData['total'] ?? 0) > 0, 'Audit administration did not record mutations.');
 expect_true(
     isset($auditData['items'][0]['action']),
     'Audit search result shape is invalid.'
 );
-$academicYears->activate(1, $newYearId);
+$academicYears->activate(1, $newYearId, 1);
 
 $activeYearCount = (int)$pdo->query(
     'SELECT COUNT(*) FROM academic_years WHERE is_active = 1'

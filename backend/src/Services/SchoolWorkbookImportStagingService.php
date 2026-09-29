@@ -38,9 +38,7 @@ final class SchoolWorkbookImportStagingService
             throw new InvalidArgumentException('Invalid importing user.');
         }
 
-        if ($schoolId !== null && $schoolId < 1) {
-            throw new InvalidArgumentException('Invalid school.');
-        }
+        $schoolId = $this->requireSchoolId($schoolId);
 
         if ($targetAcademicYearId !== null) {
             if ($targetAcademicYearId < 1 || $this->academicYears->find($targetAcademicYearId, $schoolId) === null) {
@@ -187,6 +185,15 @@ final class SchoolWorkbookImportStagingService
             ),
             'sheets' => $parsed['sheets'],
         ];
+    }
+
+    private function requireSchoolId(?int $schoolId): int
+    {
+        if ($schoolId === null || $schoolId < 1) {
+            throw new InvalidArgumentException('Authenticated school scope is required.');
+        }
+
+        return $schoolId;
     }
 
     private function normalizeFilename(string $filename): string

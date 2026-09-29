@@ -28,6 +28,21 @@ function tenant_assert(bool $condition, string $message): void
     if (!$condition) throw new RuntimeException($message);
 }
 
+function tenant_expect_scope_required(callable $callback, string $message): void
+{
+    try {
+        $callback();
+    } catch (InvalidArgumentException $e) {
+        if ($e->getMessage() === 'Authenticated school scope is required.') {
+            return;
+        }
+
+        throw $e;
+    }
+
+    throw new RuntimeException($message);
+}
+
 function tenant_exec_schema(PDO $pdo, string $sql): void
 {
     $sql = preg_replace('/^\s*--.*$/m', '', $sql) ?? $sql;
@@ -41,6 +56,22 @@ $schema = file_get_contents(__DIR__ . '/../database/schema.sql');
 tenant_assert($schema !== false, 'Unable to read schema.');
 tenant_exec_schema($pdo, $schema);
 $pdo->exec('USE ' . $db);
+
+$tenantColumns = $pdo->prepare(
+    'SELECT table_name, column_name, is_nullable
+     FROM information_schema.columns
+     WHERE table_schema = DATABASE()
+       AND ((table_name = \'users\' AND column_name = \'school_id\')
+         OR (table_name = \'academic_years\' AND column_name = \'school_id\'))
+     ORDER BY table_name'
+);
+$tenantColumns->execute();
+$tenantNullability = [];
+foreach ($tenantColumns->fetchAll() as $column) {
+    $tenantNullability[(string)$column['table_name']] = (string)$column['is_nullable'];
+}
+tenant_assert(($tenantNullability['users'] ?? '') === 'NO', 'Fresh schema must require users.school_id.');
+tenant_assert(($tenantNullability['academic_years'] ?? '') === 'NO', 'Fresh schema must require academic_years.school_id.');
 
 $pdo->exec("INSERT INTO schools (code, name) VALUES ('TEN-A', 'Tenant A'), ('TEN-B', 'Tenant B')");
 $schoolIds = $pdo->query(
@@ -101,6 +132,7 @@ use SAMS\Repositories\AuditLogRepository;
 use SAMS\Repositories\TeacherRepository;
 use SAMS\Repositories\UserRepository;
 use SAMS\Repositories\SchoolImportRepository;
+use SAMS\Repositories\SignatureRepository;
 
 $academicYears = new AcademicYearRepository();
 $classes = new ClassRepository();
@@ -195,6 +227,24 @@ tenant_assert(
     'School-scoped import batch lookup leaked another tenant.'
 );
 
+$signatures = new SignatureRepository();
+$signatureData = 'synthetic-tenant-signature';
+$signatures->upsert($teacherA, $classA, $signatureData, $schoolA);
+tenant_assert(
+    $signatures->findByTeacherAndClass($teacherA, $classA, $schoolA) !== null,
+    'Own-school signature was not persisted.'
+);
+tenant_assert(
+    $signatures->findByTeacherAndClass($teacherA, $classA, $schoolB) === null,
+    'Cross-school signature lookup leaked another tenant.'
+);
+$signatures->delete($teacherA, $classA, $schoolB);
+tenant_assert(
+    $signatures->findByTeacherAndClass($teacherA, $classA, $schoolA) !== null,
+    'Cross-school signature delete affected another tenant.'
+);
+$signatures->delete($teacherA, $classA, $schoolA);
+
 $teacherClasses = $classes->forUser($teacherA, 'teacher', $schoolA);
 
 $teacherClassIds = array_map(
@@ -217,4 +267,107 @@ tenant_assert(
     'Teacher access fixture unexpectedly grants an unassigned own-school class.'
 );
 
-echo "[PASS] Tenant isolation repository boundaries verified." . PHP_EOL;
+require_once __DIR__ . '/../backend/vendor/autoload.php';
+
+tenant_expect_scope_required(
+    static fn() => (new \SAMS\Services\AcademicYearAdministrationService())->create(
+        $adminA,
+        '2027/2028',
+        '2027-09-01',
+        '2028-07-31'
+    ),
+    'Academic-year writer accepted a request without tenant scope.'
+);
+
+tenant_expect_scope_required(
+    static fn() => (new \SAMS\Services\ClassAdministrationService())->create(
+        $adminA,
+        'SCOPE-TEST'
+    ),
+    'Class writer accepted a request without tenant scope.'
+);
+
+tenant_expect_scope_required(
+    static fn() => (new \SAMS\Services\UserAdministrationService())->create(
+        $adminA,
+        'scope-test-user',
+        'Scope Test User',
+        'teacher',
+        'ScopePassword123!'
+    ),
+    'User writer accepted a request without tenant scope.'
+);
+
+tenant_expect_scope_required(
+    static fn() => (new \SAMS\Services\TeacherAdministrationService())->assignTeaching(
+        $adminA,
+        $teacherA,
+        $subjectId,
+        $classA
+    ),
+    'Teaching-assignment writer accepted a request without tenant scope.'
+);
+
+tenant_expect_scope_required(
+    static fn() => (new \SAMS\Services\TeacherClassAdministrationService())->assign(
+        $adminA,
+        $teacherA,
+        $classA
+    ),
+    'Teacher-class writer accepted a request without tenant scope.'
+);
+
+tenant_expect_scope_required(
+    static fn() => (new \SAMS\Services\TeacherAttendanceService())->saveBulk(
+        $teacherA,
+        'teacher',
+        $classA,
+        [[
+            'student_id' => 1,
+            'attendance_date' => '2026-09-23',
+            'period' => 1,
+            'action' => 'upsert',
+            'status' => 'present',
+        ]]
+    ),
+    'Attendance writer accepted a request without tenant scope.'
+);
+
+tenant_expect_scope_required(
+    static fn() => (new \SAMS\Services\StudentTransferService())->transfer(
+        $adminA,
+        'admin',
+        $studentB,
+        $classB,
+        $classA,
+        '2026-09-15'
+    ),
+    'Student-transfer writer accepted a request without tenant scope.'
+);
+
+tenant_expect_scope_required(
+    static fn() => (new \SAMS\Services\SchoolWorkbookImportStagingService())->stage(
+        '/tmp/nonexistent-scope-test.xlsx',
+        $adminA,
+        'scope-test.xlsx'
+    ),
+    'School-import staging writer accepted a request without tenant scope.'
+);
+
+tenant_expect_scope_required(
+    static fn() => (new \SAMS\Services\SchoolWorkbookImportReconciliationService())->reconcile(
+        $batchB,
+        $adminB
+    ),
+    'School-import reconciliation accepted a request without tenant scope.'
+);
+
+tenant_expect_scope_required(
+    static fn() => (new \SAMS\Services\SchoolWorkbookImportReconciliationService())->commit(
+        $batchB,
+        $adminB
+    ),
+    'School-import commit accepted a request without tenant scope.'
+);
+
+echo "[PASS] Tenant isolation repository and writer boundaries verified." . PHP_EOL;

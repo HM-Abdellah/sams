@@ -54,7 +54,7 @@ final class SchoolWorkbookImportReconciliationService
         if ($batchId < 1 || $userId < 1) {
             throw new \InvalidArgumentException('Invalid school import reconciliation request.');
         }
-        $this->assertSchoolIdWhenProvided($schoolId);
+        $schoolId = $this->requireSchoolId($schoolId);
 
         $pdo = Database::connection();
         $pdo->beginTransaction();
@@ -319,7 +319,7 @@ final class SchoolWorkbookImportReconciliationService
         if ($batchId < 1 || $userId < 1) {
             throw new \InvalidArgumentException('Invalid school import request.');
         }
-        $this->assertSchoolIdWhenProvided($schoolId);
+        $schoolId = $this->requireSchoolId($schoolId);
 
         $pdo = Database::connection();
         $pdo->beginTransaction();
@@ -678,5 +678,14 @@ final class SchoolWorkbookImportReconciliationService
         if ($schoolId !== null && $schoolId < 1) {
             throw new \InvalidArgumentException('Invalid school.');
         }
+    }
+
+    private function requireSchoolId(?int $schoolId): int
+    {
+        if ($schoolId === null || $schoolId < 1) {
+            throw new \InvalidArgumentException('Authenticated school scope is required.');
+        }
+
+        return $schoolId;
     }
 }

@@ -36,7 +36,7 @@ final class ClassAdministrationService
         ?int $schoolId = null
     ): int {
         $this->assertAdminId($adminId);
-        $this->assertSchoolIdWhenProvided($schoolId);
+        $schoolId = $this->requireSchoolId($schoolId);
 
         $name = $this->validator->normalizeName($name);
         $level = $this->validator->optionalText($level, 50);
@@ -97,7 +97,7 @@ final class ClassAdministrationService
         ?int $schoolId = null
     ): int {
         $this->assertAdminId($adminId);
-        $this->assertSchoolIdWhenProvided($schoolId);
+        $schoolId = $this->requireSchoolId($schoolId);
         if ($classId < 1) {
             throw new \InvalidArgumentException('Invalid class.');
         }
@@ -157,7 +157,7 @@ final class ClassAdministrationService
         ?int $schoolId = null
     ): bool {
         $this->assertAdminId($adminId);
-        $this->assertSchoolIdWhenProvided($schoolId);
+        $schoolId = $this->requireSchoolId($schoolId);
         if ($classId < 1) {
             throw new \InvalidArgumentException('Invalid class.');
         }
@@ -209,5 +209,14 @@ final class ClassAdministrationService
         if ($schoolId !== null && $schoolId < 1) {
             throw new \InvalidArgumentException('Invalid school.');
         }
+    }
+
+    private function requireSchoolId(?int $schoolId): int
+    {
+        if ($schoolId === null || $schoolId < 1) {
+            throw new \InvalidArgumentException('Authenticated school scope is required.');
+        }
+
+        return $schoolId;
     }
 }

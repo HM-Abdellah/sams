@@ -68,15 +68,16 @@ $schema = file_get_contents(__DIR__ . '/../database/schema.sql');
 if ($schema === false) throw new RuntimeException('Unable to read schema.');
 execute_schema($pdo, $schema);
 
-$pdo->exec("INSERT INTO academic_years (name, starts_on, ends_on, is_active)
-VALUES ('2026/2027', '2026-09-01', '2027-07-31', 1)");
-$pdo->exec("INSERT INTO academic_years (name, starts_on, ends_on, is_active)
-VALUES ('2025/2026', '2025-09-01', '2026-07-31', 0)");
-$pdo->exec("INSERT INTO users (username, employee_id, full_name, password_hash, role, is_active)
-VALUES ('admin.phase6', 'ADM6', 'Phase 6 Admin', 'synthetic-admin-hash', 'admin', 1),
-       ('teacher.phase6', 'TCH6', 'Phase 6 Teacher', 'synthetic-teacher-hash', 'teacher', 1),
-       ('other.teacher6', 'TCH7', 'Other Teacher', 'synthetic-other-hash', 'teacher', 1),
-       ('counselor.phase6', 'CNS6', 'Phase 6 Counselor', 'synthetic-counselor-hash', 'counselor', 1)");
+$pdo->exec("INSERT INTO schools (code, name) VALUES ('PHASE6', 'Phase 6 School')");
+$pdo->exec("INSERT INTO academic_years (school_id, name, starts_on, ends_on, is_active)
+VALUES (1, '2026/2027', '2026-09-01', '2027-07-31', 1)");
+$pdo->exec("INSERT INTO academic_years (school_id, name, starts_on, ends_on, is_active)
+VALUES (1, '2025/2026', '2025-09-01', '2026-07-31', 0)");
+$pdo->exec("INSERT INTO users (school_id, username, employee_id, full_name, password_hash, role, is_active)
+VALUES (1, 'admin.phase6', 'ADM6', 'Phase 6 Admin', 'synthetic-admin-hash', 'admin', 1),
+       (1, 'teacher.phase6', 'TCH6', 'Phase 6 Teacher', 'synthetic-teacher-hash', 'teacher', 1),
+       (1, 'other.teacher6', 'TCH7', 'Other Teacher', 'synthetic-other-hash', 'teacher', 1),
+       (1, 'counselor.phase6', 'CNS6', 'Phase 6 Counselor', 'synthetic-counselor-hash', 'counselor', 1)");
 
 $pdo->exec("INSERT INTO classes (academic_year_id, name, level, branch, is_active)
 VALUES (1, 'P6-A', '2BAC', 'SP', 1),
@@ -145,7 +146,7 @@ expect_exception(
     'Unknown student history was accepted.'
 );
 expect_exception(
-    static fn() => $signature->save(2, 1, 'data:image/png;base64,' . base64_encode('not-a-png')),
+    static fn() => $signature->save(2, 1, 'data:image/png;base64,' . base64_encode('not-a-png'), 1),
     422,
     'Non-PNG signature payload was accepted.'
 );
@@ -171,11 +172,11 @@ expect_exception(
 $redPng = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC';
 $bluePng = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGNgYPgPAAEDAQAIicLsAAAAAElFTkSuQmCC';
 $png = 'data:image/png;base64,' . $redPng;
-$saved = $signature->save(2, 1, $png);
+$saved = $signature->save(2, 1, $png, 1);
 expect_true((int)$saved['id'] > 0, 'Initial signature save failed.');
 $firstSignatureId = (int)$saved['id'];
 
-$savedAgain = $signature->save(2, 1, 'data:image/png;base64,' . $bluePng);
+$savedAgain = $signature->save(2, 1, 'data:image/png;base64,' . $bluePng, 1);
 expect_true((int)$savedAgain['id'] === $firstSignatureId, 'Signature save created a duplicate row.');
 
 $pdo->exec("CREATE TRIGGER fail_phase6_signature_audit
@@ -183,7 +184,7 @@ BEFORE INSERT ON audit_logs
 FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'forced Phase 6 signature rollback'");
 $rollbackFailed = false;
 try {
-    $signature->save(2, 1, 'data:image/png;base64,' . $redPng);
+    $signature->save(2, 1, 'data:image/png;base64,' . $redPng, 1);
 } catch (PDOException) {
     $rollbackFailed = true;
 } finally {
@@ -191,12 +192,12 @@ try {
 }
 expect_true($rollbackFailed, 'Forced signature persistence failure did not surface.');
 
-$stored = $signature->get(2, 1);
+$stored = $signature->get(2, 1, 1);
 expect_true($stored !== null && (int)$stored['id'] === $firstSignatureId, 'Failed signature mutation did not preserve the previous row.');
 expect_true($stored['signature_data'] === 'data:image/png;base64,' . $bluePng, 'Failed signature mutation changed stored data.');
 
-expect_true($signature->delete(2, 1) === true, 'Signature delete should report a change.');
-expect_true($signature->delete(2, 1) === false, 'Signature delete should be idempotent.');
+expect_true($signature->delete(2, 1, 1) === true, 'Signature delete should report a change.');
+expect_true($signature->delete(2, 1, 1) === false, 'Signature delete should be idempotent.');
 
 expect_true(
     (int)$pdo->query("SELECT COUNT(*) FROM audit_logs WHERE action = 'signature.upsert' AND user_id = 2")->fetchColumn() >= 2,

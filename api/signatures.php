@@ -30,7 +30,7 @@ try {
 
     if ($method === 'GET') {
         Response::success([
-            'signature' => $repo->findByTeacherAndClass((int)$user['id'], $classId)
+            'signature' => $repo->findByTeacherAndClass((int)$user['id'], $classId, $schoolId)
         ]);
     }
 
@@ -45,8 +45,8 @@ try {
 
     try {
         if ($method === 'DELETE') {
-            $existing = $repo->findByTeacherAndClass((int)$user['id'], $classId);
-            $repo->delete((int)$user['id'], $classId);
+            $existing = $repo->findByTeacherAndClass((int)$user['id'], $classId, $schoolId);
+            $repo->delete((int)$user['id'], $classId, $schoolId);
 
             if ($existing !== null) {
                 $audit->record(
@@ -72,8 +72,8 @@ try {
             (string)($body['signature_data'] ?? '')
         );
 
-        $existing = $repo->findByTeacherAndClass((int)$user['id'], $classId);
-        $repo->upsert((int)$user['id'], $classId, $data);
+        $existing = $repo->findByTeacherAndClass((int)$user['id'], $classId, $schoolId);
+        $repo->upsert((int)$user['id'], $classId, $data, $schoolId);
 
         $audit->record(
             (int)$user['id'],

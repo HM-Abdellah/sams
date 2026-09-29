@@ -86,7 +86,7 @@ It never returns password hashes or SAMS Code hashes.
 ## Transition note
 
 Migration 006 backfills and then requires school ownership on existing installations.
-The fresh-install schema keeps the new school_id fields nullable during this intermediate step so the legacy test/seed surface can be migrated safely. The next tenant-enforcement change will make the fresh schema strict and update all application writers to require the authenticated school scope.
+The fresh-install schema now also requires users.school_id and academic_years.school_id. Application writer services fail closed when authenticated school scope is omitted, and repository boundaries used by signatures enforce school ownership through the class/academic-year and user relationships.
 
 ## Migration order
 

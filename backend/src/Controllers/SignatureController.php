@@ -29,16 +29,20 @@ final class SignatureController
             $classId = isset($params['id']) && ctype_digit((string)$params['id'])
                 ? (int)$params['id'] : 0;
             if ($classId < 1) return Response::json(['success' => false, 'error' => 'Invalid class.'], 422);
+            $schoolId = (int)$user['school_id'];
+            if ($schoolId < 1) {
+                return Response::json(['success' => false, 'error' => 'Invalid school scope.'], 500);
+            }
             if (!(new ClassRepository())->hasAccess(
                 $user['id'],
                 $user['role'],
                 $classId,
-                isset($user['school_id']) ? (int)$user['school_id'] : null
+                $schoolId
             )) {
                 return Response::json(['success' => false, 'error' => 'Forbidden.'], 403);
             }
             if ($request->method() === 'GET') {
-                return Response::json(['success' => true, 'data' => ['signature' => $this->service->get((int)$user['id'], $classId)]]);
+                return Response::json(['success' => true, 'data' => ['signature' => $this->service->get((int)$user['id'], $classId, $schoolId)]]);
             }
             if (!in_array($request->method(), ['POST', 'DELETE'], true)) {
                 return Response::json(['success' => false, 'error' => 'Method not allowed.'], 405, ['Allow' => 'GET, POST, DELETE']);
@@ -48,11 +52,11 @@ final class SignatureController
                 return Response::json(['success' => false, 'error' => 'Invalid CSRF token.'], 419);
             }
             if ($request->method() === 'DELETE') {
-                $changed = $this->service->delete((int)$user['id'], $classId);
+                $changed = $this->service->delete((int)$user['id'], $classId, $schoolId);
                 return Response::json(['success' => true, 'data' => ['changed' => $changed]]);
             }
             $body = $request->jsonBody();
-            $saved = $this->service->save((int)$user['id'], $classId, (string)($body['signature_data'] ?? ''));
+            $saved = $this->service->save((int)$user['id'], $classId, (string)($body['signature_data'] ?? ''), $schoolId);
             return Response::json(['success' => true, 'data' => ['signature' => $saved]]);
         } catch (\SAMS\Exceptions\RequestPayloadTooLargeException $e) {
             return Response::json(['success' => false, 'error' => $e->getMessage()], $e->httpStatus());

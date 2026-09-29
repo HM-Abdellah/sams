@@ -37,7 +37,7 @@ final class StudentTransferService
         if ($role !== 'admin') {
             throw new StudentWorkflowException('Forbidden.', 403);
         }
-        $this->assertSchoolIdWhenProvided($schoolId);
+        $schoolId = $this->requireSchoolId($schoolId);
         if ($studentId < 1 || $sourceClassId < 1 || $targetClassId < 1) {
             throw new StudentWorkflowException('Invalid transfer parameters.', 422);
         }
@@ -230,5 +230,14 @@ final class StudentTransferService
         if ($schoolId !== null && $schoolId < 1) {
             throw new \InvalidArgumentException('Invalid school.');
         }
+    }
+
+    private function requireSchoolId(?int $schoolId): int
+    {
+        if ($schoolId === null || $schoolId < 1) {
+            throw new \InvalidArgumentException('Authenticated school scope is required.');
+        }
+
+        return $schoolId;
     }
 }

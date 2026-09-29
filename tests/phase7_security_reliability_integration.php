@@ -120,10 +120,11 @@ $schema = file_get_contents(__DIR__ . '/../database/schema.sql');
 p7_expect($schema !== false, 'Unable to read schema.');
 p7_execute_schema($pdo, $schema);
 
+$pdo->exec("INSERT INTO schools (code, name) VALUES ('P7-SCHOOL', 'Phase 7 School')");
 $pdo->exec("INSERT INTO users
-    (username, employee_id, full_name, password_hash, role, is_active, session_version)
-VALUES ('phase7-admin', 'P7A', 'Phase 7 Admin', 'synthetic-hash', 'admin', 1, 1),
-       ('phase7-inactive', 'P7I', 'Phase 7 Inactive', 'synthetic-hash', 'teacher', 0, 1)");
+    (school_id, username, employee_id, full_name, password_hash, role, is_active, session_version)
+VALUES (1, 'phase7-admin', 'P7A', 'Phase 7 Admin', 'synthetic-hash', 'admin', 1, 1),
+       (1, 'phase7-inactive', 'P7I', 'Phase 7 Inactive', 'synthetic-hash', 'teacher', 0, 1)");
 
 p7_expect(
     (int)$pdo->getAttribute(PDO::ATTR_EMULATE_PREPARES) === 0,

@@ -102,6 +102,8 @@ expect_true($tables === $expectedTables, 'Fresh schema table set does not match 
 
 $pdo->exec("USE " . $db);
 
+$pdo->exec("INSERT INTO schools (code, name) VALUES ('INTEGRATION', 'Integration School')");
+
 expect_true(
     (int)$pdo->query("SELECT COUNT(*) FROM information_schema.KEY_COLUMN_USAGE
         WHERE TABLE_SCHEMA = " . $pdo->quote($db) . "
@@ -132,8 +134,8 @@ $stagingWorkbook = $stagingPath . '.xlsx';
 @unlink($stagingPath);
 
 $pdo->exec(
-    "INSERT INTO users (username, full_name, password_hash, role)
-     VALUES ('integration-admin', 'Integration Admin', 'hash-admin', 'admin')"
+    "INSERT INTO users (school_id, username, full_name, password_hash, role)
+     VALUES (1, 'integration-admin', 'Integration Admin', 'hash-admin', 'admin')"
 );
 
 try {
@@ -161,7 +163,8 @@ try {
         $stagingWorkbook,
         1,
         'integration-school.xlsx',
-        null
+        null,
+        1
     );
 
     expect_true($result['status'] === 'validated', 'Valid school workbook should be staged as validated.');
@@ -197,13 +200,13 @@ try {
 
 
 $pdo->exec(
-    "INSERT INTO academic_years (name, starts_on, ends_on, is_active)
-     VALUES ('2026-2027', '2026-09-01', '2027-07-31', 1)"
+    "INSERT INTO academic_years (school_id, name, starts_on, ends_on, is_active)
+     VALUES (1, '2026-2027', '2026-09-01', '2027-07-31', 1)"
 );
 
 $pdo->exec(
-    "INSERT INTO users (username, full_name, password_hash, role)
-     VALUES ('teacher1', 'Integration Teacher', 'hash-teacher', 'teacher')"
+    "INSERT INTO users (school_id, username, full_name, password_hash, role)
+     VALUES (1, 'teacher1', 'Integration Teacher', 'hash-teacher', 'teacher')"
 );
 
 $pdo->exec(

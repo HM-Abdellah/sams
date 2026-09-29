@@ -101,7 +101,7 @@ final class TeacherAttendanceService
             throw new AttendanceWorkflowException('Forbidden.', 403);
         }
 
-        $this->assertSchoolIdWhenProvided($schoolId);
+        $schoolId = $this->requireSchoolId($schoolId);
 
         $this->assertAccess($userId, $role, $classId, $schoolId);
 
@@ -379,5 +379,14 @@ final class TeacherAttendanceService
         if ($schoolId !== null && $schoolId < 1) {
             throw new \InvalidArgumentException('Invalid school.');
         }
+    }
+
+    private function requireSchoolId(?int $schoolId): int
+    {
+        if ($schoolId === null || $schoolId < 1) {
+            throw new \InvalidArgumentException('Authenticated school scope is required.');
+        }
+
+        return $schoolId;
     }
 }

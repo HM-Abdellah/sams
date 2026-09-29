@@ -51,10 +51,11 @@ if ($schema === false) throw new RuntimeException('Unable to read schema.');
 execute_schema($pdo, $schema);
 require_once __DIR__ . '/../backend/vendor/autoload.php';
 
-$pdo->exec("INSERT INTO academic_years (name, starts_on, ends_on, is_active) VALUES ('2026-2027', '2026-09-01', '2027-07-31', 1)");
-$pdo->exec("INSERT INTO users (username, full_name, password_hash, role) VALUES ('admin', 'Integration Admin', 'x', 'admin')");
-$pdo->exec("INSERT INTO users (username, full_name, password_hash, role) VALUES ('teacher', 'Integration Teacher', 'x', 'teacher')");
-$pdo->exec("INSERT INTO users (username, full_name, password_hash, role) VALUES ('other', 'Other Teacher', 'x', 'teacher')");
+$pdo->exec("INSERT INTO schools (code, name) VALUES ('ATTENDANCE', 'Attendance Test School')");
+$pdo->exec("INSERT INTO academic_years (school_id, name, starts_on, ends_on, is_active) VALUES (1, '2026-2027', '2026-09-01', '2027-07-31', 1)");
+$pdo->exec("INSERT INTO users (school_id, username, full_name, password_hash, role) VALUES (1, 'admin', 'Integration Admin', 'x', 'admin')");
+$pdo->exec("INSERT INTO users (school_id, username, full_name, password_hash, role) VALUES (1, 'teacher', 'Integration Teacher', 'x', 'teacher')");
+$pdo->exec("INSERT INTO users (school_id, username, full_name, password_hash, role) VALUES (1, 'other', 'Other Teacher', 'x', 'teacher')");
 $pdo->exec("INSERT INTO classes (academic_year_id, name, level, branch) VALUES (1, '2BAC-A', '2BAC', 'SP')");
 $pdo->exec("INSERT INTO classes (academic_year_id, name, level, branch) VALUES (1, '2BAC-B', '2BAC', 'SP')");
 $pdo->exec("INSERT INTO teacher_classes (teacher_id, class_id) VALUES (2, 1)");
@@ -106,7 +107,7 @@ $saved = $service->saveBulk(2, 'teacher', 1, [
     ['student_id' => 1, 'attendance_date' => '2026-09-23', 'period' => 1, 'action' => 'upsert', 'status' => 'absent'],
     ['student_id' => 2, 'attendance_date' => '2026-09-23', 'period' => 2, 'action' => 'upsert', 'status' => 'late'],
     ['student_id' => 2, 'attendance_date' => '2026-09-23', 'period' => 3, 'action' => 'delete'],
-]);
+], 1);
 expect_true($saved['changed'] === 2, 'Bulk save should report two changed rows.');
 expect_true($saved['unchanged'] === 1, 'Deleting a missing row should be a no-op.');
 expect_true((int)$pdo->query('SELECT COUNT(*) FROM attendance')->fetchColumn() === 2, 'Bulk save did not persist expected rows.');
@@ -120,7 +121,7 @@ $pdo->exec("INSERT INTO attendance_week_submissions
 
 $revised = $service->saveBulk(2, 'teacher', 1, [
     ['student_id' => 1, 'attendance_date' => '2026-09-23', 'period' => 1, 'action' => 'upsert', 'status' => 'late'],
-]);
+], 1);
 expect_true($revised['changed'] === 1, 'Changed attendance should be persisted.');
 $signatureStatus = (string)$pdo->query("SELECT status FROM attendance_week_signatures WHERE class_id = 1 AND teacher_id = 2 AND week_start = '2026-09-21'")->fetchColumn();
 expect_true($signatureStatus === 'needs_resign', 'Weekly signature was not invalidated after attendance correction.');
@@ -128,28 +129,28 @@ expect_true((int)$pdo->query("SELECT COUNT(*) FROM attendance_week_submissions W
 
 $noop = $service->saveBulk(2, 'teacher', 1, [
     ['student_id' => 1, 'attendance_date' => '2026-09-23', 'period' => 1, 'action' => 'upsert', 'status' => 'late'],
-]);
+], 1);
 expect_true($noop['changed'] === 0 && $noop['unchanged'] === 1, 'Exact no-op must not report a change.');
 
 expect_throw(
     static fn() => $service->saveBulk(2, 'teacher', 1, [
         ['student_id' => 1, 'attendance_date' => '2026-09-23', 'period' => 4, 'action' => 'upsert', 'status' => 'absent'],
         ['student_id' => 1, 'attendance_date' => '2026-09-23', 'period' => 4, 'action' => 'upsert', 'status' => 'late'],
-    ]),
+    ], 1),
     'Duplicate attendance keys inside one batch were accepted.'
 );
 
 expect_throw(
     static fn() => $service->saveBulk(2, 'teacher', 1, [
         ['student_id' => 4, 'attendance_date' => '2026-09-23', 'period' => 4, 'action' => 'upsert', 'status' => 'absent'],
-    ]),
+    ], 1),
     'Attendance for another class was accepted.'
 );
 
 expect_throw(
     static fn() => $service->saveBulk(2, 'teacher', 1, [
         ['student_id' => 1, 'attendance_date' => '2028-01-01', 'period' => 4, 'action' => 'upsert', 'status' => 'absent'],
-    ]),
+    ], 1),
     'Attendance outside the academic year was accepted.'
 );
 
@@ -160,7 +161,7 @@ $pdo->exec("INSERT INTO attendance_signoffs
 expect_throw(
     static fn() => $service->saveBulk(2, 'teacher', 1, [
         ['student_id' => 1, 'attendance_date' => '2026-09-23', 'period' => 5, 'action' => 'upsert', 'status' => 'absent'],
-    ]),
+    ], 1),
     'Signed lesson was editable without reopening.'
 );
 $pdo->exec('DELETE FROM attendance_signoffs');
@@ -177,7 +178,7 @@ expect_throw(
     static fn() => $service->saveBulk(2, 'teacher', 1, [
         ['student_id' => 1, 'attendance_date' => '2026-09-24', 'period' => 1, 'action' => 'upsert', 'status' => 'absent'],
         ['student_id' => 2, 'attendance_date' => '2026-09-24', 'period' => 2, 'action' => 'upsert', 'status' => 'late'],
-    ]),
+    ], 1),
     'Forced failure did not abort the attendance transaction.'
 );
 
@@ -188,7 +189,7 @@ $pdo->exec('DROP TRIGGER fail_attendance_audit');
 $recovered = $service->saveBulk(2, 'teacher', 1, [
     ['student_id' => 1, 'attendance_date' => '2026-09-24', 'period' => 1, 'action' => 'upsert', 'status' => 'absent'],
     ['student_id' => 2, 'attendance_date' => '2026-09-24', 'period' => 2, 'action' => 'upsert', 'status' => 'late'],
-]);
+], 1);
 expect_true($recovered['changed'] === 2, 'Attendance batch did not recover after rollback.');
 
 echo "[PASS] Phase 4 attendance workflow integration\n";

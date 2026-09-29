@@ -112,16 +112,18 @@ execute_schema($pdo, $schema);
 
 require_once __DIR__ . '/../backend/vendor/autoload.php';
 
+$pdo->exec("INSERT INTO schools (code, name) VALUES ('IMPORT-FINAL', 'Import Final School')");
+
 $pdo->exec(
-    "INSERT INTO academic_years (name, starts_on, ends_on, is_active)
+    "INSERT INTO academic_years (school_id, name, starts_on, ends_on, is_active)
      VALUES
-       ('2025-2026', '2025-09-01', '2026-07-31', 0),
-       ('2026-2027', '2026-09-01', '2027-07-31', 1)"
+       (1, '2025-2026', '2025-09-01', '2026-07-31', 0),
+       (1, '2026-2027', '2026-09-01', '2027-07-31', 1)"
 );
 
 $pdo->exec(
-    "INSERT INTO users (username, full_name, password_hash, role)
-     VALUES ('admin', 'Integration Admin', 'hash-admin', 'admin')"
+    "INSERT INTO users (school_id, username, full_name, password_hash, role)
+     VALUES (1, 'admin', 'Integration Admin', 'hash-admin', 'admin')"
 );
 
 $targetAcademicYearId = (int)$pdo->query(
@@ -202,11 +204,11 @@ try {
         $adminId,
         'valid-school.xlsx',
         $targetAcademicYearId
-    );
+    , 1);
 
     expect_true($staged['status'] === 'validated', 'Valid workbook should enter validated staging state.');
 
-    $reconciled = $reconciliation->reconcile((int)$staged['batch_id'], $adminId);
+    $reconciled = $reconciliation->reconcile((int)$staged['batch_id'], $adminId, 1);
     expect_true($reconciled['ready_to_import'] === true, 'Valid workbook should be ready after reconciliation.');
     expect_true($reconciled['summary']['new_students'] === 1, 'Reconciliation should identify one new student.');
     expect_true($reconciled['summary']['existing_students'] === 1, 'Reconciliation should identify one existing student.');
@@ -215,7 +217,7 @@ try {
         'Reconciliation must not create production students.'
     );
 
-    $committed = $reconciliation->commit((int)$staged['batch_id'], $adminId);
+    $committed = $reconciliation->commit((int)$staged['batch_id'], $adminId, 1);
     expect_true($committed['summary']['new_students'] === 1, 'Commit should create one new student.');
     expect_true($committed['summary']['existing_students'] === 1, 'Commit should reuse one existing student.');
     expect_true($committed['summary']['enrollments_created'] === 2, 'Commit should create two target-year enrollments.');
@@ -267,7 +269,7 @@ try {
     )->fetchColumn();
     expect_true($rowsImported === 2, 'All valid school-import rows should be marked imported.');
 
-    $again = $reconciliation->commit((int)$staged['batch_id'], $adminId);
+    $again = $reconciliation->commit((int)$staged['batch_id'], $adminId, 1);
     expect_true($again['already_imported'] === true, 'A second commit must be idempotent.');
     expect_true(
         (int)$pdo->query('SELECT COUNT(*) FROM students')->fetchColumn() === $beforeStudents + 1,
@@ -283,8 +285,8 @@ try {
             $adminId,
             'renamed-target-class.xlsx',
             $targetAcademicYearId
-        );
-        $renamedReconcile = $reconciliation->reconcile((int)$renamedStage['batch_id'], $adminId);
+        , 1);
+        $renamedReconcile = $reconciliation->reconcile((int)$renamedStage['batch_id'], $adminId, 1);
         expect_true($renamedReconcile['ready_to_import'] === true, 'Class rename guard fixture should reconcile cleanly.');
 
         $pdo->exec(
@@ -295,7 +297,7 @@ try {
 
         $renameBlocked = false;
         try {
-            $reconciliation->commit((int)$renamedStage['batch_id'], $adminId);
+            $reconciliation->commit((int)$renamedStage['batch_id'], $adminId, 1);
         } catch (SAMS\Exceptions\SchoolImportWorkflowException) {
             $renameBlocked = true;
         }
@@ -327,7 +329,7 @@ $warningRosterWorkbook = createWorkbook([
             $adminId,
             'duplicate-roster-warning.xlsx',
             $targetAcademicYearId
-        );
+        , 1);
 
         expect_true(
             $warningStage['status'] === 'validated',
@@ -338,13 +340,13 @@ $warningRosterWorkbook = createWorkbook([
             'Duplicate roster numbers should be counted as row warnings.'
         );
 
-        $warningReconcile = $reconciliation->reconcile((int)$warningStage['batch_id'], $adminId);
+        $warningReconcile = $reconciliation->reconcile((int)$warningStage['batch_id'], $adminId, 1);
         expect_true(
             $warningReconcile['ready_to_import'] === true,
             'Duplicate roster-number warnings must not block reconciliation.'
         );
 
-        $warningCommit = $reconciliation->commit((int)$warningStage['batch_id'], $adminId);
+        $warningCommit = $reconciliation->commit((int)$warningStage['batch_id'], $adminId, 1);
         expect_true(
             $warningCommit['summary']['new_students'] === 2,
             'Warning-only roster-number fixture should import both students.'
@@ -373,14 +375,14 @@ $warningRosterWorkbook = createWorkbook([
             $adminId,
             'school-import-fallback.md',
             $targetAcademicYearId
-        );
+        , 1);
 
         expect_true(
             $markdownStage['status'] === 'validated',
             'Markdown school import should enter validated staging state.'
         );
 
-        $markdownReconcile = $reconciliation->reconcile((int)$markdownStage['batch_id'], $adminId);
+        $markdownReconcile = $reconciliation->reconcile((int)$markdownStage['batch_id'], $adminId, 1);
         expect_true(
             $markdownReconcile['ready_to_import'] === true,
             'Markdown school import should be ready after reconciliation.'
@@ -390,7 +392,7 @@ $warningRosterWorkbook = createWorkbook([
             'Markdown reconciliation should identify both students as new.'
         );
 
-        $markdownCommit = $reconciliation->commit((int)$markdownStage['batch_id'], $adminId);
+        $markdownCommit = $reconciliation->commit((int)$markdownStage['batch_id'], $adminId, 1);
         expect_true(
             $markdownCommit['summary']['new_students'] === 2,
             'Markdown commit should create both students.'
@@ -417,8 +419,8 @@ $warningRosterWorkbook = createWorkbook([
             $adminId,
             'identity-conflict.xlsx',
             $targetAcademicYearId
-        );
-        $conflictReconcile = $reconciliation->reconcile((int)$conflictStage['batch_id'], $adminId);
+        , 1);
+        $conflictReconcile = $reconciliation->reconcile((int)$conflictStage['batch_id'], $adminId, 1);
         expect_true($conflictReconcile['ready_to_import'] === false, 'Identity conflict must block import.');
 
         $conflictRow = $pdo->query(
@@ -438,7 +440,7 @@ $warningRosterWorkbook = createWorkbook([
 
         $conflictBlocked = false;
         try {
-            $reconciliation->commit((int)$conflictStage['batch_id'], $adminId);
+            $reconciliation->commit((int)$conflictStage['batch_id'], $adminId, 1);
         } catch (SAMS\Exceptions\SchoolImportWorkflowException) {
             $conflictBlocked = true;
         }
@@ -459,8 +461,8 @@ $warningRosterWorkbook = createWorkbook([
             $adminId,
             'enrollment-conflict.xlsx',
             $targetAcademicYearId
-        );
-        $enrollmentReconcile = $reconciliation->reconcile((int)$enrollmentStage['batch_id'], $adminId);
+        , 1);
+        $enrollmentReconcile = $reconciliation->reconcile((int)$enrollmentStage['batch_id'], $adminId, 1);
         expect_true($enrollmentReconcile['ready_to_import'] === false, 'Existing enrollment in another target class must block import.');
 
         $enrollmentRow = $pdo->query(
@@ -491,13 +493,13 @@ $warningRosterWorkbook = createWorkbook([
             $adminId,
             'unmapped-class.xlsx',
             $targetAcademicYearId
-        );
-        $unmappedReconcile = $reconciliation->reconcile((int)$unmappedStage['batch_id'], $adminId);
+        , 1);
+        $unmappedReconcile = $reconciliation->reconcile((int)$unmappedStage['batch_id'], $adminId, 1);
         expect_true($unmappedReconcile['ready_to_import'] === false, 'Unmapped class must block import.');
 
         $unmappedBlocked = false;
         try {
-            $reconciliation->commit((int)$unmappedStage['batch_id'], $adminId);
+            $reconciliation->commit((int)$unmappedStage['batch_id'], $adminId, 1);
         } catch (SAMS\Exceptions\SchoolImportWorkflowException) {
             $unmappedBlocked = true;
         }
@@ -516,8 +518,8 @@ $warningRosterWorkbook = createWorkbook([
             $adminId,
             'transactional-failure.xlsx',
             $targetAcademicYearId
-        );
-        $transactionReconcile = $reconciliation->reconcile((int)$transactionStage['batch_id'], $adminId);
+        , 1);
+        $transactionReconcile = $reconciliation->reconcile((int)$transactionStage['batch_id'], $adminId, 1);
         expect_true($transactionReconcile['ready_to_import'] === true, 'Transactional failure fixture should reconcile cleanly.');
 
         $pdo->exec(
@@ -536,7 +538,7 @@ $warningRosterWorkbook = createWorkbook([
 
         $rolledBack = false;
         try {
-            $reconciliation->commit((int)$transactionStage['batch_id'], $adminId);
+            $reconciliation->commit((int)$transactionStage['batch_id'], $adminId, 1);
         } catch (Throwable) {
             $rolledBack = true;
         }

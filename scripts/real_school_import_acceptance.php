@@ -436,8 +436,16 @@ try {
         acceptance_fail('No active admin user exists in the isolated database.');
     }
 
+    $adminSchoolId = (int)$pdo->query(
+        "SELECT school_id FROM users WHERE id = {$adminUserId} LIMIT 1"
+    )->fetchColumn();
+
+    if ($adminSchoolId < 1) {
+        acceptance_fail('Selected admin user has no school ownership.');
+    }
+
     $targetYearStmt = $pdo->prepare(
-        'SELECT id, name, starts_on, ends_on, is_active
+        'SELECT id, school_id, name, starts_on, ends_on, is_active
          FROM academic_years
          WHERE id = ?
          LIMIT 1'
@@ -449,6 +457,10 @@ try {
         acceptance_fail(
             "Target academic year {$targetAcademicYearId} does not exist."
         );
+    }
+
+    if ((int)($targetYear['school_id'] ?? 0) !== $adminSchoolId) {
+        acceptance_fail('Target academic year does not belong to the selected admin school.');
     }
 
     $initialCounts = acceptance_counts($pdo);
@@ -575,7 +587,7 @@ try {
         $adminUserId,
         basename($xlsxPath),
         $targetAcademicYearId
-    );
+    , $adminSchoolId);
 
     if (($xlsxStaged['status'] ?? '') !== 'validated') {
         acceptance_fail('Real XLSX did not reach validated staging state.');
@@ -586,7 +598,7 @@ try {
         $adminUserId,
         basename($mdPath),
         $targetAcademicYearId
-    );
+    , $adminSchoolId);
 
     if (($mdStaged['status'] ?? '') !== 'validated') {
         acceptance_fail('Real Markdown did not reach validated staging state.');
@@ -650,7 +662,7 @@ try {
     $xlsxReconciled = $reconciliation->reconcile(
         $xlsxBatchId,
         $adminUserId
-    );
+    , $adminSchoolId);
 
     acceptance_assert_same_counts(
         $beforeReconcile,
@@ -700,7 +712,7 @@ try {
     $xlsxCommitted = $reconciliation->commit(
         $xlsxBatchId,
         $adminUserId
-    );
+    , $adminSchoolId);
 
     $afterFirstCommit = acceptance_counts($pdo);
 
@@ -748,7 +760,7 @@ try {
     $secondCommit = $reconciliation->commit(
         $xlsxBatchId,
         $adminUserId
-    );
+    , $adminSchoolId);
 
     if (($secondCommit['already_imported'] ?? false) !== true) {
         acceptance_fail('Second real XLSX commit was not idempotent.');
@@ -767,7 +779,7 @@ try {
         $adminUserId,
         basename($xlsxPath) . '.rollback-probe.xlsx',
         $targetAcademicYearId
-    );
+    , $adminSchoolId);
 
     if (($rollbackStaged['status'] ?? '') !== 'validated') {
         acceptance_fail('Rollback-probe XLSX did not reach validated staging state.');
@@ -778,7 +790,7 @@ try {
     $rollbackReconciled = $reconciliation->reconcile(
         $rollbackBatchId,
         $adminUserId
-    );
+    , $adminSchoolId);
 
     if (($rollbackReconciled['ready_to_import'] ?? false) !== true) {
         acceptance_fail('Rollback-probe XLSX reconciliation did not become ready_to_import.');
@@ -839,7 +851,7 @@ try {
         $reconciliation->commit(
             $rollbackBatchId,
             $adminUserId
-        );
+        , $adminSchoolId);
     } catch (\Throwable) {
         $rollbackFailed = true;
     } finally {
@@ -876,7 +888,7 @@ try {
     $recovered = $reconciliation->commit(
         $rollbackBatchId,
         $adminUserId
-    );
+    , $adminSchoolId);
 
     $afterRecovery = acceptance_counts($pdo);
 
@@ -904,7 +916,7 @@ try {
     $recoveryReplay = $reconciliation->commit(
         $rollbackBatchId,
         $adminUserId
-    );
+    , $adminSchoolId);
 
     if (($recoveryReplay['already_imported'] ?? false) !== true) {
         acceptance_fail('Rollback recovery replay was not idempotent.');

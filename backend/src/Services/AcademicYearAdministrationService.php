@@ -32,7 +32,7 @@ final class AcademicYearAdministrationService
         ?int $schoolId = null
     ): int {
         $this->assertAdminId($adminId);
-        $this->assertSchoolIdWhenProvided($schoolId);
+        $schoolId = $this->requireSchoolId($schoolId);
 
         $name = $this->validator->validateName($name);
         [$startsOn, $endsOn] = $this->validator->validateRange($startsOn, $endsOn);
@@ -89,7 +89,7 @@ final class AcademicYearAdministrationService
         ?int $schoolId = null
     ): void {
         $this->assertAdminId($adminId);
-        $this->assertSchoolIdWhenProvided($schoolId);
+        $schoolId = $this->requireSchoolId($schoolId);
         if ($yearId < 1) {
             throw new \InvalidArgumentException('Invalid academic year.');
         }
@@ -149,5 +149,14 @@ final class AcademicYearAdministrationService
         if ($schoolId !== null && $schoolId < 1) {
             throw new \InvalidArgumentException('Invalid school.');
         }
+    }
+
+    private function requireSchoolId(?int $schoolId): int
+    {
+        if ($schoolId === null || $schoolId < 1) {
+            throw new \InvalidArgumentException('Authenticated school scope is required.');
+        }
+
+        return $schoolId;
     }
 }
