@@ -1,7 +1,18 @@
 import { apiClient } from '../../services/api/client.ts'
 
 export interface ReportStudentTotals {
-  [key: string]: unknown
+  id: number
+  student_number: string | null
+  massar_code: string | null
+  first_name: string
+  last_name: string
+  birth_date: string | null
+  present_count: number
+  absent_count: number
+  late_count: number
+  excused_count: number
+  other_count: number
+  recorded_count: number
 }
 
 export interface MonthlyReportData {

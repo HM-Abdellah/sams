@@ -8,6 +8,7 @@ export interface AppRouteDefinition {
 }
 
 export const TEACHER_ROUTES = [
+  { path: '/app/teacher', label: 'teacher.dashboard', roles: ['teacher'] },
   { path: '/app/attendance', label: 'navigation.attendance', roles: ['teacher'] },
   { path: '/app/students', label: 'navigation.students', roles: ['teacher'] },
   { path: '/app/signatures', label: 'navigation.signatures', roles: ['teacher'] },

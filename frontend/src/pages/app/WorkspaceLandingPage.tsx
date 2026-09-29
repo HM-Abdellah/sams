@@ -11,7 +11,7 @@ export function WorkspaceLandingPage() {
   }
 
   if (session.user.role === 'teacher') {
-    return <Navigate to="/app/attendance" replace />
+    return <Navigate to="/app/teacher" replace />
   }
 
   return (

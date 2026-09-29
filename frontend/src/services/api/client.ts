@@ -5,6 +5,8 @@ import type { ApiEnvelope, AuthSessionData } from './types.ts'
 export type HttpMethod = 'GET' | 'POST' | 'DELETE'
 export type CsrfMode = 'required' | 'omit'
 
+let sharedCsrfToken: string | null = null
+
 export interface RequestOptions {
   method?: HttpMethod
   body?: unknown
@@ -14,7 +16,11 @@ export interface RequestOptions {
 }
 
 export class ApiClient {
-  private csrfToken: string | null = null
+  private readonly baseUrl: string
+
+  constructor(baseUrl = env.apiBaseUrl) {
+    this.baseUrl = baseUrl
+  }
 
   async request<T>(path: string, options: RequestOptions = {}): Promise<T> {
     const method = options.method ?? 'GET'
@@ -27,10 +33,10 @@ export class ApiClient {
     }
 
     if (csrf === 'required') {
-      if (this.csrfToken === null) {
+      if (sharedCsrfToken === null) {
         throw new ApiError(419, 'CSRF token is not initialized.')
       }
-      headers.set('X-CSRF-Token', this.csrfToken)
+      headers.set('X-CSRF-Token', sharedCsrfToken)
     }
 
     const requestInit: RequestInit = {
@@ -61,15 +67,15 @@ export class ApiClient {
     return this.request<AuthSessionData>('/auth/session')
   }
   setCsrfToken(token: string): void {
-    this.csrfToken = token
+    sharedCsrfToken = token
   }
 
   clearCsrfToken(): void {
-    this.csrfToken = null
+    sharedCsrfToken = null
   }
 
   private url(path: string): string {
-    return `${env.apiBaseUrl}/${path.replace(/^\/+/, '')}`
+    return `${this.baseUrl}/${path.replace(/^\/+/, '')}`
   }
 
   private async readEnvelope<T>(response: Response): Promise<ApiEnvelope<T>> {
@@ -108,9 +114,10 @@ export class ApiClient {
     if (!data || typeof data !== 'object' || !('csrf' in data)) return
     const csrf = (data as { csrf?: unknown }).csrf
     if (typeof csrf === 'string' && csrf !== '') {
-      this.csrfToken = csrf
+      sharedCsrfToken = csrf
     }
   }
 }
 
 export const apiClient = new ApiClient()
+export const legacyApiClient = new ApiClient('/api')

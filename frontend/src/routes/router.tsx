@@ -10,6 +10,7 @@ import { TeacherAttendancePage } from '../pages/app/TeacherAttendancePage.tsx'
 import { TeacherStudentsPage } from '../pages/app/TeacherStudentsPage.tsx'
 import { TeacherSignaturesPage } from '../pages/app/TeacherSignaturesPage.tsx'
 import { TeacherReportsPage } from '../pages/app/TeacherReportsPage.tsx'
+import { TeacherDashboardPage } from '../pages/app/TeacherDashboardPage.tsx'
 import { WorkspaceLandingPage } from '../pages/app/WorkspaceLandingPage.tsx'
 import { PublicOnlyRoute } from './guards/PublicOnlyRoute.tsx'
 import { ProtectedRoute } from './guards/ProtectedRoute.tsx'
@@ -48,7 +49,7 @@ const router = createBrowserRouter([
           {
             element: <RoleRoute roles={['teacher']} />,
             children: [
-              { path: '/app/teacher', element: <Navigate to="/app/attendance" replace /> },
+              { path: '/app/teacher', element: <TeacherDashboardPage /> },
               { path: '/app/attendance', element: <TeacherAttendancePage /> },
               { path: '/app/students', element: <TeacherStudentsPage /> },
               { path: '/app/signatures', element: <TeacherSignaturesPage /> },
