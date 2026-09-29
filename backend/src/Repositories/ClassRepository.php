@@ -8,120 +8,173 @@ use SAMS\Helpers\Database;
 
 final class ClassRepository
 {
-    public function forUser(int $userId, string $role): array
+    public function forUser(int $userId, string $role, ?int $schoolId = null): array
     {
         $pdo = Database::connection();
 
-        if (in_array($role, ['admin', 'counselor'], true)) {
-            return $pdo->query(
-                'SELECT c.id, c.name, c.level, c.branch, c.academic_year_id
-                 FROM classes c
-                 INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-                 WHERE c.is_active = 1 AND ay.is_active = 1
-                 ORDER BY c.name'
-            )->fetchAll();
+        if ($schoolId !== null) {
+            $this->assertSchoolId($schoolId);
         }
 
-        $stmt = $pdo->prepare(
-            'SELECT c.id, c.name, c.level, c.branch, c.academic_year_id
-             FROM classes c
-             INNER JOIN teacher_classes tc ON tc.class_id = c.id
-             INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-             WHERE tc.teacher_id = ? AND c.is_active = 1 AND ay.is_active = 1
-             ORDER BY c.name'
-        );
-        $stmt->execute([$userId]);
+        if (in_array($role, ['admin', 'counselor'], true)) {
+            $sql = 'SELECT c.id, c.name, c.level, c.branch, c.academic_year_id
+                    FROM classes c
+                    INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+                    WHERE c.is_active = 1 AND ay.is_active = 1';
+            $params = [];
+
+            if ($schoolId !== null) {
+                $sql .= ' AND ay.school_id = ?';
+                $params[] = $schoolId;
+            }
+
+            $sql .= ' ORDER BY c.name';
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetchAll();
+        }
+
+        $sql = 'SELECT c.id, c.name, c.level, c.branch, c.academic_year_id
+                FROM classes c
+                INNER JOIN teacher_classes tc ON tc.class_id = c.id
+                INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+                WHERE tc.teacher_id = ? AND c.is_active = 1 AND ay.is_active = 1';
+        $params = [$userId];
+
+        if ($schoolId !== null) {
+            $sql .= ' AND ay.school_id = ?';
+            $params[] = $schoolId;
+        }
+
+        $sql .= ' ORDER BY c.name';
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
         return $stmt->fetchAll();
     }
 
-    public function allForAdmin(): array
+    public function allForAdmin(?int $schoolId = null): array
     {
-        return Database::connection()->query(
-            'SELECT
-                c.id,
-                c.name,
-                c.level,
-                c.branch,
-                c.academic_year_id,
-                c.is_active,
-                ay.name AS academic_year_name,
-                ay.is_active AS academic_year_active
-             FROM classes c
-             INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-             ORDER BY ay.starts_on DESC, c.name, c.id'
-        )->fetchAll();
+        $sql = 'SELECT
+                    c.id,
+                    c.name,
+                    c.level,
+                    c.branch,
+                    c.academic_year_id,
+                    c.is_active,
+                    ay.name AS academic_year_name,
+                    ay.is_active AS academic_year_active
+                FROM classes c
+                INNER JOIN academic_years ay ON ay.id = c.academic_year_id';
+        $params = [];
+
+        if ($schoolId !== null) {
+            $this->assertSchoolId($schoolId);
+            $sql .= ' WHERE ay.school_id = ?';
+            $params[] = $schoolId;
+        }
+
+        $sql .= ' ORDER BY ay.starts_on DESC, c.name, c.id';
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
     }
 
-    public function find(int $classId): ?array
+    public function find(int $classId, ?int $schoolId = null): ?array
     {
-        $stmt = Database::connection()->prepare(
-            'SELECT
-                c.id,
-                c.name,
-                c.level,
-                c.branch,
-                c.academic_year_id,
-                c.is_active,
-                ay.name AS academic_year_name,
-                ay.starts_on AS academic_year_starts_on,
-                ay.ends_on AS academic_year_ends_on,
-                ay.is_active AS academic_year_active
-             FROM classes c
-             INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-             WHERE c.id = ?
-             LIMIT 1'
-        );
-        $stmt->execute([$classId]);
+        $sql = 'SELECT
+                    c.id,
+                    c.name,
+                    c.level,
+                    c.branch,
+                    c.academic_year_id,
+                    c.is_active,
+                    ay.school_id,
+                    ay.name AS academic_year_name,
+                    ay.starts_on AS academic_year_starts_on,
+                    ay.ends_on AS academic_year_ends_on,
+                    ay.is_active AS academic_year_active
+                FROM classes c
+                INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+                WHERE c.id = ?';
+        $params = [$classId];
+
+        if ($schoolId !== null) {
+            $this->assertSchoolId($schoolId);
+            $sql .= ' AND ay.school_id = ?';
+            $params[] = $schoolId;
+        }
+
+        $sql .= ' LIMIT 1';
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
         $row = $stmt->fetch();
         return $row ?: null;
     }
 
-    public function findByAcademicYearAndName(int $academicYearId, string $name): ?array
-    {
-        $stmt = Database::connection()->prepare(
-            'SELECT
-                c.id,
-                c.name,
-                c.level,
-                c.branch,
-                c.academic_year_id,
-                c.is_active,
-                ay.name AS academic_year_name,
-                ay.starts_on AS academic_year_starts_on,
-                ay.ends_on AS academic_year_ends_on,
-                ay.is_active AS academic_year_active
-             FROM classes c
-             INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-             WHERE c.academic_year_id = ? AND c.name = ?
-             LIMIT 1'
-        );
-        $stmt->execute([$academicYearId, $name]);
+    public function findByAcademicYearAndName(
+        int $academicYearId,
+        string $name,
+        ?int $schoolId = null
+    ): ?array {
+        $sql = 'SELECT
+                    c.id,
+                    c.name,
+                    c.level,
+                    c.branch,
+                    c.academic_year_id,
+                    c.is_active,
+                    ay.school_id,
+                    ay.name AS academic_year_name,
+                    ay.starts_on AS academic_year_starts_on,
+                    ay.ends_on AS academic_year_ends_on,
+                    ay.is_active AS academic_year_active
+                FROM classes c
+                INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+                WHERE c.academic_year_id = ? AND c.name = ?';
+        $params = [$academicYearId, $name];
+
+        if ($schoolId !== null) {
+            $this->assertSchoolId($schoolId);
+            $sql .= ' AND ay.school_id = ?';
+            $params[] = $schoolId;
+        }
+
+        $sql .= ' LIMIT 1';
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
         $row = $stmt->fetch();
 
         return $row ?: null;
     }
 
-    public function findForUpdate(int $classId): ?array
+    public function findForUpdate(int $classId, ?int $schoolId = null): ?array
     {
-        $stmt = Database::connection()->prepare(
-            'SELECT
-                c.id,
-                c.name,
-                c.level,
-                c.branch,
-                c.academic_year_id,
-                c.is_active,
-                ay.name AS academic_year_name,
-                ay.starts_on AS academic_year_starts_on,
-                ay.ends_on AS academic_year_ends_on,
-                ay.is_active AS academic_year_active
-             FROM classes c
-             INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-             WHERE c.id = ?
-             LIMIT 1
-             FOR UPDATE'
-        );
-        $stmt->execute([$classId]);
+        $sql = 'SELECT
+                    c.id,
+                    c.name,
+                    c.level,
+                    c.branch,
+                    c.academic_year_id,
+                    c.is_active,
+                    ay.school_id,
+                    ay.name AS academic_year_name,
+                    ay.starts_on AS academic_year_starts_on,
+                    ay.ends_on AS academic_year_ends_on,
+                    ay.is_active AS academic_year_active
+                FROM classes c
+                INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+                WHERE c.id = ?';
+        $params = [$classId];
+
+        if ($schoolId !== null) {
+            $this->assertSchoolId($schoolId);
+            $sql .= ' AND ay.school_id = ?';
+            $params[] = $schoolId;
+        }
+
+        $sql .= ' LIMIT 1 FOR UPDATE';
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
         $row = $stmt->fetch();
 
         return $row ?: null;
@@ -163,16 +216,31 @@ final class ClassRepository
         $stmt->execute([$active ? 1 : 0, $classId]);
     }
 
-    public function hasHistoricalAccess(int $userId, string $role, int $classId): bool
-    {
+    public function hasHistoricalAccess(
+        int $userId,
+        string $role,
+        int $classId,
+        ?int $schoolId = null
+    ): bool {
+        if ($schoolId !== null) {
+            $this->assertSchoolId($schoolId);
+        }
+
         if (in_array($role, ['admin', 'counselor'], true)) {
-            $stmt = Database::connection()->prepare(
-                'SELECT 1
-                 FROM classes
-                 WHERE id = ?
-                 LIMIT 1'
-            );
-            $stmt->execute([$classId]);
+            $sql = 'SELECT 1
+                    FROM classes c
+                    INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+                    WHERE c.id = ?';
+            $params = [$classId];
+
+            if ($schoolId !== null) {
+                $sql .= ' AND ay.school_id = ?';
+                $params[] = $schoolId;
+            }
+
+            $sql .= ' LIMIT 1';
+            $stmt = Database::connection()->prepare($sql);
+            $stmt->execute($params);
             return (bool)$stmt->fetchColumn();
         }
 
@@ -180,39 +248,73 @@ final class ClassRepository
             return false;
         }
 
-        $stmt = Database::connection()->prepare(
-            'SELECT 1
-             FROM classes c
-             INNER JOIN teacher_classes tc ON tc.class_id = c.id
-             WHERE c.id = ? AND tc.teacher_id = ?
-             LIMIT 1'
-        );
-        $stmt->execute([$classId, $userId]);
+        $sql = 'SELECT 1
+                FROM classes c
+                INNER JOIN teacher_classes tc ON tc.class_id = c.id
+                INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+                WHERE c.id = ? AND tc.teacher_id = ?';
+        $params = [$classId, $userId];
+
+        if ($schoolId !== null) {
+            $sql .= ' AND ay.school_id = ?';
+            $params[] = $schoolId;
+        }
+
+        $sql .= ' LIMIT 1';
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
 
         return (bool)$stmt->fetchColumn();
     }
 
-    public function hasAccess(int $userId, string $role, int $classId): bool
-    {
+    public function hasAccess(
+        int $userId,
+        string $role,
+        int $classId,
+        ?int $schoolId = null
+    ): bool {
+        if ($schoolId !== null) {
+            $this->assertSchoolId($schoolId);
+        }
+
         if (in_array($role, ['admin', 'counselor'], true)) {
-            $stmt = Database::connection()->prepare(
-                'SELECT 1
-                 FROM classes c
-                 INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-                 WHERE c.id = ? AND c.is_active = 1 AND ay.is_active = 1'
-            );
-            $stmt->execute([$classId]);
+            $sql = 'SELECT 1
+                    FROM classes c
+                    INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+                    WHERE c.id = ? AND c.is_active = 1 AND ay.is_active = 1';
+            $params = [$classId];
+
+            if ($schoolId !== null) {
+                $sql .= ' AND ay.school_id = ?';
+                $params[] = $schoolId;
+            }
+
+            $stmt = Database::connection()->prepare($sql);
+            $stmt->execute($params);
             return (bool)$stmt->fetchColumn();
         }
 
-        $stmt = Database::connection()->prepare(
-            'SELECT 1
-             FROM classes c
-             INNER JOIN teacher_classes tc ON tc.class_id = c.id
-             INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-             WHERE c.id = ? AND c.is_active = 1 AND ay.is_active = 1 AND tc.teacher_id = ?'
-        );
-        $stmt->execute([$classId, $userId]);
+        $sql = 'SELECT 1
+                FROM classes c
+                INNER JOIN teacher_classes tc ON tc.class_id = c.id
+                INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+                WHERE c.id = ? AND c.is_active = 1 AND ay.is_active = 1 AND tc.teacher_id = ?';
+        $params = [$classId, $userId];
+
+        if ($schoolId !== null) {
+            $sql .= ' AND ay.school_id = ?';
+            $params[] = $schoolId;
+        }
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
         return (bool)$stmt->fetchColumn();
+    }
+
+    private function assertSchoolId(int $schoolId): void
+    {
+        if ($schoolId < 1) {
+            throw new \InvalidArgumentException('Invalid school.');
+        }
     }
 }

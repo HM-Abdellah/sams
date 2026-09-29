@@ -31,11 +31,13 @@ final class StudentTransferService
         int $studentId,
         int $sourceClassId,
         int $targetClassId,
-        string $effectiveDate
+        string $effectiveDate,
+        ?int $schoolId = null
     ): array {
         if ($role !== 'admin') {
             throw new StudentWorkflowException('Forbidden.', 403);
         }
+        $this->assertSchoolIdWhenProvided($schoolId);
         if ($studentId < 1 || $sourceClassId < 1 || $targetClassId < 1) {
             throw new StudentWorkflowException('Invalid transfer parameters.', 422);
         }
@@ -57,11 +59,11 @@ final class StudentTransferService
         $pdo->beginTransaction();
 
         try {
-            $lockedClasses = $this->lockClasses($sourceClassId, $targetClassId);
+            $lockedClasses = $this->lockClasses($sourceClassId, $targetClassId, $schoolId);
             $sourceClass = $lockedClasses[$sourceClassId];
             $targetClass = $lockedClasses[$targetClassId];
 
-            if (!$this->classes->hasAccess($userId, 'admin', $sourceClassId)) {
+            if (!$this->classes->hasAccess($userId, 'admin', $sourceClassId, $schoolId)) {
                 throw new StudentWorkflowException('Forbidden.', 403);
             }
 
@@ -74,7 +76,10 @@ final class StudentTransferService
                 throw new StudentWorkflowException('Student not found.', 404);
             }
 
-            $academicYear = $this->academicYears->find((int)$sourceClass['academic_year_id']);
+            $academicYear = $this->academicYears->find(
+                (int)$sourceClass['academic_year_id'],
+                $schoolId
+            );
             if ($academicYear === null) {
                 throw new StudentWorkflowException('Academic year not found.', 422);
             }
@@ -196,14 +201,18 @@ final class StudentTransferService
     }
 
     /** @return array<int,array<string,mixed>> */
-    private function lockClasses(int $sourceClassId, int $targetClassId): array
+    private function lockClasses(
+        int $sourceClassId,
+        int $targetClassId,
+        ?int $schoolId = null
+    ): array
     {
         $ids = array_values(array_unique([$sourceClassId, $targetClassId]));
         sort($ids, SORT_NUMERIC);
         $locked = [];
 
         foreach ($ids as $classId) {
-            $row = $this->classes->findForUpdate($classId);
+            $row = $this->classes->findForUpdate($classId, $schoolId);
             if ($row === null) {
                 throw new StudentWorkflowException(
                     $classId === $targetClassId ? 'Target class not found.' : 'Current class not found.',
@@ -214,5 +223,12 @@ final class StudentTransferService
         }
 
         return $locked;
+    }
+
+    private function assertSchoolIdWhenProvided(?int $schoolId): void
+    {
+        if ($schoolId !== null && $schoolId < 1) {
+            throw new \InvalidArgumentException('Invalid school.');
+        }
     }
 }

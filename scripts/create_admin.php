@@ -23,6 +23,20 @@ try {
     $username = 'admin';
     $fullName = 'SAMS Administrator';
 
+    $schoolId = $pdo->query(
+        "SELECT id FROM schools WHERE status = 'active' ORDER BY id LIMIT 1"
+    )->fetchColumn();
+
+    if ($schoolId === false) {
+        $schoolStmt = $pdo->prepare(
+            "INSERT INTO schools (code, name, status) VALUES (?, ?, 'active')"
+        );
+        $schoolStmt->execute(['SAMS-LOCAL', 'SAMS Development School']);
+        $schoolId = (int)$pdo->lastInsertId();
+    }
+
+    $schoolId = (int)$schoolId;
+
     fwrite(STDOUT, "Enter a new admin password: ");
     $password = trim((string)fgets(STDIN));
     if (strlen($password) < 10) {
@@ -33,11 +47,11 @@ try {
     if ($hash === false) throw new RuntimeException('Password hashing failed.');
 
     $stmt = $pdo->prepare(
-        'INSERT INTO users (username, full_name, password_hash, role, is_active)
-         VALUES (?, ?, ?, \'admin\', 1)
-         ON DUPLICATE KEY UPDATE full_name=VALUES(full_name), password_hash=VALUES(password_hash), role=\'admin\', is_active=1'
+        'INSERT INTO users (school_id, username, full_name, password_hash, role, account_status, is_active)
+         VALUES (?, ?, ?, ?, \'admin\', \'active\', 1)
+         ON DUPLICATE KEY UPDATE school_id=VALUES(school_id), full_name=VALUES(full_name), password_hash=VALUES(password_hash), role=\'admin\', account_status=\'active\', is_active=1'
     );
-    $stmt->execute([$username, $fullName, $hash]);
+    $stmt->execute([$schoolId, $username, $fullName, $hash]);
 
     fwrite(STDOUT, "Admin account ready: {$username}\n");
 } catch (Throwable $e) {

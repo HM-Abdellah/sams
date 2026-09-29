@@ -38,15 +38,20 @@ final class ReportService
         return [$monday->format('Y-m-d'), $monday->modify('+5 days')->format('Y-m-d')];
     }
 
-    public function monthly(int $userId, string $role, int $classId, string $month): array
-    {
+    public function monthly(
+        int $userId,
+        string $role,
+        int $classId,
+        string $month,
+        ?int $schoolId = null
+    ): array {
         [$start, $end] = $this->monthRange($month);
 
-        if (!$this->classes->hasAccess($userId, $role, $classId)) {
+        if (!$this->classes->hasAccess($userId, $role, $classId, $schoolId)) {
             throw new ArchiveReportException('Forbidden.', 403);
         }
 
-        $class = $this->classes->find($classId);
+        $class = $this->classes->find($classId, $schoolId);
         if ($class === null) {
             throw new ArchiveReportException('Class not found.', 404);
         }

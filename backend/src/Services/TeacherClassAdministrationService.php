@@ -20,19 +20,21 @@ final class TeacherClassAdministrationService
         private readonly AuditLogRepository $audit = new AuditLogRepository(),
     ) {}
 
-    public function forClass(int $classId): array
+    public function forClass(int $classId, ?int $schoolId = null): array
     {
         if ($classId < 1) throw new \InvalidArgumentException('Invalid class.');
-        return $this->repository->forClass($classId);
+        $this->assertSchoolIdWhenProvided($schoolId);
+        return $this->repository->forClass($classId, $schoolId);
     }
 
-    public function forTeacher(int $teacherId): array
+    public function forTeacher(int $teacherId, ?int $schoolId = null): array
     {
         if ($teacherId < 1) throw new \InvalidArgumentException('Invalid teacher.');
-        return $this->repository->forTeacher($teacherId);
+        $this->assertSchoolIdWhenProvided($schoolId);
+        return $this->repository->forTeacher($teacherId, $schoolId);
     }
 
-    public function assign(int $adminId, int $teacherId, int $classId): bool
+    public function assign(int $adminId, int $teacherId, int $classId, ?int $schoolId = null): bool
     {
         $this->assertAdminId($adminId);
 
@@ -44,8 +46,8 @@ final class TeacherClassAdministrationService
         $pdo->beginTransaction();
 
         try {
-            $teacher = $this->users->findByIdForUpdate($teacherId);
-            $class = $this->classes->findForUpdate($classId);
+            $teacher = $this->users->findByIdForUpdate($teacherId, $schoolId);
+            $class = $this->classes->findForUpdate($classId, $schoolId);
 
             if (
                 $teacher === null
@@ -59,7 +61,7 @@ final class TeacherClassAdministrationService
                 throw new AdministrationException('Class not found or inactive.', 404);
             }
 
-            if ($this->repository->exists($teacherId, $classId)) {
+            if ($this->repository->exists($teacherId, $classId, $schoolId)) {
                 $pdo->rollBack();
                 return false;
             }
@@ -85,7 +87,7 @@ final class TeacherClassAdministrationService
         }
     }
 
-    public function unassign(int $adminId, int $teacherId, int $classId): bool
+    public function unassign(int $adminId, int $teacherId, int $classId, ?int $schoolId = null): bool
     {
         $this->assertAdminId($adminId);
 
@@ -97,7 +99,7 @@ final class TeacherClassAdministrationService
         $pdo->beginTransaction();
 
         try {
-            if (!$this->repository->exists($teacherId, $classId)) {
+            if (!$this->repository->exists($teacherId, $classId, $schoolId)) {
                 $pdo->rollBack();
                 return false;
             }
@@ -123,6 +125,13 @@ final class TeacherClassAdministrationService
     {
         if ($adminId < 1) {
             throw new \InvalidArgumentException('Invalid administrator.');
+        }
+    }
+
+    private function assertSchoolIdWhenProvided(?int $schoolId): void
+    {
+        if ($schoolId !== null && $schoolId < 1) {
+            throw new \InvalidArgumentException('Invalid school.');
         }
     }
 }

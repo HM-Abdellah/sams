@@ -17,9 +17,10 @@ final class AcademicYearAdministrationService
         private readonly AuditLogRepository $audit = new AuditLogRepository(),
     ) {}
 
-    public function list(): array
+    public function list(?int $schoolId = null): array
     {
-        return $this->repository->all();
+        $this->assertSchoolIdWhenProvided($schoolId);
+        return $this->repository->all($schoolId);
     }
 
     public function create(
@@ -27,9 +28,11 @@ final class AcademicYearAdministrationService
         string $name,
         string $startsOn,
         string $endsOn,
-        bool $activate = false
+        bool $activate = false,
+        ?int $schoolId = null
     ): int {
         $this->assertAdminId($adminId);
+        $this->assertSchoolIdWhenProvided($schoolId);
 
         $name = $this->validator->validateName($name);
         [$startsOn, $endsOn] = $this->validator->validateRange($startsOn, $endsOn);
@@ -38,20 +41,20 @@ final class AcademicYearAdministrationService
         $pdo->beginTransaction();
 
         try {
-            $this->repository->activeForUpdate();
+            $this->repository->activeForUpdate($schoolId);
 
-            if ($this->repository->overlaps($startsOn, $endsOn)) {
+            if ($this->repository->overlaps($startsOn, $endsOn, null, $schoolId)) {
                 throw new AdministrationException(
                     'Academic year dates overlap an existing academic year.',
                     409
                 );
             }
 
-            $id = $this->repository->create($name, $startsOn, $endsOn);
+            $id = $this->repository->create($name, $startsOn, $endsOn, $schoolId);
 
             if ($activate) {
-                $this->repository->deactivateAll();
-                $this->repository->activate($id);
+                $this->repository->deactivateAll($schoolId);
+                $this->repository->activate($id, $schoolId);
             }
 
             $this->audit->record(
@@ -80,9 +83,13 @@ final class AcademicYearAdministrationService
         }
     }
 
-    public function activate(int $adminId, int $yearId): void
-    {
+    public function activate(
+        int $adminId,
+        int $yearId,
+        ?int $schoolId = null
+    ): void {
         $this->assertAdminId($adminId);
+        $this->assertSchoolIdWhenProvided($schoolId);
         if ($yearId < 1) {
             throw new \InvalidArgumentException('Invalid academic year.');
         }
@@ -91,9 +98,9 @@ final class AcademicYearAdministrationService
         $pdo->beginTransaction();
 
         try {
-            $this->repository->activeForUpdate();
+            $this->repository->activeForUpdate($schoolId);
 
-            $target = $this->repository->findForUpdate($yearId);
+            $target = $this->repository->findForUpdate($yearId, $schoolId);
             if ($target === null) {
                 throw new AdministrationException('Academic year not found.', 404);
             }
@@ -101,7 +108,8 @@ final class AcademicYearAdministrationService
             if ($this->repository->overlaps(
                 (string)$target['starts_on'],
                 (string)$target['ends_on'],
-                $yearId
+                $yearId,
+                $schoolId
             )) {
                 throw new AdministrationException(
                     'Academic year dates overlap an existing academic year.',
@@ -109,8 +117,8 @@ final class AcademicYearAdministrationService
                 );
             }
 
-            $this->repository->deactivateAll();
-            $this->repository->activate($yearId);
+            $this->repository->deactivateAll($schoolId);
+            $this->repository->activate($yearId, $schoolId);
 
             $this->audit->record(
                 $adminId,
@@ -133,6 +141,13 @@ final class AcademicYearAdministrationService
     {
         if ($adminId < 1) {
             throw new \InvalidArgumentException('Invalid administrator.');
+        }
+    }
+
+    private function assertSchoolIdWhenProvided(?int $schoolId): void
+    {
+        if ($schoolId !== null && $schoolId < 1) {
+            throw new \InvalidArgumentException('Invalid school.');
         }
     }
 }

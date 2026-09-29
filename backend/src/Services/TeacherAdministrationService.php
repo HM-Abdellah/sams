@@ -17,12 +17,16 @@ final class TeacherAdministrationService
         private readonly AuditLogRepository $audit = new AuditLogRepository(),
     ) {}
 
-    public function list(): array
+    public function list(?int $schoolId = null): array
     {
+        if ($schoolId !== null && $schoolId < 1) {
+            throw new \InvalidArgumentException('Invalid school.');
+        }
+
         return [
-            'teachers' => $this->repository->all(),
+            'teachers' => $this->repository->all($schoolId),
             'subjects' => $this->repository->subjects(),
-            'teachings' => $this->repository->teachings(),
+            'teachings' => $this->repository->teachings($schoolId),
             'online_window_seconds' => TeacherRepository::ONLINE_WINDOW_SECONDS,
         ];
     }
@@ -31,21 +35,23 @@ final class TeacherAdministrationService
         int $adminId,
         int $teacherId,
         int $subjectId,
-        int $classId
+        int $classId,
+        ?int $schoolId = null
     ): int {
         $this->assertAdminId($adminId);
+        $this->assertSchoolIdWhenProvided($schoolId);
 
         if ($teacherId < 1 || $subjectId < 1 || $classId < 1) {
             throw new \InvalidArgumentException('Invalid teaching assignment.');
         }
 
-        if (!$this->repository->teacherExists($teacherId)) {
+        if (!$this->repository->teacherExists($teacherId, $schoolId)) {
             throw new AdministrationException('Teacher not found.', 404);
         }
         if (!$this->repository->subjectExistsActive($subjectId)) {
             throw new AdministrationException('Subject not found or inactive.', 404);
         }
-        if (!$this->repository->classExistsActive($classId)) {
+        if (!$this->repository->classExistsActive($classId, $schoolId)) {
             throw new AdministrationException('Class not found or inactive.', 404);
         }
 
@@ -88,9 +94,10 @@ final class TeacherAdministrationService
         }
     }
 
-    public function unassignTeaching(int $adminId, int $teachingId): bool
+    public function unassignTeaching(int $adminId, int $teachingId, ?int $schoolId = null): bool
     {
         $this->assertAdminId($adminId);
+        $this->assertSchoolIdWhenProvided($schoolId);
         if ($teachingId < 1) {
             throw new \InvalidArgumentException('Invalid teaching assignment.');
         }
@@ -99,7 +106,7 @@ final class TeacherAdministrationService
         $pdo->beginTransaction();
 
         try {
-            $existing = $this->repository->findTeachingByIdForUpdate($teachingId);
+            $existing = $this->repository->findTeachingByIdForUpdate($teachingId, $schoolId);
             if ($existing === null) {
                 throw new AdministrationException('Teaching assignment not found.', 404);
             }
@@ -230,6 +237,13 @@ final class TeacherAdministrationService
     {
         if ($adminId < 1) {
             throw new \InvalidArgumentException('Invalid administrator.');
+        }
+    }
+
+    private function assertSchoolIdWhenProvided(?int $schoolId): void
+    {
+        if ($schoolId !== null && $schoolId < 1) {
+            throw new \InvalidArgumentException('Invalid school.');
         }
     }
 }

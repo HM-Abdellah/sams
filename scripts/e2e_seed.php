@@ -46,23 +46,33 @@ if (!preg_match('/^[A-Za-z0-9_]+$/', $db)) {
 }
 $pdo->exec('USE `' . $db . '`');
 
+$schoolStmt = $pdo->prepare(
+    "INSERT INTO schools (code, name, status) VALUES (?, ?, 'active')
+     ON DUPLICATE KEY UPDATE name = VALUES(name), status = 'active'"
+);
+$schoolStmt->execute(['E2E-SCHOOL', 'E2E Synthetic School']);
+$schoolId = (int)$pdo->query(
+    "SELECT id FROM schools WHERE code = 'E2E-SCHOOL' LIMIT 1"
+)->fetchColumn();
+
 $pdo->beginTransaction();
 
 try {
     $yearStmt = $pdo->prepare(
-        'INSERT INTO academic_years (name, starts_on, ends_on, is_active)
-         VALUES (?, ?, ?, 1)'
+        'INSERT INTO academic_years (school_id, name, starts_on, ends_on, is_active)
+         VALUES (?, ?, ?, ?, 1)'
     );
-    $yearStmt->execute(['2026/2027', '2026-09-01', '2027-07-31']);
+    $yearStmt->execute([$schoolId, '2026/2027', '2026-09-01', '2027-07-31']);
     $academicYearId = (int)$pdo->lastInsertId();
 
     $userStmt = $pdo->prepare(
         'INSERT INTO users
-            (username, employee_id, full_name, phone, password_hash, role, is_active)
-         VALUES (?, ?, ?, ?, ?, ?, 1)'
+            (school_id, username, employee_id, full_name, phone, password_hash, role, account_status, is_active)
+         VALUES (?, ?, ?, ?, ?, ?, ?, \'active\', 1)'
     );
 
     $userStmt->execute([
+        $schoolId,
         'admin',
         null,
         'E2E Admin',
@@ -73,6 +83,7 @@ try {
     $adminId = (int)$pdo->lastInsertId();
 
     $userStmt->execute([
+        $schoolId,
         'teacher.e2e',
         'teacher.e2e',
         'E2E Teacher',

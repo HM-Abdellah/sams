@@ -19,18 +19,24 @@ final class ClassAdministrationService
         private readonly AuditLogRepository $audit = new AuditLogRepository(),
     ) {}
 
-    public function list(): array
+    public function list(?int $schoolId = null): array
     {
-        return $this->repository->allForAdmin();
+        if ($schoolId !== null && $schoolId < 1) {
+            throw new \InvalidArgumentException('Invalid school.');
+        }
+
+        return $this->repository->allForAdmin($schoolId);
     }
 
     public function create(
         int $adminId,
         string $name,
         ?string $level = null,
-        ?string $branch = null
+        ?string $branch = null,
+        ?int $schoolId = null
     ): int {
         $this->assertAdminId($adminId);
+        $this->assertSchoolIdWhenProvided($schoolId);
 
         $name = $this->validator->normalizeName($name);
         $level = $this->validator->optionalText($level, 50);
@@ -40,8 +46,8 @@ final class ClassAdministrationService
         $pdo->beginTransaction();
 
         try {
-            $this->academicYears->activeForUpdate();
-            $activeYear = $this->academicYears->findActive();
+            $this->academicYears->activeForUpdate($schoolId);
+            $activeYear = $this->academicYears->findActive($schoolId);
 
             if ($activeYear === null) {
                 throw new AdministrationException('No active academic year configured.', 422);
@@ -87,9 +93,11 @@ final class ClassAdministrationService
         int $classId,
         ?string $name = null,
         ?string $level = null,
-        ?string $branch = null
+        ?string $branch = null,
+        ?int $schoolId = null
     ): int {
         $this->assertAdminId($adminId);
+        $this->assertSchoolIdWhenProvided($schoolId);
         if ($classId < 1) {
             throw new \InvalidArgumentException('Invalid class.');
         }
@@ -98,7 +106,7 @@ final class ClassAdministrationService
         $pdo->beginTransaction();
 
         try {
-            $existing = $this->repository->findForUpdate($classId);
+            $existing = $this->repository->findForUpdate($classId, $schoolId);
             if ($existing === null) {
                 throw new AdministrationException('Class not found.', 404);
             }
@@ -142,9 +150,14 @@ final class ClassAdministrationService
         }
     }
 
-    public function setActive(int $adminId, int $classId, bool $active): bool
-    {
+    public function setActive(
+        int $adminId,
+        int $classId,
+        bool $active,
+        ?int $schoolId = null
+    ): bool {
         $this->assertAdminId($adminId);
+        $this->assertSchoolIdWhenProvided($schoolId);
         if ($classId < 1) {
             throw new \InvalidArgumentException('Invalid class.');
         }
@@ -153,7 +166,7 @@ final class ClassAdministrationService
         $pdo->beginTransaction();
 
         try {
-            $existing = $this->repository->findForUpdate($classId);
+            $existing = $this->repository->findForUpdate($classId, $schoolId);
             if ($existing === null) {
                 throw new AdministrationException('Class not found.', 404);
             }
@@ -188,6 +201,13 @@ final class ClassAdministrationService
     {
         if ($adminId < 1) {
             throw new \InvalidArgumentException('Invalid administrator.');
+        }
+    }
+
+    private function assertSchoolIdWhenProvided(?int $schoolId): void
+    {
+        if ($schoolId !== null && $schoolId < 1) {
+            throw new \InvalidArgumentException('Invalid school.');
         }
     }
 }

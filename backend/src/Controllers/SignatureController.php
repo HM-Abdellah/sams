@@ -29,7 +29,12 @@ final class SignatureController
             $classId = isset($params['id']) && ctype_digit((string)$params['id'])
                 ? (int)$params['id'] : 0;
             if ($classId < 1) return Response::json(['success' => false, 'error' => 'Invalid class.'], 422);
-            if (!(new ClassRepository())->hasAccess($user['id'], $user['role'], $classId)) {
+            if (!(new ClassRepository())->hasAccess(
+                $user['id'],
+                $user['role'],
+                $classId,
+                isset($user['school_id']) ? (int)$user['school_id'] : null
+            )) {
                 return Response::json(['success' => false, 'error' => 'Forbidden.'], 403);
             }
             if ($request->method() === 'GET') {

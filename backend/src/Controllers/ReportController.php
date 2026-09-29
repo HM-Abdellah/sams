@@ -53,7 +53,8 @@ final class ReportController
                     (int)$user['id'],
                     (string)$user['role'],
                     $classId,
-                    $month
+                    $month,
+                    isset($user['school_id']) ? (int)$user['school_id'] : null
                 ),
             ]);
         } catch (ArchiveReportException $e) {

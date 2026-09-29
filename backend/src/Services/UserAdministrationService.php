@@ -19,9 +19,10 @@ final class UserAdministrationService
         private readonly AuditLogRepository $audit = new AuditLogRepository(),
     ) {}
 
-    public function list(): array
+    public function list(?int $schoolId = null): array
     {
-        return $this->repository->forAdmin();
+        $this->assertSchoolIdWhenProvided($schoolId);
+        return $this->repository->forAdmin($schoolId);
     }
 
     public function create(
@@ -31,9 +32,11 @@ final class UserAdministrationService
         string $role,
         string $password,
         ?string $employeeId = null,
-        ?string $phone = null
+        ?string $phone = null,
+        ?int $schoolId = null
     ): int {
         $this->assertAdminId($adminId);
+        $this->assertSchoolIdWhenProvided($schoolId);
 
         $username = $this->validator->validateUsername($username);
         $fullName = $this->validator->validateFullName($fullName);
@@ -55,7 +58,8 @@ final class UserAdministrationService
                 Security::hashPassword($password),
                 $role,
                 $employeeId,
-                $phone
+                $phone,
+                $schoolId
             );
 
             $this->audit->record(
@@ -90,9 +94,11 @@ final class UserAdministrationService
         ?string $role = null,
         ?bool $isActive = null,
         ?string $employeeId = null,
-        ?string $phone = null
+        ?string $phone = null,
+        ?int $schoolId = null
     ): int {
         $this->assertAdminId($adminId);
+        $this->assertSchoolIdWhenProvided($schoolId);
         if ($userId < 1) {
             throw new \InvalidArgumentException('Invalid user.');
         }
@@ -101,7 +107,7 @@ final class UserAdministrationService
         $pdo->beginTransaction();
 
         try {
-            $existing = $this->repository->findByIdForUpdate($userId);
+            $existing = $this->repository->findByIdForUpdate($userId, $schoolId);
             if ($existing === null) {
                 throw new AdministrationException('User not found.', 404);
             }
@@ -127,7 +133,7 @@ final class UserAdministrationService
                 (string)$existing['role'] === 'admin' && !$isActive;
 
             if ($removingAdminAccess || $deactivatingAdmin) {
-                $activeAdmins = $this->repository->activeAdminIdsForUpdate();
+                $activeAdmins = $this->repository->activeAdminIdsForUpdate($schoolId);
                 if (count($activeAdmins) <= 1) {
                     throw new AdministrationException(
                         'The system must keep at least one active administrator.',
@@ -167,7 +173,8 @@ final class UserAdministrationService
                 $isActive,
                 $username,
                 $employeeId,
-                $phone
+                $phone,
+                $schoolId
             );
 
             $this->audit->record(
@@ -198,9 +205,14 @@ final class UserAdministrationService
         }
     }
 
-    public function resetPassword(int $adminId, int $userId, string $password): void
-    {
+    public function resetPassword(
+        int $adminId,
+        int $userId,
+        string $password,
+        ?int $schoolId = null
+    ): void {
         $this->assertAdminId($adminId);
+        $this->assertSchoolIdWhenProvided($schoolId);
         if ($userId < 1) {
             throw new \InvalidArgumentException('Invalid user.');
         }
@@ -210,14 +222,15 @@ final class UserAdministrationService
         $pdo->beginTransaction();
 
         try {
-            $existing = $this->repository->findByIdForUpdate($userId);
+            $existing = $this->repository->findByIdForUpdate($userId, $schoolId);
             if ($existing === null) {
                 throw new AdministrationException('User not found.', 404);
             }
 
             $this->repository->updatePasswordHash(
                 $userId,
-                Security::hashPassword($password)
+                Security::hashPassword($password),
+                $schoolId
             );
 
             $this->audit->record($adminId, 'user.password_reset', 'user', $userId);
@@ -232,9 +245,13 @@ final class UserAdministrationService
         }
     }
 
-    public function unlock(int $adminId, int $userId): void
-    {
+    public function unlock(
+        int $adminId,
+        int $userId,
+        ?int $schoolId = null
+    ): void {
         $this->assertAdminId($adminId);
+        $this->assertSchoolIdWhenProvided($schoolId);
         if ($userId < 1) {
             throw new \InvalidArgumentException('Invalid user.');
         }
@@ -243,12 +260,12 @@ final class UserAdministrationService
         $pdo->beginTransaction();
 
         try {
-            $existing = $this->repository->findByIdForUpdate($userId);
+            $existing = $this->repository->findByIdForUpdate($userId, $schoolId);
             if ($existing === null) {
                 throw new AdministrationException('User not found.', 404);
             }
 
-            $this->repository->unlock($userId);
+            $this->repository->unlock($userId, $schoolId);
             $this->audit->record($adminId, 'user.unlock', 'user', $userId);
 
             $pdo->commit();
@@ -265,6 +282,13 @@ final class UserAdministrationService
     {
         if ($adminId < 1) {
             throw new \InvalidArgumentException('Invalid administrator.');
+        }
+    }
+
+    private function assertSchoolIdWhenProvided(?int $schoolId): void
+    {
+        if ($schoolId !== null && $schoolId < 1) {
+            throw new \InvalidArgumentException('Invalid school.');
         }
     }
 }

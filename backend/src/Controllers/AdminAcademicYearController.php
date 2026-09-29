@@ -17,12 +17,16 @@ final class AdminAcademicYearController extends AdminApiController
     public function __invoke(Request $request, array $params = []): Response
     {
         if ($request->method() === 'GET') {
-            $this->requireAdminOrCounselor();
+            $actor = $this->requireAdminOrCounselor();
 
             try {
                 return Response::json([
                     'success' => true,
-                    'data' => ['academic_years' => $this->service->list()],
+                    'data' => [
+                        'academic_years' => $this->service->list(
+                            isset($actor['school_id']) ? (int)$actor['school_id'] : null
+                        ),
+                    ],
                 ]);
             } catch (\Throwable $e) {
                 return $this->error($e);
@@ -50,7 +54,8 @@ final class AdminAcademicYearController extends AdminApiController
                     (string)($body['name'] ?? ''),
                     (string)($body['starts_on'] ?? ''),
                     (string)($body['ends_on'] ?? ''),
-                    !empty($body['activate'])
+                    !empty($body['activate']),
+                    isset($admin['school_id']) ? (int)$admin['school_id'] : null
                 );
 
                 return Response::json([
@@ -61,7 +66,11 @@ final class AdminAcademicYearController extends AdminApiController
 
             if ($action === 'activate') {
                 $id = (int)($body['id'] ?? 0);
-                $this->service->activate((int)$admin['id'], $id);
+                $this->service->activate(
+                    (int)$admin['id'],
+                    $id,
+                    isset($admin['school_id']) ? (int)$admin['school_id'] : null
+                );
 
                 return Response::json([
                     'success' => true,

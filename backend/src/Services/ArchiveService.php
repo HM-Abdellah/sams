@@ -24,13 +24,14 @@ final class ArchiveService
         string $view,
         ?string $month = null,
         ?string $date = null,
-        ?int $studentId = null
+        ?int $studentId = null,
+        ?int $schoolId = null
     ): array {
         if ($role !== 'admin') {
             throw new ArchiveReportException('Forbidden.', 403);
         }
 
-        if (!$this->classes->hasHistoricalAccess($userId, $role, $classId)) {
+        if (!$this->classes->hasHistoricalAccess($userId, $role, $classId, $schoolId)) {
             throw new ArchiveReportException('Forbidden.', 403);
         }
 
@@ -38,7 +39,7 @@ final class ArchiveService
             throw new \InvalidArgumentException('Invalid archive view.');
         }
 
-        $class = $this->archive->classInfo($classId);
+        $class = $this->archive->classInfo($classId, $schoolId);
         if ($class === null) {
             throw new ArchiveReportException('Class not found.', 404);
         }

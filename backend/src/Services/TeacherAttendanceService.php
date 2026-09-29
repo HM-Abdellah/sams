@@ -30,11 +30,12 @@ final class TeacherAttendanceService
         int $userId,
         string $role,
         int $classId,
-        string $weekStart
+        string $weekStart,
+        ?int $schoolId = null
     ): array {
-        $this->assertAccess($userId, $role, $classId);
+        $this->assertAccess($userId, $role, $classId, $schoolId);
 
-        $class = $this->classes->find($classId);
+        $class = $this->classes->find($classId, $schoolId);
         if ($class === null) {
             throw new AttendanceWorkflowException('Class not found.', 404);
         }
@@ -93,23 +94,29 @@ final class TeacherAttendanceService
         int $userId,
         string $role,
         int $classId,
-        array $entries
+        array $entries,
+        ?int $schoolId = null
     ): array {
         if (!in_array($role, ['admin', 'teacher'], true)) {
             throw new AttendanceWorkflowException('Forbidden.', 403);
         }
 
-        $this->assertAccess($userId, $role, $classId);
+        $this->assertSchoolIdWhenProvided($schoolId);
+
+        $this->assertAccess($userId, $role, $classId, $schoolId);
 
         if ($entries === [] || count($entries) > 500) {
             throw new \InvalidArgumentException('Invalid attendance batch.');
         }
 
-        $class = $this->classes->find($classId);
+        $class = $this->classes->find($classId, $schoolId);
         if ($class === null) {
             throw new AttendanceWorkflowException('Class not found.', 404);
         }
-        $academicYear = $this->academicYears->find((int)$class['academic_year_id']);
+        $academicYear = $this->academicYears->find(
+            (int)$class['academic_year_id'],
+            $schoolId
+        );
         if ($academicYear === null) {
             throw new AttendanceWorkflowException('Academic year not found.', 422);
         }
@@ -179,12 +186,12 @@ final class TeacherAttendanceService
         $pdo->beginTransaction();
 
         try {
-            $lockedClass = $this->classes->findForUpdate($classId);
+            $lockedClass = $this->classes->findForUpdate($classId, $schoolId);
             if ($lockedClass === null) {
                 throw new AttendanceWorkflowException('Class not found.', 404);
             }
 
-            if (!$this->classes->hasAccess($userId, $role, $classId)) {
+            if (!$this->classes->hasAccess($userId, $role, $classId, $schoolId)) {
                 throw new AttendanceWorkflowException('Forbidden.', 403);
             }
 
@@ -354,14 +361,23 @@ final class TeacherAttendanceService
         }
     }
 
-    private function assertAccess(int $userId, string $role, int $classId): void
+    private function assertAccess(int $userId, string $role, int $classId, ?int $schoolId = null): void
     {
+        $this->assertSchoolIdWhenProvided($schoolId);
+
         if ($userId < 1 || $classId < 1) {
             throw new \InvalidArgumentException('Invalid attendance context.');
         }
 
-        if (!$this->classes->hasAccess($userId, $role, $classId)) {
+        if (!$this->classes->hasAccess($userId, $role, $classId, $schoolId)) {
             throw new AttendanceWorkflowException('Forbidden.', 403);
+        }
+    }
+
+    private function assertSchoolIdWhenProvided(?int $schoolId): void
+    {
+        if ($schoolId !== null && $schoolId < 1) {
+            throw new \InvalidArgumentException('Invalid school.');
         }
     }
 }

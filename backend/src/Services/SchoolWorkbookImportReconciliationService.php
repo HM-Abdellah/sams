@@ -49,17 +49,18 @@ final class SchoolWorkbookImportReconciliationService
      *
      * @return array<string,mixed>
      */
-    public function reconcile(int $batchId, int $userId): array
+    public function reconcile(int $batchId, int $userId, ?int $schoolId = null): array
     {
         if ($batchId < 1 || $userId < 1) {
             throw new \InvalidArgumentException('Invalid school import reconciliation request.');
         }
+        $this->assertSchoolIdWhenProvided($schoolId);
 
         $pdo = Database::connection();
         $pdo->beginTransaction();
 
         try {
-            $batch = $this->imports->findBatchForUpdate($batchId);
+            $batch = $this->imports->findBatchForUpdate($batchId, $schoolId);
             if ($batch === null) {
                 throw new SchoolImportWorkflowException('School import batch not found.');
             }
@@ -88,7 +89,7 @@ final class SchoolWorkbookImportReconciliationService
                 );
             }
 
-            $academicYear = $this->academicYears->find($targetAcademicYearId);
+            $academicYear = $this->academicYears->find($targetAcademicYearId, $schoolId);
             if ($academicYear === null) {
                 throw new SchoolImportWorkflowException('Target academic year no longer exists.');
             }
@@ -313,17 +314,18 @@ final class SchoolWorkbookImportReconciliationService
      *
      * @return array<string,mixed>
      */
-    public function commit(int $batchId, int $userId): array
+    public function commit(int $batchId, int $userId, ?int $schoolId = null): array
     {
         if ($batchId < 1 || $userId < 1) {
             throw new \InvalidArgumentException('Invalid school import request.');
         }
+        $this->assertSchoolIdWhenProvided($schoolId);
 
         $pdo = Database::connection();
         $pdo->beginTransaction();
 
         try {
-            $batch = $this->imports->findBatchForUpdate($batchId);
+            $batch = $this->imports->findBatchForUpdate($batchId, $schoolId);
             if ($batch === null) {
                 throw new SchoolImportWorkflowException('School import batch not found.');
             }
@@ -356,7 +358,7 @@ final class SchoolWorkbookImportReconciliationService
                 );
             }
 
-            $academicYear = $this->academicYears->find($targetAcademicYearId);
+            $academicYear = $this->academicYears->find($targetAcademicYearId, $schoolId);
             if ($academicYear === null) {
                 throw new SchoolImportWorkflowException('Target academic year no longer exists.');
             }
@@ -405,7 +407,7 @@ final class SchoolWorkbookImportReconciliationService
 
             $targetClasses = [];
             foreach ($targetClassIds as $targetClassId) {
-                $target = $this->classes->findForUpdate($targetClassId);
+                $target = $this->classes->findForUpdate($targetClassId, $schoolId);
                 if (
                     $target === null
                     || (int)$target['academic_year_id'] !== $targetAcademicYearId
@@ -669,5 +671,12 @@ final class SchoolWorkbookImportReconciliationService
             'existing_students' => 0,
             'enrollments_created' => 0,
         ];
+    }
+
+    private function assertSchoolIdWhenProvided(?int $schoolId): void
+    {
+        if ($schoolId !== null && $schoolId < 1) {
+            throw new \InvalidArgumentException('Invalid school.');
+        }
     }
 }

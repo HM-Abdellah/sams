@@ -26,14 +26,20 @@ final class AdminTeacherClassController extends AdminApiController
                 if ($classId > 0) {
                     return Response::json([
                         'success' => true,
-                        'data' => ['teachers' => $this->service->forClass($classId)],
+                        'data' => ['teachers' => $this->service->forClass(
+                            $classId,
+                            isset($admin['school_id']) ? (int)$admin['school_id'] : null
+                        )],
                     ]);
                 }
 
                 if ($teacherId > 0) {
                     return Response::json([
                         'success' => true,
-                        'data' => ['classes' => $this->service->forTeacher($teacherId)],
+                        'data' => ['classes' => $this->service->forTeacher(
+                            $teacherId,
+                            isset($admin['school_id']) ? (int)$admin['school_id'] : null
+                        )],
                     ]);
                 }
 
@@ -54,7 +60,8 @@ final class AdminTeacherClassController extends AdminApiController
                         'changed' => $this->service->assign(
                             (int)$admin['id'],
                             $teacherId,
-                            $classId
+                            $classId,
+                            isset($admin['school_id']) ? (int)$admin['school_id'] : null
                         ),
                     ],
                 ]);
@@ -67,7 +74,8 @@ final class AdminTeacherClassController extends AdminApiController
                         'changed' => $this->service->unassign(
                             (int)$admin['id'],
                             $teacherId,
-                            $classId
+                            $classId,
+                            isset($admin['school_id']) ? (int)$admin['school_id'] : null
                         ),
                     ],
                 ]);

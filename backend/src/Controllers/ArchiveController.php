@@ -38,7 +38,8 @@ final class ArchiveController
                 $view,
                 is_string($month) ? $month : null,
                 is_string($date) ? $date : null,
-                $studentId
+                $studentId,
+                isset($user['school_id']) ? (int)$user['school_id'] : null
             );
             return Response::json(['success' => true, 'data' => $data]);
         } catch (ArchiveReportException $e) {

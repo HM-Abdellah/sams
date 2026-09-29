@@ -26,7 +26,8 @@ try {
     if (!$classes->hasAccess(
         (int)$user['id'],
         (string)$user['role'],
-        $classId
+        $classId,
+        isset($user['school_id']) ? (int)$user['school_id'] : null
     )) {
         Response::error('Forbidden.', 403);
     }
@@ -56,7 +57,8 @@ try {
             (int)($body['id'] ?? 0),
             $classId,
             (int)($body['target_class_id'] ?? 0),
-            trim((string)($body['effective_date'] ?? ''))
+            trim((string)($body['effective_date'] ?? '')),
+            isset($user['school_id']) ? (int)$user['school_id'] : null
         );
 
         Response::success($result);

@@ -70,7 +70,8 @@ final class AttendanceController
                         (int)$user['id'],
                         (string)$user['role'],
                         $classId,
-                        $weekStart
+                        $weekStart,
+                        isset($user['school_id']) ? (int)$user['school_id'] : null
                     ),
                 ]);
             }
@@ -103,7 +104,8 @@ final class AttendanceController
                     (int)$user['id'],
                     (string)$user['role'],
                     $classId,
-                    $entries
+                    $entries,
+                    isset($user['school_id']) ? (int)$user['school_id'] : null
                 ),
             ]);
         } catch (AttendanceWorkflowException $e) {

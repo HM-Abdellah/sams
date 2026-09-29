@@ -8,7 +8,7 @@ use SAMS\Helpers\Database;
 
 final class SchoolImportRepository
 {
-    public function findBatch(int $batchId): ?array
+    public function findBatch(int $batchId, ?int $schoolId = null): ?array
     {
         $stmt = Database::connection()->prepare(
             'SELECT
@@ -37,43 +37,46 @@ final class SchoolImportRepository
              INNER JOIN users u ON u.id = b.created_by
              LEFT JOIN academic_years ay ON ay.id = b.target_academic_year_id
              WHERE b.id = ?
+               AND (u.school_id = ? OR ? IS NULL)
              LIMIT 1'
         );
-        $stmt->execute([$batchId]);
+        $stmt->execute([$batchId, $schoolId, $schoolId]);
         $row = $stmt->fetch();
 
         return $row ?: null;
     }
 
-    public function findBatchForUpdate(int $batchId): ?array
+    public function findBatchForUpdate(int $batchId, ?int $schoolId = null): ?array
     {
         $stmt = Database::connection()->prepare(
             'SELECT
-                id,
-                created_by,
-                target_academic_year_id,
-                source_academic_year,
-                original_filename,
-                file_sha256,
-                file_size,
-                status,
-                total_classes,
-                valid_classes,
-                warning_classes,
-                error_classes,
-                total_rows,
-                valid_rows,
-                warning_rows,
-                error_rows,
-                imported_at,
-                created_at,
-                updated_at
-             FROM school_import_batches
-             WHERE id = ?
+                b.id,
+                b.created_by,
+                b.target_academic_year_id,
+                b.source_academic_year,
+                b.original_filename,
+                b.file_sha256,
+                b.file_size,
+                b.status,
+                b.total_classes,
+                b.valid_classes,
+                b.warning_classes,
+                b.error_classes,
+                b.total_rows,
+                b.valid_rows,
+                b.warning_rows,
+                b.error_rows,
+                b.imported_at,
+                b.created_at,
+                b.updated_at
+             FROM school_import_batches b
+             INNER JOIN users u ON u.id = b.created_by
+             WHERE b.id = ?
+               AND (u.school_id = ? OR ? IS NULL)
              LIMIT 1
              FOR UPDATE'
         );
-        $stmt->execute([$batchId]);
+        $stmt->execute([$batchId, $schoolId, $schoolId]);
         $row = $stmt->fetch();
 
         return $row ?: null;

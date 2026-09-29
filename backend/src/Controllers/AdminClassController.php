@@ -22,7 +22,11 @@ final class AdminClassController extends AdminApiController
             try {
                 return Response::json([
                     'success' => true,
-                    'data' => ['classes' => $this->service->list()],
+                    'data' => [
+                        'classes' => $this->service->list(
+                            isset($admin['school_id']) ? (int)$admin['school_id'] : null
+                        ),
+                    ],
                 ]);
             } catch (\Throwable $e) {
                 return $this->error($e);
@@ -48,7 +52,8 @@ final class AdminClassController extends AdminApiController
                     (int)$admin['id'],
                     (string)($body['name'] ?? ''),
                     isset($body['level']) ? (string)$body['level'] : null,
-                    isset($body['branch']) ? (string)$body['branch'] : null
+                    isset($body['branch']) ? (string)$body['branch'] : null,
+                    isset($admin['school_id']) ? (int)$admin['school_id'] : null
                 );
 
                 return Response::json([
@@ -63,7 +68,8 @@ final class AdminClassController extends AdminApiController
                     (int)($body['id'] ?? 0),
                     array_key_exists('name', $body) ? (string)$body['name'] : null,
                     array_key_exists('level', $body) ? (string)$body['level'] : null,
-                    array_key_exists('branch', $body) ? (string)$body['branch'] : null
+                    array_key_exists('branch', $body) ? (string)$body['branch'] : null,
+                    isset($admin['school_id']) ? (int)$admin['school_id'] : null
                 );
 
                 return Response::json([
@@ -77,7 +83,8 @@ final class AdminClassController extends AdminApiController
                 $changed = $this->service->setActive(
                     (int)$admin['id'],
                     $id,
-                    $action === 'activate'
+                    $action === 'activate',
+                    isset($admin['school_id']) ? (int)$admin['school_id'] : null
                 );
 
                 return Response::json([
