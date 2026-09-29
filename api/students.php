@@ -26,7 +26,8 @@ try {
     if (!$classes->hasAccess(
         (int)$user['id'],
         (string)$user['role'],
-        $classId
+        $classId,
+        isset($user['school_id']) ? (int)$user['school_id'] : null
     )) {
         Response::error('Forbidden.', 403);
     }
@@ -56,7 +57,8 @@ try {
             (int)($body['id'] ?? 0),
             $classId,
             (int)($body['target_class_id'] ?? 0),
-            trim((string)($body['effective_date'] ?? ''))
+            trim((string)($body['effective_date'] ?? '')),
+            isset($user['school_id']) ? (int)$user['school_id'] : null
         );
 
         Response::success($result);
@@ -82,7 +84,7 @@ try {
         $pdo->beginTransaction();
 
         try {
-            $lockedClass = $classes->findForUpdate($classId);
+            $lockedClass = $classes->findForUpdate($classId, (int)$user['school_id']);
             if ($lockedClass === null || !(bool)$lockedClass['is_active']) {
                 throw new StudentWorkflowException('Class not found.', 404);
             }
@@ -161,7 +163,7 @@ try {
         $pdo->beginTransaction();
 
         try {
-            $lockedClass = $classes->findForUpdate($classId);
+            $lockedClass = $classes->findForUpdate($classId, (int)$user['school_id']);
             if ($lockedClass === null || !(bool)$lockedClass['is_active']) {
                 throw new StudentWorkflowException('Class not found.', 404);
             }

@@ -8,38 +8,69 @@ use SAMS\Helpers\Database;
 
 final class TeacherClassRepository
 {
-    public function forClass(int $classId): array
+    public function forClass(int $classId, ?int $schoolId = null): array
     {
-        $stmt = Database::connection()->prepare(
-            'SELECT u.id, u.username, u.full_name, u.is_active, tc.assigned_at
-             FROM teacher_classes tc
-             INNER JOIN users u ON u.id = tc.teacher_id
-             WHERE tc.class_id = ? AND u.role = \'teacher\'
-             ORDER BY u.full_name, u.username, u.id'
-        );
-        $stmt->execute([$classId]);
+        $sql = "SELECT u.id, u.username, u.full_name, u.is_active, tc.assigned_at
+                FROM teacher_classes tc
+                INNER JOIN users u ON u.id = tc.teacher_id
+                INNER JOIN classes c ON c.id = tc.class_id
+                INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+                WHERE tc.class_id = ? AND u.role = 'teacher'";
+        $params = [$classId];
+
+        if ($schoolId !== null) {
+            if ($schoolId < 1) throw new \InvalidArgumentException('Invalid school.');
+            $sql .= ' AND u.school_id = ay.school_id AND ay.school_id = ?';
+            $params[] = $schoolId;
+        }
+
+        $sql .= ' ORDER BY u.full_name, u.username, u.id';
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
         return $stmt->fetchAll();
     }
 
-    public function forTeacher(int $teacherId): array
+    public function forTeacher(int $teacherId, ?int $schoolId = null): array
     {
-        $stmt = Database::connection()->prepare(
-            'SELECT c.id, c.name, c.level, c.branch, c.academic_year_id, c.is_active, tc.assigned_at
-             FROM teacher_classes tc
-             INNER JOIN classes c ON c.id = tc.class_id
-             WHERE tc.teacher_id = ?
-             ORDER BY c.name, c.id'
-        );
-        $stmt->execute([$teacherId]);
+        $sql = 'SELECT c.id, c.name, c.level, c.branch, c.academic_year_id, c.is_active, tc.assigned_at
+                FROM teacher_classes tc
+                INNER JOIN classes c ON c.id = tc.class_id
+                INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+                INNER JOIN users u ON u.id = tc.teacher_id
+                WHERE tc.teacher_id = ?';
+        $params = [$teacherId];
+
+        if ($schoolId !== null) {
+            if ($schoolId < 1) throw new \InvalidArgumentException('Invalid school.');
+            $sql .= ' AND u.school_id = ay.school_id AND ay.school_id = ?';
+            $params[] = $schoolId;
+        }
+
+        $sql .= ' ORDER BY c.name, c.id';
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
         return $stmt->fetchAll();
     }
 
-    public function exists(int $teacherId, int $classId): bool
+    public function exists(int $teacherId, int $classId, ?int $schoolId = null): bool
     {
-        $stmt = Database::connection()->prepare(
-            'SELECT 1 FROM teacher_classes WHERE teacher_id = ? AND class_id = ? LIMIT 1'
-        );
-        $stmt->execute([$teacherId, $classId]);
+        $sql = 'SELECT 1
+                FROM teacher_classes tc
+                INNER JOIN users u ON u.id = tc.teacher_id
+                INNER JOIN classes c ON c.id = tc.class_id
+                INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+                WHERE tc.teacher_id = ? AND tc.class_id = ?';
+        $params = [$teacherId, $classId];
+
+        if ($schoolId !== null) {
+            if ($schoolId < 1) throw new \InvalidArgumentException('Invalid school.');
+            $sql .= ' AND u.school_id = ay.school_id AND ay.school_id = ?';
+            $params[] = $schoolId;
+        }
+
+        $sql .= ' LIMIT 1';
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
         return (bool)$stmt->fetchColumn();
     }
 

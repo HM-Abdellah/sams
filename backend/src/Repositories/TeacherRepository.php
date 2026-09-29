@@ -10,10 +10,9 @@ final class TeacherRepository
 {
     public const ONLINE_WINDOW_SECONDS = 90;
 
-    public function all(): array
+    public function all(?int $schoolId = null): array
     {
-        return Database::connection()->query(
-            "SELECT
+        $sql = "SELECT
                 u.id,
                 u.username,
                 u.employee_id,
@@ -31,36 +30,54 @@ final class TeacherRepository
                     THEN 1 ELSE 0
                 END AS is_online
              FROM users u
-             WHERE u.role = 'teacher'
-             ORDER BY u.full_name, u.employee_id, u.id"
-        )->fetchAll();
+             WHERE u.role = 'teacher'";
+        $params = [];
+        if ($schoolId !== null) {
+            $this->assertSchoolId($schoolId);
+            $sql .= ' AND u.school_id = ?';
+            $params[] = $schoolId;
+        }
+        $sql .= ' ORDER BY u.full_name, u.employee_id, u.id';
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
     }
 
-    public function teachings(): array
+    public function teachings(?int $schoolId = null): array
     {
-        return Database::connection()->query(
-            'SELECT
-                tt.id,
-                tt.teacher_id,
-                tt.subject_id,
-                s.code AS subject_code,
-                s.name_fr AS subject_name_fr,
-                s.name_ar AS subject_name_ar,
-                s.name_en AS subject_name_en,
-                tt.class_id,
-                c.name AS class_name,
-                c.level AS class_level,
-                c.branch AS class_branch,
-                c.academic_year_id,
-                ay.name AS academic_year_name,
-                tt.assigned_at
-             FROM teacher_teachings tt
-             INNER JOIN subjects s ON s.id = tt.subject_id
-             INNER JOIN classes c ON c.id = tt.class_id
-             INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-             WHERE c.is_active = 1 AND ay.is_active = 1
-             ORDER BY tt.teacher_id, s.name_fr, c.branch, c.name, tt.id'
-        )->fetchAll();
+        $sql = 'SELECT
+                    tt.id,
+                    tt.teacher_id,
+                    tt.subject_id,
+                    s.code AS subject_code,
+                    s.name_fr AS subject_name_fr,
+                    s.name_ar AS subject_name_ar,
+                    s.name_en AS subject_name_en,
+                    tt.class_id,
+                    c.name AS class_name,
+                    c.level AS class_level,
+                    c.branch AS class_branch,
+                    c.academic_year_id,
+                    ay.name AS academic_year_name,
+                    tt.assigned_at
+                FROM teacher_teachings tt
+                INNER JOIN users u ON u.id = tt.teacher_id
+                INNER JOIN subjects s ON s.id = tt.subject_id
+                INNER JOIN classes c ON c.id = tt.class_id
+                INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+                WHERE c.is_active = 1 AND ay.is_active = 1';
+        $params = [];
+
+        if ($schoolId !== null) {
+            $this->assertSchoolId($schoolId);
+            $sql .= ' AND u.school_id = ay.school_id AND ay.school_id = ?';
+            $params[] = $schoolId;
+        }
+
+        $sql .= ' ORDER BY tt.teacher_id, s.name_fr, c.branch, c.name, tt.id';
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
     }
 
     public function subjects(): array
@@ -72,12 +89,20 @@ final class TeacherRepository
         )->fetchAll();
     }
 
-    public function teacherExists(int $teacherId): bool
+    public function teacherExists(int $teacherId, ?int $schoolId = null): bool
     {
-        $stmt = Database::connection()->prepare(
-            "SELECT 1 FROM users WHERE id = ? AND role = 'teacher' LIMIT 1"
-        );
-        $stmt->execute([$teacherId]);
+        $sql = "SELECT 1 FROM users WHERE id = ? AND role = 'teacher'";
+        $params = [$teacherId];
+
+        if ($schoolId !== null) {
+            $this->assertSchoolId($schoolId);
+            $sql .= ' AND school_id = ?';
+            $params[] = $schoolId;
+        }
+
+        $sql .= ' LIMIT 1';
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
         return (bool)$stmt->fetchColumn();
     }
 
@@ -105,16 +130,26 @@ final class TeacherRepository
         return $row ?: null;
     }
 
-    public function findTeachingByIdForUpdate(int $teachingId): ?array
+    public function findTeachingByIdForUpdate(int $teachingId, ?int $schoolId = null): ?array
     {
-        $stmt = Database::connection()->prepare(
-            'SELECT id, teacher_id, subject_id, class_id
-             FROM teacher_teachings
-             WHERE id = ?
-             LIMIT 1
-             FOR UPDATE'
-        );
-        $stmt->execute([$teachingId]);
+        $sql = 'SELECT tt.id, tt.teacher_id, tt.subject_id, tt.class_id
+                FROM teacher_teachings tt
+                INNER JOIN users u ON u.id = tt.teacher_id
+                INNER JOIN classes c ON c.id = tt.class_id
+                INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+                WHERE tt.id = ?';
+        $params = [$teachingId];
+
+        if ($schoolId !== null) {
+            $this->assertSchoolId($schoolId);
+            $sql .= ' AND u.school_id = ay.school_id
+                      AND ay.school_id = ?';
+            $params[] = $schoolId;
+        }
+
+        $sql .= ' LIMIT 1 FOR UPDATE';
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
         $row = $stmt->fetch();
 
         return $row ?: null;
@@ -159,16 +194,23 @@ final class TeacherRepository
         return (bool)$stmt->fetchColumn();
     }
 
-    public function classExistsActive(int $classId): bool
+    public function classExistsActive(int $classId, ?int $schoolId = null): bool
     {
-        $stmt = Database::connection()->prepare(
-            'SELECT 1
-             FROM classes c
-             INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-             WHERE c.id = ? AND c.is_active = 1 AND ay.is_active = 1
-             LIMIT 1'
-        );
-        $stmt->execute([$classId]);
+        $sql = 'SELECT 1
+                FROM classes c
+                INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+                WHERE c.id = ? AND c.is_active = 1 AND ay.is_active = 1';
+        $params = [$classId];
+
+        if ($schoolId !== null) {
+            $this->assertSchoolId($schoolId);
+            $sql .= ' AND ay.school_id = ?';
+            $params[] = $schoolId;
+        }
+
+        $sql .= ' LIMIT 1';
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
         return (bool)$stmt->fetchColumn();
     }
 
@@ -178,5 +220,12 @@ final class TeacherRepository
             'INSERT IGNORE INTO teacher_classes (teacher_id, class_id) VALUES (?, ?)'
         );
         $stmt->execute([$teacherId, $classId]);
+    }
+
+    private function assertSchoolId(int $schoolId): void
+    {
+        if ($schoolId < 1) {
+            throw new \InvalidArgumentException('Invalid school.');
+        }
     }
 }

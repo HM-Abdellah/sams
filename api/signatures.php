@@ -19,7 +19,8 @@ try {
     if ($classId < 1) Response::error('Invalid class.', 422);
 
     $classes = new ClassRepository();
-    if (!$classes->hasAccess((int)$user['id'], (string)$user['role'], $classId)) {
+    $schoolId = (int)$user['school_id'];
+    if (!$classes->hasAccess((int)$user['id'], (string)$user['role'], $classId, $schoolId)) {
         Response::error('Forbidden.', 403);
     }
 

@@ -22,7 +22,11 @@ final class AdminUserController extends AdminApiController
             try {
                 return Response::json([
                     'success' => true,
-                    'data' => ['users' => $this->service->list()],
+                    'data' => [
+                        'users' => $this->service->list(
+                            isset($admin['school_id']) ? (int)$admin['school_id'] : null
+                        ),
+                    ],
                 ]);
             } catch (\Throwable $e) {
                 return $this->error($e);
@@ -51,7 +55,8 @@ final class AdminUserController extends AdminApiController
                     (string)($body['role'] ?? ''),
                     (string)($body['password'] ?? ''),
                     isset($body['employee_id']) ? (string)$body['employee_id'] : null,
-                    isset($body['phone']) ? (string)$body['phone'] : null
+                    isset($body['phone']) ? (string)$body['phone'] : null,
+                    isset($admin['school_id']) ? (int)$admin['school_id'] : null
                 );
 
                 return Response::json([
@@ -68,7 +73,8 @@ final class AdminUserController extends AdminApiController
                     array_key_exists('role', $body) ? (string)$body['role'] : null,
                     array_key_exists('is_active', $body) ? (bool)$body['is_active'] : null,
                     array_key_exists('employee_id', $body) ? (string)$body['employee_id'] : null,
-                    array_key_exists('phone', $body) ? (string)$body['phone'] : null
+                    array_key_exists('phone', $body) ? (string)$body['phone'] : null,
+                    isset($admin['school_id']) ? (int)$admin['school_id'] : null
                 );
 
                 return Response::json([
@@ -81,7 +87,8 @@ final class AdminUserController extends AdminApiController
                 $this->service->resetPassword(
                     (int)$admin['id'],
                     (int)($body['id'] ?? 0),
-                    (string)($body['password'] ?? '')
+                    (string)($body['password'] ?? ''),
+                    isset($admin['school_id']) ? (int)$admin['school_id'] : null
                 );
 
                 return Response::json(['success' => true, 'data' => null]);
@@ -89,7 +96,11 @@ final class AdminUserController extends AdminApiController
 
             if ($action === 'unlock') {
                 $id = (int)($body['id'] ?? 0);
-                $this->service->unlock((int)$admin['id'], $id);
+                $this->service->unlock(
+                    (int)$admin['id'],
+                    $id,
+                    isset($admin['school_id']) ? (int)$admin['school_id'] : null
+                );
 
                 return Response::json([
                     'success' => true,

@@ -42,7 +42,7 @@ final class SchoolImportController
         }
 
         if (isset($params['action'])) {
-            return $this->workflowAction($request, $params, (int)$user['id']);
+            return $this->workflowAction($request, $params, $user);
         }
 
         return $this->upload($request, $user);
@@ -115,7 +115,8 @@ final class SchoolImportController
             $tmpName,
             (int)$user['id'],
             $filename,
-            $targetAcademicYearId
+            $targetAcademicYearId,
+            isset($user['school_id']) ? (int)$user['school_id'] : null
         );
 
         return Response::json([
@@ -127,7 +128,7 @@ final class SchoolImportController
     private function workflowAction(
         Request $request,
         array $params,
-        int $userId
+        array $user
     ): Response {
         $batchId = isset($params['id']) && ctype_digit((string)$params['id'])
             ? (int)$params['id']
@@ -150,8 +151,16 @@ final class SchoolImportController
 
         try {
             $result = $action === 'reconcile'
-                ? $this->reconciliation->reconcile($batchId, $userId)
-                : $this->reconciliation->commit($batchId, $userId);
+                ? $this->reconciliation->reconcile(
+                    $batchId,
+                    (int)$user['id'],
+                    isset($user['school_id']) ? (int)$user['school_id'] : null
+                )
+                : $this->reconciliation->commit(
+                    $batchId,
+                    (int)$user['id'],
+                    isset($user['school_id']) ? (int)$user['school_id'] : null
+                );
 
             return Response::json([
                 'success' => true,
@@ -184,7 +193,10 @@ final class SchoolImportController
         }
 
         $imports = new SchoolImportRepository();
-        $batch = $imports->findBatch($batchId);
+        $batch = $imports->findBatch(
+            $batchId,
+            isset($user['school_id']) ? (int)$user['school_id'] : null
+        );
         if ($batch === null) {
             return Response::json([
                 'success' => false,

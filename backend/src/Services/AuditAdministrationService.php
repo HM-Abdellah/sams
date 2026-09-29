@@ -20,10 +20,14 @@ final class AuditAdministrationService
         ?string $fromDate,
         ?string $toDate,
         int $page = 1,
-        int $perPage = 50
+        int $perPage = 50,
+        ?int $schoolId = null
     ): array {
         if ($userId !== null && $userId < 1) {
             throw new \InvalidArgumentException('Invalid user_id.');
+        }
+        if ($schoolId !== null && $schoolId < 1) {
+            throw new \InvalidArgumentException('Invalid school.');
         }
 
         $page = max(1, $page);
@@ -49,7 +53,8 @@ final class AuditAdministrationService
             $fromDate,
             $toDate,
             $page,
-            $perPage
+            $perPage,
+            $schoolId
         );
     }
 }

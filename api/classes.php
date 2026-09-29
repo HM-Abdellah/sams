@@ -14,18 +14,19 @@ try {
     $user = Auth::requireLogin();
     $repo = new ClassRepository();
     $adminService = new ClassAdministrationService();
+    $schoolId = (int)$user['school_id'];
     $method = sams_method();
 
     if ($method === 'GET') {
         if ((string)($_GET['scope'] ?? '') === 'all') {
             Auth::requireRole('admin');
             Response::success([
-                'classes' => $repo->allForAdmin()
+                'classes' => $repo->allForAdmin($schoolId)
             ]);
         }
 
         Response::success([
-            'classes' => $repo->forUser((int)$user['id'], (string)$user['role'])
+            'classes' => $repo->forUser((int)$user['id'], (string)$user['role'], $schoolId)
         ]);
     }
 
@@ -47,7 +48,8 @@ try {
             (int)$user['id'],
             (string)($body['name'] ?? ''),
             isset($body['level']) ? (string)$body['level'] : null,
-            isset($body['branch']) ? (string)$body['branch'] : null
+            isset($body['branch']) ? (string)$body['branch'] : null,
+            $schoolId
         );
 
         Response::success(['id' => $id], 201);
@@ -60,7 +62,8 @@ try {
             $classId,
             array_key_exists('name', $body) ? (string)$body['name'] : null,
             array_key_exists('level', $body) ? (string)$body['level'] : null,
-            array_key_exists('branch', $body) ? (string)$body['branch'] : null
+            array_key_exists('branch', $body) ? (string)$body['branch'] : null,
+            $schoolId
         );
 
         Response::success(['id' => $id]);
@@ -71,7 +74,8 @@ try {
         $changed = $adminService->setActive(
             (int)$user['id'],
             $classId,
-            $action === 'activate'
+            $action === 'activate',
+            $schoolId
         );
 
         Response::success(['changed' => $changed]);

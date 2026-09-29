@@ -8,25 +8,33 @@ use SAMS\Helpers\Database;
 
 final class ArchiveRepository
 {
-    public function classInfo(int $classId): ?array
+    public function classInfo(int $classId, ?int $schoolId = null): ?array
     {
-        $stmt = Database::connection()->prepare(
-            'SELECT
-                c.id,
-                c.name,
-                c.level,
-                c.branch,
-                c.is_active,
-                c.academic_year_id,
-                ay.name AS academic_year_name,
-                ay.starts_on AS academic_year_starts_on,
-                ay.ends_on AS academic_year_ends_on
-             FROM classes c
-             INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-             WHERE c.id = ?
-             LIMIT 1'
-        );
-        $stmt->execute([$classId]);
+        $sql = 'SELECT
+                    c.id,
+                    c.name,
+                    c.level,
+                    c.branch,
+                    c.is_active,
+                    c.academic_year_id,
+                    ay.school_id,
+                    ay.name AS academic_year_name,
+                    ay.starts_on AS academic_year_starts_on,
+                    ay.ends_on AS academic_year_ends_on
+                FROM classes c
+                INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+                WHERE c.id = ?';
+        $params = [$classId];
+
+        if ($schoolId !== null) {
+            if ($schoolId < 1) throw new \InvalidArgumentException('Invalid school.');
+            $sql .= ' AND ay.school_id = ?';
+            $params[] = $schoolId;
+        }
+
+        $sql .= ' LIMIT 1';
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
 
         $row = $stmt->fetch();
         return $row ?: null;

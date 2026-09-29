@@ -10,58 +10,61 @@ final class AdminDashboardRepository
 {
     public const ABSENCE_ALERT_THRESHOLD = 5;
 
-    public function summary(): array
+    public function summary(?int $schoolId = null): array
     {
+        $schoolId = $this->normalizeSchoolId($schoolId);
+        $yearScope = $schoolId === null ? '' : ' AND ay.school_id = ' . $schoolId;
+        $userScope = $schoolId === null ? '' : ' AND school_id = ' . $schoolId;
         $pdo = Database::connection();
         $summary = $pdo->query(
             "SELECT
                 (SELECT COUNT(*)
                  FROM classes c
                  INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-                 WHERE c.is_active = 1 AND ay.is_active = 1) AS active_classes,
+                 WHERE c.is_active = 1 AND ay.is_active = 1{$yearScope}) AS active_classes,
                 (SELECT COUNT(DISTINCT e.student_id)
                  FROM student_enrollments e
                  INNER JOIN classes c ON c.id = e.class_id
                  INNER JOIN academic_years ay ON ay.id = c.academic_year_id
                  INNER JOIN students s ON s.id = e.student_id
-                 WHERE c.is_active = 1 AND ay.is_active = 1
+                 WHERE c.is_active = 1 AND ay.is_active = 1{$yearScope}
                    AND s.status = 'active'
                    AND e.starts_on <= CURDATE()
                    AND (e.ends_on IS NULL OR e.ends_on >= CURDATE())) AS active_students,
-                (SELECT COUNT(*) FROM users WHERE role = 'teacher' AND is_active = 1) AS active_teachers,
-                (SELECT COUNT(*) FROM users WHERE role = 'teacher' AND is_active = 1 AND last_seen_at >= CURRENT_TIMESTAMP - INTERVAL 90 SECOND) AS online_teachers,
-                (SELECT COUNT(*) FROM users WHERE role = 'teacher' AND is_active = 1 AND phone_verified = 0) AS unverified_teachers,
-                (SELECT COUNT(*) FROM users WHERE role = 'teacher' AND is_active = 1 AND locked_until IS NOT NULL AND locked_until > CURRENT_TIMESTAMP) AS locked_teachers,
+                (SELECT COUNT(*) FROM users WHERE role = 'teacher' AND is_active = 1{$userScope}) AS active_teachers,
+                (SELECT COUNT(*) FROM users WHERE role = 'teacher' AND is_active = 1 AND last_seen_at >= CURRENT_TIMESTAMP - INTERVAL 90 SECOND{$userScope}) AS online_teachers,
+                (SELECT COUNT(*) FROM users WHERE role = 'teacher' AND is_active = 1 AND phone_verified = 0{$userScope}) AS unverified_teachers,
+                (SELECT COUNT(*) FROM users WHERE role = 'teacher' AND is_active = 1 AND locked_until IS NOT NULL AND locked_until > CURRENT_TIMESTAMP{$userScope}) AS locked_teachers,
                 (SELECT COUNT(*)
                  FROM attendance a
                  INNER JOIN student_enrollments e ON e.id = a.enrollment_id
                  INNER JOIN classes c ON c.id = e.class_id
                  INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-                 WHERE c.is_active = 1 AND ay.is_active = 1 AND a.attendance_date = CURDATE()) AS today_records,
+                 WHERE c.is_active = 1 AND ay.is_active = 1{$yearScope} AND a.attendance_date = CURDATE()) AS today_records,
                 (SELECT COALESCE(SUM(a.status = 'present'), 0)
                  FROM attendance a
                  INNER JOIN student_enrollments e ON e.id = a.enrollment_id
                  INNER JOIN classes c ON c.id = e.class_id
                  INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-                 WHERE c.is_active = 1 AND ay.is_active = 1 AND a.attendance_date = CURDATE()) AS today_present,
+                 WHERE c.is_active = 1 AND ay.is_active = 1{$yearScope} AND a.attendance_date = CURDATE()) AS today_present,
                 (SELECT COALESCE(SUM(a.status = 'absent'), 0)
                  FROM attendance a
                  INNER JOIN student_enrollments e ON e.id = a.enrollment_id
                  INNER JOIN classes c ON c.id = e.class_id
                  INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-                 WHERE c.is_active = 1 AND ay.is_active = 1 AND a.attendance_date = CURDATE()) AS today_absent,
+                 WHERE c.is_active = 1 AND ay.is_active = 1{$yearScope} AND a.attendance_date = CURDATE()) AS today_absent,
                 (SELECT COALESCE(SUM(a.status = 'late'), 0)
                  FROM attendance a
                  INNER JOIN student_enrollments e ON e.id = a.enrollment_id
                  INNER JOIN classes c ON c.id = e.class_id
                  INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-                 WHERE c.is_active = 1 AND ay.is_active = 1 AND a.attendance_date = CURDATE()) AS today_late,
+                 WHERE c.is_active = 1 AND ay.is_active = 1{$yearScope} AND a.attendance_date = CURDATE()) AS today_late,
                 (SELECT COALESCE(SUM(a.status = 'excused'), 0)
                  FROM attendance a
                  INNER JOIN student_enrollments e ON e.id = a.enrollment_id
                  INNER JOIN classes c ON c.id = e.class_id
                  INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-                 WHERE c.is_active = 1 AND ay.is_active = 1 AND a.attendance_date = CURDATE()) AS today_excused"
+                 WHERE c.is_active = 1 AND ay.is_active = 1{$yearScope} AND a.attendance_date = CURDATE()) AS today_excused"
         )->fetch();
 
         $todayTotal = (int)($summary['today_records'] ?? 0);
@@ -72,8 +75,10 @@ final class AdminDashboardRepository
         return $summary ?: [];
     }
 
-    public function classStats(): array
+    public function classStats(?int $schoolId = null): array
     {
+        $schoolId = $this->normalizeSchoolId($schoolId);
+        $yearScope = $schoolId === null ? '' : ' AND ay.school_id = ' . $schoolId;
         return Database::connection()->query(
             "SELECT
                 c.id,
@@ -95,14 +100,16 @@ final class AdminDashboardRepository
                 AND (e.ends_on IS NULL OR e.ends_on >= CURDATE())
              LEFT JOIN students s ON s.id = e.student_id
              LEFT JOIN attendance a ON a.enrollment_id = e.id AND a.attendance_date = CURDATE()
-             WHERE c.is_active = 1 AND ay.is_active = 1
+             WHERE c.is_active = 1 AND ay.is_active = 1{$yearScope}
              GROUP BY c.id, c.name, c.level, c.branch, ay.id, ay.name
              ORDER BY c.branch, c.level, c.name, c.id"
         )->fetchAll();
     }
 
-    public function attentionStudents(): array
+    public function attentionStudents(?int $schoolId = null): array
     {
+        $schoolId = $this->normalizeSchoolId($schoolId);
+        $yearScope = $schoolId === null ? '' : ' AND current_year.school_id = ' . $schoolId;
         $threshold = self::ABSENCE_ALERT_THRESHOLD;
         $stmt = Database::connection()->query(
             "SELECT
@@ -124,7 +131,7 @@ final class AdminDashboardRepository
                 ON current_class.id = current_enrollment.class_id
              INNER JOIN academic_years current_year
                 ON current_year.id = current_class.academic_year_id
-               AND current_year.is_active = 1
+               AND current_year.is_active = 1{$yearScope}
              LEFT JOIN student_enrollments e
                 ON e.student_id = s.id
                AND e.starts_on <= CURDATE()
@@ -143,14 +150,16 @@ final class AdminDashboardRepository
         return $stmt->fetchAll();
     }
 
-    public function classesWithoutTodayRecords(): array
+    public function classesWithoutTodayRecords(?int $schoolId = null): array
     {
+        $schoolId = $this->normalizeSchoolId($schoolId);
+        $yearScope = $schoolId === null ? '' : ' AND ay.school_id = ' . $schoolId;
         return Database::connection()->query(
             "SELECT c.id, c.name, c.level, c.branch, ay.name AS academic_year_name
              FROM classes c
              INNER JOIN academic_years ay ON ay.id = c.academic_year_id
              WHERE c.is_active = 1
-               AND ay.is_active = 1
+               AND ay.is_active = 1{$yearScope}
                AND EXISTS (
                    SELECT 1
                    FROM student_enrollments e
@@ -171,10 +180,12 @@ final class AdminDashboardRepository
         )->fetchAll();
     }
 
-    public function recentAudit(): array
+    public function recentAudit(?int $schoolId = null): array
     {
+        $schoolId = $this->normalizeSchoolId($schoolId);
+        $auditScope = $schoolId === null ? '' : ' WHERE a.school_id = ' . $schoolId;
         return Database::connection()->query(
-            'SELECT
+            "SELECT
                 a.id,
                 a.action,
                 a.entity_type,
@@ -183,9 +194,17 @@ final class AdminDashboardRepository
                 u.full_name,
                 u.username
              FROM audit_logs a
-             LEFT JOIN users u ON u.id = a.user_id
+             LEFT JOIN users u ON u.id = a.user_id$auditScope
              ORDER BY a.id DESC
-             LIMIT 8'
+             LIMIT 8"
         )->fetchAll();
+    }
+
+    private function normalizeSchoolId(?int $schoolId): ?int
+    {
+        if ($schoolId !== null && $schoolId < 1) {
+            throw new \InvalidArgumentException('Invalid school.');
+        }
+        return $schoolId;
     }
 }

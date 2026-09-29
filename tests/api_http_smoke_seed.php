@@ -38,18 +38,31 @@ http_seed_schema($pdo, $schema);
 
 $pdo->beginTransaction();
 try {
-    $pdo->exec("INSERT INTO academic_years (name, starts_on, ends_on, is_active)
-        VALUES ('2026/2027', '2026-09-01', '2027-07-31', 1)");
+    $pdo->exec("INSERT INTO schools (code, name)
+        VALUES ('HTTP-001', 'HTTP Smoke School')");
+    $schoolId = (int)$pdo->lastInsertId();
 
-    $pdo->exec("INSERT INTO users
-        (username, employee_id, full_name, password_hash, role, is_active, session_version)
-    VALUES ('http-admin', 'HTTPA', 'HTTP Admin', 'synthetic-admin-hash', 'admin', 1, 1),
-           ('http-teacher', 'HTTPT', 'HTTP Teacher', 'synthetic-teacher-hash', 'teacher', 1, 1),
-           ('http-observer', 'HTTPO', 'HTTP Observer', 'synthetic-observer-hash', 'teacher', 1, 1),
-           ('http-counselor', 'HTTPC', 'HTTP Counselor', 'synthetic-counselor-hash', 'counselor', 1, 1)");
+    $yearStmt = $pdo->prepare("INSERT INTO academic_years
+        (school_id, name, starts_on, ends_on, is_active)
+        VALUES (?, '2026/2027', '2026-09-01', '2027-07-31', 1)");
+    $yearStmt->execute([$schoolId]);
+    $yearId = (int)$pdo->lastInsertId();
 
-    $pdo->exec("INSERT INTO classes (academic_year_id, name, level, branch, is_active)
-        VALUES (1, 'HTTP-A', '2BAC', 'SP', 1)");
+    $userStmt = $pdo->prepare("INSERT INTO users
+        (school_id, username, employee_id, full_name, password_hash, role, account_status, is_active, session_version)
+    VALUES (?, ?, ?, ?, ?, ?, 'active', 1, 1)");
+    $users = [
+        ['http-admin', 'HTTPA', 'HTTP Admin', 'synthetic-admin-hash', 'admin'],
+        ['http-teacher', 'HTTPT', 'HTTP Teacher', 'synthetic-teacher-hash', 'teacher'],
+        ['http-observer', 'HTTPO', 'HTTP Observer', 'synthetic-observer-hash', 'teacher'],
+        ['http-counselor', 'HTTPC', 'HTTP Counselor', 'synthetic-counselor-hash', 'counselor'],
+    ];
+    foreach ($users as [$username, $employeeId, $fullName, $passwordHash, $role]) {
+        $userStmt->execute([$schoolId, $username, $employeeId, $fullName, $passwordHash, $role]);
+    }
+
+    $pdo->prepare("INSERT INTO classes (academic_year_id, name, level, branch, is_active)
+        VALUES (?, 'HTTP-A', '2BAC', 'SP', 1)")->execute([$yearId]);
     $pdo->exec('INSERT INTO teacher_classes (teacher_id, class_id) VALUES (2, 1)');
 
     $pdo->exec("INSERT INTO students

@@ -26,21 +26,24 @@ if (PHP_SAPI !== 'cli') {
     exit(1);
 }
 
-function upsert_user(PDO $pdo, string $username, string $fullName, string $password, string $role): int
+function upsert_user(PDO $pdo, int $schoolId, string $username, string $fullName, string $password, string $role): int
 {
     $stmt = $pdo->prepare(
-        'INSERT INTO users (username, full_name, password_hash, role, is_active)
-         VALUES (?, ?, ?, ?, 1)
+        'INSERT INTO users (school_id, username, full_name, password_hash, role, account_status, is_active)
+         VALUES (?, ?, ?, ?, ?, \'active\', 1)
          ON DUPLICATE KEY UPDATE
+            school_id = VALUES(school_id),
             full_name = VALUES(full_name),
             password_hash = VALUES(password_hash),
             role = VALUES(role),
+            account_status = VALUES(account_status),
             is_active = 1,
             failed_login_attempts = 0,
             locked_until = NULL'
     );
 
     $stmt->execute([
+        $schoolId,
         $username,
         $fullName,
         password_hash($password, PASSWORD_DEFAULT),
@@ -142,6 +145,22 @@ function ensure_student(PDO $pdo, int $classId, array $student, string $startsOn
 try {
     $pdo = Database::connection();
 
+    $tableCheck = $pdo->query("SHOW TABLES LIKE 'schools'");
+    if ($tableCheck->fetchColumn() === false) {
+        throw new RuntimeException(
+            "SAMS schema is missing the school table. Import database/schema.sql first."
+        );
+    }
+
+    $schoolStmt = $pdo->prepare(
+        "INSERT INTO schools (code, name, status) VALUES (?, ?, 'active')
+         ON DUPLICATE KEY UPDATE name = VALUES(name), status = 'active'"
+    );
+    $schoolStmt->execute(['DEMO-SCHOOL', 'SAMS Demo School']);
+    $schoolId = (int)$pdo->query(
+        "SELECT id FROM schools WHERE code = 'DEMO-SCHOOL' LIMIT 1"
+    )->fetchColumn();
+
     $tableCheck = $pdo->query("SHOW TABLES LIKE 'academic_years'");
     if ($tableCheck->fetchColumn() === false) {
         throw new RuntimeException(
@@ -180,18 +199,18 @@ try {
     $yearStmt = $pdo->prepare(
         'SELECT id
          FROM academic_years
-         WHERE name = ?
+         WHERE school_id = ? AND name = ?
          LIMIT 1'
     );
-    $yearStmt->execute(['2026/2027']);
+    $yearStmt->execute([$schoolId, '2026/2027']);
     $academicYearId = $yearStmt->fetchColumn();
 
     if ($academicYearId === false) {
         $createYear = $pdo->prepare(
-            'INSERT INTO academic_years (name, starts_on, ends_on, is_active)
-             VALUES (?, ?, ?, 1)'
+            'INSERT INTO academic_years (school_id, name, starts_on, ends_on, is_active)
+             VALUES (?, ?, ?, ?, 1)'
         );
-        $createYear->execute(['2026/2027', '2026-09-01', '2027-07-31']);
+        $createYear->execute([$schoolId, '2026/2027', '2026-09-01', '2027-07-31']);
         $academicYearId = (int)$pdo->lastInsertId();
     } else {
         $academicYearId = (int)$academicYearId;
@@ -212,6 +231,7 @@ try {
 
     $adminId = upsert_user(
         $pdo,
+        $schoolId,
         DEMO_ADMIN_USERNAME,
         'SAMS Demo Administrator',
         DEMO_ADMIN_PASSWORD,
@@ -220,6 +240,7 @@ try {
 
     $teacherId = upsert_user(
         $pdo,
+        $schoolId,
         DEMO_TEACHER_USERNAME,
         'SAMS Demo Teacher',
         DEMO_TEACHER_PASSWORD,

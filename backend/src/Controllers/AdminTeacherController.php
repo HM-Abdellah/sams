@@ -22,7 +22,9 @@ final class AdminTeacherController extends AdminApiController
             try {
                 return Response::json([
                     'success' => true,
-                    'data' => $this->service->list(),
+                    'data' => $this->service->list(
+                        isset($admin['school_id']) ? (int)$admin['school_id'] : null
+                    ),
                 ]);
             } catch (\Throwable $e) {
                 return $this->error($e);
@@ -48,7 +50,8 @@ final class AdminTeacherController extends AdminApiController
                     (int)$admin['id'],
                     (int)($body['teacher_id'] ?? 0),
                     (int)($body['subject_id'] ?? 0),
-                    (int)($body['class_id'] ?? 0)
+                    (int)($body['class_id'] ?? 0),
+                    isset($admin['school_id']) ? (int)$admin['school_id'] : null
                 );
 
                 return Response::json([
@@ -59,7 +62,11 @@ final class AdminTeacherController extends AdminApiController
 
             if ($action === 'unassign') {
                 $id = (int)($body['id'] ?? 0);
-                $this->service->unassignTeaching((int)$admin['id'], $id);
+                $this->service->unassignTeaching(
+                    (int)$admin['id'],
+                    $id,
+                    isset($admin['school_id']) ? (int)$admin['school_id'] : null
+                );
 
                 return Response::json([
                     'success' => true,

@@ -16,7 +16,7 @@ final class AdminDashboardController extends AdminApiController
 
     public function __invoke(Request $request, array $params = []): Response
     {
-        $this->requireAdmin();
+        $admin = $this->requireAdmin();
 
         if ($request->method() !== 'GET') {
             return Response::json([
@@ -28,7 +28,9 @@ final class AdminDashboardController extends AdminApiController
         try {
             return Response::json([
                 'success' => true,
-                'data' => $this->service->snapshot(),
+                'data' => $this->service->snapshot(
+                    isset($admin['school_id']) ? (int)$admin['school_id'] : null
+                ),
             ]);
         } catch (\Throwable $e) {
             return $this->error($e);

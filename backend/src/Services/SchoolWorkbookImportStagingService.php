@@ -31,14 +31,19 @@ final class SchoolWorkbookImportStagingService
         string $path,
         int $createdBy,
         string $filename,
-        ?int $targetAcademicYearId = null
+        ?int $targetAcademicYearId = null,
+        ?int $schoolId = null
     ): array {
         if ($createdBy < 1) {
             throw new InvalidArgumentException('Invalid importing user.');
         }
 
+        if ($schoolId !== null && $schoolId < 1) {
+            throw new InvalidArgumentException('Invalid school.');
+        }
+
         if ($targetAcademicYearId !== null) {
-            if ($targetAcademicYearId < 1 || $this->academicYears->find($targetAcademicYearId) === null) {
+            if ($targetAcademicYearId < 1 || $this->academicYears->find($targetAcademicYearId, $schoolId) === null) {
                 throw new InvalidArgumentException('Target academic year not found.');
             }
         }
