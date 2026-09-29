@@ -1,10 +1,10 @@
-import { env } from '../lib/env.ts'
+import { SessionProvider } from './providers/SessionProvider.tsx'
 import { AppRouter } from '../routes/router.tsx'
 
 export function App() {
   return (
-    <div data-api-base-url={env.apiBaseUrl}>
+    <SessionProvider>
       <AppRouter />
-    </div>
+    </SessionProvider>
   )
 }
