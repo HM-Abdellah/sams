@@ -172,6 +172,30 @@ $studentStmt = $pdo->prepare(
 $studentStmt->execute([$classB, 'TEN-B-STUDENT', 'Tenant', 'B Student']);
 $studentB = (int)$pdo->lastInsertId();
 
+$studentLookup = (new SAMSRepositoriesStudentRepository())->studentsByMassarCodes(
+    ['TEN-B-STUDENT'],
+    $schoolA
+);
+tenant_assert(
+    $studentLookup === [],
+    'School-scoped Massar lookup returned another tenant\'s student.'
+);
+
+$foreignMassars = (new SAMSRepositoriesStudentRepository())->massarCodesOwnedByOtherSchools(
+    ['TEN-B-STUDENT'],
+    $schoolA
+);
+tenant_assert(
+    isset($foreignMassars['ten-b-student']),
+    'Cross-school Massar collision was not detected without exposing student details.'
+);
+
+$globalLookup = (new SAMSRepositoriesStudentRepository())->studentsByMassarCodes(['TEN-B-STUDENT']);
+tenant_assert(
+    count($globalLookup) === 1 && (int)$globalLookup['ten-b-student']['id'] === $studentB,
+    'Global compatibility Massar lookup should still resolve the fixture student.'
+);
+
 $enrollmentStmt = $pdo->prepare(
     'INSERT INTO student_enrollments (student_id, class_id, starts_on)
      VALUES (?, ?, CURDATE())'
