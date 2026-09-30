@@ -40,7 +40,13 @@ export function OnboardingStatusPage() {
     finally { setLoading(false) }
   }, [t])
 
-  useEffect(() => { if (initialToken !== '') void load(initialToken) }, [initialToken, load])
+  useEffect(() => {
+    if (queryToken !== '' && stateToken === '') {
+      navigate('/onboarding/status', { replace: true, state: { requestToken: queryToken } })
+      return
+    }
+    if (initialToken !== '') void load(initialToken)
+  }, [initialToken, load, navigate, queryToken, stateToken])
 
   const updateToken = () => {
     const next = token.trim()

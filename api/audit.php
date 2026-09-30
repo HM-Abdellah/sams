@@ -7,10 +7,11 @@ require_once dirname(__DIR__) . '/app/bootstrap.php';
 use SAMS\Helpers\Auth;
 use SAMS\Helpers\Response;
 use SAMS\Helpers\Validation;
-use SAMS\Repositories\AuditLogRepository;
+use SAMS\Services\AuditAdministrationService;
 
 try {
-    Auth::requireRole('admin');
+    $admin = Auth::requireRole('admin');
+    $schoolId = (int)$admin['school_id'];
 
     if (sams_method() !== 'GET') {
         Response::error('Method not allowed.', 405);
@@ -32,14 +33,15 @@ try {
         Response::error('Invalid audit date range.', 422);
     }
 
-    $result = (new AuditLogRepository())->search(
+    $result = (new AuditAdministrationService())->search(
         $userId,
         $action,
         $entityType,
         $fromDate,
         $toDate,
         $page,
-        $perPage
+        $perPage,
+        $schoolId
     );
 
     Response::success($result);

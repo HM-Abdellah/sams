@@ -99,6 +99,8 @@ $userStmt->execute([$schoolB, 'tenant-b-admin', 'Tenant B Admin', 'admin']);
 $adminB = (int)$pdo->lastInsertId();
 $userStmt->execute([$schoolA, 'tenant-a-teacher', 'Tenant A Teacher', 'teacher']);
 $teacherA = (int)$pdo->lastInsertId();
+$userStmt->execute([$schoolB, 'tenant-b-teacher', 'Tenant B Teacher', 'teacher']);
+$teacherB = (int)$pdo->lastInsertId();
 
 $classStmt = $pdo->prepare(
     'INSERT INTO classes (academic_year_id, name, level, branch)
@@ -225,6 +227,28 @@ $auditSchool = $pdo->query(
     "SELECT school_id FROM audit_logs WHERE user_id = {$adminA} AND action = 'tenant.test' ORDER BY id DESC LIMIT 1"
 )->fetchColumn();
 tenant_assert((int)$auditSchool === $schoolA, 'New audit records did not retain tenant ownership.');
+
+$teacherClassAdministration = new \SAMS\Services\TeacherClassAdministrationService();
+$crossSchoolAssignmentRejected = false;
+try {
+    $teacherClassAdministration->assign($adminA, $teacherB, $classA, $schoolA);
+} catch (\SAMS\Exceptions\AdministrationException $e) {
+    $crossSchoolAssignmentRejected = $e->httpStatus() === 404;
+}
+tenant_assert($crossSchoolAssignmentRejected, 'Cross-school legacy-compatible teacher assignment was accepted.');
+tenant_assert(
+    (int)$pdo->query("SELECT COUNT(*) FROM teacher_classes WHERE teacher_id = {$teacherB} AND class_id = {$classA}")->fetchColumn() === 0,
+    'Cross-school teacher assignment inserted a relation despite tenant isolation.'
+);
+
+tenant_assert(
+    $teacherClassAdministration->assign($adminA, $teacherA, $classA, $schoolA) === true,
+    'Own-school teacher assignment failed through the tenant-scoped administration service.'
+);
+tenant_assert(
+    $teacherClassAdministration->unassign($adminA, $teacherA, $classA, $schoolA) === true,
+    'Own-school teacher unassignment failed through the tenant-scoped administration service.'
+);
 
 $imports = new SchoolImportRepository();
 $batchB = $imports->createBatch(

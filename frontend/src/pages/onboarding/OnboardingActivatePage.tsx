@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 import { onboardingApi, type OnboardingActivationData } from '../../features/onboarding/api.ts'
 import { ApiError } from '../../services/api/errors.ts'
@@ -17,6 +17,12 @@ export function OnboardingActivatePage() {
     : ''
   const queryToken = new URLSearchParams(location.search).get('request_token')?.trim() ?? ''
   const token = stateToken || queryToken
+
+  useEffect(() => {
+    if (queryToken !== '' && stateToken === '') {
+      navigate('/onboarding/activate', { replace: true, state: { requestToken: queryToken } })
+    }
+  }, [navigate, queryToken, stateToken])
 
   const activate = async () => {
     if (token === '') return
