@@ -32,13 +32,13 @@ export function OnboardingPage() {
   }
 
   return (
-    <main className="grid min-h-screen place-items-center p-6">
-      <section className="w-full max-w-md rounded-xl border bg-white p-6 shadow-sm dark:bg-neutral-900">
+    <main className="grid min-h-screen place-items-center bg-[var(--sams-background)] p-6 text-[var(--sams-text)]">
+      <section className="w-full max-w-md rounded-xl border border-[var(--sams-border)] bg-[var(--sams-surface)] p-6 shadow-sm">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-medium text-neutral-500">SAMS</p><LanguageSelect />
+          <p className="text-sm font-medium text-[var(--sams-muted)]">SAMS</p><LanguageSelect />
         </div>
         <h1 className="mt-1 text-2xl font-semibold">{t(TRANSLATION_KEYS.onboarding.title)}</h1>
-        <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">{t(TRANSLATION_KEYS.onboarding.hint)}</p>
+        <p className="mt-2 text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.onboarding.hint)}</p>
         {error && <div className="mt-4"><StatusMessage variant="danger">{error}</StatusMessage></div>}
         {token === null ? (
           <form className="mt-6 space-y-4" onSubmit={(event) => { event.preventDefault(); void submit() }}>
@@ -51,7 +51,7 @@ export function OnboardingPage() {
         ) : (
           <div className="mt-6 space-y-4">
             <StatusMessage variant="success" title={t(TRANSLATION_KEYS.onboarding.requestSubmitted)}>{t(TRANSLATION_KEYS.onboarding.requestTokenHint)}</StatusMessage>
-            <div className="rounded-lg border bg-neutral-50 p-4 dark:bg-neutral-800"><p className="text-sm font-medium">{t(TRANSLATION_KEYS.onboarding.requestToken)}</p><code className="mt-2 block break-all text-sm">{token}</code></div>
+            <div className="rounded-lg border border-[var(--sams-border)] bg-[var(--sams-muted-surface)] p-4"><p className="text-sm font-medium">{t(TRANSLATION_KEYS.onboarding.requestToken)}</p><code className="mt-2 block break-all text-sm">{token}</code></div>
             <Button type="button" className="w-full" onClick={() => navigate('/onboarding/status', { state: { requestToken: token } })}>{t(TRANSLATION_KEYS.onboarding.checkStatus)}</Button>
           </div>
         )}
