@@ -23,20 +23,20 @@ export function LoginPage() {
   const from = safeReturnTo(location.state?.from)
 
   if (session.status === 'loading') {
-    return <div className="grid min-h-screen place-items-center p-6">{t(TRANSLATION_KEYS.auth.loading)}</div>
+    return <div className="grid min-h-screen place-items-center bg-[var(--sams-background)] p-6 text-[var(--sams-text)]">{t(TRANSLATION_KEYS.auth.loading)}</div>
   }
 
   if (session.status === 'authenticated') return null
 
   return (
-    <main className="grid min-h-screen place-items-center p-6">
-      <section className="w-full max-w-md rounded-xl border bg-white p-6 shadow-sm">
+    <main className="grid min-h-screen place-items-center bg-[var(--sams-background)] p-6 text-[var(--sams-text)]">
+      <section className="w-full max-w-md rounded-xl border border-[var(--sams-border)] bg-[var(--sams-surface)] p-6 shadow-sm">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-semibold tracking-wide text-neutral-500">SAMS</p>
+          <p className="text-sm font-semibold tracking-wide text-[var(--sams-muted)]">SAMS</p>
           <LanguageSelect />
         </div>
         <h1 className="mt-1 text-2xl font-semibold">{t(TRANSLATION_KEYS.auth.signIn)}</h1>
-        <p className="mt-2 text-sm text-neutral-600">{t(TRANSLATION_KEYS.auth.signInHint)}</p>
+        <p className="mt-2 text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.auth.signInHint)}</p>
         <form
           className="mt-6 space-y-4"
           onSubmit={async (event) => {
