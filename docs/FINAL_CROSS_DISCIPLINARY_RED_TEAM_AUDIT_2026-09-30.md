@@ -17,7 +17,7 @@ The fix now:
 - treats that collision as a blocking reconciliation issue;
 - verifies the behavior with tenant-isolation integration coverage.
 
-The repository-level findings were remediated in PR #28, and the resulting branch passed the hosted release verification in GitHub Actions Run #816. The prior PR #27 release gate remains the baseline for the already-merged production boundary.
+The repository-level findings were remediated in PR #28, and the resulting branch passed the hosted release verification in GitHub Actions Run #817. The prior PR #27 release gate remains the baseline for the already-merged production boundary.
 
 ## Audit domains
 
@@ -261,9 +261,9 @@ PR #28 is the current release follow-up branch.
 
 PR #28 remains open and mergeable against `main`.
 
-The latest head is `77726a96b6fcf8d20f95c1fcec546532bc611818`.
+The latest head is `5fee6aaf6e7e94d36025b77826f990241f2d1993`.
 
-GitHub Actions Run #816 completed successfully across all seven release jobs:
+GitHub Actions Run #817 completed successfully across all seven release jobs:
 
 - PHP;
 - E2E;
@@ -281,7 +281,7 @@ The tenant-isolation regression, dependency audit, production Apache integration
 
 **PASS — FINAL CROSS-DISCIPLINARY ENGINEERING + SECURITY GATE VERIFIED**
 
-Run #816 satisfies the external verification conditions for PR #28 with all seven jobs successful and the frontend E2E commit status green.
+Run #817 satisfies the external verification conditions for PR #28 with all seven jobs successful and the frontend E2E commit status green.
 
 No new release-blocking finding was reported by that hosted run.
 
