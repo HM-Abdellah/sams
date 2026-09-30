@@ -2,7 +2,7 @@ import { Link } from 'react-router'
 import { useI18n } from '../../features/i18n/useI18n.ts'
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
 import { useTeacherClasses } from '../../features/classes/useTeacherClasses.ts'
-import { AsyncStateFeedback, EmptyState } from '../../components/ui/index.ts'
+import { AsyncStateFeedback, EmptyState, PageHeader } from '../../components/ui/index.ts'
 
 export function TeacherClassesPage() {
   const { t, formatDate } = useI18n()
@@ -29,10 +29,10 @@ export function TeacherClassesPage() {
 
   return (
     <section className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold">{t(TRANSLATION_KEYS.navigation.classes)}</h1>
-        <p className="mt-2 text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.teacher.teachingContext)}</p>
-      </header>
+      <PageHeader
+        title={t(TRANSLATION_KEYS.navigation.classes)}
+        description={t(TRANSLATION_KEYS.teacher.teachingContext)}
+      />
 
       <AsyncStateFeedback
         state={classes}

@@ -90,3 +90,49 @@ Verification:
 - Production build: PASS.
 
 This keeps the implementation aligned with the design-token foundation without changing signature storage, API behavior, or the interaction model.
+
+## Page-level composition audit — PageHeader
+
+The next design-system step was to remove repeated page-header composition without changing route or data behavior.
+
+New shared primitive:
+
+- `frontend/src/components/ui/PageHeader.tsx`
+
+Contract:
+
+- optional eyebrow;
+- required title;
+- optional supporting description constrained to readable width;
+- optional action slot aligned independently from the title block;
+- logical-width-safe `min-w-0` title container;
+- SAMS semantic text/muted tokens;
+- responsive wrapping instead of forcing a wide header row.
+
+Adopted by:
+
+- Teacher Dashboard
+- Teacher Classes
+- Teacher Class Details
+- Teacher Reports
+- Teacher Signatures
+- Admin Dashboard
+- Admin Classes
+- Admin Audit
+
+Attendance keeps its own specialized header hierarchy because its context controls are part of the operational workflow rather than generic page actions.
+
+Research decision:
+
+The structure follows the current compositional direction documented by shadcn/ui: layout primitives should be composed from explicit structural regions instead of each page inventing its own wrapper hierarchy. The SAMS component remains intentionally smaller than a generic library shell and does not import shadcn application architecture.
+
+Verification:
+
+- Typecheck: PASS.
+- Lint: PASS, 0 warnings / 0 errors.
+- E2E regression pack: 22/22 passed.
+- Unit tests: 45/45 passed.
+- Production build: PASS; `frontend/dist/index.html` present.
+- `git diff --check`: PASS.
+
+No business logic, API contract, or route behavior was changed by this composition refactor.

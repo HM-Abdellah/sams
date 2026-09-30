@@ -4,7 +4,7 @@ import { useAdminResource } from '../../features/admin/useAdminResource.ts'
 import { dateTime } from '../../features/admin/helpers.ts'
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
 import { useI18n } from '../../features/i18n/useI18n.ts'
-import { Badge, Button, EmptyState, ErrorState, FormField, Input, Loading, Select, Table } from '../../components/ui/index.ts'
+import { Badge, Button, EmptyState, ErrorState, FormField, Input, Loading, PageHeader, Select, Table } from '../../components/ui/index.ts'
 
 export function AdminAuditPage() {
   const { t } = useI18n()
@@ -32,7 +32,10 @@ export function AdminAuditPage() {
 
   return (
     <section className="space-y-6">
-      <header><h1 className="text-2xl font-semibold">{t(TRANSLATION_KEYS.navigation.audit)}</h1><p className="mt-2 text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.admin.auditHint)}</p></header>
+      <PageHeader
+        title={t(TRANSLATION_KEYS.navigation.audit)}
+        description={t(TRANSLATION_KEYS.admin.auditHint)}
+      />
       <section className="grid gap-4 rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] p-5 md:grid-cols-2 lg:grid-cols-3">
         <FormField label={t(TRANSLATION_KEYS.admin.user)}>
           {({ id, ...aria }) => <Select id={id} {...aria} value={draftUser} onChange={(e) => setDraftUser(e.target.value)}><option value="">{t(TRANSLATION_KEYS.admin.allUsers)}</option>{data.users.map((x) => <option key={x.id} value={x.id}>{x.full_name} · {x.username}</option>)}</Select>}

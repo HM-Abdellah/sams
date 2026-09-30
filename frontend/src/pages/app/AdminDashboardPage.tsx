@@ -4,7 +4,7 @@ import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
 import { adminApi } from '../../features/admin/api.ts'
 import { useAdminResource } from '../../features/admin/useAdminResource.ts'
 import { asNumber, dateTime } from '../../features/admin/helpers.ts'
-import { Badge, Button, EmptyState, ErrorState, Loading, Table } from '../../components/ui/index.ts'
+import { Badge, Button, EmptyState, ErrorState, Loading, PageHeader, Table } from '../../components/ui/index.ts'
 
 export function AdminDashboardPage() {
   const { t, formatDate } = useI18n()
@@ -27,16 +27,12 @@ export function AdminDashboardPage() {
   const { summary, class_stats, attention_students, classes_without_today_records, recent_audit } = resource.data
   return (
     <section className="space-y-6">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--sams-muted)]">SAMS</p>
-          <h1 className="mt-1 text-2xl font-semibold">{t(TRANSLATION_KEYS.navigation.dashboard)}</h1>
-          <p className="mt-2 text-sm text-[var(--sams-muted)]">
-            {t(TRANSLATION_KEYS.admin.dashboardDate)}: {formatDate(resource.data.date)}
-          </p>
-        </div>
-        <Button type="button" variant="secondary" onClick={() => void resource.reload()}>{t(TRANSLATION_KEYS.system.reload)}</Button>
-      </header>
+      <PageHeader
+        eyebrow="SAMS"
+        title={t(TRANSLATION_KEYS.navigation.dashboard)}
+        description={`${t(TRANSLATION_KEYS.admin.dashboardDate)}: ${formatDate(resource.data.date)}`}
+        actions={<Button type="button" variant="secondary" onClick={() => void resource.reload()}>{t(TRANSLATION_KEYS.system.reload)}</Button>}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Metric label={t(TRANSLATION_KEYS.admin.activeClasses)} value={asNumber(summary.active_classes)} />

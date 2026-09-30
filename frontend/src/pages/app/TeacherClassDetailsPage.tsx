@@ -3,7 +3,7 @@ import { useI18n } from '../../features/i18n/useI18n.ts'
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
 import { useTeacherClasses } from '../../features/classes/useTeacherClasses.ts'
 import { useClassStudents } from '../../features/students/useClassStudents.ts'
-import { AsyncStateFeedback, Badge, EmptyState } from '../../components/ui/index.ts'
+import { AsyncStateFeedback, Badge, EmptyState, PageHeader } from '../../components/ui/index.ts'
 
 export function TeacherClassDetailsPage() {
   const { t, formatDate } = useI18n()
@@ -39,26 +39,26 @@ export function TeacherClassDetailsPage() {
 
   return (
     <section className="space-y-6">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.navigation.classes)}</p>
-          <h1 className="mt-1 text-2xl font-semibold">{classInfo.name}</h1>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            to={'/app/students?class_id=' + classInfo.id}
-            className="inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--sams-action)] px-4 text-sm font-medium text-[var(--sams-action-foreground)]"
-          >
-            {t(TRANSLATION_KEYS.teacher.openStudents)}
-          </Link>
-          <Link
-            to={'/app/attendance?class_id=' + classInfo.id}
-            className="inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--sams-border)] px-4 text-sm font-medium text-[var(--sams-text)]"
-          >
-            {t(TRANSLATION_KEYS.teacher.openAttendance)}
-          </Link>
-        </div>
-      </header>
+      <PageHeader
+        eyebrow={t(TRANSLATION_KEYS.navigation.classes)}
+        title={classInfo.name}
+        actions={
+          <>
+            <Link
+              to={'/app/students?class_id=' + classInfo.id}
+              className="inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--sams-action)] px-4 text-sm font-medium text-[var(--sams-action-foreground)]"
+            >
+              {t(TRANSLATION_KEYS.teacher.openStudents)}
+            </Link>
+            <Link
+              to={'/app/attendance?class_id=' + classInfo.id}
+              className="inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--sams-border)] px-4 text-sm font-medium text-[var(--sams-text)]"
+            >
+              {t(TRANSLATION_KEYS.teacher.openAttendance)}
+            </Link>
+          </>
+        }
+      />
 
       <section className="rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] p-5">
         <h2 className="font-semibold">{t(TRANSLATION_KEYS.teacher.classSummary)}</h2>

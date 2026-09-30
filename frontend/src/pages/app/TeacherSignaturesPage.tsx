@@ -4,7 +4,7 @@ import { useTeacherClasses } from '../../features/classes/useTeacherClasses.ts'
 import { signaturesApi } from '../../features/signatures/api.ts'
 import { useI18n } from '../../features/i18n/useI18n.ts'
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
-import { Badge, Button, EmptyState, ErrorState, FormField, Loading, Select } from '../../components/ui/index.ts'
+import { Badge, Button, EmptyState, ErrorState, FormField, Loading, PageHeader, Select } from '../../components/ui/index.ts'
 
 const WIDTH = 720
 const HEIGHT = 260
@@ -123,10 +123,10 @@ export function TeacherSignaturesPage() {
 
   return (
     <section className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold">{t(TRANSLATION_KEYS.navigation.signatures)}</h1>
-        <p className="mt-2 text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.signature.hint)}</p>
-      </header>
+      <PageHeader
+        title={t(TRANSLATION_KEYS.navigation.signatures)}
+        description={t(TRANSLATION_KEYS.signature.hint)}
+      />
 
       <FormField label={t(TRANSLATION_KEYS.teacher.selectClass)}>
         {({ id, ...aria }) => (
