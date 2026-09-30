@@ -21,9 +21,9 @@ final class StudentRepository
         return $stmt->fetchAll();
     }
 
-    public function existingMassarCodes(array $codes): array
+    public function existingMassarCodes(array $codes, ?int $schoolId = null): array
     {
-        $students = $this->studentsByMassarCodes($codes);
+        $students = $this->studentsByMassarCodes($codes, $schoolId);
         $result = [];
 
         foreach ($students as $student) {
@@ -33,8 +33,66 @@ final class StudentRepository
         return $result;
     }
 
-    public function studentsByMassarCodes(array $codes): array
+    public function studentsByMassarCodes(array $codes, ?int $schoolId = null): array
     {
+        if ($schoolId !== null && $schoolId < 1) {
+            throw new \InvalidArgumentException('Invalid school.');
+        }
+
+        $codes = array_values(array_unique(array_filter(
+            array_map(static fn($v): string => trim((string)$v), $codes),
+            static fn(string $v): bool => $v !== ''
+        )));
+        if ($codes === []) return [];
+
+        $result = [];
+        foreach (array_chunk($codes, 1000) as $chunk) {
+            $placeholders = implode(',', array_fill(0, count($chunk), '?'));
+            $sql = "SELECT
+                        s.id,
+                        s.class_id,
+                        s.student_number,
+                        s.massar_code,
+                        s.birth_date,
+                        s.first_name,
+                        s.last_name,
+                        s.status
+                    FROM students s
+                    INNER JOIN classes c ON c.id = s.class_id
+                    INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+                    WHERE s.massar_code IN ({$placeholders})";
+            $params = $chunk;
+
+            if ($schoolId !== null) {
+                $sql .= ' AND ay.school_id = ?';
+                $params[] = $schoolId;
+            }
+
+            $stmt = Database::connection()->prepare($sql);
+            $stmt->execute($params);
+
+            foreach ($stmt->fetchAll() as $row) {
+                $result[$this->massarKey((string)$row['massar_code'])] = $row;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Return Massar codes that are registered outside the authenticated school.
+     *
+     * Only the identifiers are returned; cross-school student details are never
+     * exposed to the caller.
+     *
+     * @return array<string,true>
+     */
+    public function massarCodesOwnedByOtherSchools(array $codes, int $schoolId): array
+    {
+        if ($schoolId < 1) {
+            throw new \InvalidArgumentException('Invalid school.');
+        }
+
         $codes = array_values(array_unique(array_filter(
             array_map(static fn($v): string => trim((string)$v), $codes),
             static fn(string $v): bool => $v !== ''
@@ -45,22 +103,19 @@ final class StudentRepository
         foreach (array_chunk($codes, 1000) as $chunk) {
             $placeholders = implode(',', array_fill(0, count($chunk), '?'));
             $stmt = Database::connection()->prepare(
-                "SELECT
-                    id,
-                    class_id,
-                    student_number,
-                    massar_code,
-                    birth_date,
-                    first_name,
-                    last_name,
-                    status
-                 FROM students
-                 WHERE massar_code IN ({$placeholders})"
+                "SELECT s.massar_code
+                 FROM students s
+                 INNER JOIN classes c ON c.id = s.class_id
+                 INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+                 WHERE s.massar_code IN ({$placeholders})
+                   AND ay.school_id <> ?
+                 GROUP BY s.massar_code"
             );
-            $stmt->execute($chunk);
+            $stmt->execute([...$chunk, $schoolId]);
 
             foreach ($stmt->fetchAll() as $row) {
-                $result[$this->massarKey((string)$row['massar_code'])] = $row;
+                $key = $this->massarKey((string)$row['massar_code']);
+                if ($key !== '') $result[$key] = true;
             }
         }
 
