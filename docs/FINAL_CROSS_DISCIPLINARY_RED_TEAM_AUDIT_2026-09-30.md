@@ -2,7 +2,7 @@
 
 Date: 2026-09-30
 Audit scope: repository state represented by PR #28 against `main`
-Status: **CONDITIONALLY READY — EXTERNAL VERIFICATION REQUIRED**
+Status: **PASS — EXTERNALLY VERIFIED**
 
 ## Executive result
 
@@ -17,7 +17,7 @@ The fix now:
 - treats that collision as a blocking reconciliation issue;
 - verifies the behavior with tenant-isolation integration coverage.
 
-The release cannot be marked fully project-green from this audit alone because GitHub has not exposed a completed Actions run/status for PR #28's current head. The prior PR #27 release gate is independently evidenced by CI Run #804 and remains part of the historical verification baseline.
+The repository-level findings were remediated in PR #28, and the resulting branch passed the hosted release verification in GitHub Actions Run #816. The prior PR #27 release gate remains the baseline for the already-merged production boundary.
 
 ## Audit domains
 
@@ -255,39 +255,40 @@ The new version:
 - removes stale claims about an active PWA shell;
 - avoids credentials and demo secrets.
 
-## What remains externally verifiable
+## External verification result
 
 PR #28 is the current release follow-up branch.
 
-At the time of this audit, GitHub exposed:
+PR #28 remains open and mergeable against `main`.
 
-- PR #28 open;
-- head: `773114809fa43ce369a7bc641c0e05dcc90d83a2`;
-- base: `main` at `1bb1b837672d87af20cab09711f133aee29fe4d7`;
-- mergeable: true.
+The latest head is `77726a96b6fcf8d20f95c1fcec546532bc611818`.
 
-However, the GitHub connector returned no workflow runs and no commit statuses for the current PR #28 head.
+GitHub Actions Run #816 completed successfully across all seven release jobs:
 
-Therefore this document deliberately does **not** claim that the new Massar regression, npm audit gate, or Apache static-header assertions have passed in hosted CI.
+- PHP;
+- E2E;
+- frontend build + high-severity npm audit;
+- JavaScript checks;
+- clean-school acceptance;
+- production integration;
+- Apache checks.
+
+The published `frontend/e2e-groups` commit status is also successful.
+
+The tenant-isolation regression, dependency audit, production Apache integration, and static security-header assertions are therefore externally verified on the current PR head.
 
 ## ECC decision
 
-**CONDITIONALLY READY — EXTERNAL VERIFICATION REQUIRED**
+**PASS — FINAL CROSS-DISCIPLINARY ENGINEERING + SECURITY GATE VERIFIED**
 
-Conditions:
+Run #816 satisfies the external verification conditions for PR #28 with all seven jobs successful and the frontend E2E commit status green.
 
-1. GitHub Actions must produce a completed run for PR #28.
-2. The tenant-isolation regression must pass.
-3. The frontend dependency audit must pass at the configured high-severity threshold.
-4. The Apache production integration must pass, including static security-header assertions.
-5. No new release-blocking finding may appear in that run.
-
-Design R&D + Figma remains closed until these conditions are externally verified.
+No new release-blocking finding was reported by that hosted run.
 
 ## Audit frontier
 
 Current engineering frontier:
 
-**GitHub-hosted verification of PR #28 → final project-wide release gate → Design R&D + Figma**
+**Design R&D + Figma**
 
 No visual redesign work is included in this audit.
