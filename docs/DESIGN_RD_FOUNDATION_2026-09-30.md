@@ -245,6 +245,38 @@ The available Simple Design System library was inspected for the actual primitiv
 
 The design implementation should prefer those reusable library assets over hand-drawn equivalents.
 
+## External design R&D source matrix
+
+The following sources are research inputs, not sources of truth. The implementation remains governed by the SAMS product workflow, accessibility requirements, existing frontend primitives, and semantic tokens.
+
+| Source | Design role in SAMS | Boundary |
+| --- | --- | --- |
+| shadcn/ui | foundation patterns for accessible primitives, semantic theme tokens, tables, forms, dialogs, navigation, and composable UI | Do not replace working SAMS primitives blindly; adapt patterns to the current codebase |
+| Realtime Colors | palette exploration, font pairing experiments, live-page preview, and contrast checking | Tooling only; it does not define the SAMS brand palette |
+| Lightswind UI | application-shell, admin, data, settings, sidebar, and EdTech layout references | Borrow structural ideas selectively; avoid ornamental density |
+| 21st.dev | data tables, KPI blocks, command menus, navigation, and reusable React component patterns | Use as pattern research, not copy/paste architecture |
+| Skiper UI | uncommon interaction patterns and refined micro-interactions | Reserve for non-critical moments; never slow attendance entry |
+| Componentry | polished React motion and interaction details | Motion must remain subtle and respect reduced-motion preferences |
+| React Bits | animation and visual-enhancement references | Use selectively; operational workflows stay calm and fast |
+| Refero | real-product visual references and extracted design-system thinking | Reference language only; do not copy another product's identity |
+| Manus | rapid visual exploration and alternative composition references | Prototype inspiration only; not a source of application architecture |
+| GetLayers | visual exploration of sections, backgrounds, and higher-polish compositions | Keep away from dense attendance operations unless materially useful |
+| MotionSites AI | landing/public-surface visual inspiration | Not appropriate for core authenticated workflows |
+| OriginKit | background, text, interactive, and animation references | Decorative patterns only when they improve comprehension |
+| Spline | 2D/3D interactive visual exploration | Prefer public/login/brand surfaces; avoid the attendance core |
+
+### Added sources for this revision
+
+- `skiper-ui.com` is retained as an interaction-pattern source and is already in the research set.
+- `realtimecolors.com` is added as the palette/contrast experimentation tool; the duplicate entry is intentionally normalized to one source.
+- `ui.shadcn.com` is added as the foundational reference for composable accessible primitives and semantic theme tokens.
+
+The current shadcn documentation supports semantic CSS-variable tokens such as background, foreground, primary, border, and ring, and documents Data Table, Dialog, Drawer, Select, Table, Tabs, Tooltip, and related primitives. These ideas align with the current SAMS semantic-token approach and component vocabulary.
+
+Realtime Colors is useful for testing palette distribution on realistic layouts and for checking contrast while iterating on text, background, primary, secondary, and accent roles.
+
+Skiper UI contributes uncommon, refined interaction references and currently advertises 106+ components with shadcn-oriented installation.
+
 ## Figma build sequence
 
 When the Figma MCP rate limit permits writes:
