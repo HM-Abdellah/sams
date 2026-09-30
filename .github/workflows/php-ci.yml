@@ -1071,6 +1071,14 @@ jobs:
           done
           curl -fsS http://127.0.0.1/sams/login > /dev/null
 
+          static_headers=$(curl -sSI http://127.0.0.1/sams/login)
+          printf '%s\n' "$static_headers" | grep -Fqi 'X-Content-Type-Options: nosniff'
+          printf '%s\n' "$static_headers" | grep -Fqi 'X-Frame-Options: DENY'
+          printf '%s\n' "$static_headers" | grep -Fqi 'Referrer-Policy: same-origin'
+          printf '%s\n' "$static_headers" | grep -Fqi 'Permissions-Policy: camera=(), geolocation=(), microphone=()'
+          printf '%s\n' "$static_headers" | grep -Fqi 'Content-Security-Policy:'
+          echo "[PASS] React static responses expose baseline security headers."
+
           if grep -RInE 'test\.(skip|fixme|only)|describe\.(skip|only)' tests/e2e/frontend_phase22_real_backend_smoke.spec.js tests/e2e/frontend_phase23_production_integration.spec.js; then
             echo "Production integration suite contains skipped/focused tests."
             exit 1
