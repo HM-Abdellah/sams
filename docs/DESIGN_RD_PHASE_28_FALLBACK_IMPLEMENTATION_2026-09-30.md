@@ -52,3 +52,28 @@ The fallback is intentionally not a clone of another site's UI. External sources
 ### Follow-up refinement
 
 The period and day rail items retain `shrink-0` on the production buttons so the horizontal rail preserves stable control geometry on narrow screens rather than letting flexbox compress frequent touch targets. The responsive E2E test now asserts the period controls by accessible button names instead of depending on the old 2 × 4 CSS grid.
+
+## AppShell refinement — fallback construction
+
+Research evidence reinforced a layout rule that is useful to SAMS: authenticated application navigation should be structurally separated from task content, while RTL positioning should use logical start/end relationships. shadcn/ui's current RTL guidance documents this approach for Sidebar/navigation components. The SAMS implementation adapts that principle without importing the library's architecture.
+
+Production change in `frontend/src/components/layout/AppShell.tsx`:
+
+1. Desktop (`md+`) uses a persistent role-aware navigation rail beside the task content.
+2. Mobile retains a horizontal overflow-safe navigation rail so the existing 320px responsive behavior remains usable.
+3. Active navigation is communicated through weight, surface, and a logical start-border rather than color alone.
+4. The shell uses `min-w-0` on the grid/navigation container so the horizontal mobile nav becomes the scroll container instead of expanding the page.
+5. Header, navigation, and content now consistently consume SAMS semantic tokens for background, surface, text, muted text, border, and focus.
+
+Verification for this refinement:
+
+- Phase 17 responsive E2E: 4/4 passed.
+- Phase 18 accessibility E2E: 7/7 passed.
+- Combined regression suite: 11/11 passed.
+- Unit tests: 45/45 passed.
+- Typecheck: PASS.
+- Lint: PASS, 0 warnings / 0 errors.
+- Production build: PASS.
+- Visual geometry smoke: 390px LTR/RTL and 1440px LTR/RTL all stayed within viewport width; desktop navigation moved to the RTL side correctly.
+
+This is a fallback implementation of the design-system direction. It does not claim Figma structural construction, screenshot verification, or component-library instance binding.
