@@ -24,11 +24,11 @@ Verified against the current Codespace state before Phase 28 planning:
 
 - Repository path: `/workspaces/sams`
 - Current branch: `hardening/final-red-team-and-readme-20260930`
-- Current HEAD: `95d489526de3e26af7bab2004260f8cf95f125df`
+- Current HEAD at closeout: `08a063366dbf2f48f0e5bf698dd921321a99d5ee`
 - `origin/main`: `1bb1b837672d87af20cab09711f133aee29fe4d7`
-- Branch relationship: `0 behind / 27 ahead` of `origin/main`
-- Working tree: only intentional untracked Playwright artifacts (`playwright-report/`, `test-results/`)
-- Latest CI for current HEAD: Run #826, completed successfully
+- The branch remains ahead of `origin/main`; the exact ahead count is not duplicated here because documentation-only closeout commits can change it.
+- Working tree at the last Codespace verification contained only intentional untracked Playwright artifacts (`playwright-report/`, `test-results/`).
+- Latest verified CI before the documentation-only Phase 28 closeout commits: Run #830, completed successfully, with all 7 release jobs passing.
 - CI jobs verified: `php`, `e2e`, `frontend-build`, `javascript`, `clean-school-acceptance`, `apache`, `production-integration`
 - Figma file: `c7AYNouIorvvAzGlryHqcZ`
 - Figma file creation: previously verified
