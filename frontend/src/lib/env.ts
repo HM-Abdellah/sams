@@ -1,4 +1,5 @@
-const DEFAULT_API_BASE_URL = '/api/v1'
+const configuredBasePath = (import.meta.env.BASE_URL ?? '/').replace(/\/+$/, '')
+const DEFAULT_API_BASE_URL = `${configuredBasePath}/api/v1`
 
 function normalizeApiBaseUrl(value: string): string {
   const normalized = value.trim().replace(/\/+$/, '')
