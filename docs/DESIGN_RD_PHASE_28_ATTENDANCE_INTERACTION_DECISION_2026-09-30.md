@@ -312,3 +312,24 @@ The file is a design lab artifact only:
 
 Visual review performed with a headless Chromium render at 390px and 1440px,
 plus an RTL 390px smoke render.
+
+## 15. Automated prototype verification
+
+Executed against `docs/prototypes/phase28-attendance.html` with Playwright 1.63.0
+using Chromium headless.
+
+Results:
+- 390px LTR: body width 390px, viewport width 390px, no horizontal overflow.
+- 390px RTL: body width 390px, viewport width 390px, no horizontal overflow.
+- Direct-status prototype: 2 groups / 10 option nodes across the two sample
+  student records; protected record controls were all disabled.
+- Native radio keyboard smoke: moving from the first option with ArrowRight
+  selected the second option, confirming browser-managed single-choice keyboard
+  behavior in the prototype.
+- Save interaction smoke: button transitioned from `unsaved` to `saved` and
+  displayed `Enregistré`.
+- 1440px: no horizontal overflow; semantic table rendered 3 data rows.
+
+This verification covers structural/interaction constraints of the lab artifact.
+It does not replace real task-level usability validation or Figma structural/
+visual verification.
