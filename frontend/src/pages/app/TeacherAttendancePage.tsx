@@ -314,8 +314,8 @@ export function TeacherAttendancePage() {
                   aria-pressed={day === activeDay}
                   onClick={() => setSelectedDay(day)}
                   className={day === activeDay
-                    ? 'min-h-10 rounded-md bg-[var(--sams-action)] px-3 py-2 text-sm font-medium text-[var(--sams-action-foreground)]'
-                    : 'min-h-10 rounded-md border border-[var(--sams-border)] bg-[var(--sams-surface)] px-3 py-2 text-sm text-[var(--sams-text)] hover:bg-[var(--sams-muted-surface)]'}
+                    ? 'min-h-10 shrink-0 rounded-md bg-[var(--sams-action)] px-3 py-2 text-sm font-medium text-[var(--sams-action-foreground)]'
+                    : 'min-h-10 shrink-0 rounded-md border border-[var(--sams-border)] bg-[var(--sams-surface)] px-3 py-2 text-sm text-[var(--sams-text)] hover:bg-[var(--sams-muted-surface)]'}
                 >
                   <span className="block font-medium">{formatDate(day, locale, { weekday: 'short' })}</span>
                   <span className="block text-xs opacity-80">{formatDate(day, locale, { day: '2-digit', month: '2-digit' })}</span>
@@ -333,8 +333,8 @@ export function TeacherAttendancePage() {
                     aria-pressed={selectedPeriod === number}
                     onClick={() => setSelectedPeriod(number)}
                     className={selectedPeriod === number
-                      ? 'rounded-md bg-[var(--sams-muted-surface)] px-2 py-2 text-sm font-semibold ring-1 ring-[var(--sams-text)]'
-                      : 'rounded-md border border-[var(--sams-border)] bg-[var(--sams-surface)] px-2 py-2 text-sm hover:bg-[var(--sams-muted-surface)]'}
+                      ? 'shrink-0 rounded-md bg-[var(--sams-muted-surface)] px-3 py-2 text-sm font-semibold ring-1 ring-[var(--sams-text)]'
+                      : 'shrink-0 rounded-md border border-[var(--sams-border)] bg-[var(--sams-surface)] px-3 py-2 text-sm hover:bg-[var(--sams-muted-surface)]'}
                   >
                     <span className="block">{t(TRANSLATION_KEYS.attendance.period)} {number}</span>
                     <span className="block text-xs text-[var(--sams-muted)]">{period}</span>
