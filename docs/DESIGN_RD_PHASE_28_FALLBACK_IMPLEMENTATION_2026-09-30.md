@@ -77,3 +77,16 @@ Verification for this refinement:
 - Visual geometry smoke: 390px LTR/RTL and 1440px LTR/RTL all stayed within viewport width; desktop navigation moved to the RTL side correctly.
 
 This is a fallback implementation of the design-system direction. It does not claim Figma structural construction, screenshot verification, or component-library instance binding.
+
+## Token audit follow-up — signature canvas
+
+The signature canvas previously used literal #171717 and #ffffff rendering values. The rendering layer now reads the SAMS semantic text/surface tokens at runtime, while the canvas element itself uses the same surface token for its background.
+
+Verification:
+
+- Typecheck: PASS.
+- Lint: PASS, 0 warnings / 0 errors.
+- Teacher signatures E2E: 1/1 passed.
+- Production build: PASS.
+
+This keeps the implementation aligned with the design-token foundation without changing signature storage, API behavior, or the interaction model.
