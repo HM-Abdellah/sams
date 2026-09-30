@@ -57,11 +57,13 @@ export function TeacherSignaturesPage() {
     canvas.height = HEIGHT * ratio
     canvas.style.aspectRatio = WIDTH + ' / ' + HEIGHT
     context.setTransform(ratio, 0, 0, ratio, 0, 0)
+    const styles = getComputedStyle(document.documentElement)
+    const token = (name: string, fallback: string) => styles.getPropertyValue(name).trim() || fallback
     context.lineWidth = 2.5
     context.lineCap = 'round'
     context.lineJoin = 'round'
-    context.strokeStyle = '#171717'
-    context.fillStyle = '#ffffff'
+    context.strokeStyle = token('--sams-text', '#171717')
+    context.fillStyle = token('--sams-surface', '#ffffff')
     context.fillRect(0, 0, WIDTH, HEIGHT)
     if (!signature) return
     const image = new Image()
@@ -150,7 +152,7 @@ export function TeacherSignaturesPage() {
           <canvas
             ref={canvasRef}
             aria-label={t(TRANSLATION_KEYS.signature.canvas)}
-            className="block w-full touch-none rounded-md border border-[var(--sams-border)] bg-white"
+            className="block w-full touch-none rounded-md border border-[var(--sams-border)] bg-[var(--sams-surface)]"
             onPointerDown={(event) => {
               const current = point(event)
               if (!current) return
