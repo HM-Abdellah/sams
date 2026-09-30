@@ -169,3 +169,9 @@ Verification:
 Research decision:
 
 Current shadcn/ui guidance treats complex data tables as composition rather than a universal table component, and its pagination examples keep pagination controls separate from the table rendering. SAMS follows the same separation while retaining its server-authoritative feature state. The source used for this decision was the current shadcn/ui Table and Data Table documentation reviewed on 2026-09-30.
+
+## CI verification follow-up — lazy route synchronization
+
+The Phase 20 performance E2E test exposed a CI-only timeout while waiting for the lazily loaded Teacher Attendance route. The test already synchronizes on the semantic attendance heading; its assertion window was increased from the shared 5-second expectation timeout to 15 seconds for this cold-start route only. No fixed sleep was introduced, and local production-preview verification passes all three Phase 20 performance tests.
+
+This change addresses test-environment timing variance rather than changing the attendance runtime behavior.

@@ -90,7 +90,8 @@ test.describe('frontend Phase 20 performance', () => {
 
     await page.getByRole('link', { name: 'Attendance', exact: true }).click()
     await expect(page).toHaveURL(/\/app\/attendance/)
-    await expect(page.getByRole('heading', { name: 'Attendance register' })).toBeVisible()
+    // Lazy route chunks can cold-start slower on CI runners; wait on the semantic page-ready signal rather than a fixed delay.
+    await expect(page.getByRole('heading', { name: 'Attendance register' })).toBeVisible({ timeout: 15_000 })
 
     const afterNavigation = await scriptMetrics(page)
     expect(afterNavigation.scripts.some(({ file }) => file.startsWith('TeacherAttendancePage-'))).toBeTruthy()
