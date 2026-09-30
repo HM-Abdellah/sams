@@ -1091,6 +1091,9 @@ jobs:
 
           node --check tests/e2e/frontend_phase22_real_backend_smoke.spec.js
           node --check tests/e2e/frontend_phase23_production_integration.spec.js
+          echo "[INFO] Playwright runtime: Node $(node --version), Playwright $(./node_modules/.bin/playwright --version)"
+          test -x ./node_modules/.bin/playwright
+          SAMS_BASE_URL=http://127.0.0.1/sams/ ./node_modules/.bin/playwright test tests/e2e/frontend_phase22_real_backend_smoke.spec.js tests/e2e/frontend_phase23_production_integration.spec.js --project=chromium --list
           SAMS_BASE_URL=http://127.0.0.1/sams/ ./node_modules/.bin/playwright test tests/e2e/frontend_phase22_real_backend_smoke.spec.js tests/e2e/frontend_phase23_production_integration.spec.js --project=chromium --reporter=line
 
           test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1/sams/backend/src/Helpers/Auth.php)" = "403"
