@@ -1,5 +1,6 @@
 {
   "$schema": "https://ui.shadcn.com/schema.json",
+  "rtl": true,
   "registries": {
     "@reactbits-starter": "https://pro.reactbits.dev/api/r/starter/{name}.json",
     "@reactbits-pro": {
