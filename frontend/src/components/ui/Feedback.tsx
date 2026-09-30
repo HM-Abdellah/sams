@@ -6,6 +6,7 @@ interface StatusMessageProps {
   children: ReactNode
   variant?: 'info' | 'success' | 'warning' | 'danger'
   role?: 'alert' | 'status'
+  action?: ReactNode
   className?: string
 }
 
@@ -21,12 +22,14 @@ export function StatusMessage({
   children,
   variant = 'info',
   role = variant === 'danger' ? 'alert' : 'status',
+  action,
   className,
 }: StatusMessageProps) {
   return (
     <div role={role} className={cn('rounded-md border p-3 text-sm', statusClasses[variant], className)}>
       {title && <p className="font-semibold">{title}</p>}
       <div className={title ? 'mt-1' : undefined}>{children}</div>
+      {action && <div className="mt-3">{action}</div>}
     </div>
   )
 }

@@ -1,6 +1,7 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react'
+import { useId, useRef, type ReactNode } from 'react'
 import { Button } from './Button.tsx'
 import { cn } from './cn.ts'
+import { useModalFocus } from './useModalFocus.ts'
 
 interface DrawerProps {
   open: boolean
@@ -24,10 +25,7 @@ export function Drawer({
   const titleId = useId()
   const descriptionId = useId()
   const drawerRef = useRef<HTMLElement>(null)
-
-  useEffect(() => {
-    if (open) drawerRef.current?.focus()
-  }, [open])
+  const handleKeyDown = useModalFocus({ open, containerRef: drawerRef, onClose })
 
   if (!open) return null
 
@@ -42,11 +40,9 @@ export function Drawer({
         aria-describedby={description ? descriptionId : undefined}
         ref={drawerRef}
         tabIndex={-1}
-        onKeyDown={(event) => {
-          if (event.key === 'Escape') onClose()
-        }}
+        onKeyDown={handleKeyDown}
         className={cn(
-          'absolute inset-y-0 w-full max-w-md bg-[var(--sams-surface)] p-5 shadow-lg',
+          'absolute inset-y-0 max-h-dvh w-full max-w-md overflow-y-auto bg-[var(--sams-surface)] p-4 shadow-lg sm:p-5',
           side === 'start' ? 'inset-s-0' : 'inset-e-0',
         )}
       >

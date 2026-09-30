@@ -4,6 +4,9 @@ export interface TeacherClass {
   level: string | null
   branch: string | null
   academic_year_id: number
+  academic_year_name?: string | null
+  academic_year_starts_on?: string | null
+  academic_year_ends_on?: string | null
 }
 
 export interface TeacherClassesData {

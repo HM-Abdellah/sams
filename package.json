@@ -5,9 +5,12 @@
   "description": "Student Attendance Management System",
   "scripts": {
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "test:frontend": "npm --prefix frontend run test:unit",
+    "test:frontend:coverage": "npm --prefix frontend run test:unit:coverage"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
     "@playwright/test": "1.63.0"
   }
 }

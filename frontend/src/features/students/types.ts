@@ -13,3 +13,15 @@ export interface Student {
 export interface ClassStudentsData {
   students: Student[]
 }
+
+export interface StudentMutationInput {
+  first_name: string
+  last_name: string
+  student_number: string | null
+  massar_code: string | null
+  birth_date: string | null
+}
+
+export interface StudentMutationResult {
+  id: number
+}

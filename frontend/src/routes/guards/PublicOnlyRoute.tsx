@@ -5,7 +5,7 @@ export function PublicOnlyRoute() {
   const session = useSession()
 
   if (session.status === 'loading') {
-    return <div className="grid min-h-screen place-items-center p-6">Loading…</div>
+    return <div role="status" aria-live="polite" className="grid min-h-screen place-items-center p-6">Loading…</div>
   }
 
   if (session.status === 'error') {

@@ -2,26 +2,23 @@ import { Link } from 'react-router'
 import { useI18n } from '../../features/i18n/useI18n.ts'
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
 import { useTeacherClasses } from '../../features/classes/useTeacherClasses.ts'
-import { Button, EmptyState, ErrorState, Loading } from '../../components/ui/index.ts'
+import { AsyncStateFeedback, EmptyState } from '../../components/ui/index.ts'
 
 export function TeacherDashboardPage() {
   const { t } = useI18n()
   const classes = useTeacherClasses()
 
-  if (classes.status === 'idle' || classes.status === 'loading') {
-    return <Loading label={t(TRANSLATION_KEYS.auth.loading)} />
-  }
-
-  if (classes.status === 'error') {
+  if (classes.data === null) {
     return (
-      <ErrorState
-        title={t(TRANSLATION_KEYS.system.errorTitle)}
-        description={classes.error ?? t(TRANSLATION_KEYS.system.genericError)}
-        action={
-          <Button type="button" variant="secondary" onClick={() => void classes.reload()}>
-            {t(TRANSLATION_KEYS.system.reload)}
-          </Button>
-        }
+      <AsyncStateFeedback
+        state={classes}
+        loadingLabel={t(TRANSLATION_KEYS.auth.loading)}
+        refreshingLabel={t(TRANSLATION_KEYS.system.refreshing)}
+        errorTitle={t(TRANSLATION_KEYS.system.errorTitle)}
+        genericError={t(TRANSLATION_KEYS.system.genericError)}
+        staleErrorLabel={t(TRANSLATION_KEYS.system.staleError)}
+        reloadLabel={t(TRANSLATION_KEYS.system.reload)}
+        onRetry={() => void classes.reload()}
       />
     )
   }
@@ -33,6 +30,17 @@ export function TeacherDashboardPage() {
         <h1 className="mt-1 text-2xl font-semibold">{t(TRANSLATION_KEYS.teacher.dashboard)}</h1>
         <p className="mt-2 text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.teacher.welcome)}</p>
       </header>
+
+      <AsyncStateFeedback
+        state={classes}
+        loadingLabel={t(TRANSLATION_KEYS.auth.loading)}
+        refreshingLabel={t(TRANSLATION_KEYS.system.refreshing)}
+        errorTitle={t(TRANSLATION_KEYS.system.errorTitle)}
+        genericError={t(TRANSLATION_KEYS.system.genericError)}
+        staleErrorLabel={t(TRANSLATION_KEYS.system.staleError)}
+        reloadLabel={t(TRANSLATION_KEYS.system.reload)}
+        onRetry={() => void classes.reload()}
+      />
 
       {classes.classes.length === 0 ? (
         <EmptyState

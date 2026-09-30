@@ -1,6 +1,7 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react'
+import { useId, useRef, type ReactNode } from 'react'
 import { Button } from './Button.tsx'
 import { cn } from './cn.ts'
+import { useModalFocus } from './useModalFocus.ts'
 
 export interface DialogProps {
   open: boolean
@@ -24,10 +25,7 @@ export function Dialog({
   const titleId = useId()
   const descriptionId = useId()
   const dialogRef = useRef<HTMLElement>(null)
-
-  useEffect(() => {
-    if (open) dialogRef.current?.focus()
-  }, [open])
+  const handleKeyDown = useModalFocus({ open, containerRef: dialogRef, onClose })
 
   if (!open) return null
 
@@ -46,10 +44,8 @@ export function Dialog({
         aria-describedby={description ? descriptionId : undefined}
         ref={dialogRef}
         tabIndex={-1}
-        onKeyDown={(event) => {
-          if (event.key === 'Escape') onClose()
-        }}
-        className={cn('w-full max-w-lg rounded-lg border bg-[var(--sams-surface)] p-5 shadow-lg', className)}
+        onKeyDown={handleKeyDown}
+        className={cn('max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-lg border bg-[var(--sams-surface)] p-4 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:p-5', className)}
       >
         <div className="flex items-start justify-between gap-4">
           <div>

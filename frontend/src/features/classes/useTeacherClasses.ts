@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
+import type { AsyncResourceState } from '../../types/ui-state.ts'
 import { classesApi } from './api.ts'
 import type { TeacherClass } from './types.ts'
 
-interface TeacherClassesState {
-  status: 'idle' | 'loading' | 'success' | 'error'
+interface TeacherClassesState extends AsyncResourceState<TeacherClass[]> {
   classes: TeacherClass[]
-  error: string | null
 }
 
 export function useTeacherClasses() {
   const [state, setState] = useState<TeacherClassesState>({
     status: 'idle',
+    data: null,
     classes: [],
     error: null,
   })
@@ -19,14 +19,15 @@ export function useTeacherClasses() {
     setState((current) => ({ ...current, status: 'loading', error: null }))
     try {
       const result = await classesApi.forCurrentUser(signal)
-      setState({ status: 'success', classes: result.classes, error: null })
+      setState({ status: 'success', data: result.classes, classes: result.classes, error: null })
     } catch (cause) {
       if (signal?.aborted) return
-      setState({
+      setState((current) => ({
         status: 'error',
-        classes: [],
+        data: current.data,
+        classes: current.classes,
         error: cause instanceof Error ? cause.message : 'Unable to load classes.',
-      })
+      }))
     }
   }, [])
 

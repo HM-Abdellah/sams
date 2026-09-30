@@ -2,13 +2,13 @@
 
 ## Production prerequisites
 
-The supported release deployment assumes Apache 2.4+, PHP 8.3, MariaDB/MySQL, and Composer 2.
+The supported release deployment assumes Apache 2.4+, PHP 8.3, MariaDB/MySQL, Composer 2, and a Node.js build environment used only to produce the static React bundle.
 
 PHP must provide these extensions used by the release candidate and PhpSpreadsheet: `pdo_mysql`, `mbstring`, `dom`, `xml`, `xmlwriter`, `zip`, and `gd`.
 
 Apache must allow the repository root `.htaccess` to run (`AllowOverride All` for the SAMS directory) and must provide `mod_rewrite` and `mod_headers`.
 
-Node.js is not required by the production runtime. It is only needed for JavaScript/Playwright release verification.
+Node.js is not required by the production runtime. It is used only to build the static React bundle and run JavaScript/Playwright release verification.
 
 ## Production topology
 
@@ -34,10 +34,16 @@ Keep the database and the web application on the same trusted server unless ther
        composer install --no-dev --no-interaction --prefer-dist --no-progress
        composer check-platform-reqs --no-dev
 
-11. Create the first administrator with:
+11. Build the React frontend:
+
+       cd ..\frontend
+       npm ci --no-audit --no-fund
+       npm run build -- --base /sams/
+
+12. Create the first administrator with:
    C:\xampp\php\php.exe scripts\create_admin.php
-12. Open the public application entry point:
-   http://server-name-or-ip/sams/public/
+13. Open the application entry point:
+   http://server-name-or-ip/sams/
 
 Do not place database credentials in Git.
 
@@ -49,9 +55,9 @@ From the repository root:
 
 Then open:
 
-    http://localhost:8080/public/
+    http://localhost:8080/sams/
 
-This is for development/testing. The router exposes only public/ and api/ and keeps application source/configuration outside the HTTP surface. It is not a replacement for the intended Apache deployment.
+This is for development/testing. The router serves the React production bundle and routes /api/v1/* to the PHP backend. It is not a replacement for the intended Apache deployment.
 
 ### CS50.dev clean demo setup
 

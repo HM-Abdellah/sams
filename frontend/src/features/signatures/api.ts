@@ -2,10 +2,8 @@ import { apiClient } from '../../services/api/client.ts'
 
 export interface SignatureRecord {
   id: number
-  teacher_id: number
-  class_id: number
   signature_data: string
-  created_at: string
+  mime_type: string
   updated_at: string
 }
 

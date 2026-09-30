@@ -4,7 +4,7 @@ import { useI18n } from '../../features/i18n/useI18n.ts'
 import { TRANSLATION_KEYS, type TranslationKey } from '../../features/i18n/types.ts'
 import { useTeacherClasses } from '../../features/classes/useTeacherClasses.ts'
 import { useMonthlyReport } from '../../features/reports/useMonthlyReport.ts'
-import { Button, EmptyState, ErrorState, FormField, Loading, Select, Table } from '../../components/ui/index.ts'
+import { AsyncStateFeedback, Button, EmptyState, ErrorState, FormField, Loading, Select, Table } from '../../components/ui/index.ts'
 
 function currentMonth() {
   const date = new Date()
@@ -62,9 +62,20 @@ export function TeacherReportsPage() {
 
   return (
     <section className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold">{t(TRANSLATION_KEYS.teacher.statistics)}</h1>
-        <p className="mt-2 text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.teacher.reportMonth)}</p>
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">{t(TRANSLATION_KEYS.teacher.statistics)}</h1>
+          <p className="mt-2 text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.teacher.reportMonth)}</p>
+        </div>
+        <Button
+          type="button"
+          variant="secondary"
+          className="print:hidden"
+          onClick={() => window.print()}
+          disabled={selectedClassId === null || report.status !== 'success' || report.data === null}
+        >
+          {t(TRANSLATION_KEYS.teacher.printReport)}
+        </Button>
       </header>
 
       {classes.classes.length === 0 ? (
@@ -101,25 +112,29 @@ export function TeacherReportsPage() {
 
           {selectedClassId === null ? (
             <EmptyState title={t(TRANSLATION_KEYS.teacher.selectClass)} />
-          ) : report.status === 'idle' || report.status === 'loading' ? (
-            <Loading label={t(TRANSLATION_KEYS.auth.loading)} />
-          ) : report.status === 'error' ? (
-            <ErrorState
-              title={t(TRANSLATION_KEYS.system.errorTitle)}
-              description={report.error ?? t(TRANSLATION_KEYS.system.genericError)}
-              action={
-                <Button type="button" variant="secondary" onClick={() => void report.reload()}>
-                  {t(TRANSLATION_KEYS.system.reload)}
-                </Button>
-              }
-            />
           ) : reportData === null ? (
-            <ErrorState
-              title={t(TRANSLATION_KEYS.system.errorTitle)}
-              description={t(TRANSLATION_KEYS.system.genericError)}
+            <AsyncStateFeedback
+              state={report}
+              loadingLabel={t(TRANSLATION_KEYS.auth.loading)}
+              refreshingLabel={t(TRANSLATION_KEYS.system.refreshing)}
+              errorTitle={t(TRANSLATION_KEYS.system.errorTitle)}
+              genericError={t(TRANSLATION_KEYS.system.genericError)}
+              staleErrorLabel={t(TRANSLATION_KEYS.system.staleError)}
+              reloadLabel={t(TRANSLATION_KEYS.system.reload)}
+              onRetry={() => void report.reload()}
             />
           ) : (
             <div className="space-y-5">
+              <AsyncStateFeedback
+                state={report}
+                loadingLabel={t(TRANSLATION_KEYS.auth.loading)}
+                refreshingLabel={t(TRANSLATION_KEYS.system.refreshing)}
+                errorTitle={t(TRANSLATION_KEYS.system.errorTitle)}
+                genericError={t(TRANSLATION_KEYS.system.genericError)}
+                staleErrorLabel={t(TRANSLATION_KEYS.system.staleError)}
+                reloadLabel={t(TRANSLATION_KEYS.system.reload)}
+                onRetry={() => void report.reload()}
+              />
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                 {([
                   [TRANSLATION_KEYS.teacher.present, totals?.present ?? 0],

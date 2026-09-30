@@ -51,6 +51,7 @@ final class TeacherAttendanceService
                 'week_end' => $end,
                 'students' => [],
                 'attendance' => [],
+                'period_signoffs' => [],
             ];
         }
 
@@ -87,6 +88,7 @@ final class TeacherAttendanceService
             'week_end' => $end,
             'students' => $students,
             'attendance' => $attendance,
+            'period_signoffs' => $this->signoffs->forWeek($classId, $start, $end),
         ];
     }
 

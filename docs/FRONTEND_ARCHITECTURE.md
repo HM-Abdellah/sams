@@ -241,6 +241,7 @@ The client owns:
 Feature adapters are responsible only for endpoint paths and typed payload/response shapes. Pages and components must not know HTTP details.
 
 The current onboarding public POST endpoints are an explicit backend contract exception and therefore opt out of CSRF in their adapter rather than silently applying an invented client-side rule.
+Request tokens are sensitive transient values: generated navigation keeps them in React Router history state instead of adding them to the URL; direct query-token entry remains available for manual recovery.
 
 The client also rejects non-JSON and malformed API envelopes before feature code receives them. Network-level failures remain distinct from backend HTTP errors so later UX layers can choose retry behavior without guessing.
 
@@ -258,6 +259,7 @@ Conceptual routes:
 /onboarding/activate
 
 /app
+/app/counselor
 /app/attendance
 /app/students
 /app/signatures
@@ -643,42 +645,46 @@ Production:
 ```
 Browser
   ↓
-Apache
-  ├── frontend/dist
-  └── /api/v1/* and required compatibility APIs
-          ↓
-       PHP backend
-          ↓
-       MySQL/MariaDB
+Apache (/sams/)
+  ├── frontend/dist → React static build
+  └── /api/v1/* → backend/public/index.php
+                     ↓
+                  PHP backend
+                     ↓
+                  MySQL/MariaDB
 ```
 
 No Node.js process is required in production.
 
-React Router uses browser history. Apache must provide the frontend fallback for client-side routes while preserving API routing.
+The documented Apache deployment builds the frontend with `/sams/` as its Vite base path. React Router derives its basename from the build base, while Apache provides the fallback for client-side routes and keeps API routing separate.
+
+The old PHP-rendered UI is no longer the active production entry point.
 
 ## 17. Legacy replacement strategy
 
-Legacy files remain until verified React replacement exists.
+The PHP-rendered UI and Vanilla JS frontend have been replaced by the React application at the runtime boundary.
 
-For each file:
+Current state:
 
 ```
-Dependency audit
-↓
-Behavior extracted
+Legacy UI audit
 ↓
 React replacement
 ↓
-API verified
+Unit/integration verification
 ↓
-E2E verified
+Frontend E2E verification
 ↓
-Production entry switched
+Static production build verification
 ↓
-Legacy references removed
+React production entry switched
 ↓
-Safe deletion
+Legacy UI assets removed from runtime
+↓
+Retired PHP UI entry points return 410 Gone
 ```
+
+The old /api/*.php endpoints remain a separate backend compatibility surface and are not removed by this frontend phase.
 
 Do not translate legacy file structure one-to-one.
 

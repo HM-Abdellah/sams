@@ -1,17 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router'
 import { RouterProvider } from 'react-router/dom'
 import { AppShell } from '../components/layout/AppShell.tsx'
-import { LoginPage } from '../pages/auth/LoginPage.tsx'
-import { OnboardingPage } from '../pages/onboarding/OnboardingPage.tsx'
-import { OnboardingStatusPage } from '../pages/onboarding/OnboardingStatusPage.tsx'
-import { OnboardingActivatePage } from '../pages/onboarding/OnboardingActivatePage.tsx'
-import { FeaturePlaceholderPage } from '../pages/app/FeaturePlaceholderPage.tsx'
-import { TeacherAttendancePage } from '../pages/app/TeacherAttendancePage.tsx'
-import { TeacherStudentsPage } from '../pages/app/TeacherStudentsPage.tsx'
-import { TeacherSignaturesPage } from '../pages/app/TeacherSignaturesPage.tsx'
-import { TeacherReportsPage } from '../pages/app/TeacherReportsPage.tsx'
-import { TeacherDashboardPage } from '../pages/app/TeacherDashboardPage.tsx'
-import { WorkspaceLandingPage } from '../pages/app/WorkspaceLandingPage.tsx'
 import { PublicOnlyRoute } from './guards/PublicOnlyRoute.tsx'
 import { ProtectedRoute } from './guards/ProtectedRoute.tsx'
 import { RoleRoute } from './guards/RoleRoute.tsx'
@@ -19,22 +8,18 @@ import { NotFoundPage } from '../pages/system/NotFoundPage.tsx'
 import { UnauthorizedPage } from '../pages/system/UnauthorizedPage.tsx'
 import { RouteErrorPage } from '../pages/system/RouteErrorPage.tsx'
 
-const adminPlaceholder = (title: string) => (
-  <FeaturePlaceholderPage
-    title={title}
-    description="Administrative feature implementation is scheduled for a later engineering phase."
-  />
-)
+const basename = import.meta.env.BASE_URL.replace(/\/+$/, '') || undefined
+const routerOptions = basename === undefined ? {} : { basename }
 
 const router = createBrowserRouter([
   {
     errorElement: <RouteErrorPage />,
     element: <PublicOnlyRoute />,
     children: [
-      { path: '/login', element: <LoginPage /> },
-      { path: '/onboarding', element: <OnboardingPage /> },
-      { path: '/onboarding/status', element: <OnboardingStatusPage /> },
-      { path: '/onboarding/activate', element: <OnboardingActivatePage /> },
+      { path: '/login', lazy: () => import('../pages/auth/LoginPage.tsx').then((module) => ({ Component: module.LoginPage })) },
+      { path: '/onboarding', lazy: () => import('../pages/onboarding/OnboardingPage.tsx').then((module) => ({ Component: module.OnboardingPage })) },
+      { path: '/onboarding/status', lazy: () => import('../pages/onboarding/OnboardingStatusPage.tsx').then((module) => ({ Component: module.OnboardingStatusPage })) },
+      { path: '/onboarding/activate', lazy: () => import('../pages/onboarding/OnboardingActivatePage.tsx').then((module) => ({ Component: module.OnboardingActivatePage })) },
     ],
   },
   {
@@ -45,30 +30,38 @@ const router = createBrowserRouter([
       {
         element: <AppShell />,
         children: [
-          { path: '/app', element: <WorkspaceLandingPage /> },
+          { path: '/app', lazy: () => import('../pages/app/WorkspaceLandingPage.tsx').then((module) => ({ Component: module.WorkspaceLandingPage })) },
           {
             element: <RoleRoute roles={['teacher']} />,
             children: [
-              { path: '/app/teacher', element: <TeacherDashboardPage /> },
-              { path: '/app/attendance', element: <TeacherAttendancePage /> },
-              { path: '/app/students', element: <TeacherStudentsPage /> },
-              { path: '/app/signatures', element: <TeacherSignaturesPage /> },
-              { path: '/app/reports', element: <TeacherReportsPage /> },
+              { path: '/app/teacher', lazy: () => import('../pages/app/TeacherDashboardPage.tsx').then((module) => ({ Component: module.TeacherDashboardPage })) },
+              { path: '/app/attendance', lazy: () => import('../pages/app/TeacherAttendancePage.tsx').then((module) => ({ Component: module.TeacherAttendancePage })) },
+              { path: '/app/classes', lazy: () => import('../pages/app/TeacherClassesPage.tsx').then((module) => ({ Component: module.TeacherClassesPage })) },
+              { path: '/app/classes/:classId', lazy: () => import('../pages/app/TeacherClassDetailsPage.tsx').then((module) => ({ Component: module.TeacherClassDetailsPage })) },
+              { path: '/app/students', lazy: () => import('../pages/app/TeacherStudentsPage.tsx').then((module) => ({ Component: module.TeacherStudentsPage })) },
+              { path: '/app/signatures', lazy: () => import('../pages/app/TeacherSignaturesPage.tsx').then((module) => ({ Component: module.TeacherSignaturesPage })) },
+              { path: '/app/reports', lazy: () => import('../pages/app/TeacherReportsPage.tsx').then((module) => ({ Component: module.TeacherReportsPage })) },
+            ],
+          },
+          {
+            element: <RoleRoute roles={['counselor']} />,
+            children: [
+              { path: '/app/counselor', lazy: () => import('../pages/app/CounselorDashboardPage.tsx').then((module) => ({ Component: module.CounselorDashboardPage })) },
             ],
           },
           {
             element: <RoleRoute roles={['admin']} />,
             children: [
               { path: '/app/admin', element: <Navigate to="/app/admin/dashboard" replace /> },
-              { path: '/app/admin/dashboard', element: adminPlaceholder('Dashboard') },
-              { path: '/app/admin/classes', element: adminPlaceholder('Classes') },
-              { path: '/app/admin/teachers', element: adminPlaceholder('Teachers') },
-              { path: '/app/admin/users', element: adminPlaceholder('Users') },
-              { path: '/app/admin/onboarding', element: adminPlaceholder('Onboarding') },
-              { path: '/app/admin/academic-years', element: adminPlaceholder('Academic years') },
-              { path: '/app/admin/imports', element: adminPlaceholder('Imports') },
-              { path: '/app/admin/archive', element: adminPlaceholder('Archive') },
-              { path: '/app/admin/audit', element: adminPlaceholder('Audit') },
+              { path: '/app/admin/dashboard', lazy: () => import('../pages/app/AdminDashboardPage.tsx').then((module) => ({ Component: module.AdminDashboardPage })) },
+              { path: '/app/admin/classes', lazy: () => import('../pages/app/AdminClassesPage.tsx').then((module) => ({ Component: module.AdminClassesPage })) },
+              { path: '/app/admin/teachers', lazy: () => import('../pages/app/AdminTeachersPage.tsx').then((module) => ({ Component: module.AdminTeachersPage })) },
+              { path: '/app/admin/users', lazy: () => import('../pages/app/AdminUsersPage.tsx').then((module) => ({ Component: module.AdminUsersPage })) },
+              { path: '/app/admin/onboarding', lazy: () => import('../pages/app/AdminOnboardingPage.tsx').then((module) => ({ Component: module.AdminOnboardingPage })) },
+              { path: '/app/admin/academic-years', lazy: () => import('../pages/app/AdminAcademicYearsPage.tsx').then((module) => ({ Component: module.AdminAcademicYearsPage })) },
+              { path: '/app/admin/imports', lazy: () => import('../pages/app/AdminImportsPage.tsx').then((module) => ({ Component: module.AdminImportsPage })) },
+              { path: '/app/admin/archive', lazy: () => import('../pages/app/AdminArchivePage.tsx').then((module) => ({ Component: module.AdminArchivePage })) },
+              { path: '/app/admin/audit', lazy: () => import('../pages/app/AdminAuditPage.tsx').then((module) => ({ Component: module.AdminAuditPage })) },
             ],
           },
         ],
@@ -77,7 +70,7 @@ const router = createBrowserRouter([
   },
   { path: '/', element: <Navigate to="/app" replace /> },
   { path: '*', element: <NotFoundPage /> },
-])
+], routerOptions)
 
 export function AppRouter() {
   return <RouterProvider router={router} />

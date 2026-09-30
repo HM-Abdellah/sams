@@ -19,6 +19,21 @@ The official frontend plan supplied on 2026-09-29 is the source of truth for pha
 | 7 | State architecture | PASS | Explicit ownership model + async/mutation state types |
 | 8 | I18n / RTL | PASS | FR/AR/EN, runtime direction, locale formatting / cc27a98 |
 | 9 | Functional component system | PASS | Core + composite functional primitives / 3991f13 plus current refinements |
+| 10 | Teacher workflow | PASS | Teacher dashboard/classes navigation and workflow foundation |
+| 11 | Attendance engineering | PASS | Canonical attendance register + mutations + responsive workflow |
+| 12 | Attendance reliability | PASS | Reliability state machine + navigation/reload/logout guards + 12/12 E2E |
+| 13 | Students / Classes | PASS | Teacher class list/detail + roster search/details + create/edit + E2E regression preserved |
+| 14 | Admin platform | PASS | Dashboard, classes, teachers, assignments, users, onboarding, academic years, imports, audit + 5/5 Phase 14 E2E |
+| 15 | Archive / Reports / Signatures | PASS | Historical archive views, monthly report print action, signature save/load/clear + 3/3 Phase 15 E2E |
+| 16 | UI state system | PASS | Shared async-resource state contract, non-destructive refresh/error feedback, query-key guards, teacher/archive integration + 2/2 Phase 16 E2E; 25/25 combined regression 12–16 |
+| 17 | Responsive engineering | PASS | Responsive app shell/navigation, attendance reflow, viewport-safe dialogs/drawers, phone/tablet/desktop checks + 4/4 Phase 17 mobile E2E |
+| 18 | Accessibility | PASS | Shared focus management, semantic attendance controls, contrast token fix, touch target review, reduced-motion verification, axe scans + 7/7 Phase 18 E2E |
+| 19 | Frontend security review | PASS | Open-redirect hardening, XSS sink audit, CSRF transport tests, role-boundary checks, storage review, dependency audit + 6/6 Phase 19 E2E |
+| 20 | Frontend Performance | PASS | Route-level code splitting, production JS budget, lazy route loading regression guards + 3/3 Phase 20 E2E |
+| 21 | Frontend Testing | PASS | Vitest unit/integration layer, Attendance/Session/API tests, 42/42 frontend regression, 3/3 production performance regression, Phase 21 testing record |
+| 22 | Legacy Replacement | PASS | React becomes active UI runtime under /sams/, legacy UI assets removed from runtime, public URL shims retained, SPA/asset/API routing verified + 4/4 Phase 22 E2E |
+| 23 | Production Integration | IMPLEMENTED — hosted CI gate pending | Apache + PHP + MariaDB production boundary, `/sams/` SPA routing, `/api/v1` integration, session persistence, legacy UI retirement, production E2E + dedicated CI job |
+| 24 | Final frontend engineering audit | PASS — local final audit; hosted release gate inherited from Phase 23 | Public onboarding + counselor workspace completed, architecture/security/accessibility/performance audit, 45/45 unit, 47/47 final browser sweep, 5/5 Phase 24 audit, 3/3 production performance |
 
 ## Phase-order drift
 
@@ -41,28 +56,12 @@ All valid implementations remain preserved. The reconciliation exists so future 
 - State Architecture is explicitly documented and backed by typed state semantics.
 - The I18n implementation remains the official Phase 8 implementation.
 
-## Not started
+## Current frontier
 
-Official Phase 10 onward has not been implemented yet.
+Official frontend Phases 1–23 are implemented locally. Phase 24 final engineering audit is also locally PASS; hosted CI remains the release-closure gate for the production integration boundary.
 
-These remain future work:
+The next stage is:
 
-- 10 Teacher workflow
-- 11 Attendance engineering
-- 12 Attendance reliability
-- 13 Students / Classes
-- 14 Admin platform
-- 15 Archive / Reports / Signatures
-- 16 UI state system
-- 17 Responsive engineering
-- 18 Accessibility
-- 19 Frontend security review
-- 20 Performance
-- 21 Frontend testing
-- 22 Legacy replacement
-- 23 Production integration
-- 24 Final frontend engineering audit
+- Design R&D + Figma after the hosted production gate passes
 
-Only after Phase 24 passes does Design R&D + Figma open.
-
-📍 Current project state: Official frontend Phases 1–9 are PASS. Phase 10 is next. Backend/security/auth/tenant foundation remains frozen unless a proven gap is found.
+📍 Current project state: Frontend engineering Phases 1–24 are locally verified. No final visual redesign has started. Backend/security/auth/tenant foundation remains frozen unless a proven gap is found.

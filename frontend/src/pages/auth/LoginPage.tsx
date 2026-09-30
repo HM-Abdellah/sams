@@ -8,6 +8,7 @@ import { LanguageSelect } from '../../components/ui/LanguageSelect.tsx'
 import { StatusMessage } from '../../components/ui/Feedback.tsx'
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
 import { useI18n } from '../../features/i18n/useI18n.ts'
+import { safeReturnTo } from '../../routes/safeReturnTo.ts'
 
 export function LoginPage() {
   const session = useSession()
@@ -19,9 +20,7 @@ export function LoginPage() {
   const [submitting, setSubmitting] = useState(false)
   const { t } = useI18n()
 
-  const from = typeof location.state?.from === 'string' && location.state.from.startsWith('/')
-    ? location.state.from
-    : '/app'
+  const from = safeReturnTo(location.state?.from)
 
   if (session.status === 'loading') {
     return <div className="grid min-h-screen place-items-center p-6">{t(TRANSLATION_KEYS.auth.loading)}</div>

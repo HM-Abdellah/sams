@@ -98,7 +98,7 @@ Requires an authenticated session and the current `X-CSRF-Token`. The session is
 
 ### GET `api/classes.php`
 
-Without query parameters, returns operational classes visible to the current role. Operational visibility is limited to active classes in the active academic year.
+Without query parameters, returns operational classes visible to the current role. Operational visibility is limited to active classes in the active academic year. Each class includes `id`, `name`, `level`, `branch`, `academic_year_id`, `academic_year_name`, `academic_year_starts_on`, and `academic_year_ends_on` so the frontend can display the class's current academic context without deriving it locally.
 
 For administrators, `?scope=all` returns all classes, including inactive classes and classes from historical academic years, for administration only.
 
@@ -238,7 +238,7 @@ A transfer is transactional: the current enrollment is closed on the day before 
 
 ### GET `/api/v1/classes/{class_id}/attendance?week_start=YYYY-MM-DD`
 
-Authenticated users only. The class must be active in the active academic year, and teachers may read only assigned classes. The supplied date is normalized to Monday, the six-day school-week range is clamped to academic-year boundaries when it partially overlaps the year, and a fully out-of-year week returns an empty register. The response contains the active attendance roster using only first/last names plus enrollment-aware attendance rows.
+Authenticated users only. The class must be active in the active academic year, and teachers may read only assigned classes. The supplied date is normalized to Monday, the six-day school-week range is clamped to academic-year boundaries when it partially overlaps the year, and a fully out-of-year week returns an empty register. The response contains the active attendance roster using only first/last names, enrollment-aware attendance rows, and the selected week's per-lesson sign-off state so the client can respect protected lessons.
 
 ### POST `/api/v1/classes/{class_id}/attendance/bulk`
 

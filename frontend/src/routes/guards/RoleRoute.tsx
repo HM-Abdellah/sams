@@ -10,7 +10,7 @@ export function RoleRoute({ roles }: RoleRouteProps) {
   const session = useSession()
 
   if (session.status === 'loading') {
-    return <div className="grid min-h-screen place-items-center p-6">Loading…</div>
+    return <div role="status" aria-live="polite" className="grid min-h-screen place-items-center p-6">Loading…</div>
   }
 
   if (session.status === 'anonymous' || session.user === null) {

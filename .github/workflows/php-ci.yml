@@ -397,9 +397,34 @@ jobs:
       - name: Check JavaScript syntax
         shell: sh
         run: |
-          find public/assets/js tests/e2e -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+          find tests/e2e -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    container:
+      image: node:22-alpine
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund
+
+      - name: Build production frontend
+        working-directory: frontend
+        run: npm run build -- --base /sams/
+
+      - name: Upload React build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sams-frontend-dist
+          path: frontend/dist
+          if-no-files-found: error
 
   apache:
+    needs: frontend-build
     runs-on: ubuntu-latest
     container:
       image: php:8.3-apache-bookworm
@@ -407,6 +432,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+
+      - name: Download React build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: sams-frontend-dist
+          path: frontend/dist
 
       - name: Install Apache runtime dependencies
         shell: bash
@@ -490,7 +521,7 @@ jobs:
           trap cleanup EXIT
 
           for i in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1/sams/public/login.php > /dev/null 2>&1; then
+            if curl -fsS http://127.0.0.1/sams/login > /dev/null 2>&1; then
               break
             fi
             if ! kill -0 "$apache_pid" 2>/dev/null; then
@@ -501,12 +532,28 @@ jobs:
           done
 
           root_headers=/tmp/sams-apache-root.headers
-          curl -sS -D "$root_headers" -o /dev/null http://127.0.0.1/sams/
-          grep -qi '^HTTP/.* 302' "$root_headers"
-          grep -qi '^Location: http://127.0.0.1/sams/public/' "$root_headers"
+          curl -sS -D "$root_headers" -o /tmp/sams-apache-root.html -w "%{http_code}" http://127.0.0.1/sams/
+          root_status=$(awk 'NR==1 {print $2}' "$root_headers")
+          test "$root_status" = "200"
+          grep -q 'SAMS — Student Attendance Management System' /tmp/sams-apache-root.html
 
-          login_status=$(curl -sS -o /tmp/sams-apache-login.html -w "%{http_code}" http://127.0.0.1/sams/public/login.php)
+          login_status=$(curl -sS -o /tmp/sams-apache-login.html -w "%{http_code}" http://127.0.0.1/sams/login)
           test "$login_status" = "200"
+          grep -q 'SAMS — Student Attendance Management System' /tmp/sams-apache-login.html
+
+          legacy_login_headers=/tmp/sams-apache-legacy-login.headers
+          curl -sS -D "$legacy_login_headers" -o /dev/null http://127.0.0.1/sams/public/login.php
+          grep -qi '^HTTP/.* 410' "$legacy_login_headers"
+          ! grep -qi '^Location:' "$legacy_login_headers"
+
+          legacy_index_headers=/tmp/sams-apache-legacy-index.headers
+          curl -sS -D "$legacy_index_headers" -o /dev/null http://127.0.0.1/sams/public/index.php
+          grep -qi '^HTTP/.* 410' "$legacy_index_headers"
+          ! grep -qi '^Location:' "$legacy_index_headers"
+
+          client_route_status=$(curl -sS -o /tmp/sams-apache-client-route.html -w "%{http_code}" http://127.0.0.1/sams/not-a-real-route)
+          test "$client_route_status" = "200"
+          grep -q 'SAMS — Student Attendance Management System' /tmp/sams-apache-client-route.html
 
           health_headers=/tmp/sams-apache-health.headers
           health_status=$(curl -sS -D "$health_headers" -o /tmp/sams-apache-health.json -w "%{http_code}" http://127.0.0.1/sams/api/v1/health)
@@ -532,7 +579,7 @@ jobs:
           source_status=$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1/sams/backend/src/Services/TeacherAttendanceService.php)
           test "$source_status" = "403"
 
-          echo "[PASS] Apache 2.4 production-path smoke: /sams/ redirect, PHP execution, /api/v1 routing, security headers, and private-path denial"
+          echo "[PASS] Apache 2.4 production-path smoke: React /sams/ entry, client-route fallback, legacy UI redirects, /api/v1 routing, security headers, and private-path denial"
 
   e2e:
     runs-on: ubuntu-latest
@@ -609,22 +656,30 @@ jobs:
       - name: Install Node dependencies
         run: npm ci --no-audit --no-fund
 
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund
+
+      - name: Build React frontend for frontend E2E
+        working-directory: frontend
+        run: npm run build
+
       - name: Run Playwright E2E
-        id: phase8_e2e
+        id: frontend_e2e
         env:
-          SAMS_BASE_URL: http://127.0.0.1:8080/public/
+          SAMS_BASE_URL: http://127.0.0.1:5173/
           SAMS_E2E_USERNAME: admin
           SAMS_E2E_TEACHER_USERNAME: teacher.e2e
         shell: bash
         run: |
-          : > /tmp/phase8-playwright.log
-          exec > >(tee -a /tmp/phase8-playwright.log) 2>&1
+          : > /tmp/frontend-playwright.log
+          exec > >(tee -a /tmp/frontend-playwright.log) 2>&1
 
           php -S 0.0.0.0:8080 scripts/dev_router.php > /tmp/sams-server.log 2>&1 &
           server_pid=$!
 
           for i in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:8080/public/login.php > /dev/null 2>&1; then
+            if curl -fsS http://127.0.0.1:8080/sams/login > /dev/null 2>&1; then
               break
             fi
             if ! kill -0 "$server_pid" 2>/dev/null; then
@@ -635,7 +690,7 @@ jobs:
             sleep 1
           done
 
-          if ! curl -fsS http://127.0.0.1:8080/public/login.php > /dev/null 2>&1; then
+          if ! curl -fsS http://127.0.0.1:8080/sams/login > /dev/null 2>&1; then
             echo "PHP server did not become ready."
             cat /tmp/sams-server.log
             exit 1
@@ -655,72 +710,70 @@ jobs:
 
           overall_status=0
 
-          reset_e2e_school() {
-            php -r '$pdo = new PDO(sprintf("mysql:host=%s;port=%d;charset=utf8mb4", getenv("SAMS_TEST_DB_HOST"), (int)getenv("SAMS_TEST_DB_PORT")), getenv("SAMS_TEST_DB_USER"), getenv("SAMS_TEST_DB_PASS"), [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]); $db = getenv("SAMS_TEST_DB_NAME"); if (!preg_match("/^[A-Za-z0-9_]+$/", $db)) { throw new RuntimeException("Invalid E2E database name."); } $pdo->exec("DROP DATABASE " . $db); $pdo->exec("CREATE DATABASE " . $db);'
-            php scripts/e2e_seed.php
-          }
+          npm --prefix frontend run dev -- --host 0.0.0.0 --port 5173 > /tmp/sams-vite-dev.log 2>&1 &
+          vite_pid=$!
+          npm --prefix frontend run preview -- --host 0.0.0.0 --port 4173 > /tmp/sams-vite-preview.log 2>&1 &
+          preview_pid=$!
 
-          run_e2e_group() {
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:5173/login > /dev/null 2>&1 && curl -fsS http://127.0.0.1:4173/login > /dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+
+          run_frontend_group() {
             group_name="$1"
-            shift
-            echo "===== Phase 8 E2E: $group_name =====" | tee -a /tmp/phase8-playwright.log
-            reset_e2e_school
+            base_url="$2"
+            shift 2
+            echo "===== Active frontend E2E: $group_name =====" | tee -a /tmp/frontend-playwright.log
             set +e
-            npx playwright test "$@" --reporter=line 2>&1 | tee -a /tmp/phase8-playwright.log
+            SAMS_BASE_URL="$base_url" npx playwright test "$@" --reporter=line 2>&1 | tee -a /tmp/frontend-playwright.log
             group_status=${PIPESTATUS[0]}
             set -e
             if [ "$group_status" -ne 0 ]; then
-              echo "[FAIL] $group_name (exit $group_status)" | tee -a /tmp/phase8-playwright.log
+              echo "[FAIL] $group_name (exit $group_status)" | tee -a /tmp/frontend-playwright.log
               overall_status=1
             else
-              echo "[PASS] $group_name" | tee -a /tmp/phase8-playwright.log
+              echo "[PASS] $group_name" | tee -a /tmp/frontend-playwright.log
             fi
           }
 
-          run_e2e_group "smoke" tests/e2e/smoke.spec.js
+          run_frontend_group "phases-12-19" "http://127.0.0.1:5173/" \
+            tests/e2e/frontend_phase12_attendance_reliability.spec.js \
+            tests/e2e/frontend_phase13_students_classes.spec.js \
+            tests/e2e/frontend_phase14_admin_platform.spec.js \
+            tests/e2e/frontend_phase15_archive_reports_signatures.spec.js \
+            tests/e2e/frontend_phase16_ui_state.spec.js \
+            tests/e2e/frontend_phase17_responsive.mobile.spec.js \
+            tests/e2e/frontend_phase18_accessibility.spec.js \
+            tests/e2e/frontend_phase19_security.spec.js
 
-          run_e2e_group "teacher-core-1" tests/e2e/authenticated.spec.js \
-            --grep 'login, operational|attendance edits are sent|teacher cannot access historical|teacher sees only assigned'
+          SAMS_BASE_URL=http://127.0.0.1:4173/ SAMS_PERFORMANCE_MODE=1 npx playwright test tests/e2e/frontend_phase20_performance.spec.js --reporter=line || overall_status=1
 
-          run_e2e_group "teacher-core-2" tests/e2e/authenticated.spec.js \
-            --grep 'teacher can sign, reopen|teacher weekly attendance'
+          run_frontend_group "phase-24-final-audit" "http://127.0.0.1:4173/" tests/e2e/frontend_phase24_final_audit.spec.js
 
-          run_e2e_group "imports" tests/e2e/authenticated.spec.js \
-            --grep 'admin can upload a Markdown|admin can upload a real XLSX|admin can review and explicitly confirm|admin can complete a CSV'
-
-          run_e2e_group "history-and-signatures" tests/e2e/authenticated.spec.js \
-            --grep 'admin can transfer a student|admin can view teachers|admin dashboard separates|admin can receive a fully signed'
-
-          run_e2e_group "admin-and-logout" tests/e2e/authenticated.spec.js \
-            --grep 'admin can manage a class and a user|logout invalidates the authenticated'
-
-          run_e2e_group "phase8-admin" tests/e2e/phase8_admin.spec.js
-          run_e2e_group "phase8-auth" tests/e2e/phase8_auth.spec.js
-          run_e2e_group "canonical-auth" tests/e2e/canonical_auth.spec.js
-          run_e2e_group "canonical-onboarding" tests/e2e/canonical_onboarding.spec.js
-          run_e2e_group "phase8-mobile" tests/e2e/phase8_mobile.mobile.spec.js
-
-          kill "$server_pid" 2>/dev/null || true
+          kill "$server_pid" "$vite_pid" "$preview_pid" 2>/dev/null || true
           exit "$overall_status"
 
-      - name: Publish Phase 8 Playwright status
+      - name: Publish frontend Playwright status
         if: always()
         continue-on-error: true
         uses: actions/github-script@v7
         env:
-          PHASE8_LOG_PATH: /tmp/phase8-playwright.log
+          FRONTEND_E2E_LOG_PATH: /tmp/frontend-playwright.log
         with:
           script: |
             const fs = require('fs');
-            const log = fs.existsSync(process.env.PHASE8_LOG_PATH) ? fs.readFileSync(process.env.PHASE8_LOG_PATH, 'utf8') : '';
+            const log = fs.existsSync(process.env.FRONTEND_E2E_LOG_PATH) ? fs.readFileSync(process.env.FRONTEND_E2E_LOG_PATH, 'utf8') : '';
             const failures = [...log.matchAll(/\[FAIL\] ([^\n]+)/g)].map((m) => m[1]);
-            const outcome = '${{ steps.phase8_e2e.outcome }}';
+            const outcome = '${{ steps.frontend_e2e.outcome }}';
             const state = outcome === 'success' ? 'success' : 'failure';
             const tail = log.trim().slice(-70).replace(/\s+/g, ' ');
             const description = (failures.length
               ? 'Failed groups: ' + failures.join('; ')
               : outcome === 'success'
-                ? 'All Phase 8 E2E groups passed.'
+                ? 'All active frontend E2E groups passed.'
                 : 'E2E preflight/runner failed: ' + tail).slice(0, 140);
             const sha = context.payload.pull_request?.head?.sha || context.sha;
             await github.rest.repos.createCommitStatus({
@@ -728,7 +781,7 @@ jobs:
               repo: context.repo.repo,
               sha,
               state,
-              context: 'phase8/e2e-groups',
+              context: 'frontend/e2e-groups',
               description
             });
 
@@ -761,6 +814,10 @@ jobs:
       SAMS_ACCEPTANCE_COUNSELOR_PASSWORD: acceptance-counselor-password-2026
       SAMS_ACCEPTANCE_TEACHER_A_PASSWORD: acceptance-teacher-a-password-2026
       SAMS_ACCEPTANCE_TEACHER_B_PASSWORD: acceptance-teacher-b-password-2026
+      SAMS_E2E_PASSWORD: e2e-admin-password-2026
+      SAMS_E2E_TEACHER_PASSWORD: e2e-teacher-password-2026
+      SAMS_E2E_ADMIN_SAMS_CODE: A100001
+      SAMS_E2E_TEACHER_SAMS_CODE: T100002
 
     steps:
       - name: Checkout repository
@@ -798,30 +855,34 @@ jobs:
           ];
           PHP
 
-      - name: Rebuild database from empty schema
+      - name: Seed deterministic E2E school
         shell: bash
-        run: |
-          mariadb --protocol=tcp             -h "$SAMS_TEST_DB_HOST"             -P "$SAMS_TEST_DB_PORT"             -u "$SAMS_TEST_DB_USER"             -p"$SAMS_TEST_DB_PASS"             < database/schema.sql
-
-      - name: Create first administrator through bootstrap CLI
-        shell: bash
-        run: |
-          printf '%s\n' "$SAMS_ACCEPTANCE_ADMIN_PASSWORD" | php scripts/create_admin.php
+        run: php scripts/e2e_seed.php
 
       - name: Install Node dependencies
         shell: bash
         run: npm ci --no-audit --no-fund
 
-      - name: Run clean-school browser acceptance
-        id: phase9_acceptance
+      - name: Install frontend dependencies
+        working-directory: frontend
+        shell: bash
+        run: npm ci --no-audit --no-fund
+
+      - name: Build React frontend for PHP-router acceptance
+        working-directory: frontend
+        shell: bash
+        run: npm run build -- --base /sams/
+
+      - name: Run clean-school React/backend acceptance
+        id: clean_school_acceptance
         shell: bash
         env:
-          SAMS_BASE_URL: http://127.0.0.1:8080/public/
+          SAMS_BASE_URL: http://127.0.0.1:8080/sams/
         run: |
-          : > /tmp/phase9-acceptance.log
-          exec > >(tee -a /tmp/phase9-acceptance.log) 2>&1
+          : > /tmp/phase22-acceptance.log
+          exec > >(tee -a /tmp/phase22-acceptance.log) 2>&1
 
-          php -S 0.0.0.0:8080 scripts/dev_router.php > /tmp/sams-phase9-server.log 2>&1 &
+          php -S 0.0.0.0:8080 scripts/dev_router.php > /tmp/sams-phase22-server.log 2>&1 &
           server_pid=$!
 
           cleanup() {
@@ -830,36 +891,36 @@ jobs:
           trap cleanup EXIT
 
           for i in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:8080/public/login.php > /dev/null 2>&1; then
+            if curl -fsS http://127.0.0.1:8080/sams/login > /dev/null 2>&1; then
               break
             fi
             if ! kill -0 "$server_pid" 2>/dev/null; then
               echo "PHP server exited before becoming ready."
-              cat /tmp/sams-phase9-server.log
+              cat /tmp/sams-phase22-server.log
               exit 1
             fi
             sleep 1
           done
 
-          if ! curl -fsS http://127.0.0.1:8080/public/login.php > /dev/null 2>&1; then
+          if ! curl -fsS http://127.0.0.1:8080/sams/login > /dev/null 2>&1; then
             echo "PHP server did not become ready."
-            cat /tmp/sams-phase9-server.log
+            cat /tmp/sams-phase22-server.log
             exit 1
           fi
 
-          if grep -RInE 'test\.(skip|fixme|only)|describe\.(skip|only)' tests/e2e/phase9_clean_school.spec.js; then
-            echo "Phase 9 acceptance contains skipped/focused tests."
+          if grep -RInE 'test\.(skip|fixme|only)|describe\.(skip|only)' tests/e2e/frontend_phase22_real_backend_smoke.spec.js; then
+            echo "Clean-school acceptance contains skipped/focused tests."
             exit 1
           fi
 
-          if grep -RIn 'waitForTimeout' tests/e2e/phase9_clean_school.spec.js; then
-            echo "Phase 9 acceptance must synchronize on observable behavior, not fixed sleeps."
+          if grep -RIn 'waitForTimeout' tests/e2e/frontend_phase22_real_backend_smoke.spec.js; then
+            echo "Clean-school acceptance must synchronize on observable behavior, not fixed sleeps."
             exit 1
           fi
 
-          node --check tests/e2e/phase9_clean_school.spec.js
+          node --check tests/e2e/frontend_phase22_real_backend_smoke.spec.js
 
-          npx playwright test tests/e2e/phase9_clean_school.spec.js --project=chromium --reporter=line
+          npx playwright test tests/e2e/frontend_phase22_real_backend_smoke.spec.js --project=chromium --reporter=line
 
       - name: Verify persisted clean-school state
         shell: bash
@@ -874,6 +935,157 @@ jobs:
                   (SELECT COUNT(*) FROM students WHERE status='active'),
                   (SELECT COUNT(*) FROM attendance),
                   (SELECT COUNT(*) FROM student_enrollments);")
-          expected=$'1\t4\t2\t2\t1\t6\t5\t1\t7'
+          expected=$'1\t2\t2\t1\t0\t4\t4\t8\t4'
           test "$result" = "$expected"
-          echo "[PASS] Clean-school persisted state matches acceptance scenario."
+          echo "[PASS] Clean-school React/backend persisted state matches acceptance scenario."
+  production-integration:
+    needs: frontend-build
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+
+    services:
+      db:
+        image: mariadb:11.4
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: sams
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      SAMS_TEST_DB_HOST: db
+      SAMS_TEST_DB_PORT: 3306
+      SAMS_TEST_DB_NAME: sams
+      SAMS_TEST_DB_USER: root
+      SAMS_TEST_DB_PASS: root
+      SAMS_ALLOW_EXAMPLE_CONFIG: 1
+      SAMS_E2E_PASSWORD: e2e-admin-password-2026
+      SAMS_E2E_TEACHER_PASSWORD: e2e-teacher-password-2026
+      SAMS_E2E_ADMIN_SAMS_CODE: A100001
+      SAMS_E2E_TEACHER_SAMS_CODE: T100002
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Download React production bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: sams-frontend-dist
+          path: frontend/dist
+
+      - name: Install Apache PHP runtime and Composer
+        shell: bash
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends apache2 libapache2-mod-php8.3 php8.3-cli php8.3-mysql php8.3-mbstring php8.3-xml php8.3-zip php8.3-gd composer curl mariadb-client
+          php -v
+          composer --version
+
+      - name: Install backend dependencies
+        working-directory: backend
+        shell: bash
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Configure production-path test runtime
+        shell: bash
+        run: |
+          cat > backend/config/app.php <<'PHP'
+          <?php
+          return [
+              'name' => 'SAMS',
+              'environment' => 'test',
+              'debug' => true,
+              'base_path' => '/sams/public',
+              'session_name' => 'SAMS_PRODUCTION_E2E_SESSION',
+              'session_lifetime' => 3600,
+              'session_idle_timeout' => 3600,
+              'session_absolute_timeout' => 43200,
+              'login_max_attempts' => 5,
+              'login_lock_minutes' => 15,
+          ];
+          PHP
+
+          cat > backend/config/database.php <<'PHP'
+          <?php
+          return [
+              'host' => getenv('SAMS_TEST_DB_HOST') ?: 'db',
+              'port' => (int)(getenv('SAMS_TEST_DB_PORT') ?: 3306),
+              'database' => getenv('SAMS_TEST_DB_NAME') ?: 'sams',
+              'username' => getenv('SAMS_TEST_DB_USER') ?: 'root',
+              'password' => getenv('SAMS_TEST_DB_PASS') ?: 'root',
+              'charset' => 'utf8mb4',
+          ];
+          PHP
+
+      - name: Seed deterministic production integration database
+        shell: bash
+        run: php scripts/e2e_seed.php
+
+      - name: Mount repository into Apache
+        shell: bash
+        run: |
+          rm -rf /var/www/html/sams
+          mkdir -p /var/www/html/sams
+          cp -a "$GITHUB_WORKSPACE/." /var/www/html/sams/
+
+      - name: Configure Apache overrides
+        shell: bash
+        run: |
+          a2enmod rewrite headers
+          cat > /etc/apache2/conf-enabled/sams.conf <<'APACHE'
+          <Directory /var/www/html>
+              AllowOverride All
+              Require all granted
+          </Directory>
+          APACHE
+          printf '%s\n' 'ServerName localhost' > /etc/apache2/conf-enabled/server-name.conf
+          apachectl -t
+
+      - name: Run Phase 23 production integration
+        shell: bash
+        run: |
+          : > /tmp/sams-production-integration.log
+          exec > >(tee -a /tmp/sams-production-integration.log) 2>&1
+
+          apachectl -D FOREGROUND > /tmp/sams-production-apache.log 2>&1 &
+          apache_pid=$!
+          cleanup() { kill "$apache_pid" 2>/dev/null || true; }
+          trap cleanup EXIT
+
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1/sams/login > /dev/null 2>&1; then break; fi
+            if ! kill -0 "$apache_pid" 2>/dev/null; then cat /tmp/sams-production-apache.log; exit 1; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1/sams/login > /dev/null
+
+          if grep -RInE 'test\.(skip|fixme|only)|describe\.(skip|only)' tests/e2e/frontend_phase22_real_backend_smoke.spec.js tests/e2e/frontend_phase23_production_integration.spec.js; then
+            echo "Production integration suite contains skipped/focused tests."
+            exit 1
+          fi
+          if grep -RIn 'waitForTimeout' tests/e2e/frontend_phase22_real_backend_smoke.spec.js tests/e2e/frontend_phase23_production_integration.spec.js; then
+            echo "Production integration suite must synchronize on observable behavior, not fixed sleeps."
+            exit 1
+          fi
+
+          node --check tests/e2e/frontend_phase22_real_backend_smoke.spec.js
+          node --check tests/e2e/frontend_phase23_production_integration.spec.js
+          SAMS_BASE_URL=http://127.0.0.1/sams/ npx playwright test tests/e2e/frontend_phase22_real_backend_smoke.spec.js tests/e2e/frontend_phase23_production_integration.spec.js --project=chromium --reporter=line
+
+          test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1/sams/backend/src/Helpers/Auth.php)" = "403"
+          test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1/sams/public/login.php)" = "410"
+          test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1/sams/public/index.php)" = "410"
+          echo "[PASS] Apache + PHP + MariaDB production integration path verified."
+
+      - name: Verify production integration database state
+        shell: bash
+        run: |
+          result=$(mariadb --protocol=tcp -h "$SAMS_TEST_DB_HOST" -P "$SAMS_TEST_DB_PORT" -u "$SAMS_TEST_DB_USER" -p"$SAMS_TEST_DB_PASS" -D "$SAMS_TEST_DB_NAME" -N -B -e "SELECT (SELECT COUNT(*) FROM academic_years),(SELECT COUNT(*) FROM users),(SELECT COUNT(*) FROM classes),(SELECT COUNT(*) FROM users WHERE role='teacher' AND is_active=1),(SELECT COUNT(*) FROM students),(SELECT COUNT(*) FROM attendance),(SELECT COUNT(*) FROM student_enrollments);")
+          expected=$'1\t2\t2\t1\t4\t8\t4'
+          test "$result" = "$expected"
+          echo "[PASS] Production integration database state remains deterministic after browser acceptance."

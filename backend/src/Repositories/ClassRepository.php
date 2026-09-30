@@ -17,7 +17,10 @@ final class ClassRepository
         }
 
         if (in_array($role, ['admin', 'counselor'], true)) {
-            $sql = 'SELECT c.id, c.name, c.level, c.branch, c.academic_year_id
+            $sql = 'SELECT c.id, c.name, c.level, c.branch, c.academic_year_id,
+                           ay.name AS academic_year_name,
+                           ay.starts_on AS academic_year_starts_on,
+                           ay.ends_on AS academic_year_ends_on
                     FROM classes c
                     INNER JOIN academic_years ay ON ay.id = c.academic_year_id
                     WHERE c.is_active = 1 AND ay.is_active = 1';
@@ -34,7 +37,10 @@ final class ClassRepository
             return $stmt->fetchAll();
         }
 
-        $sql = 'SELECT c.id, c.name, c.level, c.branch, c.academic_year_id
+        $sql = 'SELECT c.id, c.name, c.level, c.branch, c.academic_year_id,
+                       ay.name AS academic_year_name,
+                       ay.starts_on AS academic_year_starts_on,
+                       ay.ends_on AS academic_year_ends_on
                 FROM classes c
                 INNER JOIN teacher_classes tc ON tc.class_id = c.id
                 INNER JOIN academic_years ay ON ay.id = c.academic_year_id

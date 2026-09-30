@@ -124,11 +124,11 @@ The existing /api/*.php surface remains a compatibility layer while the endpoint
 
 ## Current repository state
 
-The existing release candidate contains enrollment-aware attendance, signatures, imports, CI, and a legacy Vanilla JS frontend.
+The release candidate contains enrollment-aware attendance, signatures, imports, CI, and the React frontend reconstruction.
 
-The backend source is now under backend/src while the old PHP API remains operational through the compatibility bridge.
+The backend source is under backend/src while the old /api/*.php surface remains operational through the compatibility bridge.
 
-Do not delete the legacy runtime until its replacement exists and the relevant critical workflows are verified.
+The former PHP-rendered UI and Vanilla JS assets are retired from the active runtime. The production boundary serves the React build under `/sams/`, routes `/api/v1/*` to the PHP front controller, and returns `410 Gone` for the retired PHP UI entry points.
 
 ## Engineering principles
 

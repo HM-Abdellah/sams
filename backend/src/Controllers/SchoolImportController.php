@@ -31,7 +31,7 @@ final class SchoolImportController
         $user = $this->requireAdmin($request);
 
         if ($request->method() === 'GET') {
-            return $this->preview($request, $params);
+            return $this->preview($request, $params, $user);
         }
 
         if (!Csrf::verify($request->header('x-csrf-token'))) {
@@ -179,7 +179,7 @@ final class SchoolImportController
         }
     }
 
-    private function preview(Request $request, array $params): Response
+    private function preview(Request $request, array $params, array $user): Response
     {
         $batchId = isset($params['id']) && ctype_digit((string)$params['id'])
             ? (int)$params['id']

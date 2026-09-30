@@ -7,8 +7,13 @@ export interface AppRouteDefinition {
   roles: readonly UserRole[]
 }
 
+export const COUNSELOR_ROUTES = [
+  { path: '/app/counselor', label: 'counselor.dashboard', roles: ['counselor'] },
+] as const satisfies readonly AppRouteDefinition[]
+
 export const TEACHER_ROUTES = [
   { path: '/app/teacher', label: 'teacher.dashboard', roles: ['teacher'] },
+  { path: '/app/classes', label: 'navigation.classes', roles: ['teacher'] },
   { path: '/app/attendance', label: 'navigation.attendance', roles: ['teacher'] },
   { path: '/app/students', label: 'navigation.students', roles: ['teacher'] },
   { path: '/app/signatures', label: 'navigation.signatures', roles: ['teacher'] },
@@ -30,5 +35,6 @@ export const ADMIN_ROUTES = [
 export function navigationForRole(role: UserRole): readonly AppRouteDefinition[] {
   if (role === 'teacher') return TEACHER_ROUTES
   if (role === 'admin') return ADMIN_ROUTES
+  if (role === 'counselor') return COUNSELOR_ROUTES
   return []
 }

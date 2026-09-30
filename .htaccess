@@ -1,6 +1,6 @@
 # Root Apache rules for SAMS.
-# The legacy public UI remains available during migration; new API traffic
-# uses the centralized backend front controller.
+# React is the production web UI. PHP remains the API/runtime backend.
+# The frontend is built into frontend/dist before deployment.
 
 Options -Indexes
 
@@ -8,15 +8,30 @@ Options -Indexes
     RewriteEngine On
     RewriteBase /sams/
 
-    # /sams/ -> /sams/public/
-    RewriteRule ^$ public/ [R=302,L]
+    # The frontend is served from a pre-built static bundle.
+    # The canonical API remains isolated behind the PHP front controller.
 
-    # Centralized API surface.
-    RewriteRule ^api/v1(?:/|$) backend/public/index.php [L,QSA]
+    # Canonical API surface stays on the PHP front controller.
+    RewriteRule ^api/v1(?:/|$) backend/public/index.php [END,QSA]
 
-    # Never expose repository metadata or private application directories through Apache.
-    RewriteRule ^(?:\.git|\.github|app|backend/(?:src|config|database|storage|scripts|tests|vendor)|config|database|storage|scripts|tests)(?:/|$) - [F,L,NC]
-    RewriteRule \.(?:sql|log|env|ini|bak|old|dist)$ - [F,L,NC]
+    # Never expose repository metadata, source code, build internals, or local config.
+    RewriteRule ^(?:\.git|\.github|backend/(?:src|config|database|storage|scripts|tests|vendor)|config|database|storage|scripts|tests|frontend/(?:src|node_modules|dist|tests)|frontend/(?:package(?:-lock)?\.json|tsconfig[^/]*|vite\.config\.[^/]+|\.env[^/]*)|storage)(?:/|$) - [F,END,NC]
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^app(?:/.*)?$ - [F,END,NC]
+    RewriteRule \.(?:sql|log|env|ini|bak|old|dist)$ - [F,END,NC]
+
+    # The former PHP-rendered UI entry points are retired from production.
+    RewriteRule ^public/(?:login|index)\.php$ - [G,END,NC]
+
+    # Vite production assets are exposed from the static build directory.
+    RewriteRule ^assets/(.*)$ frontend/dist/assets/$1 [END]
+
+    # The SAMS mount root is a real directory, so handle it explicitly.
+    RewriteRule ^$ frontend/dist/index.html [END]
+    # React Router owns all other non-file client routes.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ frontend/dist/index.html [END]
 </IfModule>
 
 <FilesMatch "^(?:\.env|.*\.sql|.*\.log|.*\.bak|.*\.old)$">

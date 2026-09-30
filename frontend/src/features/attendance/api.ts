@@ -3,6 +3,7 @@ import type {
   AttendanceEntry,
   AttendanceStatus,
 } from '../../services/api/types.ts'
+import type { AttendanceSignoff } from './types.ts'
 
 export interface AttendanceStudent {
   id: number
@@ -25,6 +26,7 @@ export interface WeeklyRegisterData {
   week_end: string
   students: AttendanceStudent[]
   attendance: AttendanceRecord[]
+  period_signoffs: AttendanceSignoff[]
 }
 
 export interface SaveBulkData {

@@ -14,13 +14,9 @@ export function WorkspaceLandingPage() {
     return <Navigate to="/app/teacher" replace />
   }
 
-  return (
-    <section>
-      <p className="text-sm font-medium text-neutral-500">SAMS</p>
-      <h1 className="mt-1 text-2xl font-semibold">Counselor workspace</h1>
-      <p className="mt-2 text-sm text-neutral-600">
-        Your role is authenticated. Feature modules for this workspace will be connected later.
-      </p>
-    </section>
-  )
+  if (session.user.role === 'counselor') {
+    return <Navigate to="/app/counselor" replace />
+  }
+
+  return <Navigate to="/unauthorized" replace />
 }
