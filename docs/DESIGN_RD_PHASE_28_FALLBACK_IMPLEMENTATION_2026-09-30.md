@@ -4,9 +4,9 @@ Date: 2026-09-30
 
 ## Scope
 
-Figma construction remains blocked by the active Starter-plan MCP tool-call rate limit. Phase 28 therefore continues through the documented fallback path: current design research → SAMS-specific interaction decision → production implementation of the already-approved reference behavior → verification.
+The original Starter-team Figma construction path remains rate-limited. Phase 28 construction is nevertheless complete through the verified student-team Figma write path, with the canonical file fully populated and structurally/render verified.
 
-This is not a claim that the Figma file was constructed or visually verified.
+This document now records the fallback production implementation that preceded and complemented the completed canonical Figma construction.
 
 ## Research evidence used
 
@@ -42,7 +42,7 @@ An attempted `npm run test:unit -- --runInBand` is intentionally not counted as 
 - Phase 28 design specification gate: PASS
 - Phase 28 interaction gate: PASS
 - Phase 28 fallback production-reference implementation: PASS for the approved rail/bidi subset above
-- Figma construction gate: BLOCKED by external Starter-plan MCP rate limiting
+- Figma construction gate: PASS in the canonical student-team file
 - Direct-radio production replacement: NOT APPROVED; requires task-level usability validation across FR/EN/AR, touch, keyboard, and protected lessons
 
 ## Research rule
@@ -175,3 +175,16 @@ Current shadcn/ui guidance treats complex data tables as composition rather than
 The Phase 20 performance E2E test exposed a CI-only timeout while waiting for the lazily loaded Teacher Attendance route. The test already synchronizes on the semantic attendance heading; its assertion window was increased from the shared 5-second expectation timeout to 15 seconds for this cold-start route only. No fixed sleep was introduced, and local production-preview verification passes all three Phase 20 performance tests.
 
 This change addresses test-environment timing variance rather than changing the attendance runtime behavior.
+
+
+## Phase 28 Figma construction completion
+
+The Figma construction gate is now complete in the canonical student-team design file:
+
+`https://www.figma.com/design/qMn52cWIjW89zqHWahgCgP`
+
+The file contains foundations, 16 editable components, reusable patterns, a 390px Teacher Attendance reference, a 1440px Teacher Attendance reference, state coverage, and RTL/LTR verification. Semantic SAMS variables are bound to representative visual properties, and Figma screenshot renders were generated for the key reference/state frames.
+
+The earlier Starter-team file remains a historical/raw-capture artifact only; its MCP write path remains rate-limited.
+
+Phase 28 exit gate: **COMPLETE**.

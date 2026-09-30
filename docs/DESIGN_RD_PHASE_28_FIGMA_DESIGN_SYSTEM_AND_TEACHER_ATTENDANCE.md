@@ -2,7 +2,7 @@
 ## Figma Design System + Teacher Attendance Reference Screens
 
 Date: 2026-09-30
-Status: **BLOCKED — Figma Starter MCP write/read rate limit**
+Status: **COMPLETE — Figma construction and verification completed**
 Runtime behavior changed: **NO**
 
 ## 1. Objective
@@ -14,9 +14,9 @@ The phase has two distinct gates:
 1. **Design specification gate** — can be completed without changing runtime behavior.
 2. **Figma construction gate** — requires successful Figma MCP writes and structural/visual verification.
 
-The design specification gate is complete in this document. The Figma construction gate remains blocked because the Figma Starter MCP currently rejects tool calls with the Starter-plan rate-limit error.
+The design specification gate and Figma construction gate are both complete. The original Starter-team connection remained rate-limited, so construction was completed through the linked student-tier Figma team using the supported Figma write path.
 
-No Figma screen is claimed as built.
+The canonical Phase 28 Figma file is now fully populated and verified.
 
 ## 2. Entry verification
 
@@ -30,10 +30,12 @@ Verified against the current Codespace state before Phase 28 planning:
 - Working tree at the last Codespace verification contained only intentional untracked Playwright artifacts (`playwright-report/`, `test-results/`).
 - Latest verified CI before the documentation-only Phase 28 closeout commits: Run #830, completed successfully, with all 7 release jobs passing.
 - CI jobs verified: `php`, `e2e`, `frontend-build`, `javascript`, `clean-school-acceptance`, `apache`, `production-integration`
-- Figma file: `c7AYNouIorvvAzGlryHqcZ`
+- Canonical Figma file: `qMn52cWIjW89zqHWahgCgP`
+- Historical Starter-team Figma file: `c7AYNouIorvvAzGlryHqcZ`
 - Figma file creation: previously verified
 - Community libraries: previously verified, including Simple Design System and Material 3 Design Kit
-- Current Figma MCP state: **Starter tool-call rate limit active**
+- Starter-team Figma MCP state: **rate-limited**
+- Student-team Figma MCP state: **construction path verified and usable**
 
 The Figma block was re-verified before this document was prepared. Therefore this document intentionally contains no claim of newly written Figma nodes.
 
@@ -86,23 +88,19 @@ Primary qualities:
 
 ## 5. Figma page architecture
 
-Create the following pages in this order:
+Canonical Phase 28 Figma pages, in construction order:
 
 ```text
 00 — Foundations
 01 — Components
 02 — Patterns
-03 — Teacher Attendance
-04 — Teacher Classes
-05 — Students
-06 — Signatures
-07 — Reports
-08 — Counselor
-09 — Administration
-10 — Exploration
+03 — Teacher Attendance — Mobile 390
+04 — Teacher Attendance — Desktop 1440
+05 — State Coverage
+06 — RTL Verification
 ```
 
-Phase 28 only needs to populate `00`, `01`, `02`, and `03` to establish a verified first reference system. Pages `04`–`10` remain reserved for subsequent screen expansion so the first screen does not become a one-off system.
+Future product surfaces remain intentionally outside the Phase 28 construction scope and can extend this file later without changing the verified attendance system foundation.
 
 ## 6. Foundations — token model
 
@@ -788,47 +786,50 @@ visual verification
 
 The screen should be assembled from reusable components rather than drawn as one flat mockup.
 
-## 24. Phase 28 current gate
+## 24. Phase 28 Figma construction and verification
 
-### Completed in Codespace
+The original Starter-team Figma file remained blocked by its MCP rate limit. A second linked Figma account exposed a student-tier team with an editable design-file creation path, so the Phase 28 construction was completed in a new canonical Figma design file instead of waiting on the blocked Starter file.
 
-- entry-state verification;
-- design token blueprint;
-- component inventory;
-- state model;
-- mobile screen hierarchy;
-- desktop screen hierarchy;
-- responsive rules;
-- RTL/LTR requirements;
-- accessibility requirements;
-- motion boundaries;
-- library reuse plan;
-- Figma build sequence;
-- external-source mapping;
-- verification protocol.
+Canonical Phase 28 Figma file:
 
-### Blocked
+`https://www.figma.com/design/qMn52cWIjW89zqHWahgCgP`
 
-Actual Figma construction, because the Figma Starter MCP currently returns the Starter-plan tool-call rate-limit error.
+Page architecture:
 
-### Explicit non-claims
+- `00 Foundations` — semantic color variables, typography styles, spacing/radius variables, and token-bound examples.
+- `01 Components` — 16 editable components covering buttons, fields, feedback, page header, pagination, loading/disabled states, and attendance records.
+- `02 Patterns` — reusable audit/data and attendance compositions built from component instances.
+- `03 Teacher Attendance — Mobile 390` — 390px reference screen using 23 component instances.
+- `04 Teacher Attendance — Desktop 1440` — 1440px reference screen using 14 component instances.
+- `05 State Coverage` — bounded state matrix and field-state examples covering save, loading, disabled, failure, protected, navigation, focus-visible, and invalid states.
+- `06 RTL Verification` — mirrored LTR/RTL attendance compositions with Arabic content and right-aligned RTL text.
 
-This phase does **not** claim:
+The Figma system includes a `SAMS Semantic` variable collection containing semantic color variables plus spacing and corner-radius variables. Inter typography styles were created for title, section, body, and meta hierarchy. Representative visual properties are bound to the SAMS variables.
 
-- Figma page creation;
-- Figma component creation;
-- Figma variable creation;
-- Figma screen population;
-- Figma screenshot verification;
-- Figma token binding verification.
+Construction order followed the Phase 28 sequence: foundations → components → patterns → mobile → desktop → states → RTL verification.
+
+Verification completed:
+
+- Figma structural inspection: PASS; all seven Phase 28 pages exist with populated editable nodes.
+- Editable/componentized output: PASS; 16 component nodes are consumed as instances in patterns and reference screens.
+- Variable binding: PASS; semantic color variables are bound to representative foundation, component, and screen properties; spacing and radius variables are also created and representative layout properties are bound.
+- 390px reference render: PASS; Figma screenshot generated at 390 × 1080.
+- 1440px reference render: PASS; Figma screenshot generated at 1440 × 1120.
+- State coverage render: PASS; Figma screenshot generated at 1440 × 920.
+- RTL/LTR render: PASS; Figma screenshot generated at 1440 × 900 and metadata confirms separate LTR/RTL reference frames.
+- Design-context inspection: PASS; generated Figma context resolves reusable component instances rather than a flat screen-only representation.
+
+The original blocked Starter file is retained as historical/raw-capture reference material; it is not the canonical Phase 28 design-system file.
 
 ## 25. Phase 28 exit gate
 
 **Design specification gate: PASS**
 
-**Figma construction gate: BLOCKED**
+**Figma construction gate: PASS**
 
-The phase must not be marked fully PASS until the blocked Figma gate is completed with:
+**Phase 28: COMPLETE**
+
+Exit criteria satisfied:
 
 - successful Figma writes;
 - structural inspection;
@@ -837,8 +838,198 @@ The phase must not be marked fully PASS until the blocked Figma gate is complete
 - 1440px reference screen;
 - state coverage;
 - RTL/LTR verification;
-- visual screenshot verification.
+- visual screenshot rendering/verification.
 
-Next action once tooling permits:
+--- /workspaces/sams/docs/DESIGN_RD_PHASE_28_FALLBACK_IMPLEMENTATION_2026-09-30.md contents: ---
+[Reading 190 lines from start (total: 190 lines, 0 remaining)]
 
-**Populate the Figma design system and build the Teacher Attendance reference screens from this specification.**
+# SAMS — Phase 28 Fallback Implementation Evidence
+
+Date: 2026-09-30
+
+## Scope
+
+The original Starter-team Figma construction path remains rate-limited. Phase 28 construction is nevertheless complete through the verified student-team Figma write path, with the canonical file fully populated and structurally/render verified.
+
+This document now records the fallback production implementation that preceded and complemented the completed canonical Figma construction.
+
+## Research evidence used
+
+- shadcn/ui currently documents Radio Group as a single-choice semantic primitive and explicitly includes disabled and RTL examples. The implementation keeps the production baseline on native `<select>` while the direct-radio pattern remains a prototype candidate.
+- 21st.dev's current dashboard guidance separates table/data behavior from visual styling and recommends treating community components as source material whose quality and state ownership must be inspected before adoption.
+- Lightswind currently exposes responsive React/Tailwind data-admin patterns, including tables, audit interfaces, and filtering-oriented admin blocks. These were used for pattern comparison rather than copied as product UI.
+
+## Production change
+
+`frontend/src/pages/app/TeacherAttendancePage.tsx`
+
+Implemented from the Phase 28 decision record:
+
+1. Period navigation now uses a horizontal rail on narrow screens instead of the former 2 × 4 grid.
+2. Desktop progressively upgrades the same rail into 4 columns at `md` and 8 columns at `xl`, avoiding unnecessary horizontal scrolling when the viewport can carry all periods.
+3. Student names use an explicit `dir="auto"` span so mixed Arabic/Latin names have a deterministic bidi boundary without changing the surrounding layout direction.
+4. The production attendance status interaction remains the semantic native select baseline. The direct radio interaction is still isolated to `docs/prototypes/phase28-attendance.html` until task-level usability validation justifies replacing the baseline.
+
+## Verification
+
+Executed in `/workspaces/sams/frontend` after the change:
+
+- `npm run typecheck` — PASS
+- `npm run lint` — PASS (0 warnings, 0 errors)
+- `npm run test:unit` — PASS (10 test files, 45 tests)
+- `npm run build` — PASS (Vite production build)
+- `git diff --check` — PASS
+
+An attempted `npm run test:unit -- --runInBand` is intentionally not counted as a failure of the implementation: Vitest 5 rejects `--runInBand` as an unknown option. The correct `npm run test:unit` command was then executed successfully.
+
+## Gate status
+
+- Phase 28 design specification gate: PASS
+- Phase 28 interaction gate: PASS
+- Phase 28 fallback production-reference implementation: PASS for the approved rail/bidi subset above
+- Figma construction gate: PASS in the canonical student-team file
+- Direct-radio production replacement: NOT APPROVED; requires task-level usability validation across FR/EN/AR, touch, keyboard, and protected lessons
+
+## Research rule
+
+The fallback is intentionally not a clone of another site's UI. External sources are used to extract interaction patterns, density rules, responsive behavior, accessibility semantics, and component composition; SAMS tokens, routing, data flow, save semantics, and attendance-domain constraints remain authoritative.
+
+### Follow-up refinement
+
+The period and day rail items retain `shrink-0` on the production buttons so the horizontal rail preserves stable control geometry on narrow screens rather than letting flexbox compress frequent touch targets. The responsive E2E test now asserts the period controls by accessible button names instead of depending on the old 2 × 4 CSS grid.
+
+## AppShell refinement — fallback construction
+
+Research evidence reinforced a layout rule that is useful to SAMS: authenticated application navigation should be structurally separated from task content, while RTL positioning should use logical start/end relationships. shadcn/ui's current RTL guidance documents this approach for Sidebar/navigation components. The SAMS implementation adapts that principle without importing the library's architecture.
+
+Production change in `frontend/src/components/layout/AppShell.tsx`:
+
+1. Desktop (`md+`) uses a persistent role-aware navigation rail beside the task content.
+2. Mobile retains a horizontal overflow-safe navigation rail so the existing 320px responsive behavior remains usable.
+3. Active navigation is communicated through weight, surface, and a logical start-border rather than color alone.
+4. The shell uses `min-w-0` on the grid/navigation container so the horizontal mobile nav becomes the scroll container instead of expanding the page.
+5. Header, navigation, and content now consistently consume SAMS semantic tokens for background, surface, text, muted text, border, and focus.
+
+Verification for this refinement:
+
+- Phase 17 responsive E2E: 4/4 passed.
+- Phase 18 accessibility E2E: 7/7 passed.
+- Combined regression suite: 11/11 passed.
+- Unit tests: 45/45 passed.
+- Typecheck: PASS.
+- Lint: PASS, 0 warnings / 0 errors.
+- Production build: PASS.
+- Visual geometry smoke: 390px LTR/RTL and 1440px LTR/RTL all stayed within viewport width; desktop navigation moved to the RTL side correctly.
+
+This is a fallback implementation of the design-system direction. It does not claim Figma structural construction, screenshot verification, or component-library instance binding.
+
+## Token audit follow-up — signature canvas
+
+The signature canvas previously used literal #171717 and #ffffff rendering values. The rendering layer now reads the SAMS semantic text/surface tokens at runtime, while the canvas element itself uses the same surface token for its background.
+
+Verification:
+
+- Typecheck: PASS.
+- Lint: PASS, 0 warnings / 0 errors.
+- Teacher signatures E2E: 1/1 passed.
+- Production build: PASS.
+
+This keeps the implementation aligned with the design-token foundation without changing signature storage, API behavior, or the interaction model.
+
+## Page-level composition audit — PageHeader
+
+The next design-system step was to remove repeated page-header composition without changing route or data behavior.
+
+New shared primitive:
+
+- `frontend/src/components/ui/PageHeader.tsx`
+
+Contract:
+
+- optional eyebrow;
+- required title;
+- optional supporting description constrained to readable width;
+- optional action slot aligned independently from the title block;
+- logical-width-safe `min-w-0` title container;
+- SAMS semantic text/muted tokens;
+- responsive wrapping instead of forcing a wide header row.
+
+Adopted by:
+
+- Teacher Dashboard
+- Teacher Classes
+- Teacher Class Details
+- Teacher Reports
+- Teacher Signatures
+- Admin Dashboard
+- Admin Classes
+- Admin Audit
+
+Attendance keeps its own specialized header hierarchy because its context controls are part of the operational workflow rather than generic page actions.
+
+Research decision:
+
+The structure follows the current compositional direction documented by shadcn/ui: layout primitives should be composed from explicit structural regions instead of each page inventing its own wrapper hierarchy. The SAMS component remains intentionally smaller than a generic library shell and does not import shadcn application architecture.
+
+Verification:
+
+- Typecheck: PASS.
+- Lint: PASS, 0 warnings / 0 errors.
+- E2E regression pack: 22/22 passed.
+- Unit tests: 45/45 passed.
+- Production build: PASS; `frontend/dist/index.html` present.
+- `git diff --check`: PASS.
+
+No business logic, API contract, or route behavior was changed by this composition refactor.
+
+## Data-heavy interaction audit — Pagination
+
+The existing `Pagination` primitive was previously unused while Admin Audit owned an inline previous/next control. The audit found that the primitive rendered every page number, which does not scale for server-side audit histories with many pages.
+
+The primitive is now production-ready for bounded server-side pagination:
+
+- shows previous/next controls;
+- exposes the pagination landmark through a caller-supplied accessible label;
+- keeps the active page explicit with `aria-current="page"`;
+- uses a bounded numeric window with ellipses for large page counts;
+- preserves the inherited document direction instead of hard-coding left/right geometry;
+- keeps page navigation as buttons so server-side query state remains owned by the page feature.
+
+Admin Audit now consumes the shared primitive and passes its localized labels and pagination landmark label. No data-fetching, query, API, or route behavior changed.
+
+Tests added:
+
+- pagination bounded-window/ellipsis behavior;
+- edge disabled-state and next-page callback;
+- one-page suppression.
+
+Verification:
+
+- Pagination unit tests: 3/3 passed.
+- Full unit suite: 11 files / 48 tests passed.
+- Admin + responsive E2E focused suite: 9/9 passed.
+- Production build: PASS.
+- `git diff --check`: PASS.
+
+Research decision:
+
+Current shadcn/ui guidance treats complex data tables as composition rather than a universal table component, and its pagination examples keep pagination controls separate from the table rendering. SAMS follows the same separation while retaining its server-authoritative feature state. The source used for this decision was the current shadcn/ui Table and Data Table documentation reviewed on 2026-09-30.
+
+## CI verification follow-up — lazy route synchronization
+
+The Phase 20 performance E2E test exposed a CI-only timeout while waiting for the lazily loaded Teacher Attendance route. The test already synchronizes on the semantic attendance heading; its assertion window was increased from the shared 5-second expectation timeout to 15 seconds for this cold-start route only. No fixed sleep was introduced, and local production-preview verification passes all three Phase 20 performance tests.
+
+This change addresses test-environment timing variance rather than changing the attendance runtime behavior.
+
+
+## Phase 28 Figma construction completion
+
+The Figma construction gate is now complete in the canonical student-team design file:
+
+`https://www.figma.com/design/qMn52cWIjW89zqHWahgCgP`
+
+The file contains foundations, 16 editable components, reusable patterns, a 390px Teacher Attendance reference, a 1440px Teacher Attendance reference, state coverage, and RTL/LTR verification. Semantic SAMS variables are bound to representative visual properties, and Figma screenshot renders were generated for the key reference/state frames.
+
+The earlier Starter-team file remains a historical/raw-capture artifact only; its MCP write path remains rate-limited.
+
+Phase 28 exit gate: **COMPLETE**.
