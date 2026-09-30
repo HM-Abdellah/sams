@@ -17,7 +17,7 @@ The fix now:
 - treats that collision as a blocking reconciliation issue;
 - verifies the behavior with tenant-isolation integration coverage.
 
-The repository-level findings were remediated in PR #28, and the resulting branch passed the hosted release verification in GitHub Actions Run #817. The prior PR #27 release gate remains the baseline for the already-merged production boundary.
+The repository-level findings were remediated in PR #28, and the release code passed hosted verification in GitHub Actions Run #818. The only subsequent change is documentation-only audit metadata; the runtime/application code remains unchanged from the verified release-code head.
 
 ## Audit domains
 
@@ -261,9 +261,9 @@ PR #28 is the current release follow-up branch.
 
 PR #28 remains open and mergeable against `main`.
 
-The latest head is `5fee6aaf6e7e94d36025b77826f990241f2d1993`.
+The latest release-code head covered by hosted verification is `5fee6aaf6e7e94d36025b77826f990241f2d1993`.
 
-GitHub Actions Run #817 completed successfully across all seven release jobs:
+GitHub Actions Run #818 completed successfully across all seven release jobs on the branch containing that release code plus the documentation-only audit update:
 
 - PHP;
 - E2E;
@@ -275,13 +275,13 @@ GitHub Actions Run #817 completed successfully across all seven release jobs:
 
 The published `frontend/e2e-groups` commit status is also successful.
 
-The tenant-isolation regression, dependency audit, production Apache integration, and static security-header assertions are therefore externally verified on the current PR head.
+The tenant-isolation regression, dependency audit, production Apache integration, and static security-header assertions are therefore externally verified for the current release code. Changes after that verification are documentation-only.
 
 ## ECC decision
 
 **PASS — FINAL CROSS-DISCIPLINARY ENGINEERING + SECURITY GATE VERIFIED**
 
-Run #817 satisfies the external verification conditions for PR #28 with all seven jobs successful and the frontend E2E commit status green.
+Run #818 satisfies the external verification conditions for the PR #28 release code with all seven jobs successful and the frontend E2E commit status green. The current diff since that run is documentation-only.
 
 No new release-blocking finding was reported by that hosted run.
 
