@@ -179,6 +179,7 @@ Auth::login([
     'id' => 1,
     'full_name' => 'Phase 7 Admin',
     'role' => 'admin',
+    'school_id' => 1,
     'session_version' => 2,
 ]);
 p7_expect(Auth::check(), 'Session could not be re-established after version invalidation.');
@@ -195,6 +196,7 @@ Auth::login([
       'id' => 1,
     'full_name' => 'Phase 7 Admin',
     'role' => 'admin',
+    'school_id' => 1,
     'session_version' => 2,
 ]);
 p7_expect(Auth::check(), 'Session could not be re-established after idle timeout.');
@@ -216,6 +218,7 @@ Auth::login([
     'id' => 1,
     'full_name' => 'Phase 7 Admin',
     'role' => 'admin',
+    'school_id' => 1,
     'session_version' => 2,
 ]);
 $pdo->exec("UPDATE users SET is_active = 0 WHERE id = 1");
