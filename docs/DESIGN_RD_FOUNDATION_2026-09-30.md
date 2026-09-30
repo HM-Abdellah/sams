@@ -309,3 +309,30 @@ Current state:
 **R&D READY — Figma canvas population BLOCKED by Starter MCP rate limit**
 
 Engineering and security gates remain closed and verified at the application baseline. This document is the bridge from the verified implementation to the visual design/reconstruction stage.
+
+## Design MCP connection layer — 2026-09-30
+
+The Codespace now has Codex CLI 0.159.2 and a local MCP configuration at `~/.codex/config.toml`.
+
+Registered MCP servers:
+
+| Source | Connection path | Current state |
+| --- | --- | --- |
+| Refero | Remote MCP `https://api.refero.design/mcp` | Registered; OAuth login still required |
+| 21st.dev | Remote MCP `https://21st.dev/api/mcp` | Registered; account login may be required |
+| OriginKit | Remote MCP `https://mcp.originkit.dev/mcp` | Registered; `ORIGINKIT_API_KEY` supported, not present in Codespace |
+| GetLayers | Remote MCP `https://mcp.getlayers.ai/mcp` | Registered; service authorization/account required |
+| MotionSites AI | Remote MCP | Registered; service authorization required |
+| shadcn/ui | stdio MCP via shadcn CLI | Enabled for `frontend/` |
+| Lightswind UI | stdio MCP via Lightswind CLI | Enabled for `frontend/` |
+
+The shadcn registry configuration in `frontend/components.json` keeps the following sources connected through one MCP layer:
+React Bits Starter, React Bits Pro, Componentry, and Skiper UI.
+
+React Bits Pro and Skiper Pro authentication remain environment-only; no license keys are committed.
+
+Non-MCP research sources remain active references rather than being discarded: Manus, Realtime Colors, styles.refero.design, and the broader visual role of Spline are still part of the Design Research Stack.
+
+Spline has an official MCP, but its server is bundled with the Spline desktop app and runs locally on macOS/Windows, so it cannot be attached to this Linux Codespace as the same local server.
+
+This connection layer is tooling-only. It does not change SAMS runtime behavior, authorization, API contracts, or business logic.
