@@ -156,6 +156,7 @@ Auth::login([
     'id' => 1,
     'full_name' => 'Phase 7 Admin',
     'role' => 'admin',
+    'school_id' => 1,
     'session_version' => 1,
 ]);
 
