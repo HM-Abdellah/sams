@@ -323,7 +323,7 @@ export function TeacherAttendancePage() {
               ))}
             </div>
 
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
+            <div className="flex gap-2 overflow-x-auto pb-1 md:grid md:grid-cols-4 md:overflow-visible xl:grid-cols-8">
               {PERIODS.map((period, index) => {
                 const number = index + 1
                 return (
@@ -381,7 +381,7 @@ export function TeacherAttendancePage() {
                     return (
                       <tr key={student.id} className="border-b border-[var(--sams-border)] last:border-b-0">
                         <td className="px-3 py-3 text-[var(--sams-muted)]">{index + 1}</td>
-                        <td className="px-3 py-3 font-medium">{displayName(student.first_name, student.last_name)}</td>
+                        <td className="px-3 py-3 font-medium"><span dir="auto">{displayName(student.first_name, student.last_name)}</span></td>
                         <td className="w-56 px-3 py-2">
                           <Select
                             aria-label={`${displayName(student.first_name, student.last_name)} — ${t(TRANSLATION_KEYS.attendance.status)}`}
@@ -409,7 +409,7 @@ export function TeacherAttendancePage() {
                     <article key={student.id} className="rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] p-3">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="font-medium">{index + 1}. {displayName(student.first_name, student.last_name)}</p>
+                          <p className="font-medium"><span aria-hidden="true">{index + 1}. </span><span dir="auto">{displayName(student.first_name, student.last_name)}</span></p>
                           <p className="mt-1 text-xs text-[var(--sams-muted)]">
                             {t(TRANSLATION_KEYS.attendance.withAbsences)}: {absenceCounts.get(student.id) ?? 0}
                           </p>
