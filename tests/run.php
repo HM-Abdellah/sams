@@ -218,6 +218,7 @@ $tests = [
                 'id' => 42,
                 'full_name' => 'Integration User',
                 'role' => 'teacher',
+                'school_id' => 1,
                 'session_version' => 7,
             ]);
 
