@@ -1,0 +1,50 @@
+# SAMS — Phase 28 Fallback Implementation Evidence
+
+Date: 2026-09-30
+
+## Scope
+
+Figma construction remains blocked by the active Starter-plan MCP tool-call rate limit. Phase 28 therefore continues through the documented fallback path: current design research → SAMS-specific interaction decision → production implementation of the already-approved reference behavior → verification.
+
+This is not a claim that the Figma file was constructed or visually verified.
+
+## Research evidence used
+
+- shadcn/ui currently documents Radio Group as a single-choice semantic primitive and explicitly includes disabled and RTL examples. The implementation keeps the production baseline on native `<select>` while the direct-radio pattern remains a prototype candidate.
+- 21st.dev's current dashboard guidance separates table/data behavior from visual styling and recommends treating community components as source material whose quality and state ownership must be inspected before adoption.
+- Lightswind currently exposes responsive React/Tailwind data-admin patterns, including tables, audit interfaces, and filtering-oriented admin blocks. These were used for pattern comparison rather than copied as product UI.
+
+## Production change
+
+`frontend/src/pages/app/TeacherAttendancePage.tsx`
+
+Implemented from the Phase 28 decision record:
+
+1. Period navigation now uses a horizontal rail on narrow screens instead of the former 2 × 4 grid.
+2. Desktop progressively upgrades the same rail into 4 columns at `md` and 8 columns at `xl`, avoiding unnecessary horizontal scrolling when the viewport can carry all periods.
+3. Student names use an explicit `dir="auto"` span so mixed Arabic/Latin names have a deterministic bidi boundary without changing the surrounding layout direction.
+4. The production attendance status interaction remains the semantic native select baseline. The direct radio interaction is still isolated to `docs/prototypes/phase28-attendance.html` until task-level usability validation justifies replacing the baseline.
+
+## Verification
+
+Executed in `/workspaces/sams/frontend` after the change:
+
+- `npm run typecheck` — PASS
+- `npm run lint` — PASS (0 warnings, 0 errors)
+- `npm run test:unit` — PASS (10 test files, 45 tests)
+- `npm run build` — PASS (Vite production build)
+- `git diff --check` — PASS
+
+An attempted `npm run test:unit -- --runInBand` is intentionally not counted as a failure of the implementation: Vitest 5 rejects `--runInBand` as an unknown option. The correct `npm run test:unit` command was then executed successfully.
+
+## Gate status
+
+- Phase 28 design specification gate: PASS
+- Phase 28 interaction gate: PASS
+- Phase 28 fallback production-reference implementation: PASS for the approved rail/bidi subset above
+- Figma construction gate: BLOCKED by external Starter-plan MCP rate limiting
+- Direct-radio production replacement: NOT APPROVED; requires task-level usability validation across FR/EN/AR, touch, keyboard, and protected lessons
+
+## Research rule
+
+The fallback is intentionally not a clone of another site's UI. External sources are used to extract interaction patterns, density rules, responsive behavior, accessibility semantics, and component composition; SAMS tokens, routing, data flow, save semantics, and attendance-domain constraints remain authoritative.
