@@ -1,3 +1,5 @@
+[Reading 312 lines from start (total: 312 lines, 0 remaining)]
+
 # SAMS — Phase 28 Attendance Interaction Decision Record
 
 Date: 2026-09-30
@@ -249,3 +251,64 @@ rare non-critical micro-interactions only.
 
 Core rule:
 **pattern discovery is broad; production adoption is SAMS-specific.**
+## 11. Visual prototype review
+
+The first mobile comparison showed a clear density difference:
+- Native select keeps each student record compact.
+- Direct status makes the current state visible without opening a control.
+- The first direct-status layout used three rows for five options and was too tall.
+
+Targeted visual correction:
+- changed the direct-status option grid from two columns to three;
+- preserved 40px minimum option height;
+- retained native radio inputs and label-based visual states.
+
+Post-fix result:
+- five status options fit in two rows;
+- the student record becomes materially shorter;
+- selected status is immediately scannable;
+- protected state remains visually distinct;
+- no page-level horizontal overflow was detected at 390px.
+
+## 12. RTL smoke result
+
+RTL rendering was exercised at 390px.
+Observed:
+- layout mirrored without page overflow;
+- selected controls remained visually identifiable;
+- day/period rails flowed in RTL;
+- direct-status labels remained readable;
+- the selected Monday/period remained discoverable at the rail edge.
+
+Follow-up refinement:
+mixed Arabic/Latin identity strings should use explicit bidi isolation
+around row-number/name fragments during the eventual React implementation.
+This is a refinement, not a Phase 28 blocker.
+
+## 13. Current gate conclusion
+
+The direct-status pattern is now a **validated visual prototype candidate**.
+It is not yet approved for production implementation.
+
+Production baseline remains:
+- native select for semantic/interaction safety;
+- horizontal day and period rails as the navigation reference;
+- in-flow save/state strip.
+
+The next evidence required before replacing the mobile native select is
+task-level usability validation with realistic repeated attendance entry,
+including keyboard and touch behavior across FR/EN/AR and protected lessons.
+
+## 14. Prototype artifact
+
+Prototype:
+docs/prototypes/phase28-attendance.html
+
+The file is a design lab artifact only:
+- not imported by the production app;
+- not wired to backend data;
+- not part of the runtime route tree;
+- safe to modify while exploring the interaction model.
+
+Visual review performed with a headless Chromium render at 390px and 1440px,
+plus an RTL 390px smoke render.
