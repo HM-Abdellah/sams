@@ -1056,9 +1056,7 @@ jobs:
       - name: Run Phase 23 production integration
         shell: bash
         run: |
-          : > /tmp/sams-production-integration.log
-          exec > >(tee -a /tmp/sams-production-integration.log) 2>&1
-
+          # Keep CI stdout/stderr directly visible so the step exit status is unambiguous.
           apachectl -D FOREGROUND > /tmp/sams-production-apache.log 2>&1 &
           apache_pid=$!
           cleanup() { kill "$apache_pid" 2>/dev/null || true; }
