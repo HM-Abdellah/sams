@@ -152,7 +152,10 @@ Phases 1–24
 Final engineering + security red-team audit
             │
             ▼
-Design R&D + Figma
+Design R&D Phase 25–28
+            │
+            ▼
+Figma construction gate (currently blocked)
 ~~~
 
 PWA / offline attendance synchronization is **not part of the current release scope**.
