@@ -172,7 +172,7 @@ $studentStmt = $pdo->prepare(
 $studentStmt->execute([$classB, 'TEN-B-STUDENT', 'Tenant', 'B Student']);
 $studentB = (int)$pdo->lastInsertId();
 
-$studentLookup = (new SAMSRepositoriesStudentRepository())->studentsByMassarCodes(
+$studentLookup = (new \SAMS\Repositories\StudentRepository())->studentsByMassarCodes(
     ['TEN-B-STUDENT'],
     $schoolA
 );
@@ -181,7 +181,7 @@ tenant_assert(
     'School-scoped Massar lookup returned another tenant\'s student.'
 );
 
-$foreignMassars = (new SAMSRepositoriesStudentRepository())->massarCodesOwnedByOtherSchools(
+$foreignMassars = (new \SAMS\Repositories\StudentRepository())->massarCodesOwnedByOtherSchools(
     ['TEN-B-STUDENT'],
     $schoolA
 );
@@ -190,7 +190,7 @@ tenant_assert(
     'Cross-school Massar collision was not detected without exposing student details.'
 );
 
-$globalLookup = (new SAMSRepositoriesStudentRepository())->studentsByMassarCodes(['TEN-B-STUDENT']);
+$globalLookup = (new \SAMS\Repositories\StudentRepository())->studentsByMassarCodes(['TEN-B-STUDENT']);
 tenant_assert(
     count($globalLookup) === 1 && (int)$globalLookup['ten-b-student']['id'] === $studentB,
     'Global compatibility Massar lookup should still resolve the fixture student.'
