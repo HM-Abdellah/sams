@@ -283,6 +283,7 @@ export const TRANSLATION_KEYS = {
     applyFilters: 'admin.applyFilters',
     previous: 'admin.previous',
     next: 'admin.next',
+    pagination: 'admin.pagination',
     date: 'admin.date',
     metadata: 'admin.metadata',
     noClasses: 'admin.noClasses',

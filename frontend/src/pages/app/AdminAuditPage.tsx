@@ -4,7 +4,7 @@ import { useAdminResource } from '../../features/admin/useAdminResource.ts'
 import { dateTime } from '../../features/admin/helpers.ts'
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
 import { useI18n } from '../../features/i18n/useI18n.ts'
-import { Badge, Button, EmptyState, ErrorState, FormField, Input, Loading, PageHeader, Select, Table } from '../../components/ui/index.ts'
+import { Badge, Button, EmptyState, ErrorState, FormField, Input, Loading, PageHeader, Pagination, Select, Table } from '../../components/ui/index.ts'
 
 export function AdminAuditPage() {
   const { t } = useI18n()
@@ -58,11 +58,14 @@ export function AdminAuditPage() {
           </tr>)}
         </Table>
       )}
-      <div className="flex flex-wrap items-center gap-3">
-        <Button type="button" variant="secondary" disabled={data.audit.page <= 1} onClick={() => changePage(data.audit.page - 1)}>{t(TRANSLATION_KEYS.admin.previous)}</Button>
-        <span className="text-sm">{data.audit.page} / {data.audit.total_pages}</span>
-        <Button type="button" variant="secondary" disabled={data.audit.page >= data.audit.total_pages} onClick={() => changePage(data.audit.page + 1)}>{t(TRANSLATION_KEYS.admin.next)}</Button>
-      </div>
+      <Pagination
+        page={data.audit.page}
+        pageCount={data.audit.total_pages}
+        previousLabel={t(TRANSLATION_KEYS.admin.previous)}
+        nextLabel={t(TRANSLATION_KEYS.admin.next)}
+        ariaLabel={t(TRANSLATION_KEYS.admin.pagination)}
+        onPageChange={changePage}
+      />
     </section>
   )
 }

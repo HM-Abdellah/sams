@@ -136,3 +136,36 @@ Verification:
 - `git diff --check`: PASS.
 
 No business logic, API contract, or route behavior was changed by this composition refactor.
+
+## Data-heavy interaction audit — Pagination
+
+The existing `Pagination` primitive was previously unused while Admin Audit owned an inline previous/next control. The audit found that the primitive rendered every page number, which does not scale for server-side audit histories with many pages.
+
+The primitive is now production-ready for bounded server-side pagination:
+
+- shows previous/next controls;
+- exposes the pagination landmark through a caller-supplied accessible label;
+- keeps the active page explicit with `aria-current="page"`;
+- uses a bounded numeric window with ellipses for large page counts;
+- preserves the inherited document direction instead of hard-coding left/right geometry;
+- keeps page navigation as buttons so server-side query state remains owned by the page feature.
+
+Admin Audit now consumes the shared primitive and passes its localized labels and pagination landmark label. No data-fetching, query, API, or route behavior changed.
+
+Tests added:
+
+- pagination bounded-window/ellipsis behavior;
+- edge disabled-state and next-page callback;
+- one-page suppression.
+
+Verification:
+
+- Pagination unit tests: 3/3 passed.
+- Full unit suite: 11 files / 48 tests passed.
+- Admin + responsive E2E focused suite: 9/9 passed.
+- Production build: PASS.
+- `git diff --check`: PASS.
+
+Research decision:
+
+Current shadcn/ui guidance treats complex data tables as composition rather than a universal table component, and its pagination examples keep pagination controls separate from the table rendering. SAMS follows the same separation while retaining its server-authoritative feature state. The source used for this decision was the current shadcn/ui Table and Data Table documentation reviewed on 2026-09-30.
