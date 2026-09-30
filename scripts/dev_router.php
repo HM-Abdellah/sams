@@ -19,6 +19,11 @@ if ($uri === '/api/v1' || str_starts_with($uri, '/api/v1/')) {
 if ($uri === '/api' || str_starts_with($uri, '/api/')) {
     $file = $root . $uri;
     if (is_file($file)) {
+        if (str_ends_with(strtolower($file), '.php')) {
+            require $file;
+            return;
+        }
+
         return false;
     }
 }
