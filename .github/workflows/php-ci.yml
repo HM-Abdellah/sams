@@ -1059,7 +1059,10 @@ jobs:
           # Keep CI stdout/stderr directly visible so the step exit status is unambiguous.
           apachectl -D FOREGROUND > /tmp/sams-production-apache.log 2>&1 &
           apache_pid=$!
-          cleanup() { kill "$apache_pid" 2>/dev/null || true; }
+          cleanup() {
+            kill "$apache_pid" 2>/dev/null || true
+            wait "$apache_pid" 2>/dev/null || true
+          }
           trap cleanup EXIT
 
           for i in $(seq 1 30); do
