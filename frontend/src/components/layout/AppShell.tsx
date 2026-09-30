@@ -22,14 +22,14 @@ export function AppShell() {
   const links = navigationForRole(session.user.role)
 
   return (
-    <div className="min-h-screen">
-      <header className="border-b bg-white dark:bg-neutral-950">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4">
+    <div className="min-h-screen bg-[var(--sams-background)]">
+      <header className="border-b border-[var(--sams-border)] bg-[var(--sams-surface)]">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">SAMS</p>
-            <p className="truncate font-medium">{session.user.full_name}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--sams-muted)]">SAMS</p>
+            <p className="truncate text-sm font-medium text-[var(--sams-text)]">{session.user.full_name}</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <LanguageSelect />
             <Button
               type="button"
@@ -38,36 +38,50 @@ export function AppShell() {
               loading={loggingOut}
               disabled={attendancePendingWork || loggingOut}
               onClick={async () => {
-              setLoggingOut(true)
-              try {
-                await session.logout()
-                navigate('/login', { replace: true })
-              } finally {
-                setLoggingOut(false)
-              }
-            }}
-              >
-                {t(TRANSLATION_KEYS.app.signOut)}
-              </Button>
+                setLoggingOut(true)
+                try {
+                  await session.logout()
+                  navigate('/login', { replace: true })
+                } finally {
+                  setLoggingOut(false)
+                }
+              }}
+            >
+              {t(TRANSLATION_KEYS.app.signOut)}
+            </Button>
           </div>
         </div>
       </header>
-      <nav aria-label={t(TRANSLATION_KEYS.app.application)} className="overflow-x-auto border-b bg-white dark:bg-neutral-950">
-        <div className="mx-auto flex min-w-max max-w-6xl gap-4 px-4 py-3 sm:px-6">
-          {links.map((link) => (
-            <NavLink
-              key={link.path}
-              to={link.path}
-              className={({ isActive }) => isActive ? 'font-medium underline' : 'text-neutral-600'}
-            >
-              {t(link.label)}
-            </NavLink>
-          ))}
-        </div>
-      </nav>
-      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
-        <Outlet />
-      </main>
+
+      <div className="mx-auto grid max-w-6xl md:grid-cols-[15rem_minmax(0,1fr)]">
+        <aside className="min-w-0 border-b border-[var(--sams-border)] bg-[var(--sams-surface)] md:border-b-0 md:border-e">
+          <nav
+            aria-label={t(TRANSLATION_KEYS.app.application)}
+            className="min-w-0 overflow-x-auto md:sticky md:top-0 md:max-h-screen md:overflow-y-auto md:px-3 md:py-5"
+          >
+            <div className="flex min-w-max gap-1 px-4 py-3 sm:px-6 md:min-w-0 md:flex-col md:px-0 md:py-0">
+              {links.map((link) => (
+                <NavLink
+                  key={link.path}
+                  to={link.path}
+                  className={({ isActive }) => [
+                    'rounded-md px-3 py-2 text-sm transition-colors',
+                    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sams-focus)]',
+                    isActive
+                      ? 'border-s-2 border-[var(--sams-text)] bg-[var(--sams-muted-surface)] ps-2 font-semibold text-[var(--sams-text)]'
+                      : 'text-[var(--sams-muted)] hover:bg-[var(--sams-muted-surface)] hover:text-[var(--sams-text)]',
+                  ].join(' ')}
+                >
+                  {t(link.label)}
+                </NavLink>
+              ))}
+            </div>
+          </nav>
+        </aside>
+
+        <main className="min-w-0 px-4 py-6 sm:px-6 sm:py-8">
+          <Outlet />
+        </main>
+      </div>
     </div>
-  )
-}
+  )}
