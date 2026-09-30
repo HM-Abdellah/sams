@@ -48,3 +48,7 @@ An attempted `npm run test:unit -- --runInBand` is intentionally not counted as 
 ## Research rule
 
 The fallback is intentionally not a clone of another site's UI. External sources are used to extract interaction patterns, density rules, responsive behavior, accessibility semantics, and component composition; SAMS tokens, routing, data flow, save semantics, and attendance-domain constraints remain authoritative.
+
+### Follow-up refinement
+
+The period and day rail items retain `shrink-0` on the production buttons so the horizontal rail preserves stable control geometry on narrow screens rather than letting flexbox compress frequent touch targets. The responsive E2E test now asserts the period controls by accessible button names instead of depending on the old 2 × 4 CSS grid.
