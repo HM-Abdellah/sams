@@ -286,7 +286,7 @@ jobs:
           test "$admin_get_status" = "401"
           grep -q '"success":false' /tmp/sams-admin-auth.json
 
-          admin_sid=$(php -d session.save_path=/tmp/sams-api-sessions -r 'session_name("SAMS_SESSION"); session_start(); $_SESSION["_auth_user"]=["id"=>1,"session_version"=>1]; $_SESSION["_csrf_token"]="phase5-ci-token"; session_write_close(); echo session_id();')
+          admin_sid=$(php -d session.save_path=/tmp/sams-api-sessions -r 'session_name("SAMS_SESSION"); session_start(); $_SESSION["_auth_user"]=["id"=>1,"school_id"=>1,"session_version"=>1]; $_SESSION["_csrf_token"]="phase5-ci-token"; session_write_close(); echo session_id();')
 
           dashboard_status=$(curl -sS -o /tmp/sams-admin-dashboard.json -w "%{http_code}" -b "SAMS_SESSION=$admin_sid" http://127.0.0.1:8090/api/v1/admin/dashboard)
           test "$dashboard_status" = "200"
@@ -312,8 +312,8 @@ jobs:
           test "$audit_status" = "200"
           grep -q '"items"' /tmp/sams-admin-audit.json
 
-          teacher_sid=$(php -d session.save_path=/tmp/sams-api-sessions -r 'session_name("SAMS_SESSION"); session_start(); $_SESSION["_auth_user"]=["id"=>2,"session_version"=>1]; $_SESSION["_csrf_token"]="phase5-ci-token"; session_write_close(); echo session_id();')
-          counselor_sid=$(php -d session.save_path=/tmp/sams-api-sessions -r 'session_name("SAMS_SESSION"); session_start(); $_SESSION["_auth_user"]=["id"=>4,"session_version"=>1]; session_write_close(); echo session_id();')
+          teacher_sid=$(php -d session.save_path=/tmp/sams-api-sessions -r 'session_name("SAMS_SESSION"); session_start(); $_SESSION["_auth_user"]=["id"=>2,"school_id"=>1,"session_version"=>1]; $_SESSION["_csrf_token"]="phase5-ci-token"; session_write_close(); echo session_id();')
+          counselor_sid=$(php -d session.save_path=/tmp/sams-api-sessions -r 'session_name("SAMS_SESSION"); session_start(); $_SESSION["_auth_user"]=["id"=>4,"school_id"=>1,"session_version"=>1]; session_write_close(); echo session_id();')
           signature_b64='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC'
 
           archive_auth_status=$(curl -sS -o /tmp/sams-archive-auth.json -w "%{http_code}" "http://127.0.0.1:8090/api/v1/admin/archive?view=days&class_id=1&month=2026-09")
@@ -971,6 +971,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+
+      - name: Install Node dependencies
+        run: npm ci --no-audit --no-fund
 
       - name: Download React production bundle
         uses: actions/download-artifact@v4

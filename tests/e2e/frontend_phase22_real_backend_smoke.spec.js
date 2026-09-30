@@ -27,7 +27,7 @@ test.describe('frontend Phase 22 real backend smoke', () => {
     await login(page, adminCode, adminPassword)
     await expect(page).toHaveURL(/\/sams\/app\/admin\/dashboard$/)
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
-    await expect(page.getByText('E2E-2BAC-A')).toBeVisible()
+    await expect(page.getByRole('cell', { name: 'E2E-2BAC-A', exact: true })).toBeVisible()
   })
 
   test('logout invalidates the reconstructed application session', async ({ page }) => {
