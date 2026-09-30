@@ -120,5 +120,7 @@ export class ApiClient {
   }
 }
 
+const legacyApiBaseUrl = `${configuredBasePath}/api`
+
 export const apiClient = new ApiClient()
-export const legacyApiClient = new ApiClient('/api')
+export const legacyApiClient = new ApiClient(legacyApiBaseUrl)
