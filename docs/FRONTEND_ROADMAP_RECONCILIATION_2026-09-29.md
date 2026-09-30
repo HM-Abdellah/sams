@@ -60,10 +60,10 @@ All valid implementations remain preserved. The reconciliation exists so future 
 
 Frontend engineering Phases 1–24 are complete and the hosted production-integration gate has passed.
 
-The next project-wide gate is:
+The current project frontier is:
 
-- Final Cross-Disciplinary Engineering + Security Red-Team Audit
+- Design R&D Phase 28 — Figma Design System + Teacher Attendance
 
-Design R&D + Figma remains closed until the project-wide audit is completed.
+Phase 28 interaction research/prototyping is complete. Figma construction remains blocked by the active Starter-plan Figma MCP tool-call limit. No production UI redesign is claimed until Figma structural/visual verification is complete.
 
 The backend/security/auth/tenant foundation remains frozen unless a proven release-blocking gap is found.
