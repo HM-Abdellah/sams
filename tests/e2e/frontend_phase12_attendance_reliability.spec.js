@@ -237,7 +237,9 @@ test.describe('frontend Phase 12 attendance reliability', () => {
     await page.locator('table tbody tr').first().locator('button.sams-touch-cell').first().click()
     await expect(page.getByText(/Saving…/)).toBeVisible()
 
-    await page.getByRole('link', { name: 'Students' }).click()
+    await page.getByRole('button', { name: 'Open navigation' }).click()
+    const mobileNavigation = page.getByRole('dialog', { name: 'SAMS' }).getByRole('navigation', { name: 'Application' })
+    await mobileNavigation.getByRole('link', { name: 'Students' }).click()
     await expect(page).toHaveURL(/\/app\/students/)
     expect(bulkRequests).toHaveLength(1)
   })

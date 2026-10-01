@@ -249,6 +249,7 @@ Every phase records: goal, evidence, files changed, technical decisions, tests, 
 Correctness → Data integrity → Security → Core workflow → Responsive usability → Accessibility → Performance → Visual polish.
 
 ## Current position
-Phase 32 — Application Shell + Information Architecture.
-Phase 30 baseline reconciliation and Phase 31 shared design-system/responsive foundation are closed on the reconstruction branch.
+Phase 33 — Admin Dashboard Reconstruction.
+Phase 30 baseline reconciliation, Phase 31 shared design-system/responsive foundation, and Phase 32 application shell + information architecture are closed on the reconstruction branch.
+Phase 32 verification is complete; its Git-check is in progress before closure.
 The working branch remains isolated from main: reconstruction/product-system-2026-10-01.
