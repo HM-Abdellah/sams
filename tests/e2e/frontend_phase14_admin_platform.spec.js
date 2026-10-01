@@ -257,7 +257,7 @@ test.describe('frontend Phase 14 admin platform', () => {
     await page.getByLabel('Select class').selectOption('1')
     await page.getByLabel('Status').selectOption('all')
     await page.getByRole('button', { name: 'Deactivate' }).first().click()
-    await expect(page.getByText('Youssef Student')).not.toBeVisible()
+    await expect(page.getByText('Youssef Student')).toBeVisible()
     await page.getByLabel('Status').selectOption('inactive')
     await expect(page.getByText('Youssef Student')).toBeVisible()
   })
