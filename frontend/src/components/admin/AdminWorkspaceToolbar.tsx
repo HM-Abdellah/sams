@@ -17,7 +17,7 @@ export function AdminWorkspaceToolbar({
   children,
 }: Props) {
   return (
-    <section className="sams-admin-toolbar grid gap-4 p-4 sm:p-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-end">
+    <section className={`sams-admin-toolbar grid gap-4 p-4 sm:p-5 ${searchLabel !== undefined && onSearchChange !== undefined ? "lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]" : "lg:grid-cols-1"} lg:items-end`}>
       {searchLabel !== undefined && onSearchChange !== undefined ? (
         <FormField label={searchLabel}>
           {({ id, ...aria }) => (
@@ -31,7 +31,7 @@ export function AdminWorkspaceToolbar({
             />
           )}
         </FormField>
-      ) : <div />}
+      ) : null}
       {children}
     </section>
   )
