@@ -12,6 +12,7 @@ test.describe('frontend Phase 14 admin platform', () => {
   let importStatus
   let uploadContentType
   let auditQuery
+  let studentsByClass
 
   test.beforeEach(async ({ page }) => {
     role = 'admin'
@@ -40,6 +41,13 @@ test.describe('frontend Phase 14 admin platform', () => {
     importStatus = 'validated'
     uploadContentType = null
     auditQuery = null
+    studentsByClass = {
+      1: [
+        { id: 301, student_number: 'S301', massar_code: 'M301', birth_date: '2010-01-10', first_name: 'Amina', last_name: 'Student', status: 'active', created_at: '2026-09-01T08:00:00Z', updated_at: '2026-09-01T08:00:00Z' },
+        { id: 302, student_number: 'S302', massar_code: 'M302', birth_date: '2010-02-11', first_name: 'Youssef', last_name: 'Student', status: 'active', created_at: '2026-09-01T08:00:00Z', updated_at: '2026-09-01T08:00:00Z' },
+      ],
+      2: [],
+    }
 
     await page.route('**/api/v1/auth/session', async (route) => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
@@ -159,6 +167,42 @@ test.describe('frontend Phase 14 admin platform', () => {
       importStatus = 'imported'
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: { batch_id: 55, already_imported: false, summary: { student_count: 2, new_students: 0, existing_students: 2, enrollments_created: 0 } } }) })
     })
+    await page.route('**/api/students.php*', async (route) => {
+      const url = new URL(route.request().url())
+      const classId = Number(url.searchParams.get('class_id') ?? 0)
+      if (route.request().method() === 'GET') {
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: { students: studentsByClass[classId] ?? [] } }) })
+        return
+      }
+      const payload = route.request().postDataJSON()
+      const roster = studentsByClass[classId] ?? []
+      if (payload.action === 'create') {
+        const student = {
+          id: 304,
+          student_number: payload.student_number ?? null,
+          massar_code: payload.massar_code ?? null,
+          birth_date: payload.birth_date ?? null,
+          first_name: payload.first_name,
+          last_name: payload.last_name,
+          status: 'active',
+          created_at: '2026-09-29T08:00:00Z',
+          updated_at: '2026-09-29T08:00:00Z',
+        }
+        roster.push(student)
+        studentsByClass[classId] = roster
+        await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ success: true, data: { id: student.id } }) })
+        return
+      }
+      const student = roster.find((item) => item.id === payload.id)
+      if (payload.action === 'update' && student) Object.assign(student, payload, { id: student.id, status: student.status, updated_at: '2026-09-29T08:01:00Z' })
+      if (payload.action === 'delete' && student) student.status = 'inactive'
+      if (payload.action === 'transfer' && student) {
+        studentsByClass[classId] = roster.filter((item) => item.id !== student.id)
+        studentsByClass[payload.target_class_id] = [...(studentsByClass[payload.target_class_id] ?? []), student]
+      }
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: { id: payload.id ?? null, changed: true, class_id: payload.target_class_id ?? classId, enrollment_id: 7, effective_date: payload.effective_date ?? null } }) })
+    })
+
     await page.route('**/api/v1/admin/audit*', async (route) => {
       auditQuery = route.request().url()
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: { items: [{ id: 900, user_id: 10, username: 'admin.e2e', full_name: 'E2E Admin', action: 'user.create', entity_type: 'user', entity_id: 11, ip_address: '127.0.0.1', user_agent: 'Playwright', metadata: { source: 'e2e' }, created_at: '2026-09-29T08:00:00Z' }], total: 1, page: 1, per_page: 50, total_pages: 1 } }) })
@@ -185,7 +229,40 @@ test.describe('frontend Phase 14 admin platform', () => {
     await expect(page.getByText('E2E-CREATED')).toBeVisible()
   })
 
-  test('teachers, users, onboarding and academic years execute mutations and refresh server state', async ({ page }) => {
+  test('admin students workspace manages roster lifecycle within class context', async ({ page }) => {
+    await page.goto('/app/admin/students')
+    await expect(page.getByRole('heading', { name: 'Students' })).toBeVisible()
+    await expect(page.getByLabel('Select class')).toHaveValue('1')
+    await expect(page.getByText('Amina Student')).toBeVisible()
+
+    await page.getByLabel('Search').fill('Amina')
+    await expect(page.getByText('Amina Student')).toBeVisible()
+    await expect(page.getByText('Youssef Student')).not.toBeVisible()
+
+    await page.getByRole('button', { name: 'Edit' }).click()
+    await page.getByLabel('First name').fill('Amina Updated')
+    await page.getByRole('button', { name: 'Save' }).click()
+    await expect(page.getByText('Amina Updated Student')).toBeVisible()
+
+    await page.getByLabel('Search').fill('')
+    await page.getByRole('button', { name: 'Transfer student' }).first().click()
+    await page.getByLabel('Target class').selectOption('2')
+    await page.getByLabel('Effective date').fill('2026-10-01')
+    await page.getByRole('button', { name: 'Transfer student', exact: true }).click()
+    await expect(page.getByText('Amina Updated Student')).not.toBeVisible()
+
+    await page.getByLabel('Select class').selectOption('2')
+    await expect(page.getByText('Amina Updated Student')).toBeVisible()
+
+    await page.getByLabel('Select class').selectOption('1')
+    await page.getByLabel('Status').selectOption('all')
+    await page.getByRole('button', { name: 'Deactivate' }).first().click()
+    await expect(page.getByText('Youssef Student')).toBeVisible()
+    await page.getByLabel('Status').selectOption('inactive')
+    await expect(page.getByText('Youssef Student')).toBeVisible()
+  })
+
+'teachers, users, onboarding and academic years execute mutations and refresh server state', async ({ page }) => {
     await page.goto('/app/admin/teachers')
     await expect(page.getByRole('heading', { name: 'Teachers' })).toBeVisible()
     await page.getByLabel('Teacher').selectOption('10')
