@@ -93,6 +93,30 @@ export interface OnboardingRequest {
   updated_at: string
 }
 
+export interface DashboardAcademicYear {
+  id: number
+  name: string
+  starts_on: string
+  ends_on: string
+}
+
+export interface DashboardTrendPoint {
+  date: string
+  record_count: number | string
+  present_count: number | string
+  absent_count: number | string
+  late_count: number | string
+  excused_count: number | string
+  presence_rate: number | null
+}
+
+export interface DashboardOnlineTeacher {
+  id: number
+  full_name: string
+  employee_id: string | null
+  last_seen_at: string | null
+}
+
 export interface DashboardSummary {
   active_classes: number | string
   active_students: number | string
@@ -155,8 +179,11 @@ export interface DashboardAudit {
 
 export interface AdminDashboard {
   date: string
+  academic_year: DashboardAcademicYear | null
   absence_alert_threshold: number
   summary: DashboardSummary
+  attendance_trend: DashboardTrendPoint[]
+  online_teachers: DashboardOnlineTeacher[]
   class_stats: DashboardClassStat[]
   attention_students: DashboardAttentionStudent[]
   classes_without_today_records: DashboardMissingClass[]
