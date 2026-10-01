@@ -2,7 +2,7 @@
 ## Cross-Surface Consistency + Touch Interaction Refinement
 
 Date: 2026-10-01
-Status: implementation + local verification complete; hosted CI gate pending
+Status: COMPLETE — implementation, local verification, hosted CI, and merge closed
 
 ## Objective
 
@@ -120,6 +120,10 @@ same 16 tests passed without code-related failures.
 
 ## Release gate
 
-Hosted CI must pass before the Phase 29 branch is merged to main.
+Hosted CI completed successfully on PR #29 before merge.
+All seven hosted jobs passed: frontend-build, javascript, e2e, php,
+clean-school-acceptance, apache, and production-integration.
 
-**PHASE 29 — implementation and local verification COMPLETE; hosted CI gate pending**
+PR #29 was merged to main as squash commit `34283284e6b56dac45247afe2ee4d3fa5c15b061`.
+
+**PHASE 29 — COMPLETE**
