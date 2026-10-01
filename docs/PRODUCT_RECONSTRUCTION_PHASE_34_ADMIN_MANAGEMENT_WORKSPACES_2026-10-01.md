@@ -2,7 +2,7 @@
 ## Admin Management Workspaces
 ### 2026-10-01
 
-Status: IN PROGRESS — implementation complete; final CI verification pending.
+Status: CLOSED — verified by GitHub Actions run #941 on branch head.
 
 ## 1. Explore
 Phase 33 established the operational admin dashboard, but the management routes were still mostly form-plus-table surfaces. Classes lacked relationship summaries and deliberate discovery controls; teachers and users needed better search/filter workflows; academic years had limited management filtering; and students had no dedicated admin workspace.
@@ -62,13 +62,13 @@ Extended Phase 14 E2E with the admin student roster lifecycle and aligned class 
 Added AdminWorkspaceToolbar unit coverage for accessible search/filter semantics.
 
 ## 7. Verification
-Final execution is delegated to GitHub Actions because the connected Codespace device is offline.
-Required gates are frontend-build, javascript, php, e2e, clean-school-acceptance, apache, and production-integration.
-Phase 34 remains open until the final branch-head CI passes all seven jobs.
+GitHub Actions run #941 verified the branch head with all seven required gates green: frontend-build, javascript, php, e2e, clean-school-acceptance, apache, and production-integration.
+The admin student lifecycle regression passed inside the Playwright E2E gate, and the administration backend integration passed inside the PHP gate.
 
 ## 8. Git
 Branch: `reconstruction/product-system-2026-10-01`
-Verified head: `5f744fcac43216d5ac4cdac0fe54ab8cbbdc6e24`
+Verified head: `d6d43201c768924f0dac08336369e7561099369b`
+CI verification: GitHub Actions run `#941`
 Main base: `64a081294f7ec08612c85007d671aeb13f49c4c6`
 No merge to main is performed in this phase.
 
@@ -77,7 +77,7 @@ All close criteria are satisfied:
 - final branch-head CI is green;
 - the admin student lifecycle regression passes;
 - schema/API authority decisions remain intact;
-- final documentation records the verified head;
-- Phase 35 is now the next active phase.
+- final documentation records the verified branch head and CI run;
+- Phase 35 is the next planned phase; it has not started.
 
 Phase 34 is formally closed. Phase 35 starts only from this verified branch state.
