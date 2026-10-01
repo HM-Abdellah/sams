@@ -7,6 +7,8 @@ export interface AdminClass {
   is_active: boolean | number
   academic_year_name: string
   academic_year_active: boolean | number
+  student_count: number | string
+  teacher_count: number | string
 }
 
 export interface AdminTeacher {
