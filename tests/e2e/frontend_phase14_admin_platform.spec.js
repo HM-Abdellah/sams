@@ -239,7 +239,7 @@ test.describe('frontend Phase 14 admin platform', () => {
     await expect(page.getByText('Amina Student')).toBeVisible()
     await expect(page.getByText('Youssef Student')).not.toBeVisible()
 
-    await page.getByRole('button', { name: 'Edit' }).click()
+    await page.getByRole('row').filter({ hasText: 'Amina Student' }).getByRole('button', { name: 'Edit', exact: true }).click()
     await page.getByLabel('First name').fill('Amina Updated')
     await page.getByRole('button', { name: 'Save' }).click()
     await expect(page.getByText('Amina Updated Student')).toBeVisible()
@@ -265,7 +265,7 @@ test.describe('frontend Phase 14 admin platform', () => {
   test('teachers, users, onboarding and academic years execute mutations and refresh server state', async ({ page }) => {
     await page.goto('/app/admin/teachers')
     await expect(page.getByRole('heading', { name: 'Teachers' })).toBeVisible()
-    await page.getByLabel('Teacher').selectOption('10')
+    await page.getByRole('combobox', { name: 'Teacher', exact: true }).selectOption('10')
     await page.getByRole('combobox', { name: 'Subject', exact: true }).selectOption('21')
     await page.getByLabel('Class').selectOption('1')
     await page.getByRole('button', { name: 'Assign' }).click()
