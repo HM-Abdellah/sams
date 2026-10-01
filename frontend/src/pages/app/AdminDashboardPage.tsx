@@ -272,6 +272,33 @@ export function AdminDashboardPage() {
         )}
       </section>
 
+      <section className="sams-card p-5 sm:p-6" aria-labelledby="recent-activity-title">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="sams-section-label">{t(TRANSLATION_KEYS.admin.operations)}</p>
+            <h2 id="recent-activity-title" className="mt-1 text-xl font-semibold tracking-tight">{t(TRANSLATION_KEYS.admin.recentAudit)}</h2>
+          </div>
+          <Link className="sams-interactive-target inline-flex items-center rounded-md px-2 text-sm font-medium underline-offset-4 hover:underline focus-visible:underline" to="/app/admin/audit">
+            {t(TRANSLATION_KEYS.navigation.audit)}
+          </Link>
+        </div>
+        {resource.data.recent_audit.length === 0 ? (
+          <p className="mt-4 text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.admin.noAudit)}</p>
+        ) : (
+          <ul className="mt-4 divide-y divide-[var(--sams-border)]">
+            {resource.data.recent_audit.map((item) => (
+              <li key={item.id} className="grid gap-1 py-3 sm:grid-cols-[1fr_auto] sm:items-center">
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{item.action}</p>
+                  <p className="truncate text-xs text-[var(--sams-muted)]">{item.entity_type ?? '—'} · {item.full_name ?? item.username ?? '—'}</p>
+                </div>
+                <p className="text-xs tabular-nums text-[var(--sams-muted)]">{dateTime(item.created_at)}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       <section className="sams-card p-5 sm:p-6" aria-labelledby="quick-actions-title">
         <div>
           <p className="sams-section-label">{t(TRANSLATION_KEYS.admin.operations)}</p>
