@@ -23,4 +23,11 @@ describe('Button', () => {
     fireEvent.click(button)
     expect(onClick).toHaveBeenCalledTimes(1)
   })
+
+  test('keeps compact actions touch-safe on narrow viewports', () => {
+    render(<Button size="sm">Filter</Button>)
+    const button = screen.getByRole('button', { name: 'Filter' })
+    expect(button.className).toContain('min-h-10')
+    expect(button.className).toContain('md:min-h-9')
+  })
 })

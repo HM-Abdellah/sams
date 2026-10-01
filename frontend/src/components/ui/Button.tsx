@@ -19,7 +19,8 @@ const variantClasses: Record<ButtonVariant, string> = {
 }
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'min-h-9 px-3 text-sm',
+  // Keep compact controls comfortable on touch devices while allowing tighter desktop density.
+  sm: 'min-h-10 px-3 text-sm md:min-h-9',
   md: 'min-h-10 px-4 text-sm',
   lg: 'min-h-11 px-5 text-base',
 }

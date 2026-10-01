@@ -10,6 +10,7 @@ import { StudentFormDialog } from '../../features/students/StudentFormDialog.tsx
 import {
   AsyncStateFeedback,
   Badge,
+  PageHeader,
   Button,
   EmptyState,
   ErrorState,
@@ -104,12 +105,11 @@ export function TeacherStudentsPage() {
 
   return (
     <section className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold">{t(TRANSLATION_KEYS.navigation.students)}</h1>
-        <p className="mt-2 text-sm text-[var(--sams-muted)]">
-          {t(TRANSLATION_KEYS.teacher.teachingContext)}
-        </p>
-      </header>
+      <PageHeader
+        eyebrow={t(TRANSLATION_KEYS.navigation.students)}
+        title={t(TRANSLATION_KEYS.navigation.students)}
+        description={t(TRANSLATION_KEYS.teacher.teachingContext)}
+      />
       {classes.classes.length === 0 ? (
         <EmptyState
           title={t(TRANSLATION_KEYS.teacher.classes)}

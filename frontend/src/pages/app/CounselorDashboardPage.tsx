@@ -1,7 +1,7 @@
 import { useI18n } from '../../features/i18n/useI18n.ts'
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
 import { useTeacherClasses } from '../../features/classes/useTeacherClasses.ts'
-import { AsyncStateFeedback, EmptyState } from '../../components/ui/index.ts'
+import { AsyncStateFeedback, EmptyState, PageHeader } from '../../components/ui/index.ts'
 
 export function CounselorDashboardPage() {
   const { t } = useI18n()
@@ -24,11 +24,11 @@ export function CounselorDashboardPage() {
 
   return (
     <section className="space-y-6">
-      <header>
-        <p className="text-sm font-medium text-[var(--sams-muted)]">SAMS</p>
-        <h1 className="mt-1 text-2xl font-semibold">{t(TRANSLATION_KEYS.counselor.dashboard)}</h1>
-        <p className="mt-2 text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.counselor.welcome)}</p>
-      </header>
+      <PageHeader
+        eyebrow="SAMS"
+        title={t(TRANSLATION_KEYS.counselor.dashboard)}
+        description={t(TRANSLATION_KEYS.counselor.welcome)}
+      />
 
       <AsyncStateFeedback
         state={classes}
@@ -48,7 +48,7 @@ export function CounselorDashboardPage() {
           <h2 className="font-semibold">{t(TRANSLATION_KEYS.counselor.classes)}</h2>
           <div className="grid gap-3 md:grid-cols-2">
             {classes.classes.map((item) => (
-              <article key={item.id} className="rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] p-4">
+              <article key={item.id} className="sams-card p-4">
                 <h3 className="font-semibold">{item.name}</h3>
                 {(item.level || item.branch) && <p className="mt-1 text-sm text-[var(--sams-muted)]">{[item.level, item.branch].filter(Boolean).join(' · ')}</p>}
                 {item.academic_year_name && <p className="mt-2 text-sm text-[var(--sams-muted)]">{item.academic_year_name}</p>}
