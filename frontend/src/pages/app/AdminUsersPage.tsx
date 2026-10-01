@@ -29,6 +29,7 @@ export function AdminUsersPage() {
   const [query, setQuery] = useState('')
   const [roleFilter, setRoleFilter] = useState<'all' | AdminUser['role']>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | AdminUser['account_status']>('all')
+  const [sort, setSort] = useState<'name' | 'role' | 'status' | 'activity'>('name')
 
   const resetForm = () => {
     setEditing(null)
@@ -141,8 +142,13 @@ export function AdminUsersPage() {
       const matchesRole = roleFilter === 'all' || user.role === roleFilter
       const matchesStatus = statusFilter === 'all' || user.account_status === statusFilter
       return matchesQuery && matchesRole && matchesStatus
+    }).sort((a, b) => {
+      if (sort === 'role') return a.role.localeCompare(b.role) || a.full_name.localeCompare(b.full_name)
+      if (sort === 'status') return a.account_status.localeCompare(b.account_status) || a.full_name.localeCompare(b.full_name)
+      if (sort === 'activity') return (b.last_seen_at ?? '').localeCompare(a.last_seen_at ?? '') || a.full_name.localeCompare(b.full_name)
+      return a.full_name.localeCompare(b.full_name)
     })
-  }, [resource.data, query, roleFilter, statusFilter])
+  }, [resource.data, query, roleFilter, statusFilter, sort])
 
   if (resource.status === 'idle' || resource.status === 'loading') {
     return <Loading label={t(TRANSLATION_KEYS.auth.loading)} />
@@ -209,6 +215,16 @@ export function AdminUsersPage() {
             <FormField label={t(TRANSLATION_KEYS.admin.status)}>{({ id, ...aria }) => <Select id={id} {...aria} value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}><option value="all">{t(TRANSLATION_KEYS.admin.allStatuses)}</option><option value="active">{t(TRANSLATION_KEYS.admin.activeOnly)}</option><option value="suspended">{t(TRANSLATION_KEYS.admin.suspended)}</option><option value="deactivated">{t(TRANSLATION_KEYS.admin.deactivated)}</option></Select>}</FormField>
           </div>
         </AdminWorkspaceToolbar>
+        <div className="sams-admin-toolbar grid gap-4 p-4 sm:p-5">
+          <FormField label={t(TRANSLATION_KEYS.admin.sort)}>
+            {({ id, ...aria }) => <Select id={id} {...aria} value={sort} onChange={(event) => setSort(event.target.value as typeof sort)}>
+              <option value="name">{t(TRANSLATION_KEYS.admin.sortName)}</option>
+              <option value="role">{t(TRANSLATION_KEYS.admin.role)}</option>
+              <option value="status">{t(TRANSLATION_KEYS.admin.sortStatus)}</option>
+              <option value="activity">{t(TRANSLATION_KEYS.admin.sortOnline)}</option>
+            </Select>}
+          </FormField>
+        </div>
         <p className="text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.admin.showingResults)}: {filteredUsers.length} / {data.users.length}</p>
         <Table caption={t(TRANSLATION_KEYS.navigation.users)} headers={[
           t(TRANSLATION_KEYS.admin.fullName),
