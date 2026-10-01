@@ -208,7 +208,7 @@ test.describe('frontend Phase 17 responsive engineering', () => {
     await page.setViewportSize({ width: 320, height: 640 })
     await assertNoPageOverflow(page)
 
-    const formGrid = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Create class' }) }).locator('.grid')
+    const formGrid = page.locator('section.sams-card').filter({ has: page.getByRole('heading', { name: 'Create class' }) }).locator('div.mt-4.grid').first()
     await expect(formGrid).toBeVisible()
     expect(await formGrid.evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(1)
 
