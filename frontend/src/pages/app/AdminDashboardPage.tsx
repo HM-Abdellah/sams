@@ -85,10 +85,10 @@ export function AdminDashboardPage() {
         {todayTotal > 0 && statusTotal > 0 ? (
           <>
             <div className="mt-6 h-4 overflow-hidden rounded-full bg-[var(--sams-muted-surface)]" role="img" aria-label={attendanceDistributionLabel(t, summary)}>
-              {summary.today_present > 0 && <div className="h-full bg-[var(--sams-success)]" style={{ width: percentage(summary.today_present, statusTotal) }} />}
-              {summary.today_absent > 0 && <div className="h-full bg-[var(--sams-danger)]" style={{ width: percentage(summary.today_absent, statusTotal) }} />}
-              {summary.today_late > 0 && <div className="h-full bg-[var(--sams-warning)]" style={{ width: percentage(summary.today_late, statusTotal) }} />}
-              {summary.today_excused > 0 && <div className="h-full bg-[var(--sams-excused)]" style={{ width: percentage(summary.today_excused, statusTotal) }} />}
+              {asNumber(summary.today_present) > 0 && <div className="h-full bg-[var(--sams-success)]" style={{ width: percentage(summary.today_present, statusTotal) }} />}
+              {asNumber(summary.today_absent) > 0 && <div className="h-full bg-[var(--sams-danger)]" style={{ width: percentage(summary.today_absent, statusTotal) }} />}
+              {asNumber(summary.today_late) > 0 && <div className="h-full bg-[var(--sams-warning)]" style={{ width: percentage(summary.today_late, statusTotal) }} />}
+              {asNumber(summary.today_excused) > 0 && <div className="h-full bg-[var(--sams-excused)]" style={{ width: percentage(summary.today_excused, statusTotal) }} />}
             </div>
             <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <StatusStat label={t(TRANSLATION_KEYS.admin.present)} value={summary.today_present} variant="success" formatNumber={formatNumber} />
@@ -133,7 +133,7 @@ export function AdminDashboardPage() {
           </svg>
           <div className="mt-3 flex items-center justify-between gap-4 text-xs text-[var(--sams-muted)]">
             <span>{attendance_trend[0] ? formatDate(attendance_trend[0].date) : '—'}</span>
-            <span>{attendance_trend[attendance_trend.length - 1] ? formatDate(attendance_trend[attendance_trend.length - 1].date) : '—'}</span>
+            <span>{attendance_trend.at(-1) ? formatDate(attendance_trend.at(-1)!.date) : '—'}</span>
           </div>
           <figcaption className="mt-4 rounded-xl border border-[var(--sams-border)] bg-[var(--sams-muted-surface)]/50 p-3 text-sm text-[var(--sams-muted)]">
             {attendanceTrendDataText(attendance_trend, formatDate, formatNumber)}
@@ -305,7 +305,7 @@ export function AdminDashboardPage() {
           <h2 id="quick-actions-title" className="mt-1 text-xl font-semibold tracking-tight">{t(TRANSLATION_KEYS.admin.quickActions)}</h2>
         </div>
         <nav className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label={t(TRANSLATION_KEYS.admin.quickActions)}>
-          {[
+          {( [
             ['/app/admin/classes', t(TRANSLATION_KEYS.admin.classes)],
             ['/app/admin/teachers', t(TRANSLATION_KEYS.navigation.teachers)],
             ['/app/admin/users', t(TRANSLATION_KEYS.navigation.users)],
@@ -314,7 +314,7 @@ export function AdminDashboardPage() {
             ['/app/admin/academic-years', t(TRANSLATION_KEYS.navigation.academicYears)],
             ['/app/admin/archive', t(TRANSLATION_KEYS.navigation.archive)],
             ['/app/admin/audit', t(TRANSLATION_KEYS.navigation.audit)],
-          ].map(([href, label]) => (
+          ] as Array<[string, string]>).map(([href, label]) => (
             <Link key={href} to={href} className="sams-interactive-target flex items-center justify-between rounded-xl border border-[var(--sams-border)] px-4 py-3 text-sm font-medium hover:bg-[var(--sams-muted-surface)] focus-visible:bg-[var(--sams-muted-surface)]">
               <span>{label}</span>
               <span aria-hidden="true">→</span>
@@ -407,7 +407,7 @@ function TrendSummary({ points }: { points: DashboardTrendPoint[] }) {
   const recorded = points.filter((point) => point.presence_rate !== null)
   if (recorded.length === 0) return <p className="text-sm text-[var(--sams-muted)]">—</p>
 
-  const first = recorded[0].presence_rate ?? 0
+  const first = recorded.at(0)?.presence_rate ?? 0
   const latest = recorded.at(-1)?.presence_rate ?? first
   const delta = Math.round((latest - first) * 10) / 10
   return (
