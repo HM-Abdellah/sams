@@ -76,7 +76,6 @@ final class ClassRepository
                         THEN s.id
                     END) AS student_count,
                     COUNT(DISTINCT CASE
-                        WHEN tt.status = \'active\'
                          AND u.is_active = 1
                          AND u.role = \'teacher\'
                         THEN u.id
