@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { adminApi } from '../../features/admin/api.ts'
 import type { AdminClass } from '../../features/admin/types.ts'
@@ -21,7 +21,8 @@ function todayIso() {
 
 export function AdminStudentsPage() {
   const { t, formatDate } = useI18n()
-  const classesResource = useAdminResource(() => adminApi.classes())
+  const loadClasses = useCallback(() => adminApi.classes(), [])
+  const classesResource = useAdminResource(loadClasses)
   const [searchParams, setSearchParams] = useSearchParams()
   const requestedClassId = Number(searchParams.get('class_id') ?? 0) || null
   const [selectedClassId, setSelectedClassId] = useState<number | null>(requestedClassId)
