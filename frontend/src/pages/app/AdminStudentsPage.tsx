@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { adminApi } from '../../features/admin/api.ts'
 import type { AdminClass } from '../../features/admin/types.ts'
 import { useAdminResource } from '../../features/admin/useAdminResource.ts'
@@ -21,7 +22,9 @@ function todayIso() {
 export function AdminStudentsPage() {
   const { t, formatDate } = useI18n()
   const classesResource = useAdminResource(() => adminApi.classes())
-  const [selectedClassId, setSelectedClassId] = useState<number | null>(null)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const requestedClassId = Number(searchParams.get('class_id') ?? 0) || null
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(requestedClassId)
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('active')
   const [formOpen, setFormOpen] = useState(false)
@@ -38,7 +41,12 @@ export function AdminStudentsPage() {
     [classes],
   )
 
-  const effectiveClassId = selectedClassId ?? activeClasses[0]?.id ?? null
+  const requestedActiveClassId = activeClasses.some((item) => item.id === requestedClassId)
+    ? requestedClassId
+    : null
+  const effectiveClassId = selectedClassId !== null && activeClasses.some((item) => item.id === selectedClassId)
+    ? selectedClassId
+    : requestedActiveClassId ?? activeClasses[0]?.id ?? null
   const selectedClass = classes.find((item) => item.id === effectiveClassId) ?? null
   const students = useClassStudents(effectiveClassId)
 
@@ -150,7 +158,19 @@ export function AdminStudentsPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField label={t(TRANSLATION_KEYS.admin.selectStudentClass)}>
               {({ id, ...aria }) => (
-                <Select id={id} {...aria} value={effectiveClassId ? String(effectiveClassId) : ''} onChange={(event) => setSelectedClassId(Number(event.target.value) || null)}>
+                <Select
+                  id={id}
+                  {...aria}
+                  value={effectiveClassId ? String(effectiveClassId) : ''}
+                  onChange={(event) => {
+                    const nextId = Number(event.target.value) || null
+                    setSelectedClassId(nextId)
+                    const nextParams = new URLSearchParams(searchParams)
+                    if (nextId === null) nextParams.delete('class_id')
+                    else nextParams.set('class_id', String(nextId))
+                    setSearchParams(nextParams, { replace: true })
+                  }}
+                >
                   <option value="">{t(TRANSLATION_KEYS.admin.selectStudentClass)}</option>
                   {activeClasses.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.academic_year_name}</option>)}
                 </Select>
