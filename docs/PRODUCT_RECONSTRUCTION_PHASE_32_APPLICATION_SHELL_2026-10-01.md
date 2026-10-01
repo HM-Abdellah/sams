@@ -236,6 +236,18 @@ Deferred to later phases:
 - global academic-year/context infrastructure;
 - PWA/offline navigation (Phases 45–47).
 
+## Final Verification
+
+- Phase 17 responsive E2E after final test cleanup: PASS, 4/4.
+- Phase 18 accessibility E2E: PASS, 7/7.
+- Phase 12 attendance reliability E2E: PASS, 12/12.
+- Vitest: PASS, 49/49.
+- TypeScript typecheck: PASS.
+- Oxlint: PASS, 0 warnings / 0 errors.
+- Production Vite build: PASS, 180 modules.
+- git diff --check: PASS before remote commit.
+- Test artifacts were cleaned from the working tree after browser verification.
+
 ## ECC Status
 
 - Explore: complete
@@ -244,5 +256,5 @@ Deferred to later phases:
 - Construct: complete
 - Verify: complete
 - Document: complete
-- Git-check: in progress
-- Close: pending
+- Git-check: complete
+- Close: complete
