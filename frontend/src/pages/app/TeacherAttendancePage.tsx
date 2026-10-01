@@ -331,8 +331,8 @@ export function TeacherAttendancePage() {
                       aria-pressed={markMode === status}
                       onClick={() => setMarkMode(status)}
                       className={markMode === status
-                        ? 'inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold ring-2 ring-[var(--sams-action-soft)] ring-offset-1 ' + STATUS_STYLES[status]
-                        : 'inline-flex min-h-9 items-center gap-1.5 rounded-full border border-[var(--sams-border)] bg-[var(--sams-surface)] px-3 text-xs font-semibold text-[var(--sams-muted)] hover:bg-[var(--sams-muted-surface)]'}
+                        ? 'inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold ring-2 ring-[var(--sams-action-soft)] ring-offset-1 md:min-h-9 ' + STATUS_STYLES[status]
+                        : 'inline-flex min-h-10 items-center gap-1.5 rounded-full border border-[var(--sams-border)] bg-[var(--sams-surface)] px-3 text-xs font-semibold text-[var(--sams-muted)] hover:bg-[var(--sams-muted-surface)] md:min-h-9'}
                     >
                       <span aria-hidden="true">{STATUS_SYMBOLS[status]}</span>
                       {t(TRANSLATION_KEYS.attendance[status])}
