@@ -1,8 +1,9 @@
 import { useCallback, useMemo, useState } from 'react'
+import { Link } from 'react-router'
 import { adminApi } from '../../features/admin/api.ts'
 import type { AdminClass } from '../../features/admin/types.ts'
 import { useAdminResource } from '../../features/admin/useAdminResource.ts'
-import { isActive } from '../../features/admin/helpers.ts'
+import { asNumber, isActive } from '../../features/admin/helpers.ts'
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
 import { useI18n } from '../../features/i18n/useI18n.ts'
 import {
@@ -146,13 +147,16 @@ export function AdminClassesPage() {
       ) : (
         <div className="space-y-3">
           <p className="text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.admin.showingResults)}: {filteredClasses.length} / {resource.data.classes.length}</p>
-          <Table caption={t(TRANSLATION_KEYS.navigation.classes)} headers={[t(TRANSLATION_KEYS.admin.className), t(TRANSLATION_KEYS.admin.academicYear), t(TRANSLATION_KEYS.admin.status), t(TRANSLATION_KEYS.admin.actions)]}>
+          <Table caption={t(TRANSLATION_KEYS.navigation.classes)} headers={[t(TRANSLATION_KEYS.admin.className), t(TRANSLATION_KEYS.admin.academicYear), t(TRANSLATION_KEYS.admin.students), t(TRANSLATION_KEYS.navigation.teachers), t(TRANSLATION_KEYS.admin.status), t(TRANSLATION_KEYS.admin.actions)]}>
             {filteredClasses.map((item) => (
             <tr key={item.id} className="border-b border-[var(--sams-border)] last:border-b-0">
               <td className="px-3 py-2 font-medium">{item.name}</td>
               <td className="px-3 py-2">{item.academic_year_name}</td>
+              <td className="px-3 py-2 tabular-nums">{asNumber(item.student_count)}</td>
+              <td className="px-3 py-2 tabular-nums">{asNumber(item.teacher_count)}</td>
               <td className="px-3 py-2"><Badge variant={isActive(item.is_active) ? 'success' : 'neutral'}>{isActive(item.is_active) ? t(TRANSLATION_KEYS.admin.active) : t(TRANSLATION_KEYS.admin.inactive)}</Badge></td>
               <td className="px-3 py-2"><div className="flex flex-wrap gap-2">
+                <Link className="sams-interactive-target inline-flex items-center rounded-md border border-[var(--sams-border)] px-3 py-1.5 text-sm font-medium hover:bg-[var(--sams-muted-surface)] focus-visible:bg-[var(--sams-muted-surface)]" to={`/app/admin/students?class_id=${item.id}`}>{t(TRANSLATION_KEYS.admin.openRoster)}</Link>
                 <Button type="button" size="sm" variant="secondary" onClick={() => startEdit(item)}>{t(TRANSLATION_KEYS.admin.edit)}</Button>
                 <Button type="button" size="sm" disabled={saving} onClick={() => void setActive(item, !isActive(item.is_active))}>{isActive(item.is_active) ? t(TRANSLATION_KEYS.admin.deactivate) : t(TRANSLATION_KEYS.admin.activate)}</Button>
               </div></td>
