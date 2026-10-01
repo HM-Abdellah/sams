@@ -24,6 +24,7 @@ export function AdminClassesPage() {
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [yearFilter, setYearFilter] = useState('all')
+  const [sort, setSort] = useState<'name' | 'year' | 'students' | 'teachers' | 'status'>('name')
 
   const startEdit = (item: AdminClass) => {
     setEditing(item); setName(item.name); setLevel(item.level ?? ''); setBranch(item.branch ?? ''); setError(null)
@@ -82,8 +83,14 @@ export function AdminClassesPage() {
       const matchesStatus = statusFilter === 'all' || (statusFilter === 'active' ? active : !active)
       const matchesYear = yearFilter === 'all' || String(item.academic_year_id) === yearFilter
       return matchesQuery && matchesStatus && matchesYear
+    }).sort((a, b) => {
+      if (sort === 'year') return a.academic_year_name.localeCompare(b.academic_year_name) || a.name.localeCompare(b.name)
+      if (sort === 'students') return asNumber(b.student_count) - asNumber(a.student_count) || a.name.localeCompare(b.name)
+      if (sort === 'teachers') return asNumber(b.teacher_count) - asNumber(a.teacher_count) || a.name.localeCompare(b.name)
+      if (sort === 'status') return Number(isActive(b.is_active)) - Number(isActive(a.is_active)) || a.name.localeCompare(b.name)
+      return a.name.localeCompare(b.name)
     })
-  }, [resource.data, query, statusFilter, yearFilter])
+  }, [resource.data, query, statusFilter, yearFilter, sort])
 
   if (resource.status === 'error' || resource.data === null) {
     return <ErrorState title={t(TRANSLATION_KEYS.system.errorTitle)} description={resource.error ?? t(TRANSLATION_KEYS.system.genericError)} action={<Button type="button" variant="secondary" onClick={() => void resource.reload()}>{t(TRANSLATION_KEYS.system.reload)}</Button>} />
@@ -128,6 +135,17 @@ export function AdminClassesPage() {
                 <option value="all">{t(TRANSLATION_KEYS.admin.allStatuses)}</option>
                 <option value="active">{t(TRANSLATION_KEYS.admin.activeOnly)}</option>
                 <option value="inactive">{t(TRANSLATION_KEYS.admin.inactiveOnly)}</option>
+              </Select>
+            )}
+          </FormField>
+          <FormField label={t(TRANSLATION_KEYS.admin.sort)}>
+            {({ id, ...aria }) => (
+              <Select id={id} {...aria} value={sort} onChange={(event) => setSort(event.target.value as typeof sort)}>
+                <option value="name">{t(TRANSLATION_KEYS.admin.sortName)}</option>
+                <option value="year">{t(TRANSLATION_KEYS.admin.sortAcademicYear)}</option>
+                <option value="students">{t(TRANSLATION_KEYS.admin.sortStudents)}</option>
+                <option value="teachers">{t(TRANSLATION_KEYS.navigation.teachers)}</option>
+                <option value="status">{t(TRANSLATION_KEYS.admin.sortStatus)}</option>
               </Select>
             )}
           </FormField>
