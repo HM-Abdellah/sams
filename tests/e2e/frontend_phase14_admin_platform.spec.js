@@ -231,7 +231,7 @@ test.describe('frontend Phase 14 admin platform', () => {
 
   test('admin students workspace manages roster lifecycle within class context', async ({ page }) => {
     await page.goto('/app/admin/students')
-    await expect(page.getByRole('heading', { name: 'Students' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Students', level: 1 })).toBeVisible()
     await expect(page.getByLabel('Select class')).toHaveValue('1')
     await expect(page.getByText('Amina Student')).toBeVisible()
 
