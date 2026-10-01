@@ -248,7 +248,7 @@ test.describe('frontend Phase 14 admin platform', () => {
     await page.getByRole('button', { name: 'Transfer student' }).first().click()
     await page.getByLabel('Target class').selectOption('2')
     await page.getByLabel('Effective date').fill('2026-10-01')
-    await page.getByRole('button', { name: 'Transfer student', exact: true }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Transfer student', exact: true }).click()
     await expect(page.getByText('Amina Updated Student')).not.toBeVisible()
 
     await page.getByLabel('Select class').selectOption('2')
