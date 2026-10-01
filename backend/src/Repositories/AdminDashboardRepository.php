@@ -258,7 +258,7 @@ final class AdminDashboardRepository
         }
 
         $result = [];
-        $today = new DateTimeImmutable('today');
+        $today = new \DateTimeImmutable('today');
         for ($offset = $startOffset; $offset >= 0; --$offset) {
             $date = $today->modify("-{$offset} days")->format('Y-m-d');
             $result[] = $byDate[$date] ?? [
