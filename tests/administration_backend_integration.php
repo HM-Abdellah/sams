@@ -321,7 +321,14 @@ expect_true(
     'Teacher-class unassignment no-op was not idempotent.'
 );
 
+$pdo->exec("UPDATE users SET last_seen_at = CURRENT_TIMESTAMP WHERE id = 2");
+
 $dashboardData = $dashboard->snapshot(1);
+expect_true(($dashboardData['academic_year']['name'] ?? null) === '2026-2027', 'Dashboard active academic year is incorrect.');
+expect_true(count($dashboardData['attendance_trend'] ?? []) === 14, 'Dashboard attendance trend should cover 14 days.');
+expect_true(($dashboardData['attendance_trend'][13]['date'] ?? null) === $today, 'Dashboard attendance trend should end on today.');
+expect_true(count($dashboardData['online_teachers'] ?? []) === 1, 'Dashboard online teacher list is incorrect.');
+expect_true(($dashboardData['online_teachers'][0]['full_name'] ?? null) === 'Teacher One', 'Dashboard online teacher identity is incorrect.');
 expect_true(($dashboardData['summary']['active_classes'] ?? 0) >= 2, 'Dashboard active class summary is incorrect.');
 expect_true(($dashboardData['summary']['active_students'] ?? 0) === 1, 'Dashboard active student summary is incorrect.');
 expect_true(count($dashboardData['attention_students']) === 1, 'Dashboard absence attention list is incorrect.');
