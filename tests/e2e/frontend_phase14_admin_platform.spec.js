@@ -249,10 +249,10 @@ test.describe('frontend Phase 14 admin platform', () => {
     await page.getByLabel('Target class').selectOption('2')
     await page.getByLabel('Effective date').fill('2026-10-01')
     await page.getByRole('dialog').getByRole('button', { name: 'Transfer student', exact: true }).click()
-    await expect(page.getByText('Amina Updated Student')).not.toBeVisible()
+    await expect(page.getByRole('row').filter({ hasText: 'Amina Updated Student' })).toHaveCount(0)
 
     await page.getByLabel('Select class').selectOption('2')
-    await expect(page.getByText('Amina Updated Student')).toBeVisible()
+    await expect(page.getByRole('row').filter({ hasText: 'Amina Updated Student' })).toBeVisible()
 
     await page.getByLabel('Select class').selectOption('1')
     await page.getByLabel('Status').selectOption('all')
