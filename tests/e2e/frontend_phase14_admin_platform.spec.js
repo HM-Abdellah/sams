@@ -283,7 +283,7 @@ test.describe('frontend Phase 14 admin platform', () => {
     await expect(page.getByText('E2E-ONCE-CODE')).toBeVisible()
     page.once('dialog', (dialog) => dialog.accept())
     await page.getByRole('button', { name: 'Suspend' }).nth(1).click()
-    await expect(page.getByText('suspended')).toBeVisible()
+    await expect(page.getByRole('row').filter({ hasText: 'teacher.e2e' }).getByText('suspended', { exact: true })).toBeVisible()
 
     await page.goto('/app/admin/onboarding')
     await expect(page.getByText('New E2E Teacher')).toBeVisible()
