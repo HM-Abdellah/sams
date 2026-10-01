@@ -136,7 +136,7 @@ describe('AdminDashboardPage', () => {
     expect(screen.getByText('Teacher One')).toBeInTheDocument()
     expect(screen.getByText('Student One')).toBeInTheDocument()
     expect(screen.getByText('2BAC SP B')).toBeInTheDocument()
-    expect(screen.getByText('Attendance trend')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Attendance trend' })).toBeInTheDocument()
     expect(screen.getByText('Needs attention')).toBeInTheDocument()
     expect(screen.getByText('Quick actions')).toBeInTheDocument()
     expect(screen.getByRole('table', { name: 'Class statistics' })).toBeInTheDocument()
