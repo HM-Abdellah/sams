@@ -249,6 +249,6 @@ Every phase records: goal, evidence, files changed, technical decisions, tests, 
 Correctness → Data integrity → Security → Core workflow → Responsive usability → Accessibility → Performance → Visual polish.
 
 ## Current position
-Phase 30 — Baseline + Product Workflow Reconciliation.
-The working branch was created from clean main: reconstruction/product-system-2026-10-01.
-No runtime feature changes are intended until the baseline/reconciliation phase is closed.
+Phase 32 — Application Shell + Information Architecture.
+Phase 30 baseline reconciliation and Phase 31 shared design-system/responsive foundation are closed on the reconstruction branch.
+The working branch remains isolated from main: reconstruction/product-system-2026-10-01.

@@ -45,7 +45,7 @@ export function Dialog({
         ref={dialogRef}
         tabIndex={-1}
         onKeyDown={handleKeyDown}
-        className={cn('max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-lg border bg-[var(--sams-surface)] p-4 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:p-5', className)}
+        className={cn('max-h-[calc(100dvh-2rem)] w-full max-w-[min(40rem,calc(100vw-2rem))] overflow-y-auto rounded-[var(--sams-radius-control)] border bg-[var(--sams-surface)] p-4 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:p-5', className)}
       >
         <div className="flex items-start justify-between gap-4">
           <div>

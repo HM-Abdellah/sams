@@ -164,7 +164,7 @@ export function AppShell() {
   return (
     <div className="sams-app-bg min-h-screen">
       <header className="sticky top-0 z-30 border-b border-[var(--sams-border)] bg-[color-mix(in_srgb,var(--sams-surface)_94%,transparent)] backdrop-blur-xl">
-        <div className={"mx-auto flex max-w-[90rem] items-center justify-between gap-4 px-4 py-3 sm:px-6 " + (isAdmin ? 'lg:px-8' : '')}>
+        <div className="mx-auto flex max-w-[var(--sams-app-shell-max)] items-center justify-between gap-4 px-[var(--sams-page-gutter)] py-3">
           <div className="flex min-w-0 items-center gap-3">
             <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--sams-action)] text-sm font-bold text-white shadow-sm">
               SA
@@ -199,10 +199,10 @@ export function AppShell() {
         </div>
       </header>
 
-      <div className={"mx-auto grid max-w-[90rem] " + (isAdmin ? 'lg:grid-cols-[17rem_minmax(0,1fr)]' : 'lg:grid-cols-[16rem_minmax(0,1fr)]')}>
+      <div className={"mx-auto grid max-w-[var(--sams-app-shell-max)] " + (isAdmin ? 'lg:grid-cols-[var(--sams-admin-sidebar-width)_minmax(0,1fr)]' : 'lg:grid-cols-[var(--sams-app-sidebar-width)_minmax(0,1fr)]')}>
         <aside className="min-w-0 border-b border-[var(--sams-border)] bg-[color-mix(in_srgb,var(--sams-surface)_88%,transparent)] lg:sticky lg:top-[65px] lg:h-[calc(100vh-65px)] lg:border-b-0 lg:border-e">
           <div className="hidden border-b border-[var(--sams-border)] p-4 lg:block">
-            <div className="rounded-2xl border border-[var(--sams-border)] bg-[var(--sams-surface)] p-3.5 shadow-[0_6px_18px_rgba(22,32,51,0.035)]">
+            <div className="rounded-[var(--sams-radius-elevated)] border border-[var(--sams-border)] bg-[var(--sams-surface)] p-3.5 shadow-[0_6px_18px_rgba(22,32,51,0.035)]">
               <div className="flex items-center gap-3">
                 <div className="grid size-9 shrink-0 place-items-center rounded-full bg-[var(--sams-action-soft)] text-xs font-bold text-[var(--sams-action)]">
                   {initials(session.user.full_name)}
@@ -239,7 +239,7 @@ export function AppShell() {
           </nav>
         </aside>
 
-        <main className={"min-w-0 px-4 py-6 sm:px-6 sm:py-8 " + (isAdmin ? 'lg:px-9 lg:py-9' : 'lg:px-8')}>
+        <main className={"min-w-0 px-[var(--sams-page-gutter)] py-6 sm:py-8"}>
           <Outlet />
         </main>
       </div>
