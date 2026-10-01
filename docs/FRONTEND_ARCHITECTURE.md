@@ -718,3 +718,18 @@ Phase 3 may implement the React/Vite/TypeScript/Tailwind foundation without inve
 Next:
 
 # PHASE 3 — REACT FOUNDATION
+
+## Admin management workspace routes
+
+/app/admin/dashboard
+/app/admin/classes
+/app/admin/students
+/app/admin/teachers
+/app/admin/users
+/app/admin/onboarding
+/app/admin/academic-years
+/app/admin/imports
+/app/admin/archive
+/app/admin/audit
+
+The admin Students route is a role-protected workspace layered over the existing legacy student resource contract during backend migration.
