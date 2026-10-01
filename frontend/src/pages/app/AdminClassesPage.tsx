@@ -7,7 +7,7 @@ import { asNumber, isActive } from '../../features/admin/helpers.ts'
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
 import { useI18n } from '../../features/i18n/useI18n.ts'
 import {
-  Badge, Button, EmptyState, ErrorState, FormField, Input, Loading, PageHeader, Table,
+  Badge, Button, EmptyState, ErrorState, FormField, Input, Loading, PageHeader, Select, Table,
 } from '../../components/ui/index.ts'
 import { AdminWorkspaceToolbar } from '../../components/admin/AdminWorkspaceToolbar.tsx'
 
