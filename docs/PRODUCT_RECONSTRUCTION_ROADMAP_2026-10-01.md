@@ -253,3 +253,6 @@ Phase 33 — Admin Dashboard Reconstruction.
 Phase 30 baseline reconciliation, Phase 31 shared design-system/responsive foundation, and Phase 32 application shell + information architecture are closed on the reconstruction branch.
 Phase 32 verification is complete; its Git-check is in progress before closure.
 The working branch remains isolated from main: reconstruction/product-system-2026-10-01.
+
+## Current status
+Phase 33 is closed. Phase 34 is the active reconstruction phase; Phase 35 has not started.
