@@ -96,6 +96,7 @@ $pdo->exec("INSERT INTO classes (academic_year_id, name, level, branch, is_activ
 $pdo->exec("INSERT INTO teacher_classes (teacher_id, class_id) VALUES (2, 1)");
 $pdo->exec("INSERT INTO subjects (code, name_fr, name_ar, name_en)
     VALUES ('MATH', 'Mathématiques', 'الرياضيات', 'Mathematics')");
+$pdo->exec("INSERT INTO teacher_teachings (teacher_id, subject_id, class_id) VALUES (2, 1, 1)");
 
 $pdo->exec("INSERT INTO students
     (class_id, student_number, massar_code, birth_date, first_name, last_name, status)
@@ -151,6 +152,14 @@ expect_true($newYearId > 0, 'New academic year was not created.');
 
 $classList = $classes->list();
 expect_true(count($classList) === 4, 'Admin class list must include inactive and historical classes.');
+$primaryClass = array_values(array_filter(
+    $classList,
+    static fn(array $class): bool => (int)$class['id'] === 1
+))[0] ?? null;
+expect_true($primaryClass !== null, 'Primary admin class is missing from the class workspace.');
+expect_true((int)$primaryClass['student_count'] === 1, 'Admin class student count is incorrect.');
+expect_true((int)$primaryClass['teacher_count'] === 1, 'Admin class teacher count is incorrect.');
+
 
 $newClassId = $classes->create(1, '2BAC SP D', '2BAC', 'SP', 1);
 expect_true($newClassId > 0, 'Class creation failed.');
