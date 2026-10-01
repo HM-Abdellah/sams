@@ -188,7 +188,7 @@ export function AdminDashboardPage() {
                 <h3 className="mt-1 text-base font-semibold">{t(TRANSLATION_KEYS.admin.userAdminHint)}</h3>
               </div>
               <Link className="sams-interactive-target inline-flex shrink-0 items-center rounded-md px-2 text-sm font-medium underline-offset-4 hover:underline focus-visible:underline" to="/app/admin/users">
-                {t(TRANSLATION_KEYS.admin.users)}
+                {t(TRANSLATION_KEYS.navigation.users)}
               </Link>
             </div>
             <div className="mt-5 grid grid-cols-2 gap-3">
