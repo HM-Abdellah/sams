@@ -123,3 +123,20 @@ Final branch cleanliness and local git diff --check require Codespace recovery o
 ## 7. Close criteria
 
 Phase 33 is closed only after CI completes, failures are investigated if present, the Codespace is synchronized when available, final git state is verified, and the roadmap advances to Phase 34.
+
+
+## 8. Verification corrections discovered by CI
+
+CI exposed two real regressions introduced by the phase implementation:
+
+1. `DateTimeImmutable` inside the namespaced repository needed a global namespace qualifier. This was corrected with the minimal change to `new \\DateTimeImmutable('today')`. The failure had prevented the real-backend admin dashboard from rendering in the Phase 22/23 acceptance paths.
+2. The new Quick Actions introduced additional visible `Classes` links, making one legacy Phase 14 E2E selector ambiguous. The test now scopes the navigation target to `main` and uses an exact accessible name.
+
+The first CI run after these corrections already showed:
+- frontend production build: **PASS**
+- JavaScript syntax job: **PASS**
+- Apache job: **PASS**
+- PHP tests before the dashboard integration point: **PASS**
+- clean-school / E2E failures were traced to the dashboard namespace issue and legacy selector ambiguity rather than a new data contract error.
+
+The newest commit is `56de6e067fca069b0613d15c27db7c76e200e30b`, and a fresh GitHub Actions run `36926403479` was queued for that exact commit. Phase closure remains blocked until that run completes successfully and the Codespace is synchronized when available.
