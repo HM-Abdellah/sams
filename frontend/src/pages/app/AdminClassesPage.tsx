@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { adminApi } from '../../features/admin/api.ts'
 import type { AdminClass } from '../../features/admin/types.ts'
 import { useAdminResource } from '../../features/admin/useAdminResource.ts'
@@ -8,6 +8,7 @@ import { useI18n } from '../../features/i18n/useI18n.ts'
 import {
   Badge, Button, EmptyState, ErrorState, FormField, Input, Loading, PageHeader, Table,
 } from '../../components/ui/index.ts'
+import { AdminWorkspaceToolbar } from '../../components/admin/AdminWorkspaceToolbar.tsx'
 
 export function AdminClassesPage() {
   const { t } = useI18n()
@@ -19,6 +20,9 @@ export function AdminClassesPage() {
   const [branch, setBranch] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
+  const [yearFilter, setYearFilter] = useState('all')
 
   const startEdit = (item: AdminClass) => {
     setEditing(item); setName(item.name); setLevel(item.level ?? ''); setBranch(item.branch ?? ''); setError(null)
@@ -58,6 +62,28 @@ export function AdminClassesPage() {
   }
 
   if (resource.status === 'idle' || resource.status === 'loading') return <Loading label={t(TRANSLATION_KEYS.auth.loading)} />
+  const years = useMemo(() => {
+    const seen = new Map<number, string>()
+    for (const item of resource.data?.classes ?? []) {
+      if (!seen.has(item.academic_year_id)) seen.set(item.academic_year_id, item.academic_year_name)
+    }
+    return [...seen.entries()]
+  }, [resource.data])
+
+  const filteredClasses = useMemo(() => {
+    const normalized = query.trim().toLocaleLowerCase()
+    return (resource.data?.classes ?? []).filter((item) => {
+      const matchesQuery = normalized === ''
+        || [item.name, item.level, item.branch, item.academic_year_name]
+          .filter(Boolean)
+          .some((value) => String(value).toLocaleLowerCase().includes(normalized))
+      const active = isActive(item.is_active)
+      const matchesStatus = statusFilter === 'all' || (statusFilter === 'active' ? active : !active)
+      const matchesYear = yearFilter === 'all' || String(item.academic_year_id) === yearFilter
+      return matchesQuery && matchesStatus && matchesYear
+    })
+  }, [resource.data, query, statusFilter, yearFilter])
+
   if (resource.status === 'error' || resource.data === null) {
     return <ErrorState title={t(TRANSLATION_KEYS.system.errorTitle)} description={resource.error ?? t(TRANSLATION_KEYS.system.genericError)} action={<Button type="button" variant="secondary" onClick={() => void resource.reload()}>{t(TRANSLATION_KEYS.system.reload)}</Button>} />
   }
@@ -88,9 +114,40 @@ export function AdminClassesPage() {
         </div>
       </section>
 
-      {resource.data.classes.length === 0 ? <EmptyState title={t(TRANSLATION_KEYS.navigation.classes)} description={t(TRANSLATION_KEYS.admin.noClasses)} /> : (
-        <Table caption={t(TRANSLATION_KEYS.navigation.classes)} headers={[t(TRANSLATION_KEYS.admin.className), t(TRANSLATION_KEYS.admin.academicYear), t(TRANSLATION_KEYS.admin.status), t(TRANSLATION_KEYS.admin.actions)]}>
-          {resource.data.classes.map((item) => (
+      <AdminWorkspaceToolbar
+        searchLabel={t(TRANSLATION_KEYS.admin.search)}
+        searchPlaceholder={t(TRANSLATION_KEYS.admin.searchClasses)}
+        searchValue={query}
+        onSearchChange={setQuery}
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField label={t(TRANSLATION_KEYS.admin.status)}>
+            {({ id, ...aria }) => (
+              <Select id={id} {...aria} value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}>
+                <option value="all">{t(TRANSLATION_KEYS.admin.allStatuses)}</option>
+                <option value="active">{t(TRANSLATION_KEYS.admin.activeOnly)}</option>
+                <option value="inactive">{t(TRANSLATION_KEYS.admin.inactiveOnly)}</option>
+              </Select>
+            )}
+          </FormField>
+          <FormField label={t(TRANSLATION_KEYS.admin.academicYear)}>
+            {({ id, ...aria }) => (
+              <Select id={id} {...aria} value={yearFilter} onChange={(event) => setYearFilter(event.target.value)}>
+                <option value="all">{t(TRANSLATION_KEYS.admin.allStatuses)}</option>
+                {years.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+              </Select>
+            )}
+          </FormField>
+        </div>
+      </AdminWorkspaceToolbar>
+
+      {resource.data.classes.length === 0 ? <EmptyState title={t(TRANSLATION_KEYS.navigation.classes)} description={t(TRANSLATION_KEYS.admin.noClasses)} /> : filteredClasses.length === 0 ? (
+        <EmptyState title={t(TRANSLATION_KEYS.admin.searchClasses)} description={t(TRANSLATION_KEYS.admin.noStudentsInClass)} />
+      ) : (
+        <div className="space-y-3">
+          <p className="text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.admin.showingResults)}: {filteredClasses.length} / {resource.data.classes.length}</p>
+          <Table caption={t(TRANSLATION_KEYS.navigation.classes)} headers={[t(TRANSLATION_KEYS.admin.className), t(TRANSLATION_KEYS.admin.academicYear), t(TRANSLATION_KEYS.admin.status), t(TRANSLATION_KEYS.admin.actions)]}>
+            {filteredClasses.map((item) => (
             <tr key={item.id} className="border-b border-[var(--sams-border)] last:border-b-0">
               <td className="px-3 py-2 font-medium">{item.name}</td>
               <td className="px-3 py-2">{item.academic_year_name}</td>
@@ -100,8 +157,9 @@ export function AdminClassesPage() {
                 <Button type="button" size="sm" disabled={saving} onClick={() => void setActive(item, !isActive(item.is_active))}>{isActive(item.is_active) ? t(TRANSLATION_KEYS.admin.deactivate) : t(TRANSLATION_KEYS.admin.activate)}</Button>
               </div></td>
             </tr>
-          ))}
-        </Table>
+            ))}
+          </Table>
+        </div>
       )}
     </section>
   )
