@@ -17,8 +17,8 @@ test.describe('frontend Phase 14 admin platform', () => {
   test.beforeEach(async ({ page }) => {
     role = 'admin'
     classes = [
-      { id: 1, name: 'E2E-2BAC-A', level: '2BAC', branch: 'SP', academic_year_id: 1, is_active: 1, academic_year_name: '2026/2027', academic_year_active: 1 },
-      { id: 2, name: 'E2E-1BAC-B', level: '1BAC', branch: 'SVT', academic_year_id: 1, is_active: 0, academic_year_name: '2026/2027', academic_year_active: 1 },
+      { id: 1, name: 'E2E-2BAC-A', level: '2BAC', branch: 'SP', academic_year_id: 1, is_active: 1, academic_year_name: '2026/2027', academic_year_active: 1, student_count: 40, teacher_count: 1 },
+      { id: 2, name: 'E2E-1BAC-B', level: '1BAC', branch: 'SVT', academic_year_id: 1, is_active: 0, academic_year_name: '2026/2027', academic_year_active: 1, student_count: 0, teacher_count: 0 },
     ]
     teachers = [
       { id: 10, username: 'teacher.e2e', employee_id: 'teacher.e2e', full_name: 'E2E Teacher', phone: null, phone_verified: 1, is_active: 1, failed_login_attempts: 0, locked_until: null, last_login_at: null, last_seen_at: null, is_online: 1 },
