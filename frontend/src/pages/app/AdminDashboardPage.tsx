@@ -307,6 +307,7 @@ export function AdminDashboardPage() {
         <nav className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label={t(TRANSLATION_KEYS.admin.quickActions)}>
           {( [
             ['/app/admin/classes', t(TRANSLATION_KEYS.admin.classes)],
+            ['/app/admin/students', t(TRANSLATION_KEYS.navigation.students)],
             ['/app/admin/teachers', t(TRANSLATION_KEYS.navigation.teachers)],
             ['/app/admin/users', t(TRANSLATION_KEYS.navigation.users)],
             ['/app/admin/onboarding', t(TRANSLATION_KEYS.navigation.onboarding)],
