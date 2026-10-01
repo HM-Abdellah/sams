@@ -63,7 +63,6 @@ export function AdminClassesPage() {
     }
   }
 
-  if (resource.status === 'idle' || resource.status === 'loading') return <Loading label={t(TRANSLATION_KEYS.auth.loading)} />
   const years = useMemo(() => {
     const seen = new Map<number, string>()
     for (const item of resource.data?.classes ?? []) {
@@ -92,6 +91,7 @@ export function AdminClassesPage() {
     })
   }, [resource.data, query, statusFilter, yearFilter, sort])
 
+  if (resource.status === 'idle' || resource.status === 'loading') return <Loading label={t(TRANSLATION_KEYS.auth.loading)} />
   if (resource.status === 'error' || resource.data === null) {
     return <ErrorState title={t(TRANSLATION_KEYS.system.errorTitle)} description={resource.error ?? t(TRANSLATION_KEYS.system.genericError)} action={<Button type="button" variant="secondary" onClick={() => void resource.reload()}>{t(TRANSLATION_KEYS.system.reload)}</Button>} />
   }
