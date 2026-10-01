@@ -2,9 +2,10 @@ import { useMemo, useState } from 'react'
 import { adminApi } from '../../features/admin/api.ts'
 import type { AdminClass } from '../../features/admin/types.ts'
 import { useAdminResource } from '../../features/admin/useAdminResource.ts'
-import { asNumber, isActive } from '../../features/admin/helpers.ts'
+import { isActive } from '../../features/admin/helpers.ts'
 import { useClassStudents } from '../../features/students/useClassStudents.ts'
 import type { Student } from '../../features/students/types.ts'
+import { studentsApi } from '../../features/students/api.ts'
 import { StudentFormDialog } from '../../features/students/StudentFormDialog.tsx'
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
 import { useI18n } from '../../features/i18n/useI18n.ts'
@@ -91,7 +92,7 @@ export function AdminStudentsPage() {
     setBusy(student.id)
     setError(null)
     try {
-      await import('../../features/students/api.ts').then(({ studentsApi }) => studentsApi.deactivate(effectiveClassId, student.id))
+      await studentsApi.deactivate(effectiveClassId, student.id)
       await students.reload()
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : t(TRANSLATION_KEYS.system.genericError))
@@ -112,7 +113,6 @@ export function AdminStudentsPage() {
     setBusy('transfer')
     setError(null)
     try {
-      const { studentsApi } = await import('../../features/students/api.ts')
       await studentsApi.transfer(effectiveClassId, transferTarget.id, Number(targetClassId), effectiveDate)
       setTransferTarget(null)
       await students.reload()
