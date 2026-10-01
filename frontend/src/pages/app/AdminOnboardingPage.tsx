@@ -4,7 +4,7 @@ import { useAdminResource } from '../../features/admin/useAdminResource.ts'
 import { dateTime } from '../../features/admin/helpers.ts'
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
 import { useI18n } from '../../features/i18n/useI18n.ts'
-import { Badge, Button, EmptyState, ErrorState, FormField, Input, Loading, Select, Table } from '../../components/ui/index.ts'
+import { Badge, Button, EmptyState, ErrorState, FormField, Input, Loading, PageHeader, Select, Table } from '../../components/ui/index.ts'
 
 export function AdminOnboardingPage() {
   const { t } = useI18n()
@@ -37,20 +37,21 @@ export function AdminOnboardingPage() {
   if (resource.status === 'error' || resource.data === null) return <ErrorState title={t(TRANSLATION_KEYS.system.errorTitle)} description={resource.error ?? t(TRANSLATION_KEYS.system.genericError)} action={<Button type="button" variant="secondary" onClick={() => void resource.reload()}>{t(TRANSLATION_KEYS.system.reload)}</Button>} />
 
   return (
-    <section className="space-y-6">
-      <header><h1 className="text-2xl font-semibold">{t(TRANSLATION_KEYS.navigation.onboarding)}</h1><p className="mt-2 text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.admin.onboardingHint)}</p></header>
+    <section className="sams-admin-page space-y-8">
+      <PageHeader
+        title={t(TRANSLATION_KEYS.navigation.onboarding)}
+        description={t(TRANSLATION_KEYS.admin.onboardingHint)}
+      />
       {error && <p role="alert" className="text-sm text-[var(--sams-danger)]">{error}</p>}
       {code && <section role="status" className="rounded-lg border border-[var(--sams-warning)] bg-[var(--sams-warning-surface)] p-4"><p className="font-semibold">{t(TRANSLATION_KEYS.admin.newOnboardingCode)}</p><code className="mt-2 block text-lg">{code}</code><p className="mt-1 text-sm">{t(TRANSLATION_KEYS.admin.oneTimeSecret)}</p></section>}
       <Button type="button" loading={busy === 'code'} disabled={busy !== null && busy !== 'code'} onClick={() => void rotate()}>{t(TRANSLATION_KEYS.admin.rotateCode)}</Button>
 
-      <section className="space-y-4">
-        <div className="max-w-xs">
-          <FormField label={t(TRANSLATION_KEYS.admin.status)}>
-            {({ id, ...aria }) => <Select id={id} {...aria} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              <option value="pending">pending</option><option value="approved">approved</option><option value="rejected">rejected</option><option value="expired">expired</option>
-            </Select>}
-          </FormField>
-        </div>
+      <section className="sams-admin-toolbar grid gap-4 p-5 md:grid-cols-[minmax(0,13rem)_minmax(0,1fr)] md:items-end">
+        <FormField label={t(TRANSLATION_KEYS.admin.status)}>
+          {({ id, ...aria }) => <Select id={id} {...aria} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <option value="pending">pending</option><option value="approved">approved</option><option value="rejected">rejected</option><option value="expired">expired</option>
+          </Select>}
+        </FormField>
         <FormField label={t(TRANSLATION_KEYS.admin.rejectionReason)}>
           {({ id, ...aria }) => <Input id={id} {...aria} value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t(TRANSLATION_KEYS.admin.optionalReason)} />}
         </FormField>

@@ -133,9 +133,13 @@ test.describe('frontend Phase 18 accessibility', () => {
     await expect(dayGroup).toBeVisible()
     await expect(dayGroup.locator('button[aria-pressed="true"]')).toHaveCount(1)
 
-    const statusGroups = page.getByRole('group', { name: 'Status' })
-    await expect(statusGroups).toHaveCount(2)
-    await expect(statusGroups.nth(1).locator('button[aria-pressed="true"]')).toHaveCount(1)
+    const markGroup = page.getByRole('group', { name: 'Mark as' })
+    await expect(markGroup).toHaveCount(1)
+    await expect(markGroup.locator('button[aria-pressed="true"]')).toHaveCount(1)
+
+    const filterGroup = page.getByRole('group', { name: 'Status' })
+    await expect(filterGroup).toHaveCount(1)
+    await expect(filterGroup.locator('button[aria-pressed="true"]')).toHaveCount(1)
 
     const controls = await page.locator('button, input, select, textarea').evaluateAll(controlNameIssues)
     expect(controls).toEqual([])
@@ -171,7 +175,7 @@ test.describe('frontend Phase 18 accessibility', () => {
     await page.setViewportSize({ width: 1024, height: 800 })
     const table = page.getByRole('table')
     await expect(table).toBeVisible()
-    await expect(table.locator('th[scope="col"]')).toHaveCount(4)
+    await expect(table.getByRole('columnheader', { name: /Period [1-8]/ })).toHaveCount(8)
   })
 
   test('login page passes accessibility scan and names its authentication controls', async ({ page }) => {

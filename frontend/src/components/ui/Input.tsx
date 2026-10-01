@@ -11,12 +11,13 @@ export function Input({ className, invalid = false, ...props }: InputProps) {
       {...props}
       aria-invalid={invalid || undefined}
       className={cn(
-        'block min-h-10 w-full rounded-md border bg-[var(--sams-surface)] px-3 py-2',
-        'text-[var(--sams-text)] placeholder:text-[var(--sams-muted)]',
-        'focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-[var(--sams-focus)]',
+        'block min-h-11 w-full rounded-lg border bg-[var(--sams-surface)] px-3.5 py-2.5',
+        'text-[var(--sams-text)] placeholder:text-[var(--sams-muted)] shadow-sm',
+        'transition-[border-color,box-shadow] duration-150',
+        'focus-visible:outline-none focus-visible:border-[var(--sams-focus)] focus-visible:ring-4 focus-visible:ring-[var(--sams-info-surface)]',
         'disabled:cursor-not-allowed disabled:bg-[var(--sams-muted-surface)] disabled:opacity-60',
         invalid
-          ? 'border-[var(--sams-danger)] ring-1 ring-[var(--sams-danger)]'
+          ? 'border-[var(--sams-danger)] ring-4 ring-[var(--sams-danger-surface)]'
           : 'border-[var(--sams-border)]',
         className,
       )}

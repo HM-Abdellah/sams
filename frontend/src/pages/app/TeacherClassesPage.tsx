@@ -2,7 +2,7 @@ import { Link } from 'react-router'
 import { useI18n } from '../../features/i18n/useI18n.ts'
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
 import { useTeacherClasses } from '../../features/classes/useTeacherClasses.ts'
-import { AsyncStateFeedback, EmptyState } from '../../components/ui/index.ts'
+import { AsyncStateFeedback, EmptyState, PageHeader } from '../../components/ui/index.ts'
 
 export function TeacherClassesPage() {
   const { t, formatDate } = useI18n()
@@ -29,10 +29,10 @@ export function TeacherClassesPage() {
 
   return (
     <section className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold">{t(TRANSLATION_KEYS.navigation.classes)}</h1>
-        <p className="mt-2 text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.teacher.teachingContext)}</p>
-      </header>
+      <PageHeader
+        title={t(TRANSLATION_KEYS.navigation.classes)}
+        description={t(TRANSLATION_KEYS.teacher.teachingContext)}
+      />
 
       <AsyncStateFeedback
         state={classes}
@@ -45,10 +45,10 @@ export function TeacherClassesPage() {
         onRetry={() => void classes.reload()}
       />
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {classes.classes.map((item) => (
-          <article key={item.id} className="rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] p-5">
-            <div className="flex items-start justify-between gap-4">
+          <article key={item.id} className="sams-card overflow-hidden p-0">
+            <div className="flex items-start justify-between gap-4 border-b border-[var(--sams-border)] p-5">
               <div>
                 <h2 className="text-lg font-semibold">{item.name}</h2>
                 <p className="mt-1 text-sm text-[var(--sams-muted)]">
@@ -57,7 +57,7 @@ export function TeacherClassesPage() {
               </div>
             </div>
 
-            <dl className="mt-5 grid gap-3 sm:grid-cols-2">
+            <dl className="grid gap-3 bg-[var(--sams-muted-surface)] p-5 sm:grid-cols-2">
               <Detail label={t(TRANSLATION_KEYS.teacher.academicYear)} value={item.academic_year_name ?? '—'} />
               <Detail
                 label={t(TRANSLATION_KEYS.teacher.academicYearRange)}
@@ -67,22 +67,22 @@ export function TeacherClassesPage() {
               />
             </dl>
 
-            <div className="mt-5 flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 p-5 pt-0">
               <Link
                 to={'/app/classes/' + item.id}
-                className="inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--sams-border)] px-4 text-sm font-medium text-[var(--sams-text)]"
+                className="inline-flex min-h-10 items-center justify-center rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] px-4 text-sm font-semibold text-[var(--sams-text)] shadow-sm transition hover:bg-[var(--sams-action-soft)]"
               >
                 {t(TRANSLATION_KEYS.teacher.viewDetails)}
               </Link>
               <Link
                 to={'/app/students?class_id=' + item.id}
-                className="inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--sams-border)] px-4 text-sm font-medium text-[var(--sams-text)]"
+                className="inline-flex min-h-10 items-center justify-center rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] px-4 text-sm font-semibold text-[var(--sams-text)] shadow-sm transition hover:bg-[var(--sams-action-soft)]"
               >
                 {t(TRANSLATION_KEYS.teacher.openStudents)}
               </Link>
               <Link
                 to={'/app/attendance?class_id=' + item.id}
-                className="inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--sams-action)] px-4 text-sm font-medium text-[var(--sams-action-foreground)]"
+                className="inline-flex min-h-10 items-center justify-center rounded-lg bg-[var(--sams-action)] px-4 text-sm font-semibold text-[var(--sams-action-foreground)] shadow-sm transition hover:bg-[var(--sams-action-hover)]"
               >
                 {t(TRANSLATION_KEYS.teacher.openAttendance)}
               </Link>

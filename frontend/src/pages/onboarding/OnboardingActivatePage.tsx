@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 import { onboardingApi, type OnboardingActivationData } from '../../features/onboarding/api.ts'
 import { ApiError } from '../../services/api/errors.ts'
@@ -18,6 +18,12 @@ export function OnboardingActivatePage() {
   const queryToken = new URLSearchParams(location.search).get('request_token')?.trim() ?? ''
   const token = stateToken || queryToken
 
+  useEffect(() => {
+    if (queryToken !== '' && stateToken === '') {
+      navigate('/onboarding/activate', { replace: true, state: { requestToken: queryToken } })
+    }
+  }, [navigate, queryToken, stateToken])
+
   const activate = async () => {
     if (token === '') return
     setError(null); setSubmitting(true)
@@ -30,10 +36,10 @@ export function OnboardingActivatePage() {
   }
 
   return (
-    <main className="grid min-h-screen place-items-center p-6"><section className="w-full max-w-md rounded-xl border bg-white p-6 shadow-sm dark:bg-neutral-900">
-      <div className="flex items-center justify-between gap-3"><p className="text-sm font-medium text-neutral-500">SAMS</p><LanguageSelect /></div>
+    <main className="grid min-h-screen place-items-center bg-[var(--sams-background)] p-6 text-[var(--sams-text)]"><section className="w-full max-w-md rounded-xl border border-[var(--sams-border)] bg-[var(--sams-surface)] p-6 shadow-sm">
+      <div className="flex items-center justify-between gap-3"><p className="text-sm font-medium text-[var(--sams-muted)]">SAMS</p><LanguageSelect /></div>
       <h1 className="mt-1 text-2xl font-semibold">{t(TRANSLATION_KEYS.onboarding.activateTitle)}</h1>
-      <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">{t(TRANSLATION_KEYS.onboarding.activationHint)}</p>
+      <p className="mt-2 text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.onboarding.activationHint)}</p>
       {token === '' && <StatusMessage className="mt-6" variant="warning">{t(TRANSLATION_KEYS.onboarding.missingToken)}</StatusMessage>}
       {error && <div className="mt-6"><StatusMessage variant="danger">{error}</StatusMessage></div>}
       {result === null && token !== '' ? (
@@ -44,7 +50,7 @@ export function OnboardingActivatePage() {
       ) : result !== null ? (
         <div className="mt-6 space-y-4">
           <StatusMessage variant="success" title={t(TRANSLATION_KEYS.onboarding.activatedTitle)}>{t(TRANSLATION_KEYS.onboarding.requestSubmitted)}</StatusMessage>
-          <div className="rounded-lg border bg-neutral-50 p-4 dark:bg-neutral-800"><p className="text-sm">{t(TRANSLATION_KEYS.onboarding.samsCodeIssued)}</p><code className="mt-2 block text-xl font-semibold">{result.sams_code}</code><p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">{t(TRANSLATION_KEYS.onboarding.requestTokenHint)}</p></div>
+          <div className="rounded-lg border border-[var(--sams-border)] bg-[var(--sams-muted-surface)] p-4"><p className="text-sm">{t(TRANSLATION_KEYS.onboarding.samsCodeIssued)}</p><code className="mt-2 block text-xl font-semibold">{result.sams_code}</code><p className="mt-2 text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.onboarding.requestTokenHint)}</p></div>
           <Button type="button" className="w-full" onClick={() => navigate('/login')}>{t(TRANSLATION_KEYS.onboarding.goToLogin)}</Button>
         </div>
       ) : null}

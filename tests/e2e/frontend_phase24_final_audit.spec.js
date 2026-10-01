@@ -144,6 +144,7 @@ test.describe("frontend Phase 24 final audit", () => {
       });
     });
     await page.goto("/onboarding/status?request_token=approved-token");
+    await expect(page).toHaveURL(/\/onboarding\/status$/);
     await expect(
       page.getByRole("heading", { name: "Request status" }),
     ).toBeVisible();
@@ -177,6 +178,7 @@ test.describe("frontend Phase 24 final audit", () => {
       });
     });
     await page.goto("/onboarding/activate?request_token=approved-token");
+    await expect(page).toHaveURL(/\/onboarding\/activate$/);
     await page.getByLabel("Initial password").fill("SafePassword123!");
     await page.getByRole("button", { name: "Activate account" }).click();
     await expect(page.getByText("T123456", { exact: true })).toBeVisible();

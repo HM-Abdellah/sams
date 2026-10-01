@@ -6,16 +6,16 @@ export function ProtectedRoute() {
   const location = useLocation()
 
   if (session.status === 'loading') {
-    return <div role="status" aria-live="polite" className="grid min-h-screen place-items-center p-6">Loading…</div>
+    return <div role="status" aria-live="polite" className="grid min-h-screen place-items-center bg-[var(--sams-background)] p-6 text-[var(--sams-text)]">Loading…</div>
   }
 
   if (session.status === 'error') {
     return (
-      <main className="grid min-h-screen place-items-center p-6">
-        <section className="w-full max-w-md rounded-xl border bg-white p-6 shadow-sm">
+      <main className="grid min-h-screen place-items-center bg-[var(--sams-background)] p-6 text-[var(--sams-text)]">
+        <section className="w-full max-w-md rounded-xl border border-[var(--sams-border)] bg-[var(--sams-surface)] p-6 shadow-sm">
           <h1 className="text-lg font-semibold">Session unavailable</h1>
-          <p className="mt-2 text-sm text-neutral-600">{session.error}</p>
-          <button type="button" className="mt-4 rounded-md border px-4 py-2 text-sm" onClick={() => void session.refresh()}>
+          <p className="mt-2 text-sm text-[var(--sams-muted)]">{session.error}</p>
+          <button type="button" className="mt-4 rounded-md border border-[var(--sams-border)] bg-[var(--sams-surface)] px-4 py-2 text-sm" onClick={() => void session.refresh()}>
             Retry
           </button>
         </section>

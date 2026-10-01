@@ -1,6 +1,6 @@
 # SAMS — Frontend Roadmap Reconciliation
 
-Date: 2026-09-29
+Date: 2026-09-30
 
 ## Purpose
 
@@ -32,8 +32,8 @@ The official frontend plan supplied on 2026-09-29 is the source of truth for pha
 | 20 | Frontend Performance | PASS | Route-level code splitting, production JS budget, lazy route loading regression guards + 3/3 Phase 20 E2E |
 | 21 | Frontend Testing | PASS | Vitest unit/integration layer, Attendance/Session/API tests, 42/42 frontend regression, 3/3 production performance regression, Phase 21 testing record |
 | 22 | Legacy Replacement | PASS | React becomes active UI runtime under /sams/, legacy UI assets removed from runtime, public URL shims retained, SPA/asset/API routing verified + 4/4 Phase 22 E2E |
-| 23 | Production Integration | IMPLEMENTED — hosted CI gate pending | Apache + PHP + MariaDB production boundary, `/sams/` SPA routing, `/api/v1` integration, session persistence, legacy UI retirement, production E2E + dedicated CI job |
-| 24 | Final frontend engineering audit | PASS — local final audit; hosted release gate inherited from Phase 23 | Public onboarding + counselor workspace completed, architecture/security/accessibility/performance audit, 45/45 unit, 47/47 final browser sweep, 5/5 Phase 24 audit, 3/3 production performance |
+| 23 | Production Integration | PASS | Apache + PHP + MariaDB production boundary, `/sams/` SPA routing, `/api/v1` integration, session persistence, legacy UI retirement, production E2E + dedicated CI job; final hosted gate passed in CI Run #804 |
+| 24 | Final frontend engineering audit | PASS | Public onboarding + counselor workspace completed, architecture/security/accessibility/performance audit, 45/45 unit, 47/47 final browser sweep, 5/5 Phase 24 audit, 3/3 production performance |
 
 ## Phase-order drift
 
@@ -58,10 +58,12 @@ All valid implementations remain preserved. The reconciliation exists so future 
 
 ## Current frontier
 
-Official frontend Phases 1–23 are implemented locally. Phase 24 final engineering audit is also locally PASS; hosted CI remains the release-closure gate for the production integration boundary.
+Frontend engineering Phases 1–24 are complete and the hosted production-integration gate has passed.
 
-The next stage is:
+The current project frontier is:
 
-- Design R&D + Figma after the hosted production gate passes
+- Post-Phase-28 visual reconstruction and release hardening
 
-📍 Current project state: Frontend engineering Phases 1–24 are locally verified. No final visual redesign has started. Backend/security/auth/tenant foundation remains frozen unless a proven gap is found.
+Design R&D Phases 25–28 are complete. The canonical Phase 28 Figma file has been constructed and structurally/render verified through the available student-team write path.
+
+The backend/security/auth/tenant foundation remains frozen unless a proven release-blocking gap is found.

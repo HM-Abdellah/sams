@@ -49,4 +49,24 @@ export const attendanceApi = {
       body: { entries },
     })
   },
+
+  signPeriod(
+    classId: number,
+    weekStart: string,
+    attendanceDate: string,
+    period: number,
+  ): Promise<{ signed: boolean }> {
+    return apiClient.request<{ signed: boolean }>(
+      `/attendance-signoffs.php?class_id=${encodeURIComponent(classId)}`,
+      {
+        method: 'POST',
+        body: {
+          action: 'sign_period',
+          week_start: weekStart,
+          attendance_date: attendanceDate,
+          period,
+        },
+      },
+    )
+  },
 }

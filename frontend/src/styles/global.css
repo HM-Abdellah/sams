@@ -3,21 +3,32 @@
 :root {
   --sams-background: #f5f5f5;
   --sams-surface: #ffffff;
+  --sams-surface-elevated: #ffffff;
   --sams-muted-surface: #f5f5f5;
   --sams-text: #171717;
   --sams-muted: #6b6b6b;
   --sams-border: #d4d4d4;
+
   --sams-action: #171717;
+  --sams-action-hover: #303030;
   --sams-action-foreground: #ffffff;
+  --sams-action-soft: #f5f5f5;
+
   --sams-focus: #2563eb;
-  --sams-danger: #b91c1c;
-  --sams-danger-surface: #fef2f2;
-  --sams-success: #166534;
-  --sams-success-surface: #f0fdf4;
-  --sams-warning: #a16207;
-  --sams-warning-surface: #fefce8;
+
+  --sams-danger: #b42318;
+  --sams-danger-surface: #fef3f2;
+  --sams-success: #157347;
+  --sams-success-surface: #ecfdf3;
+  --sams-warning: #a15c00;
+  --sams-warning-surface: #fff7e8;
   --sams-info: #1d4ed8;
   --sams-info-surface: #eff6ff;
+  --sams-excused: #6b4aa6;
+  --sams-excused-surface: #f4f0ff;
+
+  --sams-brand-accent: #1d4ed8;
+  --sams-brand-accent-soft: #eff6ff;
 
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif;
@@ -51,9 +62,74 @@ select {
   font: inherit;
 }
 
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: var(--sams-action-soft);
+  color: var(--sams-text);
+}
+
 :focus-visible {
-  outline: 2px solid currentColor;
+  outline: 3px solid color-mix(in srgb, var(--sams-focus) 34%, transparent);
   outline-offset: 2px;
+}
+
+.sams-app-bg {
+  background: var(--sams-background);
+}
+
+.sams-card {
+  border: 1px solid var(--sams-border);
+  background: var(--sams-surface);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.sams-admin-page {
+  animation: sams-admin-page-in 180ms ease-out both;
+}
+
+.sams-admin-page .sams-card {
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.sams-admin-toolbar {
+  border: 1px solid var(--sams-border);
+  background: var(--sams-surface);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+@keyframes sams-admin-page-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sams-admin-page {
+    animation: none;
+  }
+}
+
+.sams-section-label {
+  color: var(--sams-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.sams-touch-cell {
+  min-width: 52px;
+  min-height: 52px;
+}
+
+.sams-scroll-surface {
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
 }
 
 @media (prefers-reduced-motion: reduce) {

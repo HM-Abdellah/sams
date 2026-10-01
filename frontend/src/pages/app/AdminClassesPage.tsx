@@ -6,7 +6,7 @@ import { isActive } from '../../features/admin/helpers.ts'
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
 import { useI18n } from '../../features/i18n/useI18n.ts'
 import {
-  Badge, Button, EmptyState, ErrorState, FormField, Input, Loading, Table,
+  Badge, Button, EmptyState, ErrorState, FormField, Input, Loading, PageHeader, Table,
 } from '../../components/ui/index.ts'
 
 export function AdminClassesPage() {
@@ -63,13 +63,13 @@ export function AdminClassesPage() {
   }
 
   return (
-    <section className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold">{t(TRANSLATION_KEYS.navigation.classes)}</h1>
-        <p className="mt-2 text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.admin.classAdminHint)}</p>
-      </header>
+    <section className="sams-admin-page space-y-8">
+      <PageHeader
+        title={t(TRANSLATION_KEYS.navigation.classes)}
+        description={t(TRANSLATION_KEYS.admin.classAdminHint)}
+      />
 
-      <section className="rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] p-5">
+      <section className="sams-card p-5">
         <h2 className="text-lg font-semibold">{editing ? t(TRANSLATION_KEYS.admin.editClass) : t(TRANSLATION_KEYS.admin.createClass)}</h2>        <div className="mt-4 grid gap-4 md:grid-cols-3">
           <FormField label={t(TRANSLATION_KEYS.admin.className)}>
             {({ id, ...aria }) => <Input id={id} {...aria} value={name} onChange={(e) => setName(e.target.value)} />}

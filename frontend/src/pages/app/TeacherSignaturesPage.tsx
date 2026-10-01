@@ -4,7 +4,7 @@ import { useTeacherClasses } from '../../features/classes/useTeacherClasses.ts'
 import { signaturesApi } from '../../features/signatures/api.ts'
 import { useI18n } from '../../features/i18n/useI18n.ts'
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
-import { Badge, Button, EmptyState, ErrorState, FormField, Loading, Select } from '../../components/ui/index.ts'
+import { Badge, Button, EmptyState, ErrorState, FormField, Loading, PageHeader, Select } from '../../components/ui/index.ts'
 
 const WIDTH = 720
 const HEIGHT = 260
@@ -57,11 +57,13 @@ export function TeacherSignaturesPage() {
     canvas.height = HEIGHT * ratio
     canvas.style.aspectRatio = WIDTH + ' / ' + HEIGHT
     context.setTransform(ratio, 0, 0, ratio, 0, 0)
+    const styles = getComputedStyle(document.documentElement)
+    const token = (name: string, fallback: string) => styles.getPropertyValue(name).trim() || fallback
     context.lineWidth = 2.5
     context.lineCap = 'round'
     context.lineJoin = 'round'
-    context.strokeStyle = '#171717'
-    context.fillStyle = '#ffffff'
+    context.strokeStyle = token('--sams-text', '#171717')
+    context.fillStyle = token('--sams-surface', '#ffffff')
     context.fillRect(0, 0, WIDTH, HEIGHT)
     if (!signature) return
     const image = new Image()
@@ -120,11 +122,11 @@ export function TeacherSignaturesPage() {
   }
 
   return (
-    <section className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold">{t(TRANSLATION_KEYS.navigation.signatures)}</h1>
-        <p className="mt-2 text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.signature.hint)}</p>
-      </header>
+    <section className="space-y-5">
+      <PageHeader
+        title={t(TRANSLATION_KEYS.navigation.signatures)}
+        description={t(TRANSLATION_KEYS.signature.hint)}
+      />
 
       <FormField label={t(TRANSLATION_KEYS.teacher.selectClass)}>
         {({ id, ...aria }) => (
@@ -140,7 +142,7 @@ export function TeacherSignaturesPage() {
       ) : loadingSignature ? (
         <Loading label={t(TRANSLATION_KEYS.auth.loading)} />
       ) : (
-        <section className="space-y-4 rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] p-5">
+        <section className="sams-card space-y-4 p-5">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-semibold">{classes.classes.find((item) => item.id === classId)?.name ?? String(classId)}</h2>
             {signature && !dirty && <Badge variant="success">{t(TRANSLATION_KEYS.signature.saved)}</Badge>}
@@ -150,7 +152,7 @@ export function TeacherSignaturesPage() {
           <canvas
             ref={canvasRef}
             aria-label={t(TRANSLATION_KEYS.signature.canvas)}
-            className="block w-full touch-none rounded-md border border-[var(--sams-border)] bg-white"
+            className="block min-h-52 w-full touch-none rounded-xl border border-[var(--sams-border)] bg-[var(--sams-muted-surface)] shadow-inner"
             onPointerDown={(event) => {
               const current = point(event)
               if (!current) return

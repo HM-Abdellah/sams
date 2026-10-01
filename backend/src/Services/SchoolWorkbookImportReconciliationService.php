@@ -28,6 +28,7 @@ final class SchoolWorkbookImportReconciliationService
         'multiple_enrollments_in_target_academic_year',
         'student_data_changed_since_reconciliation',
         'target_class_changed_since_reconciliation',
+        'student_massar_owned_by_another_school',
     ];
 
     private const NON_BLOCKING_ISSUES = [
@@ -160,7 +161,8 @@ final class SchoolWorkbookImportReconciliationService
                 }
             }
 
-            $existingStudents = $this->students->studentsByMassarCodes($massars);
+            $existingStudents = $this->students->studentsByMassarCodes($massars, $schoolId);
+            $foreignMassars = $this->students->massarCodesOwnedByOtherSchools($massars, $schoolId);
             $existingStudentIds = array_values(array_unique(array_map(
                 static fn(array $student): int => (int)$student['id'],
                 array_values($existingStudents)
@@ -215,8 +217,12 @@ final class SchoolWorkbookImportReconciliationService
                         $student = $existingStudents[$this->massarKey($massar)] ?? null;
 
                         if ($student === null) {
-                            ++$newRows;
-                            $matchStatus = 'new';
+                            if (isset($foreignMassars[$this->massarKey($massar)])) {
+                                $issues[] = 'student_massar_owned_by_another_school';
+                            } else {
+                                ++$newRows;
+                                $matchStatus = 'new';
+                            }
                         } else {
                             ++$existingRows;
                             $matchedStudentId = (int)$student['id'];
@@ -424,7 +430,7 @@ final class SchoolWorkbookImportReconciliationService
                 array_map(static fn(array $row): string => trim((string)$row['massar_code']), $rows),
                 static fn(string $value): bool => $value !== ''
             )));
-            $existingStudents = $this->students->studentsByMassarCodes($massars);
+            $existingStudents = $this->students->studentsByMassarCodes($massars, $schoolId);
 
             $existingIds = array_values(array_unique(array_map(
                 static fn(array $student): int => (int)$student['id'],

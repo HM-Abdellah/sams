@@ -8,7 +8,7 @@ import type { ArchiveData } from '../../features/archive/types.ts'
 import { asNumber, isActive } from '../../features/admin/helpers.ts'
 import { useI18n } from '../../features/i18n/useI18n.ts'
 import { TRANSLATION_KEYS, type TranslationKey } from '../../features/i18n/types.ts'
-import { AsyncStateFeedback, Badge, Button, EmptyState, ErrorState, FormField, Input, Loading, Select, Table } from '../../components/ui/index.ts'
+import { AsyncStateFeedback, Badge, Button, EmptyState, ErrorState, FormField, Input, Loading, PageHeader, Select, Table } from '../../components/ui/index.ts'
 
 type ArchiveView = 'days' | 'month' | 'day' | 'student'
 
@@ -73,13 +73,13 @@ export function AdminArchivePage() {
   const data = classes.data
 
   return (
-    <section className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold">{t(TRANSLATION_KEYS.navigation.archive)}</h1>
-        <p className="mt-2 text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.archive.readOnlyHint)}</p>
-      </header>
+    <section className="sams-admin-page space-y-8">
+      <PageHeader
+        title={t(TRANSLATION_KEYS.navigation.archive)}
+        description={t(TRANSLATION_KEYS.archive.readOnlyHint)}
+      />
 
-      <section className="grid gap-4 rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] p-5 md:grid-cols-2 lg:grid-cols-4">
+      <section className="sams-admin-toolbar grid gap-4 p-5 md:grid-cols-2 lg:grid-cols-4">
         <FormField label={t(TRANSLATION_KEYS.archive.class)}>
           {({ id, ...aria }) => (
             <Select id={id} {...aria} value={classId ? String(classId) : ''} onChange={(event) => setParam('class_id', event.target.value)}>
@@ -182,7 +182,7 @@ function ArchiveResult({
   const heading = data.class.name + ' · ' + data.class.academic_year_name
   return (
     <section className="space-y-4">
-      <div className="rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] p-5">
+      <div className="sams-card p-5">
         <h2 className="text-lg font-semibold">{heading}</h2>
         <p className="mt-1 text-sm text-[var(--sams-muted)]">
           {formatDate(data.class.academic_year_starts_on)} → {formatDate(data.class.academic_year_ends_on)}

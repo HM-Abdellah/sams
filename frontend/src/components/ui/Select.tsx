@@ -11,9 +11,10 @@ export function Select({ className, invalid = false, ...props }: SelectProps) {
       {...props}
       aria-invalid={invalid || undefined}
       className={cn(
-        'block min-h-10 w-full rounded-md border bg-[var(--sams-surface)] px-3 py-2',
-        'text-[var(--sams-text)] focus-visible:outline-2 focus-visible:outline-offset-0',
-        'focus-visible:outline-[var(--sams-focus)] disabled:cursor-not-allowed disabled:opacity-60',
+        'block min-h-11 w-full rounded-lg border bg-[var(--sams-surface)] px-3.5 py-2.5',
+        'text-[var(--sams-text)] shadow-sm',
+        'focus-visible:outline-none focus-visible:border-[var(--sams-focus)] focus-visible:ring-4 focus-visible:ring-[var(--sams-info-surface)]',
+        'disabled:cursor-not-allowed disabled:opacity-60',
         invalid ? 'border-[var(--sams-danger)]' : 'border-[var(--sams-border)]',
         className,
       )}

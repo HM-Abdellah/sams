@@ -1,0 +1,20 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "rtl": true,
+  "registries": {
+    "@reactbits-starter": "https://pro.reactbits.dev/api/r/starter/{name}.json",
+    "@reactbits-pro": {
+      "url": "https://pro.reactbits.dev/api/r/pro/{name}.json",
+      "headers": {
+        "Authorization": "Bearer ${REACTBITS_LICENSE_KEY}"
+      }
+    },
+    "@componentry": "https://componentry.dev/r/{name}.json",
+    "@skiper-ui": {
+      "url": "https://skiper-ui.com/r/{name}.json",
+      "headers": {
+        "Authorization": "Bearer ${SKIPER_LICENSE_KEY}"
+      }
+    }
+  }
+}

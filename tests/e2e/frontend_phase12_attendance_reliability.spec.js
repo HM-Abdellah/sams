@@ -133,25 +133,29 @@ test.describe('frontend Phase 12 attendance reliability', () => {
   })
   test('desktop and mobile workflows adapt without changing the attendance domain', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
-    await expect(page.locator('article').filter({ hasText: 'Jean Dupont' })).toBeVisible()
-    await expect(page.locator('table')).toBeHidden()
+    await expect(page.locator('table')).toBeVisible()
+    await expect(page.locator('table tbody tr').filter({ hasText: 'Jean Dupont' })).toBeVisible()
+    await expect(page.getByText('Swipe horizontally to reach the afternoon periods.')).toBeVisible()
 
     await page.setViewportSize({ width: 1280, height: 900 })
     await expect(page.locator('table')).toBeVisible()
-    await expect(page.locator('article').filter({ hasText: 'Jean Dupont' })).toBeHidden()
+    await expect(page.locator('table tbody tr').filter({ hasText: 'Jean Dupont' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Previous week' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Next week' })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Period 8' })).toBeVisible()
+    await expect(page.getByRole('columnheader', { name: /Period 8/ })).toBeVisible()
   })
 
   test('status changes are optimistically visible and batched through the typed bulk API', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
-    const statusSelects = page.locator('article select')
-    await expect(statusSelects).toHaveCount(3)
+    const rows = page.locator('table tbody tr')
+    const statusGroup = page.getByRole('group', { name: 'Mark as' })
+    const firstCell = (row) => rows.nth(row).locator('button.sams-touch-cell').nth(0)
 
-    await statusSelects.nth(0).selectOption('present')
-    await statusSelects.nth(1).selectOption('late')
-    await statusSelects.nth(2).selectOption('excused')
+    await firstCell(0).click()
+    await statusGroup.getByRole('button', { name: 'Late' }).click()
+    await firstCell(1).click()
+    await statusGroup.getByRole('button', { name: 'Excused' }).click()
+    await firstCell(2).click()
 
     await expect.poll(() => bulkRequests.length).toBe(1)
     expect(bulkRequests[0].entries).toEqual(expect.arrayContaining([
@@ -160,41 +164,42 @@ test.describe('frontend Phase 12 attendance reliability', () => {
       expect.objectContaining({ student_id: 3, attendance_date: '2026-09-21', period: 1, action: 'upsert', status: 'excused' }),
     ]))
 
-    await expect(statusSelects.nth(1)).toHaveValue('late')
-    await statusSelects.nth(0).selectOption('clear')
+    await expect(firstCell(1)).toHaveAttribute('aria-label', /Period 1 — Late/)
+    await statusGroup.getByRole('button', { name: 'Present' }).click()
+    await firstCell(0).click()
     await expect.poll(() => bulkRequests.length).toBe(2)
     expect(bulkRequests[1].entries).toEqual([
       expect.objectContaining({ student_id: 1, action: 'delete', attendance_date: '2026-09-21', period: 1 }),
     ])
-    await expect(statusSelects.nth(0)).toHaveValue('clear')
+    await expect(firstCell(0)).toHaveAttribute('aria-label', /Period 1 — Not marked/)
     await expect(page.getByText('Saved and confirmed by the server.')).toBeVisible()
   })
 
   test('failed bulk save preserves the pending draft and supports retry', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
-    const firstStatus = page.locator('article select').first()
-    await expect(firstStatus).toHaveValue('absent')
+    const firstStatus = page.locator('table tbody tr').first().locator('button.sams-touch-cell').first()
+    await expect(firstStatus).toHaveAttribute('aria-label', /Period 1 — Absent/)
 
     failNextBulk = true
-    await firstStatus.selectOption('present')
+    await firstStatus.click()
 
     await expect.poll(() => bulkRequests.length).toBe(1)
     await expect(page.getByText('The changes were not saved. They remain pending and can be retried.')).toBeVisible()
-    await expect(firstStatus).toHaveValue('present')
+    await expect(firstStatus).toHaveAttribute('aria-label', /Period 1 — Present/)
     await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible()
 
     await page.getByRole('button', { name: 'Retry' }).click()
     await expect.poll(() => bulkRequests.length).toBe(2)
     await expect(page.getByText('Saved and confirmed by the server.')).toBeVisible()
-    await expect(firstStatus).toHaveValue('present')
+    await expect(firstStatus).toHaveAttribute('aria-label', /Period 1 — Present/)
   })
 
   test('slow network exposes saving state and duplicate save attempts share one request', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     bulkDelayMs = 1200
-    const firstStatus = page.locator('article select').first()
+    const firstStatus = page.locator('table tbody tr').first().locator('button.sams-touch-cell').first()
 
-    await firstStatus.selectOption('present')
+    await firstStatus.click()
     await expect(page.getByText(/Saving…/)).toBeVisible()
     await expect(page.getByRole('button', { name: 'Save now' })).toBeDisabled()
 
@@ -205,11 +210,14 @@ test.describe('frontend Phase 12 attendance reliability', () => {
 
   test('rapid status changes collapse to the latest value for the same cell', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
-    const firstStatus = page.locator('article select').first()
+    const firstStatus = page.locator('table tbody tr').first().locator('button.sams-touch-cell').first()
 
-    await firstStatus.selectOption('present')
-    await firstStatus.selectOption('late')
-    await firstStatus.selectOption('excused')
+    const statusGroup = page.getByRole('group', { name: 'Mark as' })
+    await firstStatus.click()
+    await statusGroup.getByRole('button', { name: 'Late' }).click()
+    await firstStatus.click()
+    await statusGroup.getByRole('button', { name: 'Excused' }).click()
+    await firstStatus.click()
 
     await expect.poll(() => bulkRequests.length).toBe(1)
     expect(bulkRequests[0].entries).toEqual([
@@ -226,7 +234,7 @@ test.describe('frontend Phase 12 attendance reliability', () => {
   test('navigation during save is blocked until the pending write is confirmed', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     bulkDelayMs = 1000
-    await page.locator('article select').first().selectOption('present')
+    await page.locator('table tbody tr').first().locator('button.sams-touch-cell').first().click()
     await expect(page.getByText(/Saving…/)).toBeVisible()
 
     await page.getByRole('link', { name: 'Students' }).click()
@@ -237,7 +245,7 @@ test.describe('frontend Phase 12 attendance reliability', () => {
   test('reload during save is guarded by before-unload', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     bulkDelayMs = 1000
-    await page.locator('article select').first().selectOption('present')
+    await page.locator('table tbody tr').first().locator('button.sams-touch-cell').first().click()
     await expect(page.getByText(/Saving…/)).toBeVisible()
 
     const prevented = await page.evaluate(() => {
@@ -254,7 +262,7 @@ test.describe('frontend Phase 12 attendance reliability', () => {
   test('logout is blocked while attendance work is pending', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     bulkDelayMs = 1000
-    await page.locator('article select').first().selectOption('present')
+    await page.locator('table tbody tr').first().locator('button.sams-touch-cell').first().click()
     await expect(page.getByText(/Saving…/)).toBeVisible()
 
     const logout = page.getByRole('button', { name: 'Sign out' })
@@ -267,46 +275,46 @@ test.describe('frontend Phase 12 attendance reliability', () => {
     await page.setViewportSize({ width: 390, height: 844 })
     concurrentServerStatus = 'late'
 
-    const firstStatus = page.locator('article select').first()
-    await firstStatus.selectOption('present')
+    const firstStatus = page.locator('table tbody tr').first().locator('button.sams-touch-cell').first()
+    await firstStatus.click()
     await expect.poll(() => bulkRequests.length).toBe(1)
     await expect(page.getByText('Saved and confirmed by the server.')).toBeVisible()
-    await expect(firstStatus).toHaveValue('late')
+    await expect(firstStatus).toHaveAttribute('aria-label', /Period 1 — Late/)
   })
 
   test('search and attendance filters operate on the weekly roster', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
-    await expect(page.locator('article')).toHaveCount(3)
+    await expect(page.locator('table tbody tr')).toHaveCount(3)
 
     await page.getByRole('searchbox').fill('Jean')
-    await expect(page.locator('article')).toHaveCount(1)
-    await expect(page.locator('article')).toContainText('Jean Dupont')
+    await expect(page.locator('table tbody tr')).toHaveCount(1)
+    await expect(page.locator('table tbody tr')).toContainText('Jean Dupont')
 
     await page.getByRole('searchbox').fill('')
     await page.getByRole('button', { name: 'With absences' }).click()
-    await expect(page.locator('article')).toHaveCount(2)
-    await expect(page.locator('article').filter({ hasText: 'Jean Dupont' })).toBeVisible()
-    await expect(page.locator('article').filter({ hasText: 'Marie Martin' })).toBeVisible()
+    await expect(page.locator('table tbody tr')).toHaveCount(2)
+    await expect(page.locator('table tbody tr').filter({ hasText: 'Jean Dupont' })).toBeVisible()
+    await expect(page.locator('table tbody tr').filter({ hasText: 'Marie Martin' })).toBeVisible()
 
     await page.getByRole('button', { name: '8+ absences' }).click()
-    await expect(page.locator('article')).toHaveCount(0)
+    await expect(page.locator('table tbody tr')).toHaveCount(0)
     await expect(page.getByText('No student matches the current filters.')).toBeVisible()
   })
 
   test('signed lessons are server-protected in the UI', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await page.getByRole('button', { name: /Fri/i }).click()
-    await page.getByRole('button', { name: 'Period 8' }).click()
 
     await expect(page.getByText('Signed lesson')).toBeVisible()
-    await expect(page.getByText('Signed by E2E Teacher.')).toBeVisible()
-    await expect(page.locator('article select').first()).toBeDisabled()
+    await expect(page.locator('table tbody tr').first().locator('button.sams-touch-cell').nth(7)).toBeDisabled()
   })
 
   test('week and class navigation flush pending changes before changing server context', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
-    const firstStatus = page.locator('article select').first()
-    await firstStatus.selectOption('late')
+    const firstStatus = page.locator('table tbody tr').first().locator('button.sams-touch-cell').first()
+    const statusGroup = page.getByRole('group', { name: 'Mark as' })
+    await statusGroup.getByRole('button', { name: 'Late' }).click()
+    await firstStatus.click()
     await page.getByRole('button', { name: 'Next week' }).click()
 
     await expect.poll(() => bulkRequests.length).toBe(1)

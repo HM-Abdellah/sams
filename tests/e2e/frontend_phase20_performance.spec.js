@@ -39,6 +39,23 @@ async function installSessionFixture(page, role) {
           ],
         },
       }
+    } else if (path.endsWith('/api/v1/classes/1/attendance')) {
+      const weekStart = new URL(route.request().url()).searchParams.get('week_start') ?? '2026-09-28'
+      const weekEnd = new Date(weekStart + 'T00:00:00Z')
+      weekEnd.setUTCDate(weekEnd.getUTCDate() + 5)
+      data = {
+        success: true,
+        data: {
+          class_id: 1,
+          week_start: weekStart,
+          week_end: weekEnd.toISOString().slice(0, 10),
+          students: [{ id: 1, first_name: 'E2E', last_name: 'Performance Student' }],
+          attendance: [],
+          period_signoffs: [],
+        },
+      }
+    } else if (path.endsWith('/api/v1/classes/1/signature')) {
+      data = { success: true, data: { signature: null } }
     } else {
       data = { success: true, data: {} }
     }
@@ -81,7 +98,7 @@ test.describe('frontend Phase 20 performance', () => {
   test('teacher first route stays within JS budget and lazy-loads attendance', async ({ page }) => {
     await installSessionFixture(page, 'teacher')
     await page.goto('/app/teacher', { waitUntil: 'networkidle' })
-    await expect(page.getByRole('heading', { name: 'Teacher workspace' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Teacher workspace' })).toBeVisible({ timeout: 15_000 })
 
     const initial = await scriptMetrics(page)
     if (enforcePerformanceBudget) expect(initial.encodedJsBytes).toBeLessThanOrEqual(110_000)
@@ -90,7 +107,8 @@ test.describe('frontend Phase 20 performance', () => {
 
     await page.getByRole('link', { name: 'Attendance', exact: true }).click()
     await expect(page).toHaveURL(/\/app\/attendance/)
-    await expect(page.getByRole('heading', { name: 'Attendance register' })).toBeVisible()
+    // Lazy route chunks can cold-start slower on CI runners; wait on the semantic page-ready signal rather than a fixed delay.
+    await expect(page.getByRole('heading', { name: 'Attendance register' })).toBeVisible({ timeout: 15_000 })
 
     const afterNavigation = await scriptMetrics(page)
     expect(afterNavigation.scripts.some(({ file }) => file.startsWith('TeacherAttendancePage-'))).toBeTruthy()

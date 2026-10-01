@@ -2,7 +2,7 @@ import { Link } from 'react-router'
 import { useI18n } from '../../features/i18n/useI18n.ts'
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
 import { useTeacherClasses } from '../../features/classes/useTeacherClasses.ts'
-import { AsyncStateFeedback, EmptyState } from '../../components/ui/index.ts'
+import { AsyncStateFeedback, EmptyState, PageHeader } from '../../components/ui/index.ts'
 
 export function TeacherDashboardPage() {
   const { t } = useI18n()
@@ -25,11 +25,11 @@ export function TeacherDashboardPage() {
 
   return (
     <section className="space-y-6">
-      <header>
-        <p className="text-sm font-medium text-[var(--sams-muted)]">SAMS</p>
-        <h1 className="mt-1 text-2xl font-semibold">{t(TRANSLATION_KEYS.teacher.dashboard)}</h1>
-        <p className="mt-2 text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.teacher.welcome)}</p>
-      </header>
+      <PageHeader
+        eyebrow="SAMS"
+        title={t(TRANSLATION_KEYS.teacher.dashboard)}
+        description={t(TRANSLATION_KEYS.teacher.welcome)}
+      />
 
       <AsyncStateFeedback
         state={classes}
@@ -48,9 +48,9 @@ export function TeacherDashboardPage() {
           description={t(TRANSLATION_KEYS.teacher.noClasses)}
         />
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div>
-            <h2 className="font-semibold">{t(TRANSLATION_KEYS.teacher.classes)}</h2>
+            <h2 className="text-lg font-semibold tracking-tight">{t(TRANSLATION_KEYS.teacher.classes)}</h2>
             <p className="text-sm text-[var(--sams-muted)]">
               {classes.classes.length} {t(TRANSLATION_KEYS.teacher.classesAssigned)}
             </p>
@@ -59,9 +59,9 @@ export function TeacherDashboardPage() {
             {classes.classes.map((item) => (
               <article
                 key={item.id}
-                className="rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] p-4"
+                className="sams-card overflow-hidden p-5"
               >
-                <h3 className="font-semibold">{item.name}</h3>
+                <h3 className="text-lg font-semibold tracking-tight">{item.name}</h3>
                 {(item.level || item.branch) && (
                   <p className="mt-1 text-sm text-[var(--sams-muted)]">
                     {[item.level, item.branch].filter(Boolean).join(' · ')}
@@ -70,13 +70,13 @@ export function TeacherDashboardPage() {
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Link
                     to={`/app/attendance?class_id=${item.id}`}
-                    className="inline-flex min-h-9 items-center justify-center rounded-md bg-[var(--sams-action)] px-3 text-sm font-medium text-[var(--sams-action-foreground)]"
+                    className="inline-flex min-h-10 items-center justify-center rounded-lg bg-[var(--sams-action)] px-4 text-sm font-semibold text-[var(--sams-action-foreground)] shadow-sm transition hover:bg-[var(--sams-action-hover)]"
                   >
                     {t(TRANSLATION_KEYS.teacher.openAttendance)}
                   </Link>
                   <Link
                     to={`/app/students?class_id=${item.id}`}
-                    className="inline-flex min-h-9 items-center justify-center rounded-md border border-[var(--sams-border)] px-3 text-sm font-medium text-[var(--sams-text)]"
+                    className="inline-flex min-h-10 items-center justify-center rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] px-4 text-sm font-semibold text-[var(--sams-text)] shadow-sm transition hover:bg-[var(--sams-action-soft)]"
                   >
                     {t(TRANSLATION_KEYS.teacher.openStudents)}
                   </Link>

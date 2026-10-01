@@ -6,7 +6,7 @@ import { isActive } from '../../features/admin/helpers.ts'
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
 import { useI18n } from '../../features/i18n/useI18n.ts'
 import {
-  Badge, Button, EmptyState, ErrorState, FormField, Input, Loading, Select, Table,
+  Badge, Button, EmptyState, ErrorState, FormField, Input, Loading, PageHeader, Select, Table,
 } from '../../components/ui/index.ts'
 
 export function AdminTeachersPage() {
@@ -66,13 +66,13 @@ export function AdminTeachersPage() {
   }
   const { teachers, subjects, teachings, classes } = resource.data
   return (
-    <section className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold">{t(TRANSLATION_KEYS.navigation.teachers)}</h1>
-        <p className="mt-2 text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.admin.teacherAdminHint)}</p>
-      </header>
+    <section className="sams-admin-page space-y-8">
+      <PageHeader
+        title={t(TRANSLATION_KEYS.navigation.teachers)}
+        description={t(TRANSLATION_KEYS.admin.teacherAdminHint)}
+      />
       {error && <p role="alert" className="text-sm text-[var(--sams-danger)]">{error}</p>}      <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] p-5 space-y-4">
+        <section className="sams-card p-5 space-y-4">
           <h2 className="text-lg font-semibold">{t(TRANSLATION_KEYS.admin.assignTeaching)}</h2>
           <FormField label={t(TRANSLATION_KEYS.admin.teacher)}>
             {({ id, ...aria }) => <Select id={id} {...aria} value={selectedTeacher} onChange={(e) => setSelectedTeacher(e.target.value)}><option value="">{t(TRANSLATION_KEYS.admin.selectTeacher)}</option>{teachers.map((x) => <option key={x.id} value={x.id}>{x.full_name}</option>)}</Select>}
@@ -85,7 +85,7 @@ export function AdminTeachersPage() {
           </FormField>
           <Button type="button" disabled={!selectedTeacher || !selectedSubject || !selectedClass || saving} loading={saving} onClick={() => void assign()}>{t(TRANSLATION_KEYS.admin.assign)}</Button>
         </section>
-        <section className="rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] p-5 space-y-4">
+        <section className="sams-card p-5 space-y-4">
           <h2 className="text-lg font-semibold">{editingSubject ? t(TRANSLATION_KEYS.admin.editSubject) : t(TRANSLATION_KEYS.admin.createSubject)}</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField label={t(TRANSLATION_KEYS.admin.subjectCode)}>{({ id, ...aria }) => <Input id={id} {...aria} value={code} onChange={(e) => setCode(e.target.value)} />}</FormField>

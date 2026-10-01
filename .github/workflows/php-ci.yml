@@ -412,6 +412,10 @@ jobs:
         working-directory: frontend
         run: npm ci --no-audit --no-fund
 
+      - name: Verify frontend dependency graph
+        working-directory: frontend
+        run: npm audit --audit-level=high
+
       - name: Build production frontend
         working-directory: frontend
         run: npm run build -- --base /sams/
@@ -421,6 +425,7 @@ jobs:
         with:
           name: sams-frontend-dist
           path: frontend/dist
+          include-hidden-files: true
           if-no-files-found: error
 
   apache:
@@ -1066,6 +1071,14 @@ jobs:
             sleep 1
           done
           curl -fsS http://127.0.0.1/sams/login > /dev/null
+
+          static_headers=$(curl -sSI http://127.0.0.1/sams/login)
+          printf '%s\n' "$static_headers" | grep -Fqi 'X-Content-Type-Options: nosniff'
+          printf '%s\n' "$static_headers" | grep -Fqi 'X-Frame-Options: DENY'
+          printf '%s\n' "$static_headers" | grep -Fqi 'Referrer-Policy: same-origin'
+          printf '%s\n' "$static_headers" | grep -Fqi 'Permissions-Policy: camera=(), geolocation=(), microphone=()'
+          printf '%s\n' "$static_headers" | grep -Fqi 'Content-Security-Policy:'
+          echo "[PASS] React static responses expose baseline security headers."
 
           if grep -RInE 'test\.(skip|fixme|only)|describe\.(skip|only)' tests/e2e/frontend_phase22_real_backend_smoke.spec.js tests/e2e/frontend_phase23_production_integration.spec.js; then
             echo "Production integration suite contains skipped/focused tests."

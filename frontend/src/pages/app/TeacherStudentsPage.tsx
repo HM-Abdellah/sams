@@ -148,7 +148,7 @@ export function TeacherStudentsPage() {
           {selectedClass === null ? (
             <EmptyState title={t(TRANSLATION_KEYS.teacher.selectClass)} />
           ) : (
-            <section className="rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] p-5">
+            <section className="sams-card p-5">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <h2 className="text-lg font-semibold">{selectedClass.name}</h2>

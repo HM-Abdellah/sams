@@ -4,7 +4,7 @@ import { useAdminResource } from '../../features/admin/useAdminResource.ts'
 import { dateTime } from '../../features/admin/helpers.ts'
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
 import { useI18n } from '../../features/i18n/useI18n.ts'
-import { Badge, Button, EmptyState, ErrorState, FormField, Input, Loading, Select, Table } from '../../components/ui/index.ts'
+import { Badge, Button, EmptyState, ErrorState, FormField, Input, Loading, PageHeader, Pagination, Select, Table } from '../../components/ui/index.ts'
 
 export function AdminAuditPage() {
   const { t } = useI18n()
@@ -31,9 +31,12 @@ export function AdminAuditPage() {
   const changePage = (page: number) => setFilters((current) => ({ ...current, page }))
 
   return (
-    <section className="space-y-6">
-      <header><h1 className="text-2xl font-semibold">{t(TRANSLATION_KEYS.navigation.audit)}</h1><p className="mt-2 text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.admin.auditHint)}</p></header>
-      <section className="grid gap-4 rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] p-5 md:grid-cols-2 lg:grid-cols-3">
+    <section className="sams-admin-page space-y-8">
+      <PageHeader
+        title={t(TRANSLATION_KEYS.navigation.audit)}
+        description={t(TRANSLATION_KEYS.admin.auditHint)}
+      />
+      <section className="sams-admin-toolbar grid gap-4 p-5 md:grid-cols-2 lg:grid-cols-3">
         <FormField label={t(TRANSLATION_KEYS.admin.user)}>
           {({ id, ...aria }) => <Select id={id} {...aria} value={draftUser} onChange={(e) => setDraftUser(e.target.value)}><option value="">{t(TRANSLATION_KEYS.admin.allUsers)}</option>{data.users.map((x) => <option key={x.id} value={x.id}>{x.full_name} · {x.username}</option>)}</Select>}
         </FormField>
@@ -55,11 +58,14 @@ export function AdminAuditPage() {
           </tr>)}
         </Table>
       )}
-      <div className="flex flex-wrap items-center gap-3">
-        <Button type="button" variant="secondary" disabled={data.audit.page <= 1} onClick={() => changePage(data.audit.page - 1)}>{t(TRANSLATION_KEYS.admin.previous)}</Button>
-        <span className="text-sm">{data.audit.page} / {data.audit.total_pages}</span>
-        <Button type="button" variant="secondary" disabled={data.audit.page >= data.audit.total_pages} onClick={() => changePage(data.audit.page + 1)}>{t(TRANSLATION_KEYS.admin.next)}</Button>
-      </div>
+      <Pagination
+        page={data.audit.page}
+        pageCount={data.audit.total_pages}
+        previousLabel={t(TRANSLATION_KEYS.admin.previous)}
+        nextLabel={t(TRANSLATION_KEYS.admin.next)}
+        ariaLabel={t(TRANSLATION_KEYS.admin.pagination)}
+        onPageChange={changePage}
+      />
     </section>
   )
 }

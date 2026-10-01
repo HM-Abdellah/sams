@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SAMS Phase 28 — Attendance Interaction Prototype</title>
+<style>
+:root {
+  --bg:#f5f5f5;
+  --surface:#fff;
+  --text:#171717;
+  --muted:#6b6b6b;
+  --border:#d4d4d4;
+  --action:#171717;
+  --action-fg:#fff;
+  --focus:#2563eb;
+  --accent:#1d4ed8;
+  --danger:#b91c1c;
+  --danger-bg:#fef2f2;
+  --success:#166534;
+  --success-bg:#f0fdf4;
+  --warning:#a16207;
+  --warning-bg:#fefce8;
+  --space-1:4px; --space-2:8px; --space-3:12px;
+  --space-4:16px; --space-5:20px; --space-6:24px;
+  --space-8:32px; --space-10:40px; --space-12:48px;
+  --r-control:6px; --r-panel:8px; --r-surface:12px;
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text)}
+button,input,select{font:inherit}
+button{cursor:pointer}
+a{color:var(--accent)}
+.prototype{max-width:1184px;margin:0 auto;padding:32px 16px 64px}
+.prototype > header{margin-bottom:24px}
+.prototype h1{font-size:26px;line-height:34px;margin:0 0 8px;font-weight:600}
+.prototype h2{font-size:19px;line-height:26px;margin:0 0 12px;font-weight:600}
+.prototype p{margin:0}
+.note{color:var(--muted);font-size:14px;line-height:20px}
+.grid{display:grid;gap:24px}
+.mobile-grid{grid-template-columns:repeat(2,minmax(0,390px))}
+.frame{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-surface);overflow:hidden}
+.frame-head{padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600}
+.screen{padding:16px}
+.stack{display:grid;gap:12px}
+.topline{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.topline strong{font-weight:600}
+.context{display:grid;gap:8px}
+.control-label{display:grid;gap:6px;font-size:14px;font-weight:500}
+select,input[type="search"]{min-height:40px;border:1px solid var(--border);border-radius:var(--r-control);background:#fff;padding:8px 12px;color:var(--text)}
+.state{display:flex;align-items:center;justify-content:space-between;gap:12px;border-block:1px solid var(--border);padding:12px 0}
+.counts{display:flex;gap:12px;flex-wrap:wrap;font-size:13px;line-height:18px}
+.counts span{white-space:nowrap}
+.save{min-height:40px;border:0;border-radius:var(--r-control);padding:8px 14px;background:var(--action);color:var(--action-fg);font-weight:500}
+.save[data-state="saved"]{background:var(--success)}
+.rail{display:flex;gap:8px;overflow-x:auto;padding:1px 0 5px;scrollbar-width:thin}
+.rail button{flex:0 0 auto;min-height:40px;border:1px solid var(--border);border-radius:var(--r-control);background:#fff;padding:7px 10px;text-align:start}
+.rail button[aria-pressed="true"]{background:var(--action);color:var(--action-fg);border-color:var(--action)}
+.rail .minor{display:block;font-size:12px;opacity:.75;margin-top:2px}
+.search-row{display:grid;gap:8px}
+.filter-row{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
+.filter{min-height:40px;border:1px solid var(--border);border-radius:var(--r-control);background:#fff;padding:8px 11px;white-space:nowrap}
+.filter[aria-pressed="true"]{background:var(--action);color:#fff;border-color:var(--action)}
+.result{font-size:13px;color:var(--muted)}
+.student{border:1px solid var(--border);border-radius:var(--r-panel);padding:12px;display:grid;gap:12px}
+.student-top{display:flex;justify-content:space-between;gap:12px}
+.student-name{font-weight:600;line-height:20px}
+.absences{font-size:12px;color:var(--muted);margin-top:3px}
+.student-day{font-size:12px;color:var(--muted);white-space:nowrap}
+.native-status{display:grid;gap:6px}
+.native-status label,.status-group legend{font-size:13px;font-weight:500}
+.status-group{margin:0;padding:0;border:0;display:grid;gap:8px}
+.status-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.status-option{position:relative;min-width:0}
+.status-option input{position:absolute;inset:0;opacity:0}
+.status-option label{display:flex;align-items:center;justify-content:center;min-height:40px;border:1px solid var(--border);border-radius:var(--r-control);padding:8px 6px;font-size:12px;text-align:center;background:#fff}
+.status-option input:checked + label{border-color:var(--text);box-shadow:inset 0 0 0 1px var(--text);background:#f5f5f5;font-weight:600}
+.status-option input:focus-visible + label{outline:2px solid var(--focus);outline-offset:2px}
+.protected{border-color:#a16207;background:var(--warning-bg)}
+.protected .status-option{opacity:.55;pointer-events:none}
+.desktop-wrap{margin-top:24px}
+.desktop-frame{min-width:0}
+.toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center}
+.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:var(--r-panel);background:#fff}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:12px;border-bottom:1px solid var(--border);text-align:start;vertical-align:middle}
+th{font-size:13px;color:var(--muted);font-weight:500;background:#fafafa}
+tr:last-child td{border-bottom:0}
+.table-status{min-width:180px}
+.small{font-size:12px;color:var(--muted)}
+@media (max-width:900px){.mobile-grid{grid-template-columns:1fr}.prototype{max-width:760px}.toolbar{grid-template-columns:1fr}}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<main class="prototype">
+<header>
+<h1>SAMS — Teacher Attendance / Phase 28</h1>
+<p class="note">Interaction lab only. Nothing here is wired into the production React application.</p>
+</header>
+<section class="grid mobile-grid" aria-label="Mobile interaction comparison">
+<article class="frame">
+<div class="frame-head">A — Native select baseline · 390px</div>
+<div class="screen stack">
+<div class="topline"><strong>Feuille de présence</strong><span class="small">Prof. Martin</span></div>
+<label class="control-label">Classe
+<select><option>TCS 1</option><option>TCS 2</option></select>
+</label>
+<div class="context"><span class="small">Semaine · 28 sept. – 3 oct. 2026</span></div>
+<div class="state">
+<div class="counts"><span>Présents 28</span><span>Absents 2</span><span>Retard 1</span></div>
+<button class="save" data-state="unsaved" type="button">Enregistrer</button>
+</div>
+<div class="rail" data-role="days">
+<button type="button" aria-pressed="true">Lun<span class="minor">28/09</span></button>
+<button type="button" aria-pressed="false">Mar<span class="minor">29/09</span></button>
+<button type="button" aria-pressed="false">Mer<span class="minor">30/09</span></button>
+<button type="button" aria-pressed="false">Jeu<span class="minor">01/10</span></button>
+<button type="button" aria-pressed="false">Ven<span class="minor">02/10</span></button>
+<button type="button" aria-pressed="false">Sam<span class="minor">03/10</span></button>
+</div>
+<div class="rail" data-role="periods">
+<button type="button" aria-pressed="true">P1<span class="minor">08:00–09:00</span></button>
+<button type="button" aria-pressed="false">P2<span class="minor">09:00–10:00</span></button>
+<button type="button" aria-pressed="false">P3<span class="minor">10:00–11:00</span></button>
+<button type="button" aria-pressed="false">P4<span class="minor">11:00–12:00</span></button>
+<button type="button" aria-pressed="false">P5<span class="minor">14:00–15:00</span></button>
+<button type="button" aria-pressed="false">P6<span class="minor">15:00–16:00</span></button>
+<button type="button" aria-pressed="false">P7<span class="minor">16:00–17:00</span></button>
+<button type="button" aria-pressed="false">P8<span class="minor">17:00–18:00</span></button>
+</div>
+<div class="search-row">
+<input type="search" placeholder="Rechercher un élève" aria-label="Rechercher un élève">
+<div class="filter-row">
+<button class="filter" aria-pressed="true" type="button">Tous</button>
+<button class="filter" aria-pressed="false" type="button">Avec absences</button>
+<button class="filter" aria-pressed="false" type="button">8+ absences</button>
+</div>
+</div>
+<p class="result">30 / 30 élèves affichés</p>
+<article class="student">
+<div class="student-top"><div><div class="student-name">1. Lina Benali</div><div class="absences">Absences · 2</div></div><span class="student-day">Lun</span></div>
+<div class="native-status">
+<label for="native-a">Statut</label>
+<select id="native-a"><option>Présent</option><option>Non marqué</option><option>Absent</option><option>Retard</option><option>Excusé</option></select>
+</div>
+</article>
+<article class="student protected">
+<div class="student-top"><div><div class="student-name">2. Adam El Mansouri</div><div class="absences">Absences · 8 · Protégé</div></div><span class="student-day">Lun</span></div>
+<div class="native-status">
+<label for="native-b">Statut · leçon signée</label>
+<select id="native-b" disabled><option>Présent</option></select>
+</div>
+</article>
+</div>
+</article>
+<article class="frame">
+<div class="frame-head">B — Direct status experiment · 390px</div>
+<div class="screen stack">
+<div class="topline"><strong>Feuille de présence</strong><span class="small">Prof. Martin</span></div>
+<label class="control-label">Classe
+<select><option>TCS 1</option><option>TCS 2</option></select>
+</label>
+<div class="context"><span class="small">Semaine · 28 sept. – 3 oct. 2026</span></div>
+<div class="state">
+<div class="counts"><span>Présents 28</span><span>Absents 2</span><span>Retard 1</span></div>
+<button class="save" data-state="unsaved" type="button">Enregistrer</button>
+</div>
+<div class="rail" data-role="days"><button type="button" aria-pressed="true">Lun<span class="minor">28/09</span></button>
+<button type="button" aria-pressed="false">Mar<span class="minor">29/09</span></button>
+<button type="button" aria-pressed="false">Mer<span class="minor">30/09</span></button>
+<button type="button" aria-pressed="false">Jeu<span class="minor">01/10</span></button>
+<button type="button" aria-pressed="false">Ven<span class="minor">02/10</span></button>
+<button type="button" aria-pressed="false">Sam<span class="minor">03/10</span></button>
+</div>
+<div class="rail" data-role="periods">
+<button type="button" aria-pressed="true">P1<span class="minor">08:00–09:00</span></button>
+<button type="button" aria-pressed="false">P2<span class="minor">09:00–10:00</span></button>
+<button type="button" aria-pressed="false">P3<span class="minor">10:00–11:00</span></button>
+<button type="button" aria-pressed="false">P4<span class="minor">11:00–12:00</span></button>
+<button type="button" aria-pressed="false">P5<span class="minor">14:00–15:00</span></button>
+<button type="button" aria-pressed="false">P6<span class="minor">15:00–16:00</span></button>
+<button type="button" aria-pressed="false">P7<span class="minor">16:00–17:00</span></button>
+<button type="button" aria-pressed="false">P8<span class="minor">17:00–18:00</span></button>
+</div>
+<div class="search-row">
+<input type="search" placeholder="Rechercher un élève" aria-label="Rechercher un élève">
+<div class="filter-row">
+<button class="filter" aria-pressed="true" type="button">Tous</button>
+<button class="filter" aria-pressed="false" type="button">Avec absences</button>
+<button class="filter" aria-pressed="false" type="button">8+ absences</button>
+</div>
+</div>
+<p class="result">30 / 30 élèves affichés</p>
+<article class="student">
+<div class="student-top"><div><div class="student-name">1. Lina Benali</div><div class="absences">Absences · 2</div></div><span class="student-day">Lun</span></div>
+<fieldset class="status-group">
+<legend>Statut</legend>
+<div class="status-options">
+<div class="status-option"><input id="b1" name="status-1" type="radio" checked><label for="b1">Présent</label></div>
+<div class="status-option"><input id="b2" name="status-1" type="radio"><label for="b2">Non marqué</label></div>
+<div class="status-option"><input id="b3" name="status-1" type="radio"><label for="b3">Absent</label></div>
+<div class="status-option"><input id="b4" name="status-1" type="radio"><label for="b4">Retard</label></div>
+<div class="status-option"><input id="b5" name="status-1" type="radio"><label for="b5">Excusé</label></div>
+</div>
+</fieldset>
+</article>
+<article class="student protected">
+<div class="student-top"><div><div class="student-name">2. Adam El Mansouri</div><div class="absences">Absences · 8 · Protégé</div></div><span class="student-day">Lun</span></div>
+<fieldset class="status-group">
+<legend>Statut · leçon signée</legend>
+<div class="status-options">
+<div class="status-option"><input id="bp1" name="status-2" type="radio" checked disabled><label for="bp1">Présent</label></div>
+<div class="status-option"><input id="bp2" name="status-2" type="radio" disabled><label for="bp2">Non marqué</label></div>
+<div class="status-option"><input id="bp3" name="status-2" type="radio" disabled><label for="bp3">Absent</label></div>
+<div class="status-option"><input id="bp4" name="status-2" type="radio" disabled><label for="bp4">Retard</label></div>
+<div class="status-option"><input id="bp5" name="status-2" type="radio" disabled><label for="bp5">Excusé</label></div>
+</div>
+</fieldset>
+</article>
+</div>
+</article>
+</section>
+<section class="desktop-wrap">
+<h2>Desktop reference · 1440px class</h2>
+<div class="frame desktop-frame">
+<div class="screen stack">
+<div class="topline"><strong>Feuille de présence</strong><span class="small">1152px max content width</span></div>
+<div class="toolbar">
+<input type="search" placeholder="Rechercher un élève" aria-label="Recherche">
+<div class="filter-row">
+<button class="filter" aria-pressed="true" type="button">Tous</button>
+<button class="filter" aria-pressed="false" type="button">Avec absences</button>
+<button class="filter" aria-pressed="false" type="button">8+ absences</button>
+</div>
+</div>
+<div class="rail" data-role="periods">
+<button type="button" aria-pressed="true">P1<span class="minor">08:00–09:00</span></button>
+<button type="button" aria-pressed="false">P2<span class="minor">09:00–10:00</span></button>
+<button type="button" aria-pressed="false">P3<span class="minor">10:00–11:00</span></button>
+<button type="button" aria-pressed="false">P4<span class="minor">11:00–12:00</span></button>
+<button type="button" aria-pressed="false">P5<span class="minor">14:00–15:00</span></button>
+<button type="button" aria-pressed="false">P6<span class="minor">15:00–16:00</span></button>
+<button type="button" aria-pressed="false">P7<span class="minor">16:00–17:00</span></button>
+<button type="button" aria-pressed="false">P8<span class="minor">17:00–18:00</span></button>
+</div>
+<div class="table-wrap">
+<table>
+<caption class="small" style="text-align:start;padding:12px">Attendance roster</caption>
+<thead><tr><th>#</th><th>Élève</th><th>Statut</th><th>Absences</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><strong>Lina Benali</strong></td><td class="table-status"><select><option>Présent</option><option>Absent</option><option>Retard</option><option>Excusé</option><option>Non marqué</option></select></td><td>2</td></tr>
+<tr><td>2</td><td><strong>Adam El Mansouri</strong></td><td class="table-status"><select disabled><option>Présent · protégé</option></select></td><td>8</td></tr>
+<tr><td>3</td><td><strong>سارة العلوي</strong></td><td class="table-status"><select><option>Non marqué</option><option>Présent</option><option>Absent</option><option>Retard</option><option>Excusé</option></select></td><td>0</td></tr>
+</tbody>
+</table>
+</div>
+<p class="note">Prototype questions: status density, period-rail discoverability, save-state prominence, and protected-state clarity.</p>
+</div>
+</div>
+</section>
+<script>
+for (const group of document.querySelectorAll('[data-role]')) {
+  group.addEventListener('click', e => {
+    const target = e.target.closest('button');
+    if (!target) return;
+    for (const button of group.querySelectorAll('button')) button.setAttribute('aria-pressed', String(button === target));
+  });
+}
+for (const button of document.querySelectorAll('.filter')) {
+  button.addEventListener('click', () => {
+    for (const sibling of button.parentElement.querySelectorAll('.filter')) sibling.setAttribute('aria-pressed', String(sibling === button));
+  });
+}
+for (const button of document.querySelectorAll('.save')) {
+  button.addEventListener('click', () => {
+    button.dataset.state='saved';
+    button.textContent='Enregistré';
+  });
+}
+</script>
+</main>
+</body>
+</html>
