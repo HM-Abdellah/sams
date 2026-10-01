@@ -331,6 +331,7 @@ export const TRANSLATION_KEYS = {
     confirmTransferStudent: 'admin.confirmTransferStudent',
     confirmDeactivateStudent: 'admin.confirmDeactivateStudent',
     noStudentsInClass: 'admin.noStudentsInClass',
+    noMatchingResults: 'admin.noMatchingResults',
     previous: 'admin.previous',
     next: 'admin.next',
     pagination: 'admin.pagination',
