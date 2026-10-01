@@ -262,7 +262,7 @@ test.describe('frontend Phase 14 admin platform', () => {
     await expect(page.getByText('Youssef Student')).toBeVisible()
   })
 
-'teachers, users, onboarding and academic years execute mutations and refresh server state', async ({ page }) => {
+  test('teachers, users, onboarding and academic years execute mutations and refresh server state', async ({ page }) => {
     await page.goto('/app/admin/teachers')
     await expect(page.getByRole('heading', { name: 'Teachers' })).toBeVisible()
     await page.getByLabel('Teacher').selectOption('10')
