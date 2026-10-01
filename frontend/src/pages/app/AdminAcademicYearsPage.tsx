@@ -19,6 +19,7 @@ export function AdminAcademicYearsPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
+  const [sort, setSort] = useState<'start' | 'name' | 'status'>('start')
 
   const create = async () => {
     setSaving(true); setError(null)
@@ -37,7 +38,11 @@ export function AdminAcademicYearsPage() {
   const filteredYears = useMemo(() => (resource.data?.academic_years ?? []).filter((year) => {
     const active = isActive(year.is_active)
     return statusFilter === 'all' || (statusFilter === 'active' ? active : !active)
-  }), [resource.data, statusFilter])
+  }).sort((a, b) => {
+    if (sort === 'name') return a.name.localeCompare(b.name)
+    if (sort === 'status') return Number(isActive(b.is_active)) - Number(isActive(a.is_active)) || b.starts_on.localeCompare(a.starts_on)
+    return b.starts_on.localeCompare(a.starts_on) || a.name.localeCompare(b.name)
+  }), [resource.data, statusFilter, sort])
 
   if (resource.status === 'idle' || resource.status === 'loading') return <Loading label={t(TRANSLATION_KEYS.auth.loading)} />
   if (resource.status === 'error' || resource.data === null) return <ErrorState title={t(TRANSLATION_KEYS.system.errorTitle)} description={resource.error ?? t(TRANSLATION_KEYS.system.genericError)} action={<Button type="button" variant="secondary" onClick={() => void resource.reload()}>{t(TRANSLATION_KEYS.system.reload)}</Button>} />
@@ -61,8 +66,11 @@ export function AdminAcademicYearsPage() {
         <Button type="button" disabled={!name || !startsOn || !endsOn || saving} loading={saving} onClick={() => void create()}>{t(TRANSLATION_KEYS.admin.create)}</Button>
       </section>
 
-      <AdminWorkspaceToolbar searchLabel={t(TRANSLATION_KEYS.admin.status)} searchValue="" onSearchChange={() => undefined}>
-        <FormField label={t(TRANSLATION_KEYS.admin.status)}>{({ id, ...aria }) => <Select id={id} {...aria} value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}><option value="all">{t(TRANSLATION_KEYS.admin.allStatuses)}</option><option value="active">{t(TRANSLATION_KEYS.admin.activeOnly)}</option><option value="inactive">{t(TRANSLATION_KEYS.admin.inactiveOnly)}</option></Select>}</FormField>
+      <AdminWorkspaceToolbar>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField label={t(TRANSLATION_KEYS.admin.status)}>{({ id, ...aria }) => <Select id={id} {...aria} value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}><option value="all">{t(TRANSLATION_KEYS.admin.allStatuses)}</option><option value="active">{t(TRANSLATION_KEYS.admin.activeOnly)}</option><option value="inactive">{t(TRANSLATION_KEYS.admin.inactiveOnly)}</option></Select>}</FormField>
+          <FormField label={t(TRANSLATION_KEYS.admin.sort)}>{({ id, ...aria }) => <Select id={id} {...aria} value={sort} onChange={(event) => setSort(event.target.value as typeof sort)}><option value="start">{t(TRANSLATION_KEYS.admin.startsOn)}</option><option value="name">{t(TRANSLATION_KEYS.admin.sortName)}</option><option value="status">{t(TRANSLATION_KEYS.admin.sortStatus)}</option></Select>}</FormField>
+        </div>
       </AdminWorkspaceToolbar>
       <p className="text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.admin.showingResults)}: {filteredYears.length} / {resource.data.academic_years.length}</p>
       <Table caption={t(TRANSLATION_KEYS.navigation.academicYears)} headers={[t(TRANSLATION_KEYS.admin.name), t(TRANSLATION_KEYS.admin.startsOn), t(TRANSLATION_KEYS.admin.endsOn), t(TRANSLATION_KEYS.admin.status), t(TRANSLATION_KEYS.admin.actions)]}>
