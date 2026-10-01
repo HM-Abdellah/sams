@@ -27,6 +27,7 @@ export function AdminStudentsPage() {
   const [selectedClassId, setSelectedClassId] = useState<number | null>(requestedClassId)
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('active')
+  const [sort, setSort] = useState<'name' | 'student_number' | 'status'>('name')
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Student | null>(null)
   const [transferTarget, setTransferTarget] = useState<Student | null>(null)
@@ -62,8 +63,12 @@ export function AdminStudentsPage() {
       const active = student.status === 'active'
       const matchesStatus = statusFilter === 'all' || (statusFilter === 'active' ? active : !active)
       return matchesQuery && matchesStatus
+    }).sort((a, b) => {
+      if (sort === 'student_number') return (a.student_number ?? '').localeCompare(b.student_number ?? '') || a.last_name.localeCompare(b.last_name)
+      if (sort === 'status') return a.status.localeCompare(b.status) || a.last_name.localeCompare(b.last_name)
+      return `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`)
     })
-  }, [students.students, query, statusFilter])
+  }, [students.students, query, statusFilter, sort])
 
   const transferClasses = useMemo(() => (
     selectedClass === null
@@ -175,6 +180,13 @@ export function AdminStudentsPage() {
                   {activeClasses.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.academic_year_name}</option>)}
                 </Select>
               )}
+            </FormField>
+            <FormField label={t(TRANSLATION_KEYS.admin.sort)}>
+              {({ id, ...aria }) => <Select id={id} {...aria} value={sort} onChange={(event) => setSort(event.target.value as typeof sort)}>
+                <option value="name">{t(TRANSLATION_KEYS.admin.sortName)}</option>
+                <option value="student_number">{t(TRANSLATION_KEYS.teacher.studentNumber)}</option>
+                <option value="status">{t(TRANSLATION_KEYS.admin.sortStatus)}</option>
+              </Select>}
             </FormField>
             <FormField label={t(TRANSLATION_KEYS.admin.status)}>
               {({ id, ...aria }) => (
