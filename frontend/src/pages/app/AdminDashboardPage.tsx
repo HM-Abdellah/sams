@@ -210,7 +210,7 @@ export function AdminDashboardPage() {
           </Link>
         </div>
         {online_teachers.length === 0 ? (
-          <EmptyState title={t(TRANSLATION_KEYS.admin.offline)} description={t(TRANSLATION_KEYS.admin.noAssignments)} />
+          <EmptyState title={t(TRANSLATION_KEYS.admin.noOnlineTeachers)} />
         ) : (
           <ul className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {online_teachers.map((teacher) => (
@@ -280,13 +280,13 @@ export function AdminDashboardPage() {
         <nav className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label={t(TRANSLATION_KEYS.admin.quickActions)}>
           {[
             ['/app/admin/classes', t(TRANSLATION_KEYS.admin.classes)],
-            ['/app/admin/teachers', t(TRANSLATION_KEYS.admin.teachers)],
-            ['/app/admin/users', t(TRANSLATION_KEYS.admin.users)],
-            ['/app/admin/onboarding', t(TRANSLATION_KEYS.admin.onboarding)],
-            ['/app/admin/imports', t(TRANSLATION_KEYS.admin.imports)],
-            ['/app/admin/academic-years', t(TRANSLATION_KEYS.admin.academicYears)],
-            ['/app/admin/archive', t(TRANSLATION_KEYS.admin.archive)],
-            ['/app/admin/audit', t(TRANSLATION_KEYS.admin.audit)],
+            ['/app/admin/teachers', t(TRANSLATION_KEYS.navigation.teachers)],
+            ['/app/admin/users', t(TRANSLATION_KEYS.navigation.users)],
+            ['/app/admin/onboarding', t(TRANSLATION_KEYS.navigation.onboarding)],
+            ['/app/admin/imports', t(TRANSLATION_KEYS.navigation.imports)],
+            ['/app/admin/academic-years', t(TRANSLATION_KEYS.navigation.academicYears)],
+            ['/app/admin/archive', t(TRANSLATION_KEYS.navigation.archive)],
+            ['/app/admin/audit', t(TRANSLATION_KEYS.navigation.audit)],
           ].map(([href, label]) => (
             <Link key={href} to={href} className="sams-interactive-target flex items-center justify-between rounded-xl border border-[var(--sams-border)] px-4 py-3 text-sm font-medium hover:bg-[var(--sams-muted-surface)] focus-visible:bg-[var(--sams-muted-surface)]">
               <span>{label}</span>
@@ -360,12 +360,10 @@ function AttentionPanel({
 function SecurityStat({
   label,
   value,
-  hint,
   variant,
 }: {
   label: string
   value: number | string
-  hint: string
   variant: 'warning' | 'danger'
 }) {
   return (
@@ -374,9 +372,6 @@ function SecurityStat({
       <p className={`mt-1 text-2xl font-semibold ${variant === 'danger' ? 'text-[var(--sams-danger)]' : 'text-[var(--sams-warning)]'}`}>
         {asNumber(value)}
       </p>
-      <span className="sr-only">
-        {variant === 'danger' ? 'Alert' : 'Review'}
-      </span>
     </div>
   )
 }
