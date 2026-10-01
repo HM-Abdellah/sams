@@ -446,3 +446,18 @@ Next phase:
 # PHASE 2 — FRONTEND ARCHITECTURE
 
 No final visual design work starts before the engineering architecture is stable.
+
+### Admin Students
+Phase 34 adds the role-aware admin route `/app/admin/students`.
+
+Current contract:
+- class context is selected explicitly and preserved in `class_id` URL state;
+- roster search/filter/sort and lifecycle controls use the existing `/api/students.php?class_id=ID` migration contract;
+- create/update/deactivate/transfer remain server-authoritative;
+- transfer continues through the existing StudentTransferService integrity rules;
+- no new canonical v1 student endpoint is claimed until backend migration provides and verifies it.
+
+The legacy student API remains intentional migration compatibility, not a new product transport decision.
+
+### Admin Classes
+Phase 34 adds search/filter/sort, current relationship counts, and a direct roster action from each class row.
