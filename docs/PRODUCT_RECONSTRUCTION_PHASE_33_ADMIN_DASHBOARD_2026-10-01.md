@@ -2,7 +2,7 @@
 ## Admin Dashboard Reconstruction
 ### 2026-10-01
 
-Status: **Implementation complete; verification pending external CI/Codespace recovery.**
+Status: **CLOSED — implementation, external CI verification, and reconstruction-branch closeout complete.**
 
 ## 1. Explore
 
@@ -98,31 +98,37 @@ Verified by repository inspection:
 - no new frontend runtime dependency was introduced
 - no speculative route or attendance subject context was added
 
-Execution is pending because the connected Codespace device became unavailable during the phase.
+Local Codespace execution remained unavailable because the connected device was offline during the final gate. Independent GitHub Actions verification was used instead.
 
-Not yet claimed as executed locally:
-- frontend typecheck
-- Oxlint
-- Vitest
-- Vite production build
-- PHP syntax checks
-- administration backend integration
-- Playwright E2E
-
-Independent CI verification is being requested through draft PR #31:
-https://github.com/HM-Abdellah/sams/pull/31
+Independent GitHub Actions verification completed successfully on run **#875** for commit `984ab986f8077dc8ac11383467bf325c486e9cb1`:
+- `frontend-build`: PASS
+- `javascript`: PASS
+- `php`: PASS
+- `e2e`: PASS — 42/42 active frontend tests passed in the Phase 12–19 group, with the full E2E job green
+- `clean-school-acceptance`: PASS
+- `apache`: PASS
+- `production-integration`: PASS
 
 No merge to main has been performed.
 
 ## 6. Git-check
 
-All phase writes target reconstruction/product-system-2026-10-01.
+All phase writes target `reconstruction/product-system-2026-10-01`.
+The final implementation head before this closeout documentation is `984ab986f8077dc8ac11383467bf325c486e9cb1`.
+The branch is based directly on main commit `64a081294f7ec08612c85007d671aeb13f49c4c6` with no merge to main.
 
-Final branch cleanliness and local git diff --check require Codespace recovery or CI evidence.
 
 ## 7. Close criteria
 
-Phase 33 is closed only after CI completes, failures are investigated if present, the Codespace is synchronized when available, final git state is verified, and the roadmap advances to Phase 34.
+Phase 33 is closed after:
+- CI completes successfully across all seven release jobs
+- the E2E regression is corrected and re-verified
+- the dashboard contract and accessibility decisions are documented
+- no merge to main is performed before the later release gate
+
+The Codespace remained offline, so local working-tree synchronization could not be re-verified from the remote device; CI is the authoritative final execution evidence for this phase.
+
+Phase 34 is **not started** by this closeout.
 
 
 ## 8. Verification corrections discovered by CI
@@ -130,7 +136,7 @@ Phase 33 is closed only after CI completes, failures are investigated if present
 CI exposed two real regressions introduced by the phase implementation:
 
 1. `DateTimeImmutable` inside the namespaced repository needed a global namespace qualifier. This was corrected with the minimal change to `new \\DateTimeImmutable('today')`. The failure had prevented the real-backend admin dashboard from rendering in the Phase 22/23 acceptance paths.
-2. The new Quick Actions introduced additional visible `Classes` links, making one legacy Phase 14 E2E selector ambiguous. The test now scopes the navigation target to `main` and uses an exact accessible name.
+2. The new Quick Actions introduced additional visible `Classes` links, making one legacy Phase 14 E2E selector ambiguous. The final test fix navigates explicitly to `/app/admin/classes`, then verifies the canonical Classes form before interacting with its fields.
 
 The first CI run after these corrections already showed:
 - frontend production build: **PASS**
@@ -139,4 +145,4 @@ The first CI run after these corrections already showed:
 - PHP tests before the dashboard integration point: **PASS**
 - clean-school / E2E failures were traced to the dashboard namespace issue and legacy selector ambiguity rather than a new data contract error.
 
-The newest commit is `56de6e067fca069b0613d15c27db7c76e200e30b`, and a fresh GitHub Actions run `36926403479` was queued for that exact commit. Phase closure remains blocked until that run completes successfully and the Codespace is synchronized when available.
+The final verification run is GitHub Actions **#875** (`36927781315`) on `984ab986f8077dc8ac11383467bf325c486e9cb1`, and all seven jobs passed. This closeout documentation records that verified state; the branch remains unmerged into main.
