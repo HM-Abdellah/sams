@@ -81,7 +81,7 @@ Frontend changes:
 - frontend/src/features/i18n/types.ts
 - frontend/src/features/i18n/dictionary.ts
 
-The UI now contains the academic context, KPI grid, today's status distribution, 14-day trend, needs-attention panels, online teacher identities, class metrics, and quick actions.
+The UI now contains the academic context, KPI grid, today's status distribution, 14-day trend, needs-attention panels, online teacher identities, class metrics, recent activity, and quick actions.
 
 Test coverage changes:
 - tests/administration_backend_integration.php validates the new dashboard contract
