@@ -2,7 +2,7 @@
 ## Admin Management Workspaces
 ### 2026-10-01
 
-Status: CLOSED — verified by GitHub Actions run #941 on branch head.
+Status: CLOSED — verified by GitHub Actions run #943 on branch head.
 
 ## 1. Explore
 Phase 33 established the operational admin dashboard, but the management routes were still mostly form-plus-table surfaces. Classes lacked relationship summaries and deliberate discovery controls; teachers and users needed better search/filter workflows; academic years had limited management filtering; and students had no dedicated admin workspace.
@@ -62,13 +62,13 @@ Extended Phase 14 E2E with the admin student roster lifecycle and aligned class 
 Added AdminWorkspaceToolbar unit coverage for accessible search/filter semantics.
 
 ## 7. Verification
-GitHub Actions run #941 verified the branch head with all seven required gates green: frontend-build, javascript, php, e2e, clean-school-acceptance, apache, and production-integration.
+GitHub Actions run #943 verified the current branch head with all seven required gates green: frontend-build, javascript, php, e2e, clean-school-acceptance, apache, and production-integration.
 The admin student lifecycle regression passed inside the Playwright E2E gate, and the administration backend integration passed inside the PHP gate.
 
 ## 8. Git
 Branch: `reconstruction/product-system-2026-10-01`
-Verified head: `d6d43201c768924f0dac08336369e7561099369b`
-CI verification: GitHub Actions run `#941`
+Verified head: `935b066634ccd41aac33eddadc6739b35fdb0fc9`
+CI verification: GitHub Actions run `#943`
 Main base: `64a081294f7ec08612c85007d671aeb13f49c4c6`
 No merge to main is performed in this phase.
 
