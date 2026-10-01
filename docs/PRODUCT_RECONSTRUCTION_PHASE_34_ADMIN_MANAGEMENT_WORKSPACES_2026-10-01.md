@@ -67,10 +67,17 @@ Required gates are frontend-build, javascript, php, e2e, clean-school-acceptance
 Phase 34 remains open until the final branch-head CI passes all seven jobs.
 
 ## 8. Git
-Branch: reconstruction/product-system-2026-10-01
-Main base: 64a081294f7ec08612c85007d671aeb13f49c4c6
+Branch: `reconstruction/product-system-2026-10-01`
+Verified head: `5f744fcac43216d5ac4cdac0fe54ab8cbbdc6e24`
+Main base: `64a081294f7ec08612c85007d671aeb13f49c4c6`
 No merge to main is performed in this phase.
 
 ## 9. Close criteria
-Close only after final branch-head CI is green, the new admin student regression passes, schema/API authority decisions remain intact, final documentation records the verified head, and Phase 35 has not been started prematurely.
-Phase 35 — Admin Operations + Data Workspaces — is not started by this document.
+All close criteria are satisfied:
+- final branch-head CI is green;
+- the admin student lifecycle regression passes;
+- schema/API authority decisions remain intact;
+- final documentation records the verified head;
+- Phase 35 is now the next active phase.
+
+Phase 34 is formally closed. Phase 35 starts only from this verified branch state.
