@@ -39,8 +39,8 @@ export function AdminStudentsPage() {
 
   const classes = classesResource.data?.classes ?? []
   const activeClasses = useMemo(
-    () => classes.filter((item) => isActive(item.is_active) && isActive(item.academic_year_active)),
-    [classes],
+    () => (classesResource.data?.classes ?? []).filter((item) => isActive(item.is_active) && isActive(item.academic_year_active)),
+    [classesResource.data?.classes],
   )
 
   const requestedActiveClassId = activeClasses.some((item) => item.id === requestedClassId)
