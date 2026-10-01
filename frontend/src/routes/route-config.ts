@@ -24,6 +24,7 @@ export const TEACHER_ROUTES = [
 export const ADMIN_ROUTES = [
   { path: '/app/admin/dashboard', label: 'navigation.dashboard', roles: ['admin'], section: 'admin.overview' },
   { path: '/app/admin/classes', label: 'navigation.classes', roles: ['admin'], section: 'admin.people' },
+  { path: '/app/admin/students', label: 'navigation.students', roles: ['admin'], section: 'admin.people' },
   { path: '/app/admin/teachers', label: 'navigation.teachers', roles: ['admin'], section: 'admin.people' },
   { path: '/app/admin/users', label: 'navigation.users', roles: ['admin'], section: 'admin.people' },
   { path: '/app/admin/onboarding', label: 'navigation.onboarding', roles: ['admin'], section: 'admin.people' },
