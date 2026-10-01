@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { useI18n } from '../../features/i18n/useI18n.ts'
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
@@ -99,7 +99,7 @@ export function AdminDashboardPage() {
           </>
         ) : (
           <p className="mt-6 rounded-xl border border-dashed border-[var(--sams-border)] p-5 text-sm text-[var(--sams-muted)]">
-            {t(TRANSLATION_KEYS.admin.noMissingClasses)}
+            {t(TRANSLATION_KEYS.admin.noTodayAttendance)}
           </p>
         )}
       </section>
@@ -133,10 +133,10 @@ export function AdminDashboardPage() {
           </svg>
           <div className="mt-3 flex items-center justify-between gap-4 text-xs text-[var(--sams-muted)]">
             <span>{attendance_trend[0] ? formatDate(attendance_trend[0].date) : '—'}</span>
-            <span>{attendance_trend.at(-1) ? formatDate(attendance_trend.at(-1)!.date) : '—'}</span>
+            <span>{attendance_trend[attendance_trend.length - 1] ? formatDate(attendance_trend[attendance_trend.length - 1].date) : '—'}</span>
           </div>
           <figcaption className="mt-4 rounded-xl border border-[var(--sams-border)] bg-[var(--sams-muted-surface)]/50 p-3 text-sm text-[var(--sams-muted)]">
-            {attendanceTrendTable(attendance_trend, formatDate, formatNumber)}
+            {attendanceTrendDataText(attendance_trend, formatDate, formatNumber)}
           </figcaption>
         </figure>
       </section>
@@ -192,8 +192,8 @@ export function AdminDashboardPage() {
               </Link>
             </div>
             <div className="mt-5 grid grid-cols-2 gap-3">
-              <SecurityStat label={t(TRANSLATION_KEYS.admin.teacher)} value={summary.unverified_teachers} hint={t(TRANSLATION_KEYS.admin.phone)} variant="warning" />
-              <SecurityStat label={t(TRANSLATION_KEYS.admin.locked)} value={summary.locked_teachers} hint={t(TRANSLATION_KEYS.admin.unlock)} variant="danger" />
+              <SecurityStat label={t(TRANSLATION_KEYS.admin.unverifiedTeachers)} value={summary.unverified_teachers} variant="warning" />
+              <SecurityStat label={t(TRANSLATION_KEYS.admin.lockedTeachers)} value={summary.locked_teachers} variant="danger" />
             </div>
           </section>
         </div>
@@ -344,7 +344,7 @@ function AttentionPanel({
   title: string
   empty: string
   count: number
-  children: React.ReactNode
+  children: ReactNode
 }) {
   return (
     <section className="sams-card p-5">
@@ -374,7 +374,9 @@ function SecurityStat({
       <p className={`mt-1 text-2xl font-semibold ${variant === 'danger' ? 'text-[var(--sams-danger)]' : 'text-[var(--sams-warning)]'}`}>
         {asNumber(value)}
       </p>
-      <p className="mt-1 text-xs text-[var(--sams-muted)]">{hint}</p>
+      <span className="sr-only">
+        {variant === 'danger' ? 'Alert' : 'Review'}
+      </span>
     </div>
   )
 }
@@ -436,7 +438,7 @@ function attendanceDistributionLabel(
   ].join(', ')
 }
 
-function attendanceTrendTable(
+function attendanceTrendDataText(
   points: DashboardTrendPoint[],
   formatDate: (value: string | Date, options?: Intl.DateTimeFormatOptions) => string,
   formatNumber: (value: number, options?: Intl.NumberFormatOptions) => string,
