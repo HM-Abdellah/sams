@@ -133,7 +133,7 @@ export function AdminClassesPage() {
           <FormField label={t(TRANSLATION_KEYS.admin.academicYear)}>
             {({ id, ...aria }) => (
               <Select id={id} {...aria} value={yearFilter} onChange={(event) => setYearFilter(event.target.value)}>
-                <option value="all">{t(TRANSLATION_KEYS.admin.allStatuses)}</option>
+                <option value="all">{t(TRANSLATION_KEYS.admin.allAcademicYears)}</option>
                 {years.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
               </Select>
             )}
@@ -142,7 +142,7 @@ export function AdminClassesPage() {
       </AdminWorkspaceToolbar>
 
       {resource.data.classes.length === 0 ? <EmptyState title={t(TRANSLATION_KEYS.navigation.classes)} description={t(TRANSLATION_KEYS.admin.noClasses)} /> : filteredClasses.length === 0 ? (
-        <EmptyState title={t(TRANSLATION_KEYS.admin.searchClasses)} description={t(TRANSLATION_KEYS.admin.noStudentsInClass)} />
+        <EmptyState title={t(TRANSLATION_KEYS.admin.searchClasses)} description={t(TRANSLATION_KEYS.admin.noMatchingResults)} />
       ) : (
         <div className="space-y-3">
           <p className="text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.admin.showingResults)}: {filteredClasses.length} / {resource.data.classes.length}</p>
