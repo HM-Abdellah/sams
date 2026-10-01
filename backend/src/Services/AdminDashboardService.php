@@ -16,8 +16,11 @@ final class AdminDashboardService
     {
         return [
             'date' => date('Y-m-d'),
+            'academic_year' => $this->repository->activeAcademicYear($schoolId),
             'absence_alert_threshold' => AdminDashboardRepository::ABSENCE_ALERT_THRESHOLD,
             'summary' => $this->repository->summary($schoolId),
+            'attendance_trend' => $this->repository->attendanceTrend($schoolId),
+            'online_teachers' => $this->repository->onlineTeachers($schoolId),
             'class_stats' => $this->repository->classStats($schoolId),
             'attention_students' => $this->repository->attentionStudents($schoolId),
             'classes_without_today_records' => $this->repository->classesWithoutTodayRecords($schoolId),
