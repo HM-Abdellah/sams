@@ -12,10 +12,10 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: 'bg-[var(--sams-action)] text-[var(--sams-action-foreground)] hover:opacity-90',
-  secondary: 'border border-[var(--sams-border)] bg-[var(--sams-surface)] text-[var(--sams-text)] hover:bg-[var(--sams-muted-surface)]',
+  primary: 'bg-[var(--sams-action)] text-[var(--sams-action-foreground)] shadow-sm hover:bg-[var(--sams-action-hover)]',
+  secondary: 'border border-[var(--sams-border)] bg-[var(--sams-surface)] text-[var(--sams-text)] shadow-sm hover:border-[var(--sams-action)]/30 hover:bg-[var(--sams-action-soft)]',
   ghost: 'text-[var(--sams-text)] hover:bg-[var(--sams-muted-surface)]',
-  danger: 'bg-[var(--sams-danger)] text-white hover:opacity-90',
+  danger: 'bg-[var(--sams-danger)] text-white shadow-sm hover:brightness-95',
 }
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -39,15 +39,16 @@ export function Button({
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-md font-medium',
-        'transition-opacity focus-visible:outline-2 focus-visible:outline-offset-2',
-        'focus-visible:outline-[var(--sams-focus)] disabled:cursor-not-allowed disabled:opacity-50',
+        'inline-flex items-center justify-center gap-2 rounded-lg font-medium',
+        'transition-[background-color,border-color,color,box-shadow,transform] duration-150',
+        'active:scale-[0.98]',
+        'focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0',
         variantClasses[variant],
         sizeClasses[size],
         className,
       )}
     >
-      {loading && <span aria-hidden="true" className="size-4 animate-pulse rounded-full border-2 border-current border-r-transparent" />}
+      {loading && <span aria-hidden="true" className="size-4 animate-spin rounded-full border-2 border-current border-r-transparent" />}
       <span>{children}</span>
     </button>
   )

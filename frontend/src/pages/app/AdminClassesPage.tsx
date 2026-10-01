@@ -63,13 +63,13 @@ export function AdminClassesPage() {
   }
 
   return (
-    <section className="space-y-6">
+    <section className="sams-admin-page space-y-8">
       <PageHeader
         title={t(TRANSLATION_KEYS.navigation.classes)}
         description={t(TRANSLATION_KEYS.admin.classAdminHint)}
       />
 
-      <section className="rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] p-5">
+      <section className="sams-card p-5">
         <h2 className="text-lg font-semibold">{editing ? t(TRANSLATION_KEYS.admin.editClass) : t(TRANSLATION_KEYS.admin.createClass)}</h2>        <div className="mt-4 grid gap-4 md:grid-cols-3">
           <FormField label={t(TRANSLATION_KEYS.admin.className)}>
             {({ id, ...aria }) => <Input id={id} {...aria} value={name} onChange={(e) => setName(e.target.value)} />}

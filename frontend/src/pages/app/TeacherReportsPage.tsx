@@ -61,7 +61,7 @@ export function TeacherReportsPage() {
   }
 
   return (
-    <section className="space-y-6">
+    <section className="space-y-5">
       <PageHeader
         title={t(TRANSLATION_KEYS.teacher.statistics)}
         description={t(TRANSLATION_KEYS.teacher.reportMonth)}
@@ -104,7 +104,7 @@ export function TeacherReportsPage() {
                   type="month"
                   value={month}
                   onChange={(event) => updateParam('month', event.target.value)}
-                  className="block min-h-10 w-full rounded-md border border-[var(--sams-border)] bg-[var(--sams-surface)] px-3 py-2"
+                  className="block min-h-11 w-full rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] px-3.5 py-2.5 shadow-sm focus-visible:outline-none focus-visible:border-[var(--sams-focus)] focus-visible:ring-4 focus-visible:ring-[var(--sams-action-soft)]"
                 />
               )}
             </FormField>
@@ -143,7 +143,7 @@ export function TeacherReportsPage() {
                   [TRANSLATION_KEYS.teacher.excused, totals?.excused ?? 0],
                   [TRANSLATION_KEYS.teacher.totalRecorded, totals?.recorded ?? 0],
                 ] as Array<[TranslationKey, number]>).map(([key, value]) => (
-                  <article key={key} className="rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] p-4">
+                  <article key={key} className="sams-card p-4">
                     <p className="text-sm text-[var(--sams-muted)]">{t(key)}</p>
                     <p className="mt-1 text-2xl font-semibold">{formatNumber(value as number)}</p>
                   </article>

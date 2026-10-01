@@ -5,7 +5,7 @@ import { useAdminResource } from '../../features/admin/useAdminResource.ts'
 import { isActive } from '../../features/admin/helpers.ts'
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
 import { useI18n } from '../../features/i18n/useI18n.ts'
-import { Badge, Button, ErrorState, FormField, Input, Loading, Table } from '../../components/ui/index.ts'
+import { Badge, Button, ErrorState, FormField, Input, Loading, PageHeader, Table } from '../../components/ui/index.ts'
 
 export function AdminAcademicYearsPage() {
   const { t, formatDate } = useI18n()
@@ -36,11 +36,14 @@ export function AdminAcademicYearsPage() {
   if (resource.status === 'error' || resource.data === null) return <ErrorState title={t(TRANSLATION_KEYS.system.errorTitle)} description={resource.error ?? t(TRANSLATION_KEYS.system.genericError)} action={<Button type="button" variant="secondary" onClick={() => void resource.reload()}>{t(TRANSLATION_KEYS.system.reload)}</Button>} />
 
   return (
-    <section className="space-y-6">
-      <header><h1 className="text-2xl font-semibold">{t(TRANSLATION_KEYS.navigation.academicYears)}</h1><p className="mt-2 text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.admin.academicYearHint)}</p></header>
+    <section className="sams-admin-page space-y-8">
+      <PageHeader
+        title={t(TRANSLATION_KEYS.navigation.academicYears)}
+        description={t(TRANSLATION_KEYS.admin.academicYearHint)}
+      />
       {error && <p role="alert" className="text-sm text-[var(--sams-danger)]">{error}</p>}
 
-      <section className="rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] p-5 space-y-4">
+      <section className="sams-card p-5 space-y-4">
         <h2 className="text-lg font-semibold">{t(TRANSLATION_KEYS.admin.createAcademicYear)}</h2>
         <div className="grid gap-4 md:grid-cols-3">
           <FormField label={t(TRANSLATION_KEYS.admin.name)}>{({ id, ...aria }) => <Input id={id} {...aria} value={name} onChange={(e) => setName(e.target.value)} />}</FormField>

@@ -6,7 +6,7 @@ import { asNumber, isActive } from '../../features/admin/helpers.ts'
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
 import { useI18n } from '../../features/i18n/useI18n.ts'
 import {
-  Badge, Button, Dialog, ErrorState, FormField, Input, Loading, Select, Table,
+  Badge, Button, Dialog, ErrorState, FormField, Input, Loading, PageHeader, Select, Table,
 } from '../../components/ui/index.ts'
 
 export function AdminUsersPage() {
@@ -144,11 +144,11 @@ export function AdminUsersPage() {
   const data = resource.data
   return (
     <>
-      <section className="space-y-6">
-        <header>
-          <h1 className="text-2xl font-semibold">{t(TRANSLATION_KEYS.navigation.users)}</h1>
-          <p className="mt-2 text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.admin.userAdminHint)}</p>
-        </header>
+      <section className="sams-admin-page space-y-8">
+        <PageHeader
+          title={t(TRANSLATION_KEYS.navigation.users)}
+          description={t(TRANSLATION_KEYS.admin.userAdminHint)}
+        />
 
         {error && <p role="alert" className="text-sm text-[var(--sams-danger)]">{error}</p>}
 
@@ -160,7 +160,7 @@ export function AdminUsersPage() {
           </section>
         )}
 
-        <section className="space-y-4 rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] p-5">
+        <section className="space-y-4 sams-card p-5">
           <h2 className="text-lg font-semibold">{editing ? t(TRANSLATION_KEYS.admin.editUser) : t(TRANSLATION_KEYS.admin.createUser)}</h2>
           <div className="grid gap-4 md:grid-cols-2">
             {!editing && <FormField label={t(TRANSLATION_KEYS.admin.username)}>{({ id, ...aria }) => <Input id={id} {...aria} value={username} onChange={(e) => setUsername(e.target.value)} />}</FormField>}
@@ -207,8 +207,9 @@ export function AdminUsersPage() {
                 {asNumber(user.failed_login_attempts)} {t(TRANSLATION_KEYS.admin.failedAttempts)}
                 {user.locked_until ? ' · ' + t(TRANSLATION_KEYS.admin.locked) : ''}
               </td>
-              <td className="px-3 py-2">
-                <div className="flex flex-wrap gap-2">
+              <td className="sticky end-0 z-10 w-[340px] min-w-[340px] max-w-[340px] border-s border-[var(--sams-border)] bg-[var(--sams-surface)] px-3 py-2">
+                <div className="w-[316px] max-w-[316px] overflow-x-auto">
+                  <div className="flex min-w-max flex-nowrap gap-2">
                   <Button type="button" size="sm" variant="secondary" disabled={!isActive(user.is_active)} onClick={() => startEdit(user)}>{t(TRANSLATION_KEYS.admin.edit)}</Button>
                   {user.locked_until && <Button type="button" size="sm" variant="secondary" disabled={busy === user.id} onClick={() => void action(user, 'unlock')}>{t(TRANSLATION_KEYS.admin.unlock)}</Button>}
                   <Button type="button" size="sm" variant="secondary" disabled={busy === user.id} onClick={() => void action(user, user.account_status === 'active' ? 'suspended' : 'active')}>{user.account_status === 'active' ? t(TRANSLATION_KEYS.admin.suspend) : t(TRANSLATION_KEYS.admin.activate)}</Button>
@@ -216,6 +217,7 @@ export function AdminUsersPage() {
                   <Button type="button" size="sm" variant="secondary" disabled={busy === user.id} onClick={() => { setResetTarget(user); setResetPasswordValue(''); setError(null) }}>{t(TRANSLATION_KEYS.admin.resetPassword)}</Button>
                   <Button type="button" size="sm" variant="secondary" disabled={busy === user.id} onClick={() => void action(user, 'revoke')}>{t(TRANSLATION_KEYS.admin.revokeSessions)}</Button>
                   <Button type="button" size="sm" variant="secondary" disabled={busy === user.id} onClick={() => void action(user, 'code')}>{t(TRANSLATION_KEYS.admin.reissueCode)}</Button>
+                  </div>
                 </div>
               </td>
             </tr>

@@ -137,7 +137,7 @@ Security hardening is intentionally layered: frontend guards improve UX, while t
 
 ## Project status
 
-The frontend reconstruction roadmap covers **Phases 1–24**. The engineering work has reached the final cross-disciplinary engineering/security gate; visual redesign work is intentionally kept separate.
+The frontend reconstruction roadmap covers **Phases 1–24**. Engineering/security gates are closed. Design R&D **Phases 25–28** are also closed, including the canonical Figma construction and verification gate.
 
 ~~~text
 Phases 1–24
@@ -154,8 +154,13 @@ Final engineering + security red-team audit
             ▼
 Design R&D Phase 25–28
             │
-            ▼
-Figma construction gate (currently blocked)
+            ├── Web / educational product research
+            ├── UX / responsive interaction research
+            ├── SAMS visual language
+            └── Figma design system + Teacher Attendance references
+                    │
+                    ▼
+Post-Phase-28 visual reconstruction + final release hardening
 ~~~
 
 PWA / offline attendance synchronization is **not part of the current release scope**.

@@ -31,12 +31,12 @@ export function AdminAuditPage() {
   const changePage = (page: number) => setFilters((current) => ({ ...current, page }))
 
   return (
-    <section className="space-y-6">
+    <section className="sams-admin-page space-y-8">
       <PageHeader
         title={t(TRANSLATION_KEYS.navigation.audit)}
         description={t(TRANSLATION_KEYS.admin.auditHint)}
       />
-      <section className="grid gap-4 rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] p-5 md:grid-cols-2 lg:grid-cols-3">
+      <section className="sams-admin-toolbar grid gap-4 p-5 md:grid-cols-2 lg:grid-cols-3">
         <FormField label={t(TRANSLATION_KEYS.admin.user)}>
           {({ id, ...aria }) => <Select id={id} {...aria} value={draftUser} onChange={(e) => setDraftUser(e.target.value)}><option value="">{t(TRANSLATION_KEYS.admin.allUsers)}</option>{data.users.map((x) => <option key={x.id} value={x.id}>{x.full_name} · {x.username}</option>)}</Select>}
         </FormField>

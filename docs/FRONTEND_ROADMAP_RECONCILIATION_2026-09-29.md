@@ -62,8 +62,8 @@ Frontend engineering Phases 1–24 are complete and the hosted production-integr
 
 The current project frontier is:
 
-- Design R&D Phase 28 — Figma Design System + Teacher Attendance
+- Post-Phase-28 visual reconstruction and release hardening
 
-Phase 28 interaction research/prototyping is complete. Figma construction remains blocked by the active Starter-plan Figma MCP tool-call limit. No production UI redesign is claimed until Figma structural/visual verification is complete.
+Design R&D Phases 25–28 are complete. The canonical Phase 28 Figma file has been constructed and structurally/render verified through the available student-team write path.
 
 The backend/security/auth/tenant foundation remains frozen unless a proven release-blocking gap is found.

@@ -26,7 +26,7 @@ export function AdminDashboardPage() {
 
   const { summary, class_stats, attention_students, classes_without_today_records, recent_audit } = resource.data
   return (
-    <section className="space-y-6">
+    <section className="sams-admin-page space-y-8">
       <PageHeader
         eyebrow="SAMS"
         title={t(TRANSLATION_KEYS.navigation.dashboard)}
@@ -34,14 +34,24 @@ export function AdminDashboardPage() {
         actions={<Button type="button" variant="secondary" onClick={() => void resource.reload()}>{t(TRANSLATION_KEYS.system.reload)}</Button>}
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Metric label={t(TRANSLATION_KEYS.admin.activeClasses)} value={asNumber(summary.active_classes)} />
         <Metric label={t(TRANSLATION_KEYS.admin.activeStudents)} value={asNumber(summary.active_students)} />
         <Metric label={t(TRANSLATION_KEYS.admin.activeTeachers)} value={asNumber(summary.active_teachers)} />
-        <Metric label={t(TRANSLATION_KEYS.admin.onlineTeachers)} value={asNumber(summary.online_teachers)} />
-        <Metric label={t(TRANSLATION_KEYS.admin.todayRecords)} value={asNumber(summary.today_records)} />
         <Metric label={t(TRANSLATION_KEYS.admin.todayPresenceRate)} value={summary.today_presence_rate + '%'} />
       </div>
+
+      <section className="sams-card flex flex-wrap items-center gap-x-8 gap-y-3 px-5 py-4">
+        <div>
+          <p className="sams-section-label">{t(TRANSLATION_KEYS.admin.onlineTeachers)}</p>
+          <p className="mt-1 text-lg font-semibold tracking-tight text-[var(--sams-text)]">{asNumber(summary.online_teachers)}</p>
+        </div>
+        <div className="hidden h-8 w-px bg-[var(--sams-border)] sm:block" aria-hidden="true" />
+        <div>
+          <p className="sams-section-label">{t(TRANSLATION_KEYS.admin.todayRecords)}</p>
+          <p className="mt-1 text-lg font-semibold tracking-tight text-[var(--sams-text)]">{asNumber(summary.today_records)}</p>
+        </div>
+      </section>
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">{t(TRANSLATION_KEYS.admin.classStatistics)}</h2>        {class_stats.length === 0 ? (
@@ -118,17 +128,19 @@ export function AdminDashboardPage() {
 
 function Metric({ label, value }: { label: string; value: string | number }) {
   return (
-    <article className="rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] p-5">
+    <article className="sams-admin-stat sams-card p-5">
       <p className="text-sm text-[var(--sams-muted)]">{label}</p>
-      <p className="mt-2 text-2xl font-semibold">{value}</p>
+      <p className="mt-2 text-3xl font-semibold tracking-tight text-[var(--sams-text)]">{value}</p>
     </article>
   )
 }
 
 function DashboardList({ title, empty, children }: { title: string; empty: string; children: ReactNode }) {
   return (
-    <section className="rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] p-5">
-      <h2 className="text-lg font-semibold">{title}</h2>
+    <section className="sams-card p-5">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-base font-semibold tracking-tight">{title}</h2>
+      </div>
       {children ? <ul className="mt-3">{children}</ul> : <p className="mt-3 text-sm text-[var(--sams-muted)]">{empty}</p>}
     </section>
   )

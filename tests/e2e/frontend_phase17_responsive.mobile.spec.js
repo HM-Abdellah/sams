@@ -107,23 +107,23 @@ test.describe('frontend Phase 17 responsive engineering', () => {
     await expect(lastLink).toBeInViewport()
   })
 
-  test('attendance controls reflow on narrow phones without page overflow', async ({ page }) => {
+  test('attendance register stays inside the viewport and exposes all periods on narrow phones', async ({ page }) => {
     await installTeacherFixture(page)
     await page.goto('/app/attendance?class_id=1&week_start=2026-09-21')
     await expect(page.getByRole('heading', { name: 'Attendance register' })).toBeVisible()
     await page.setViewportSize({ width: 320, height: 640 })
-    await expect(page.locator('article').filter({ hasText: 'Demo Student' })).toBeVisible()
+    await expect(page.locator('table tbody tr').filter({ hasText: 'Demo Student' })).toBeVisible()
     await assertNoPageOverflow(page)
 
-    const periodButtons = page.getByRole('button', { name: /Period [1-8]/ })
-    await expect(periodButtons).toHaveCount(8)
-    const periodRail = periodButtons.first().locator('..')
-    await expect(periodRail).toBeVisible()
-    const buttons = periodRail.getByRole('button')
-    await expect(buttons).toHaveCount(8)
-    const widths = await buttons.evaluateAll((items) => items.map((item) => Math.round(item.getBoundingClientRect().width)))
-    expect(Math.max(...widths)).toBeLessThanOrEqual(150)
-    expect(Math.min(...widths)).toBeGreaterThan(0)
+    const periodHeaders = page.getByRole('columnheader', { name: /Period [1-8]/ })
+    await expect(periodHeaders).toHaveCount(8)
+    const statusCells = page.locator('button.sams-touch-cell')
+    await expect(statusCells.first()).toBeVisible()
+    const target = await statusCells.first().boundingBox()
+    expect(target).not.toBeNull()
+    expect(target.width).toBeGreaterThanOrEqual(48)
+    expect(target.height).toBeGreaterThanOrEqual(48)
+    await expect(page.getByText('Swipe horizontally to reach the afternoon periods.')).toBeVisible()
   })
 
   test('student form dialog remains contained and scrollable on a short phone', async ({ page }) => {

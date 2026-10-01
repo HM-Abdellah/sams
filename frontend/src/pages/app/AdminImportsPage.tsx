@@ -4,7 +4,7 @@ import { useAdminResource } from '../../features/admin/useAdminResource.ts'
 import { isActive, asNumber } from '../../features/admin/helpers.ts'
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
 import { useI18n } from '../../features/i18n/useI18n.ts'
-import { Badge, Button, EmptyState, ErrorState, FormField, Input, Loading, Select, Table } from '../../components/ui/index.ts'
+import { Badge, Button, EmptyState, ErrorState, FormField, Input, Loading, PageHeader, Select, Table } from '../../components/ui/index.ts'
 
 export function AdminImportsPage() {
   const { t } = useI18n()
@@ -49,10 +49,13 @@ export function AdminImportsPage() {
   const data = years.data
 
   return (
-    <section className="space-y-6">
-      <header><h1 className="text-2xl font-semibold">{t(TRANSLATION_KEYS.navigation.imports)}</h1><p className="mt-2 text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.admin.importHint)}</p></header>
+    <section className="sams-admin-page space-y-8">
+      <PageHeader
+        title={t(TRANSLATION_KEYS.navigation.imports)}
+        description={t(TRANSLATION_KEYS.admin.importHint)}
+      />
       {error && <p role="alert" className="text-sm text-[var(--sams-danger)]">{error}</p>}
-      <section className="rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] p-5 space-y-4">
+      <section className="sams-card p-5 space-y-4">
         <h2 className="text-lg font-semibold">{t(TRANSLATION_KEYS.admin.stageImport)}</h2>
         <FormField label={t(TRANSLATION_KEYS.admin.targetAcademicYear)}>
           {({ id, ...aria }) => <Select id={id} {...aria} value={yearId} onChange={(e) => setYearId(e.target.value)}>
@@ -64,7 +67,7 @@ export function AdminImportsPage() {
         <Button type="button" disabled={!file || busy !== null} loading={busy === 'upload'} onClick={() => void upload()}>{t(TRANSLATION_KEYS.admin.upload)}</Button>
       </section>
 
-      <section className="rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] p-5 space-y-4">
+      <section className="sams-card p-5 space-y-4">
         <h2 className="text-lg font-semibold">{t(TRANSLATION_KEYS.admin.importBatch)}</h2>
         <div className="flex flex-wrap gap-3 items-end">
           <FormField label={t(TRANSLATION_KEYS.admin.batchId)}>{({ id, ...aria }) => <Input id={id} {...aria} inputMode="numeric" value={batchId} onChange={(e) => setBatchId(e.target.value)} />}</FormField>
@@ -72,7 +75,7 @@ export function AdminImportsPage() {
         </div>
       </section>
       {preview && <section className="space-y-4">
-        <div className="rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] p-5">
+        <div className="sams-card p-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div><h2 className="text-lg font-semibold">{preview.batch.original_filename}</h2><p className="text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.admin.status)}: {preview.batch.status}</p></div>
             <Badge variant={preview.batch.status === 'imported' ? 'success' : preview.batch.error_rows && asNumber(preview.batch.error_rows) > 0 ? 'danger' : 'info'}>{preview.batch.status}</Badge>

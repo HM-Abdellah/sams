@@ -122,7 +122,7 @@ export function TeacherSignaturesPage() {
   }
 
   return (
-    <section className="space-y-6">
+    <section className="space-y-5">
       <PageHeader
         title={t(TRANSLATION_KEYS.navigation.signatures)}
         description={t(TRANSLATION_KEYS.signature.hint)}
@@ -142,7 +142,7 @@ export function TeacherSignaturesPage() {
       ) : loadingSignature ? (
         <Loading label={t(TRANSLATION_KEYS.auth.loading)} />
       ) : (
-        <section className="space-y-4 rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] p-5">
+        <section className="sams-card space-y-4 p-5">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-semibold">{classes.classes.find((item) => item.id === classId)?.name ?? String(classId)}</h2>
             {signature && !dirty && <Badge variant="success">{t(TRANSLATION_KEYS.signature.saved)}</Badge>}
@@ -152,7 +152,7 @@ export function TeacherSignaturesPage() {
           <canvas
             ref={canvasRef}
             aria-label={t(TRANSLATION_KEYS.signature.canvas)}
-            className="block w-full touch-none rounded-md border border-[var(--sams-border)] bg-[var(--sams-surface)]"
+            className="block min-h-52 w-full touch-none rounded-xl border border-[var(--sams-border)] bg-[var(--sams-muted-surface)] shadow-inner"
             onPointerDown={(event) => {
               const current = point(event)
               if (!current) return
