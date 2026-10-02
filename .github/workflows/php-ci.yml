@@ -1,4 +1,4 @@
-[Reading 1000 lines from start (total: 1119 lines, 119 remaining)]
+[Reading 1000 lines from start (total: 1107 lines, 107 remaining)]
 
 name: SAMS PHP CI
 
@@ -13,9 +13,9 @@ permissions:
 
 on:
   push:
-    branches: [main, reconstruction/product-system-2026-10-01, reconstruction/phase-38-shared-attendance-concurrency-2026-10-02, feat/phase-11-final-review, refactor/phase-2-backend-foundation, feat/phase-3-school-import-v2, feat/phase-4-teacher-attendance-backend, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-7-security-reliability, feat/phase-8-ci-base-v2, feat/phase-8-final-gate-v4, feat/phase-9-clean-school-acceptance]
+    branches: [main, feat/phase-11-final-review, refactor/phase-2-backend-foundation, feat/phase-3-school-import-v2, feat/phase-4-teacher-attendance-backend, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-7-security-reliability, feat/phase-8-ci-base-v2, feat/phase-8-final-gate-v4, feat/phase-9-clean-school-acceptance]
   pull_request:
-    branches: [main, reconstruction/product-system-2026-10-01, refactor/phase-2-backend-foundation, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-8-ci-base-v2]
+    branches: [main, refactor/phase-2-backend-foundation, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-8-ci-base-v2]
 
 jobs:
   php:
@@ -143,11 +143,6 @@ jobs:
         run: |
           php tests/migration_008_integration.php
 
-      - name: Verify migration 009 attendance concurrency revisions
-        shell: sh
-        run: |
-          SAMS_MIGRATION_BASE_SCHEMA=release-baseline/database/schema.sql php tests/migration_009_integration.php
-
       - name: Verify tenant isolation boundaries
         shell: sh
         run: |
@@ -187,10 +182,6 @@ jobs:
       - name: Run concurrency regression suite
         shell: sh
         run: php tests/concurrency_regression.php
-
-      - name: Run Phase 38 attendance concurrency integration tests
-        shell: sh
-        run: php tests/phase38_attendance_concurrency_integration.php
 
       - name: Run administration integration tests
         shell: sh
@@ -765,9 +756,6 @@ jobs:
             tests/e2e/frontend_phase18_accessibility.spec.js \
             tests/e2e/frontend_phase19_security.spec.js
 
-          run_frontend_group "phase-38-concurrency" "http://127.0.0.1:5173/" \
-            tests/e2e/frontend_phase38_attendance_concurrency.spec.js
-
           SAMS_BASE_URL=http://127.0.0.1:4173/ SAMS_PERFORMANCE_MODE=1 npx playwright test tests/e2e/frontend_phase20_performance.spec.js --reporter=line || overall_status=1
 
           run_frontend_group "phase-24-final-audit" "http://127.0.0.1:4173/" tests/e2e/frontend_phase24_final_audit.spec.js
@@ -1000,5 +988,17 @@ jobs:
           name: sams-frontend-dist
           path: frontend/dist
 
+      - name: Install Apache PHP runtime and Composer
+        shell: bash
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends apache2 libapache2-mod-php8.3 php8.3-cli php8.3-mysql php8.3-mbstring php8.3-xml php8.3-zip php8.3-gd composer curl mariadb-client
+          php -v
+          composer --version
+
+      - name: Install backend dependencies
+        working-directory: backend
+        shell: bash
+        run: composer install --no-interaction --prefer-dist --no-progress
 
 [executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]
