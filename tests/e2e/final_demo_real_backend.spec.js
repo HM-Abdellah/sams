@@ -47,7 +47,7 @@ test.describe('Final demo real-backend rehearsal', () => {
 
     await page.goto('/sams/app/reports?class_id=1&month=2026-09')
     await expect(page.getByRole('heading', { name: 'Statistics' })).toBeVisible()
-    await expect(page.getByText('25.0%', { exact: true }).first()).toBeVisible()
+    await expect(page.getByText('25%', { exact: true }).first()).toBeVisible()
     await expect(page.getByText('8', { exact: true }).first()).toBeVisible()
 
     await page.goto('/sams/app/signatures?class_id=1')
@@ -65,7 +65,7 @@ test.describe('Final demo real-backend rehearsal', () => {
     await expect(page.getByRole('heading', { name: 'Archive' })).toBeVisible()
     await expect(page.getByRole('heading', { name: /E2E-2BAC-A/ })).toBeVisible()
     const archiveStudent = page.getByRole('row').filter({ hasText: 'Jean Dupont' }).last()
-    await expect(archiveStudent).toContainText('25.0%')
+    await expect(archiveStudent).toContainText('25%')
     await expect(archiveStudent).toContainText('8')
   })
 })
