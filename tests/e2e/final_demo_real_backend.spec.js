@@ -127,7 +127,7 @@ test.describe('Final demo real-backend rehearsal', () => {
 
     await page.goto('/sams/app/admin/teachers')
     await expect(page.getByRole('heading', { name: 'Teachers' })).toBeVisible()
-    await expect(page.getByText('E2E Teacher', { exact: true }).first()).toBeVisible()
+    await expect(page.getByRole('table', { name: 'Teacher directory' }).getByRole('row').filter({ hasText: 'E2E Teacher' }).last()).toBeVisible()
 
     await page.goto('/sams/app/admin/users')
     await expect(page.getByRole('heading', { name: 'Users' })).toBeVisible()
