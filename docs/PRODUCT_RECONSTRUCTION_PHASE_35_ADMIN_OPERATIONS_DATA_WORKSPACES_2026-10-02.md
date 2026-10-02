@@ -1,6 +1,6 @@
 # SAMS — Product Reconstruction Phase 35
 
-Status: IN PROGRESS — implementation started on the isolated reconstruction branch.
+Status: CLOSED — implementation verified by GitHub Actions run #974 on exact implementation head 300e28a67e1d015eb88766ccb1089b9286d6fbac.
 
 ## 1. Goal
 
@@ -121,21 +121,36 @@ Added:
 - AdminImportsPage.test.tsx: class row inspection, translated detected issues, and alert-dialog confirmation before reconciliation.
 - AdminOnboardingPage.test.tsx: alert-dialog confirmation before rejection and backend call contract for an empty rejection reason.
 
-## 6. Verification snapshot
+## 6. Final verification
 
-At code snapshot:
-94f21c3bbaf534e277194e19c2c1399d0e9b0fae
+Exact implementation head:
+300e28a67e1d015eb88766ccb1089b9286d6fbac
 
-verified locally:
+Local verification at the final implementation tree:
+
 - TypeScript: PASS
 - Oxlint: PASS — 0 warnings / 0 errors
 - Vitest: PASS — 15 files / 54 tests
-- Production frontend build: PASS
+- Production frontend build: PASS — 182 modules
 - git diff --check: PASS
-- working tree: clean
+- targeted Phase 14 admin E2E: PASS — 7/7
+- targeted Phase 15 archive/report/signature E2E: PASS — 9/9
+- Phase 17 responsive/mobile E2E: PASS — 11/11
+- Phase 18 accessibility E2E/Axe: PASS — 11/11
 
-A final CI run for the eventual Phase 35 closeout is still required.
+GitHub Actions:
 
+- Run #974
+- exact head: 300e28a67e1d015eb88766ccb1089b9286d6fbac
+- javascript: PASS
+- frontend-build: PASS
+- clean-school-acceptance: PASS
+- php: PASS
+- e2e: PASS
+- apache: PASS
+- production-integration: PASS
+
+The working implementation tree was clean before the documentation-only closeout update.
 ## 7. Constraints respected
 
 No changes were made to:
@@ -150,14 +165,10 @@ No changes were made to:
 
 No fake data was introduced to fill unsupported Admin capabilities.
 
-## 8. Remaining Phase 35 work
+## 8. Phase 35 exit status
 
-Still open:
-- deeper responsive/mobile review of operational workspaces
-- focused accessibility/E2E coverage where current suites do not exercise the new paths
-- audit/activity UX review beyond the existing supported contract
-- final review of recovery/error affordances
-- final documentation reconciliation
-- exact-head GitHub Actions verification
+Phase 35 exit gates are closed.
 
-Phase 35 must not be marked CLOSED until all required gates pass on the final branch head.
+The phase does not introduce Admin Reports, Calendar, or Alerts functionality because the current backend does not expose a dedicated contract for those capabilities. They remain explicit future scope rather than simulated UI.
+
+The final CI gate passed before this documentation-only closeout update.
