@@ -33,7 +33,7 @@ export function AdminOnboardingPage() {
   const review = async (id: number, decision: 'approve' | 'reject') => {
     setBusy(id); setError(null)
     try {
-      await adminApi.reviewOnboarding(id, decision, decision === 'reject' ? reason : undefined)
+      await adminApi.reviewOnboarding(id, decision, decision === 'reject' ? (reason.trim() || undefined) : undefined)
       setReason('')
       await resource.reload()
     } catch (cause) { setError(cause instanceof Error ? cause.message : t(TRANSLATION_KEYS.system.genericError)) }
