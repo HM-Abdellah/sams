@@ -73,6 +73,7 @@ test.describe('frontend Phase 12 attendance reliability', () => {
             week_end: '2026-09-26',
             students,
             attendance: Array.from(serverRecords.values()),
+            attendance_revisions: [],
             period_signoffs: [{
               id: 50,
               class_id: 1,
@@ -124,7 +125,7 @@ test.describe('frontend Phase 12 attendance reliability', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ success: true, data: { changed: payload.entries.length, unchanged: 0, total: payload.entries.length } }),
+        body: JSON.stringify({ success: true, data: { changed: payload.entries.length, unchanged: 0, total: payload.entries.length, revisions: [] } }),
       })
     })
 

@@ -30,6 +30,7 @@ const attendanceData = {
   week_end: '2026-09-26',
   students: [student],
   attendance: [],
+  attendance_revisions: [],
   period_signoffs: [],
 }
 

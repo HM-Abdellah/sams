@@ -7,6 +7,7 @@ const attendanceData = {
   week_end: '2026-09-26',
   students: [student],
   attendance: [],
+  attendance_revisions: [],
   period_signoffs: [],
 }
 
@@ -66,7 +67,7 @@ async function installFixture(page, requests) {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ success: true, data: { changed: payload.entries.length, unchanged: 0, total: payload.entries.length } }),
+      body: JSON.stringify({ success: true, data: { changed: payload.entries.length, unchanged: 0, total: payload.entries.length, revisions: [] } }),
     })
   })
 }

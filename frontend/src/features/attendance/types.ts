@@ -2,7 +2,7 @@ import type { AttendanceEntry, AttendanceStatus } from '../../services/api/types
 
 export type AttendanceViewStatus = AttendanceStatus | 'clear'
 export type AttendanceRegisterStatus = 'idle' | 'loading' | 'success' | 'error'
-export type AttendanceMutationState = 'idle' | 'saving' | 'saved' | 'failed' | 'retrying' | 'blocked'
+export type AttendanceMutationState = 'idle' | 'saving' | 'saved' | 'failed' | 'retrying' | 'blocked' | 'conflict'
 export type AttendanceFilter = 'all' | 'with_absences' | 'eight_plus_absences'
 
 export interface AttendanceSignoff {
@@ -21,6 +21,7 @@ export interface AttendanceSignoff {
 export interface AttendanceDraft {
   entry: AttendanceEntry
   previousStatus: AttendanceViewStatus
+  expectedRevision: number
   version: number
 }
 

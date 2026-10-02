@@ -63,6 +63,20 @@ describe('ApiClient transport boundary', () => {
     expect(init.body).toBe(form)
   })
 
+  test('preserves a server-provided error code for semantic conflicts', async () => {
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ success: false, error: 'Attendance conflict' }), {
+      status: 409,
+      headers: {
+        'content-type': 'application/json',
+        'X-SAMS-Error-Code': 'ATTENDANCE_CONCURRENCY_CONFLICT',
+      },
+    }))
+    await expect(client.request('/attendance')).rejects.toMatchObject({
+      status: 409,
+      code: 'ATTENDANCE_CONCURRENCY_CONFLICT',
+    })
+  })
+
   test('maps API failures and malformed responses to ApiError', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({ success: false, error: 'Forbidden' }, 403))
     const failure = client.request('/admin')
