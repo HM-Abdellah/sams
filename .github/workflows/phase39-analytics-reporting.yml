@@ -94,11 +94,11 @@ jobs:
         working-directory: backend
         run: vendor/bin/phpunit --testsuite unit
 
-      - name: Existing administration dashboard regression
-        run: php tests/administration_backend_integration.php
-
       - name: Phase 39 data/analytics/reporting integration
         run: php tests/phase39_data_analytics_reporting_integration.php
+
+      - name: Existing administration dashboard regression
+        run: php tests/administration_backend_integration.php
 
   frontend-analytics-reporting:
     name: Frontend — Phase 39 analytics/reporting UX
