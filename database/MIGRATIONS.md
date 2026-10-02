@@ -1,3 +1,5 @@
+[Reading 67 lines from start (total: 67 lines, 0 remaining)]
+
 # SAMS Database Migration Guide
 
 ## Fresh installation
@@ -15,6 +17,8 @@ For a new school installation, use the current release schema:
 The supported existing-installation upgrade path is intentionally narrow and verified:
 
 `SAMS main baseline` → `005_school_import_staging.sql`
+
+Phase 38 adds a separate verified migration for the shared-attendance revision ledger. It is not part of the older baseline support statement until the Phase 38 release gate is closed.
 
 The baseline is the `database/schema.sql` from `main` commit `4daaeb492923a7cdfb909b13c72ae39fb63d0e48`.
 That baseline already contains the schema changes represented by the historical 001–004 migrations, teacher management, and attendance sign-off/administration-receipt tables.
@@ -57,3 +61,11 @@ For an older installation, take a verified backup and perform a dedicated migrat
 CI executes `tests/migration_005_integration.php` against the supported pre-005 schema and verifies creation and referential integrity of all three whole-school staging tables.
 
 That check is part of the release CI gate.
+
+## Phase 38 migration 009 verification
+
+`database/migrations/009_attendance_concurrency_revisions.sql` adds the server-authoritative per-lesson attendance revision ledger. CI executes `tests/migration_009_integration.php` against the supported release baseline and verifies the table shape, class foreign key, and persistence of a revision row.
+
+This migration is part of Phase 38 verification; it becomes part of the supported production upgrade path only when the Phase 38 release gate is closed.
+
+[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

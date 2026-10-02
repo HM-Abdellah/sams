@@ -1,3 +1,5 @@
+[Reading 96 lines from start (total: 96 lines, 0 remaining)]
+
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { ApiClient } from './client.ts'
 import { ApiError } from './errors.ts'
@@ -63,6 +65,20 @@ describe('ApiClient transport boundary', () => {
     expect(init.body).toBe(form)
   })
 
+  test('preserves a server-provided error code for semantic conflicts', async () => {
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ success: false, error: 'Attendance conflict' }), {
+      status: 409,
+      headers: {
+        'content-type': 'application/json',
+        'X-SAMS-Error-Code': 'ATTENDANCE_CONCURRENCY_CONFLICT',
+      },
+    }))
+    await expect(client.request('/attendance')).rejects.toMatchObject({
+      status: 409,
+      code: 'ATTENDANCE_CONCURRENCY_CONFLICT',
+    })
+  })
+
   test('maps API failures and malformed responses to ApiError', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({ success: false, error: 'Forbidden' }, 403))
     const failure = client.request('/admin')
@@ -80,3 +96,5 @@ describe('ApiClient transport boundary', () => {
     await expect(client.request('/broken')).rejects.toMatchObject({ status: 200 })
   })
 })
+
+[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

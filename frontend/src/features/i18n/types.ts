@@ -1,3 +1,5 @@
+[Reading 458 lines from start (total: 458 lines, 0 remaining)]
+
 export const SUPPORTED_LOCALES = ['fr', 'ar', 'en'] as const
 
 export type Locale = (typeof SUPPORTED_LOCALES)[number]
@@ -165,6 +167,10 @@ export const TRANSLATION_KEYS = {
     saved: 'attendance.saved',
     saveFailed: 'attendance.saveFailed',
     refreshFailed: 'attendance.refreshFailed',
+    conflictTitle: 'attendance.conflictTitle',
+    conflictHint: 'attendance.conflictHint',
+    keepChanges: 'attendance.keepChanges',
+    useLatest: 'attendance.useLatest',
     signedLesson: 'attendance.signedLesson',
     signedBy: 'attendance.signedBy',
     needsResign: 'attendance.needsResign',
@@ -452,3 +458,5 @@ export type TranslationKey = {
   [Group in keyof typeof TRANSLATION_KEYS]:
     (typeof TRANSLATION_KEYS)[Group][keyof (typeof TRANSLATION_KEYS)[Group]]
 }[keyof typeof TRANSLATION_KEYS]
+
+[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

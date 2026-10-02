@@ -1,6 +1,9 @@
+[Reading 375 lines from start (total: 375 lines, 0 remaining)]
+
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { attendanceApi } from './api.ts'
-import type { AttendanceRecord, WeeklyRegisterData } from './api.ts'
+import type { AttendanceRecord, AttendanceRevision, WeeklyRegisterData } from './api.ts'
+import { ApiError } from '../../services/api/errors.ts'
 import type { AttendanceEntry } from '../../services/api/types.ts'
 import { publishAttendancePendingWork } from './pendingWork.ts'
 import type { AttendanceDraft, AttendanceMutationState, AttendanceViewStatus } from './types.ts'
@@ -22,6 +25,17 @@ const readServerStatus = (
   return row?.status ?? 'clear'
 }
 
+const readServerRevision = (
+  data: WeeklyRegisterData | null,
+  date: string,
+  period: number,
+): number => {
+  const revision = data?.attendance_revisions.find(
+    (item: AttendanceRevision) => item.attendance_date === date && item.period === period,
+  )
+  return revision?.revision ?? 0
+}
+
 export function useAttendanceRegister(classId: number | null, weekStart: string) {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [data, setData] = useState<WeeklyRegisterData | null>(null)
@@ -30,6 +44,7 @@ export function useAttendanceRegister(classId: number | null, weekStart: string)
   const [mutationState, setMutationState] = useState<AttendanceMutationState>('idle')
   const [mutationError, setMutationError] = useState<string | null>(null)
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
+  const [conflictData, setConflictData] = useState<WeeklyRegisterData | null>(null)
 
   const queryKeyRef = useRef<string | null>(null)
   const dataRef = useRef<WeeklyRegisterData | null>(null)
@@ -83,6 +98,7 @@ export function useAttendanceRegister(classId: number | null, weekStart: string)
     setMutationState('idle')
     setMutationError(null)
     setLastSavedAt(null)
+    setConflictData(null)
 
     const controller = new AbortController()
     void load(controller.signal)
@@ -99,10 +115,14 @@ export function useAttendanceRegister(classId: number | null, weekStart: string)
   }, [isBusy])
 
   const getStatus = useCallback((studentId: number, date: string, period: number): AttendanceViewStatus => {
+    if (mutationState === 'conflict' && conflictData !== null) {
+      return readServerStatus(conflictData, studentId, date, period)
+    }
+
     const draft = draftsRef.current.get(keyFor(studentId, date, period))
     if (draft) return draft.entry.action === 'delete' ? 'clear' : (draft.entry.status ?? 'clear')
     return readServerStatus(dataRef.current, studentId, date, period)
-  }, [])
+  }, [conflictData, mutationState])
 
   const getSignoff = useCallback((date: string, period: number) => {
     return dataRef.current?.period_signoffs.find(
@@ -130,6 +150,23 @@ export function useAttendanceRegister(classId: number | null, weekStart: string)
           await attendanceApi.saveBulk(classId, entries)
         } catch (cause) {
           const message = cause instanceof Error ? cause.message : 'Unable to save attendance.'
+
+          if (cause instanceof ApiError && cause.code === 'ATTENDANCE_CONCURRENCY_CONFLICT') {
+            setMutationState('conflict')
+            setMutationError(message)
+            try {
+              const latest = await requestRegister()
+              dataRef.current = latest
+              setData(latest)
+              setConflictData(latest)
+            } catch {
+              setMutationError(
+                message + ' The latest register could not be loaded; your pending changes remain preserved.',
+              )
+            }
+            return false
+          }
+
           setMutationState('failed')
           setMutationError(message)
           return false
@@ -149,6 +186,7 @@ export function useAttendanceRegister(classId: number | null, weekStart: string)
 
         dataRef.current = refreshed
         setData(refreshed)
+        setConflictData(null)
 
         const remaining = new Map(draftsRef.current)
         for (const [key, draft] of batch) {
@@ -186,17 +224,25 @@ export function useAttendanceRegister(classId: number | null, weekStart: string)
     period: number,
     nextStatus: AttendanceViewStatus,
   ) => {
-    if (classId === null || isSigned(date, period)) return
+    if (classId === null || isSigned(date, period) || mutationState === 'conflict') return
 
     const current = getStatus(studentId, date, period)
     if (current === nextStatus) return
 
     const key = keyFor(studentId, date, period)
     const previousDraft = draftsRef.current.get(key)
+    const expectedRevision = previousDraft?.expectedRevision
+      ?? readServerRevision(dataRef.current, date, period)
     const version = ++versionRef.current
     let entry: AttendanceEntry
     if (nextStatus === 'clear') {
-      entry = { student_id: studentId, attendance_date: date, period, action: 'delete' }
+      entry = {
+        student_id: studentId,
+        attendance_date: date,
+        period,
+        action: 'delete',
+        expected_revision: expectedRevision,
+      }
     } else {
       entry = {
         student_id: studentId,
@@ -204,12 +250,14 @@ export function useAttendanceRegister(classId: number | null, weekStart: string)
         period,
         action: 'upsert',
         status: nextStatus,
+        expected_revision: expectedRevision,
       }
     }
 
     const draft: AttendanceDraft = {
       entry,
       previousStatus: previousDraft?.previousStatus ?? current,
+      expectedRevision,
       version,
     }
     const next = new Map(draftsRef.current)
@@ -219,13 +267,56 @@ export function useAttendanceRegister(classId: number | null, weekStart: string)
     setMutationState('idle')
     setMutationError(null)
     scheduleFlush()
-  }, [classId, getStatus, isSigned, scheduleFlush])
+  }, [classId, getStatus, isSigned, mutationState, scheduleFlush])
+
+  const keepChanges = useCallback(async (): Promise<boolean> => {
+    if (conflictData === null || draftsRef.current.size === 0) return false
+
+    const rebased = new Map<string, AttendanceDraft>()
+    for (const [key, draft] of draftsRef.current) {
+      const expectedRevision = readServerRevision(
+        conflictData,
+        draft.entry.attendance_date,
+        draft.entry.period,
+      )
+      rebased.set(key, {
+        ...draft,
+        expectedRevision,
+        entry: {
+          ...draft.entry,
+          expected_revision: expectedRevision,
+        },
+      })
+    }
+
+    dataRef.current = conflictData
+    setData(conflictData)
+    draftsRef.current = rebased
+    setDrafts(rebased)
+    setConflictData(null)
+    setMutationState('idle')
+    setMutationError(null)
+    return flush('retry')
+  }, [conflictData, flush])
+
+  const useLatest = useCallback(() => {
+    if (conflictData === null) return false
+
+    dataRef.current = conflictData
+    setData(conflictData)
+    draftsRef.current = new Map()
+    setDrafts(new Map())
+    setConflictData(null)
+    setMutationState('idle')
+    setMutationError(null)
+    return true
+  }, [conflictData])
 
   const retry = useCallback(() => flush('retry'), [flush])
 
   const markBlocked = useCallback(() => {
-    if (isBusy) setMutationState('blocked')
-  }, [isBusy])
+    if (isBusy && mutationState !== 'conflict') setMutationState('blocked')
+  }, [isBusy, mutationState])
 
   useEffect(() => () => {
     if (flushTimerRef.current !== null) clearTimeout(flushTimerRef.current)
@@ -270,6 +361,9 @@ export function useAttendanceRegister(classId: number | null, weekStart: string)
     mutationState,
     mutationError,
     lastSavedAt,
+    hasConflict: conflictData !== null,
+    keepChanges,
+    useLatest,
     getStatus,
     getSignoff,
     isSigned,
@@ -281,3 +375,5 @@ export function useAttendanceRegister(classId: number | null, weekStart: string)
     recordsWithDrafts,
   }
 }
+
+[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

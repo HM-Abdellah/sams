@@ -1,3 +1,5 @@
+[Reading 422 lines from start (total: 422 lines, 0 remaining)]
+
 <?php
 
 declare(strict_types=1);
@@ -376,6 +378,7 @@ tenant_expect_scope_required(
             'period' => 1,
             'action' => 'upsert',
             'status' => 'present',
+            'expected_revision' => 0,
         ]]
     ),
     'Attendance writer accepted a request without tenant scope.'
@@ -419,3 +422,5 @@ tenant_expect_scope_required(
 );
 
 echo "[PASS] Tenant isolation repository and writer boundaries verified." . PHP_EOL;
+
+[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

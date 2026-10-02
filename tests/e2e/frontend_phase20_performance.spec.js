@@ -1,3 +1,5 @@
+[Reading 138 lines from start (total: 138 lines, 0 remaining)]
+
 import { test, expect } from '@playwright/test'
 
 const enforcePerformanceBudget = process.env.SAMS_PERFORMANCE_MODE === '1'
@@ -51,6 +53,7 @@ async function installSessionFixture(page, role) {
           week_end: weekEnd.toISOString().slice(0, 10),
           students: [{ id: 1, first_name: 'E2E', last_name: 'Performance Student' }],
           attendance: [],
+          attendance_revisions: [],
           period_signoffs: [],
         },
       }
@@ -135,3 +138,5 @@ test.describe('frontend Phase 20 performance', () => {
     expect(metrics.scripts.some(({ file }) => file.startsWith('Admin'))).toBeFalsy()
   })
 })
+
+[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

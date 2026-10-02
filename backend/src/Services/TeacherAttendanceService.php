@@ -1,3 +1,5 @@
+[Reading 485 lines from start (total: 485 lines, 0 remaining)]
+
 <?php
 
 declare(strict_types=1);
@@ -51,6 +53,7 @@ final class TeacherAttendanceService
                 'week_end' => $end,
                 'students' => [],
                 'attendance' => [],
+                'attendance_revisions' => [],
                 'period_signoffs' => [],
             ];
         }
@@ -88,6 +91,11 @@ final class TeacherAttendanceService
             'week_end' => $end,
             'students' => $students,
             'attendance' => $attendance,
+            'attendance_revisions' => $this->attendance->revisionsForClassRange(
+                $classId,
+                $start,
+                $end
+            ),
             'period_signoffs' => $this->signoffs->forWeek($classId, $start, $end),
         ];
     }
@@ -125,6 +133,7 @@ final class TeacherAttendanceService
 
         $normalized = [];
         $seen = [];
+        $expectedRevisions = [];
         $minDate = null;
         $maxDate = null;
 
@@ -137,6 +146,13 @@ final class TeacherAttendanceService
             $date = (string)($entry['attendance_date'] ?? '');
             $period = (int)($entry['period'] ?? 0);
             $action = (string)($entry['action'] ?? 'upsert');
+            $expectedRevision = $entry['expected_revision'] ?? null;
+
+            if (!is_int($expectedRevision) || $expectedRevision < 0) {
+                throw new \InvalidArgumentException(
+                    'A non-negative expected attendance revision is required. Entry ' . $index . '.'
+                );
+            }
 
             try {
                 $this->validator->validateKey($studentId, $date, $period);
@@ -167,6 +183,17 @@ final class TeacherAttendanceService
             }
             $seen[$key] = true;
 
+            $lessonKey = $date . ':' . $period;
+            if (
+                isset($expectedRevisions[$lessonKey])
+                && $expectedRevisions[$lessonKey] !== $expectedRevision
+            ) {
+                throw new \InvalidArgumentException(
+                    'Entries for the same lesson must use the same expected attendance revision.'
+                );
+            }
+            $expectedRevisions[$lessonKey] = $expectedRevision;
+
             $status = null;
             if ($action === 'upsert') {
                 $status = (string)($entry['status'] ?? '');
@@ -181,6 +208,7 @@ final class TeacherAttendanceService
                 'period' => $period,
                 'action' => $action,
                 'status' => $status,
+                'expected_revision' => $expectedRevision,
             ];
         }
 
@@ -195,6 +223,18 @@ final class TeacherAttendanceService
 
             if (!$this->classes->hasAccess($userId, $role, $classId, $schoolId)) {
                 throw new AttendanceWorkflowException('Forbidden.', 403);
+            }
+
+            $lessonRevisions = [];
+            $lessonKeys = array_keys($expectedRevisions);
+            sort($lessonKeys, SORT_STRING);
+            foreach ($lessonKeys as $lessonKey) {
+                [$lessonDate, $lessonPeriod] = explode(':', $lessonKey, 2);
+                $lessonRevisions[$lessonKey] = $this->attendance->lessonRevisionForUpdate(
+                    $classId,
+                    $lessonDate,
+                    (int)$lessonPeriod
+                );
             }
 
             $studentIds = array_values(array_unique(array_map(
@@ -247,6 +287,45 @@ final class TeacherAttendanceService
                     throw new AttendanceWorkflowException(
                         'This lesson is signed. Reopen it before correcting attendance.',
                         409
+                    );
+                }
+            }
+
+            $entriesByLesson = [];
+            foreach ($normalized as $entry) {
+                $lessonKey = $entry['attendance_date'] . ':' . $entry['period'];
+                $entriesByLesson[$lessonKey][] = $entry;
+            }
+
+            foreach ($lessonRevisions as $lessonKey => $currentRevision) {
+                $expectedRevision = $expectedRevisions[$lessonKey];
+                if ($expectedRevision === $currentRevision) {
+                    continue;
+                }
+
+                $alreadyApplied = true;
+                foreach ($entriesByLesson[$lessonKey] as $entry) {
+                    $key = $entry['student_id']
+                        . ':' . $entry['attendance_date']
+                        . ':' . $entry['period'];
+                    $previous = $existing[$key] ?? null;
+                    $matchesCurrent = $entry['action'] === 'delete'
+                        ? $previous === null
+                        : $previous !== null
+                            && (string)$previous['status'] === (string)$entry['status'];
+
+                    if (!$matchesCurrent) {
+                        $alreadyApplied = false;
+                        break;
+                    }
+                }
+
+                if (!$alreadyApplied) {
+                    throw new AttendanceWorkflowException(
+                        'Attendance for lesson ' . str_replace(':', ' period ', $lessonKey)
+                        . ' was updated by another teacher. Review the latest register before saving again.',
+                        409,
+                        'ATTENDANCE_CONCURRENCY_CONFLICT'
                     );
                 }
             }
@@ -348,12 +427,26 @@ final class TeacherAttendanceService
                 $this->signoffs->clearSubmission($classId, $weekStart);
             }
 
+            $committedRevisions = [];
+            foreach ($affectedPeriods as $period) {
+                $committedRevisions[] = [
+                    'attendance_date' => $period['date'],
+                    'period' => $period['period'],
+                    'revision' => $this->attendance->incrementLessonRevision(
+                        $classId,
+                        $period['date'],
+                        $period['period']
+                    ),
+                ];
+            }
+
             $pdo->commit();
 
             return [
                 'changed' => $changed,
                 'unchanged' => $unchanged,
                 'total' => count($normalized),
+                'revisions' => $committedRevisions,
             ];
         } catch (\Throwable $e) {
             if ($pdo->inTransaction()) {
@@ -392,3 +485,5 @@ final class TeacherAttendanceService
         return $schoolId;
     }
 }
+
+[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

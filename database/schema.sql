@@ -1,3 +1,5 @@
+[Reading 624 lines from start (total: 624 lines, 0 remaining)]
+
 -- SAMS (Student Attendance Management System)
 -- Production-oriented MySQL/MariaDB schema for XAMPP.
 --
@@ -33,6 +35,7 @@ DROP TABLE IF EXISTS student_import_batches;
 DROP TABLE IF EXISTS attendance_week_signatures;
 DROP TABLE IF EXISTS attendance_week_submissions;
 DROP TABLE IF EXISTS attendance_signoffs;
+DROP TABLE IF EXISTS attendance_register_revisions;
 DROP TABLE IF EXISTS attendance;
 DROP TABLE IF EXISTS student_enrollments;
 DROP TABLE IF EXISTS audit_logs;
@@ -220,6 +223,23 @@ CREATE TABLE attendance (
         FOREIGN KEY (recorded_by) REFERENCES users(id)
         ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT chk_attendance_period CHECK (period BETWEEN 1 AND 8)
+) ENGINE=InnoDB;
+
+CREATE TABLE attendance_register_revisions (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    class_id BIGINT UNSIGNED NOT NULL,
+    attendance_date DATE NOT NULL,
+    period TINYINT UNSIGNED NOT NULL,
+    revision BIGINT UNSIGNED NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_attendance_register_revisions_class_date_period (class_id, attendance_date, period),
+    KEY idx_attendance_register_revisions_class_date (class_id, attendance_date),
+    CONSTRAINT fk_attendance_register_revisions_class
+        FOREIGN KEY (class_id) REFERENCES classes(id)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT chk_attendance_register_revisions_period CHECK (period BETWEEN 1 AND 8)
 ) ENGINE=InnoDB;
 
 CREATE TABLE attendance_signoffs (
@@ -604,3 +624,5 @@ CREATE TABLE teacher_onboarding_requests (
 
 -- Business rule: the application must keep at most one currently usable
 -- onboarding code per school. Rotation is enforced by the service layer.
+
+[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

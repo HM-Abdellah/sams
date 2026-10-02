@@ -1,3 +1,5 @@
+[Reading 224 lines from start (total: 224 lines, 0 remaining)]
+
 import { test, expect } from '@playwright/test'
 
 const students = [
@@ -31,6 +33,7 @@ const attendanceData = {
   week_end: '2026-09-26',
   students: students.map(({ id, first_name, last_name }) => ({ id, first_name, last_name })),
   attendance: [],
+  attendance_revisions: [],
   period_signoffs: [],
 }
 
@@ -221,3 +224,5 @@ test.describe('frontend Phase 17 responsive engineering', () => {
     await expect(page.getByText('E2E-RESPONSIVE-CLASS-WITH-A-LONG-NAME')).toBeVisible()
   })
 })
+
+[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

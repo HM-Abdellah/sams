@@ -1,3 +1,5 @@
+[Reading 602 lines from start (total: 602 lines, 0 remaining)]
+
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useBeforeUnload, useBlocker, useSearchParams } from 'react-router'
 import { useI18n } from '../../features/i18n/useI18n.ts'
@@ -561,7 +563,7 @@ export function TeacherAttendancePage() {
             </div>
             <div className="flex items-center gap-2">
               {register.isDirty && <Badge variant="warning">{register.dirtyCount} {t(TRANSLATION_KEYS.attendance.unsavedChanges)}</Badge>}
-              <Button type="button" size="sm" loading={register.mutationState === 'saving'} disabled={!register.isDirty || register.mutationState === 'saving'} onClick={() => void register.flush()}>
+              <Button type="button" size="sm" loading={register.mutationState === 'saving'} disabled={!register.isDirty || register.mutationState === 'saving' || register.mutationState === 'conflict'} onClick={() => void register.flush()}>
                 {t(TRANSLATION_KEYS.attendance.saveNow)}
               </Button>
             </div>
@@ -575,13 +577,30 @@ export function TeacherAttendancePage() {
               </div>
             </StatusMessage>
           )}
+          {register.mutationState === 'conflict' && register.hasConflict && (
+            <StatusMessage variant="warning" title={t(TRANSLATION_KEYS.attendance.conflictTitle)}>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <span>{t(TRANSLATION_KEYS.attendance.conflictHint)}</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button type="button" size="sm" onClick={() => void register.keepChanges()}>
+                    {t(TRANSLATION_KEYS.attendance.keepChanges)}
+                  </Button>
+                  <Button type="button" size="sm" variant="secondary" onClick={() => register.useLatest()}>
+                    {t(TRANSLATION_KEYS.attendance.useLatest)}
+                  </Button>
+                </div>
+              </div>
+            </StatusMessage>
+          )}
           {register.mutationState === 'saving' && <StatusMessage>{t(TRANSLATION_KEYS.attendance.saving)}</StatusMessage>}
           {register.mutationState === 'retrying' && <StatusMessage>{t(TRANSLATION_KEYS.attendance.retrying)}</StatusMessage>}
           {register.mutationState === 'blocked' && <StatusMessage variant="warning" title={t(TRANSLATION_KEYS.attendance.blocked)}>{t(TRANSLATION_KEYS.attendance.blockedHint)}</StatusMessage>}
           {register.mutationState === 'saved' && !register.isDirty && <StatusMessage variant="success">{t(TRANSLATION_KEYS.attendance.saved)}</StatusMessage>}
-          {register.isDirty && register.mutationState !== 'saving' && <StatusMessage variant="warning" title={t(TRANSLATION_KEYS.attendance.unsavedChanges)}>{register.dirtyCount}</StatusMessage>}
+          {register.isDirty && register.mutationState !== 'saving' && register.mutationState !== 'conflict' && <StatusMessage variant="warning" title={t(TRANSLATION_KEYS.attendance.unsavedChanges)}>{register.dirtyCount}</StatusMessage>}
         </>
       )}
     </section>
   )
 }
+
+[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

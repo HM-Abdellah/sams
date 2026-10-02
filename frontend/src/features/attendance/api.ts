@@ -1,3 +1,5 @@
+[Reading 80 lines from start (total: 80 lines, 0 remaining)]
+
 import { apiClient } from '../../services/api/client.ts'
 import type {
   AttendanceEntry,
@@ -20,12 +22,19 @@ export interface AttendanceRecord {
   status: AttendanceStatus
 }
 
+export interface AttendanceRevision {
+  attendance_date: string
+  period: number
+  revision: number
+}
+
 export interface WeeklyRegisterData {
   class_id: number
   week_start: string
   week_end: string
   students: AttendanceStudent[]
   attendance: AttendanceRecord[]
+  attendance_revisions: AttendanceRevision[]
   period_signoffs: AttendanceSignoff[]
 }
 
@@ -33,6 +42,7 @@ export interface SaveBulkData {
   changed: number
   unchanged: number
   total: number
+  revisions: AttendanceRevision[]
 }
 
 export const attendanceApi = {
@@ -70,3 +80,5 @@ export const attendanceApi = {
     )
   },
 }
+
+[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

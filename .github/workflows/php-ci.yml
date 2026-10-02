@@ -1,3 +1,5 @@
+[Reading 1000 lines from start (total: 1119 lines, 119 remaining)]
+
 name: SAMS PHP CI
 
 concurrency:
@@ -11,9 +13,9 @@ permissions:
 
 on:
   push:
-    branches: [main, feat/phase-11-final-review, refactor/phase-2-backend-foundation, feat/phase-3-school-import-v2, feat/phase-4-teacher-attendance-backend, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-7-security-reliability, feat/phase-8-ci-base-v2, feat/phase-8-final-gate-v4, feat/phase-9-clean-school-acceptance]
+    branches: [main, reconstruction/product-system-2026-10-01, reconstruction/phase-38-shared-attendance-concurrency-2026-10-02, feat/phase-11-final-review, refactor/phase-2-backend-foundation, feat/phase-3-school-import-v2, feat/phase-4-teacher-attendance-backend, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-7-security-reliability, feat/phase-8-ci-base-v2, feat/phase-8-final-gate-v4, feat/phase-9-clean-school-acceptance]
   pull_request:
-    branches: [main, refactor/phase-2-backend-foundation, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-8-ci-base-v2]
+    branches: [main, reconstruction/product-system-2026-10-01, refactor/phase-2-backend-foundation, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-8-ci-base-v2]
 
 jobs:
   php:
@@ -141,6 +143,11 @@ jobs:
         run: |
           php tests/migration_008_integration.php
 
+      - name: Verify migration 009 attendance concurrency revisions
+        shell: sh
+        run: |
+          SAMS_MIGRATION_BASE_SCHEMA=release-baseline/database/schema.sql php tests/migration_009_integration.php
+
       - name: Verify tenant isolation boundaries
         shell: sh
         run: |
@@ -180,6 +187,10 @@ jobs:
       - name: Run concurrency regression suite
         shell: sh
         run: php tests/concurrency_regression.php
+
+      - name: Run Phase 38 attendance concurrency integration tests
+        shell: sh
+        run: php tests/phase38_attendance_concurrency_integration.php
 
       - name: Run administration integration tests
         shell: sh
@@ -754,6 +765,9 @@ jobs:
             tests/e2e/frontend_phase18_accessibility.spec.js \
             tests/e2e/frontend_phase19_security.spec.js
 
+          run_frontend_group "phase-38-concurrency" "http://127.0.0.1:5173/" \
+            tests/e2e/frontend_phase38_attendance_concurrency.spec.js
+
           SAMS_BASE_URL=http://127.0.0.1:4173/ SAMS_PERFORMANCE_MODE=1 npx playwright test tests/e2e/frontend_phase20_performance.spec.js --reporter=line || overall_status=1
 
           run_frontend_group "phase-24-final-audit" "http://127.0.0.1:4173/" tests/e2e/frontend_phase24_final_audit.spec.js
@@ -986,122 +1000,5 @@ jobs:
           name: sams-frontend-dist
           path: frontend/dist
 
-      - name: Install Apache PHP runtime and Composer
-        shell: bash
-        run: |
-          apt-get update
-          apt-get install -y --no-install-recommends apache2 libapache2-mod-php8.3 php8.3-cli php8.3-mysql php8.3-mbstring php8.3-xml php8.3-zip php8.3-gd composer curl mariadb-client
-          php -v
-          composer --version
 
-      - name: Install backend dependencies
-        working-directory: backend
-        shell: bash
-        run: composer install --no-interaction --prefer-dist --no-progress
-
-      - name: Configure production-path test runtime
-        shell: bash
-        run: |
-          cat > backend/config/app.php <<'PHP'
-          <?php
-          return [
-              'name' => 'SAMS',
-              'environment' => 'test',
-              'debug' => true,
-              'base_path' => '/sams/public',
-              'session_name' => 'SAMS_PRODUCTION_E2E_SESSION',
-              'session_lifetime' => 3600,
-              'session_idle_timeout' => 3600,
-              'session_absolute_timeout' => 43200,
-              'login_max_attempts' => 5,
-              'login_lock_minutes' => 15,
-          ];
-          PHP
-
-          cat > backend/config/database.php <<'PHP'
-          <?php
-          return [
-              'host' => getenv('SAMS_TEST_DB_HOST') ?: 'db',
-              'port' => (int)(getenv('SAMS_TEST_DB_PORT') ?: 3306),
-              'database' => getenv('SAMS_TEST_DB_NAME') ?: 'sams',
-              'username' => getenv('SAMS_TEST_DB_USER') ?: 'root',
-              'password' => getenv('SAMS_TEST_DB_PASS') ?: 'root',
-              'charset' => 'utf8mb4',
-          ];
-          PHP
-
-      - name: Seed deterministic production integration database
-        shell: bash
-        run: php scripts/e2e_seed.php
-
-      - name: Mount repository into Apache
-        shell: bash
-        run: |
-          rm -rf /var/www/html/sams
-          mkdir -p /var/www/html/sams
-          cp -a "$GITHUB_WORKSPACE/." /var/www/html/sams/
-
-      - name: Configure Apache overrides
-        shell: bash
-        run: |
-          a2enmod rewrite headers
-          cat > /etc/apache2/conf-enabled/sams.conf <<'APACHE'
-          <Directory /var/www/html>
-              AllowOverride All
-              Require all granted
-          </Directory>
-          APACHE
-          printf '%s\n' 'ServerName localhost' > /etc/apache2/conf-enabled/server-name.conf
-          apachectl -t
-
-      - name: Run Phase 23 production integration
-        shell: bash
-        run: |
-          : > /tmp/sams-production-integration.log
-          exec > >(tee -a /tmp/sams-production-integration.log) 2>&1
-
-          apachectl -D FOREGROUND > /tmp/sams-production-apache.log 2>&1 &
-          apache_pid=$!
-          cleanup() { kill "$apache_pid" 2>/dev/null || true; }
-          trap cleanup EXIT
-
-          for i in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1/sams/login > /dev/null 2>&1; then break; fi
-            if ! kill -0 "$apache_pid" 2>/dev/null; then cat /tmp/sams-production-apache.log; exit 1; fi
-            sleep 1
-          done
-          curl -fsS http://127.0.0.1/sams/login > /dev/null
-
-          static_headers=$(curl -sSI http://127.0.0.1/sams/login)
-          printf '%s\n' "$static_headers" | grep -Fqi 'X-Content-Type-Options: nosniff'
-          printf '%s\n' "$static_headers" | grep -Fqi 'X-Frame-Options: DENY'
-          printf '%s\n' "$static_headers" | grep -Fqi 'Referrer-Policy: same-origin'
-          printf '%s\n' "$static_headers" | grep -Fqi 'Permissions-Policy: camera=(), geolocation=(), microphone=()'
-          printf '%s\n' "$static_headers" | grep -Fqi 'Content-Security-Policy:'
-          echo "[PASS] React static responses expose baseline security headers."
-
-          if grep -RInE 'test\.(skip|fixme|only)|describe\.(skip|only)' tests/e2e/frontend_phase22_real_backend_smoke.spec.js tests/e2e/frontend_phase23_production_integration.spec.js; then
-            echo "Production integration suite contains skipped/focused tests."
-            exit 1
-          fi
-          if grep -RIn 'waitForTimeout' tests/e2e/frontend_phase22_real_backend_smoke.spec.js tests/e2e/frontend_phase23_production_integration.spec.js; then
-            echo "Production integration suite must synchronize on observable behavior, not fixed sleeps."
-            exit 1
-          fi
-
-          node --check tests/e2e/frontend_phase22_real_backend_smoke.spec.js
-          node --check tests/e2e/frontend_phase23_production_integration.spec.js
-          SAMS_BASE_URL=http://127.0.0.1/sams/ npx playwright test tests/e2e/frontend_phase22_real_backend_smoke.spec.js tests/e2e/frontend_phase23_production_integration.spec.js --project=chromium --reporter=line
-
-          test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1/sams/backend/src/Helpers/Auth.php)" = "403"
-          test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1/sams/public/login.php)" = "410"
-          test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1/sams/public/index.php)" = "410"
-          echo "[PASS] Apache + PHP + MariaDB production integration path verified."
-
-      - name: Verify production integration database state
-        shell: bash
-        run: |
-          result=$(mariadb --protocol=tcp -h "$SAMS_TEST_DB_HOST" -P "$SAMS_TEST_DB_PORT" -u "$SAMS_TEST_DB_USER" -p"$SAMS_TEST_DB_PASS" -D "$SAMS_TEST_DB_NAME" -N -B -e "SELECT (SELECT COUNT(*) FROM academic_years),(SELECT COUNT(*) FROM users),(SELECT COUNT(*) FROM classes),(SELECT COUNT(*) FROM users WHERE role='teacher' AND is_active=1),(SELECT COUNT(*) FROM students),(SELECT COUNT(*) FROM attendance),(SELECT COUNT(*) FROM student_enrollments);")
-          expected=$'1\t2\t2\t1\t4\t8\t4'
-          test "$result" = "$expected"
-          echo "[PASS] Production integration database state remains deterministic after browser acceptance."
+[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

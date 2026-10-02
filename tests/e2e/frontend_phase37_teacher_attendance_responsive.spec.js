@@ -1,3 +1,5 @@
+[Reading 122 lines from start (total: 122 lines, 0 remaining)]
+
 import { test, expect } from '@playwright/test'
 
 const student = { id: 501, first_name: 'Phase37', last_name: 'Student' }
@@ -7,6 +9,7 @@ const attendanceData = {
   week_end: '2026-09-26',
   students: [student],
   attendance: [],
+  attendance_revisions: [],
   period_signoffs: [],
 }
 
@@ -66,7 +69,7 @@ async function installFixture(page, requests) {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ success: true, data: { changed: payload.entries.length, unchanged: 0, total: payload.entries.length } }),
+      body: JSON.stringify({ success: true, data: { changed: payload.entries.length, unchanged: 0, total: payload.entries.length, revisions: [] } }),
     })
   })
 }
@@ -119,3 +122,5 @@ test.describe('frontend Phase 37 teacher attendance responsive reconstruction', 
     await assertNoPageOverflow(page)
   })
 })
+
+[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

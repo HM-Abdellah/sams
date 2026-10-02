@@ -1,3 +1,5 @@
+[Reading 461 lines from start (total: 461 lines, 0 remaining)]
+
 # SAMS API Contract
 
 This document is the frontend/backend contract for the release candidate.
@@ -238,11 +240,11 @@ A transfer is transactional: the current enrollment is closed on the day before 
 
 ### GET `/api/v1/classes/{class_id}/attendance?week_start=YYYY-MM-DD`
 
-Authenticated users only. The class must be active in the active academic year, and teachers may read only assigned classes. The supplied date is normalized to Monday, the six-day school-week range is clamped to academic-year boundaries when it partially overlaps the year, and a fully out-of-year week returns an empty register. The response contains the active attendance roster using only first/last names, enrollment-aware attendance rows, and the selected week's per-lesson sign-off state so the client can respect protected lessons.
+Authenticated users only. The class must be active in the active academic year, and teachers may read only assigned classes. The supplied date is normalized to Monday, the six-day school-week range is clamped to academic-year boundaries when it partially overlaps the year, and a fully out-of-year week returns an empty register. The response contains the active attendance roster using only first/last names, enrollment-aware attendance rows, the selected week's per-lesson sign-off state, and per-lesson attendance revisions. A lesson with no revision history has revision 0.
 
 ### POST `/api/v1/classes/{class_id}/attendance/bulk`
 
-Admin and teacher only. Requires CSRF. JSON body contains `entries`, capped at 500. Each entry supports `upsert` or `delete`; upserts use the statuses `present`, `absent`, `late`, `excused`. Students must belong to the class and be active, dates must be inside the class academic year, and duplicate student/date/period keys within a batch are rejected. Signed lessons cannot be edited until reopened. The complete batch, audit records, and sign-off invalidation run in one transaction; a failure rolls the whole batch back. Exact no-op updates do not create audit noise.
+Admin and teacher only. Requires CSRF. JSON body contains `entries`, capped at 500. Each entry supports `upsert` or `delete`; upserts use the statuses `present`, `absent`, `late`, `excused`. Every entry must include a non-negative `expected_revision` for its class + attendance_date + period lesson. Students must belong to the class and be active, dates must be inside the class academic year, and duplicate student/date/period keys within a batch are rejected. All entries for the same lesson must use the same expected revision. Signed lessons cannot be edited until reopened. A stale expected revision returns HTTP 409 with `X-SAMS-Error-Code: ATTENDANCE_CONCURRENCY_CONFLICT`, unless the requested end state is already committed (idempotent retry). Successful mutations advance the lesson revision once, even when an attendance row is deleted. The complete batch, audit records, revision update, and sign-off invalidation run in one transaction; a failure rolls the whole batch back.
 
 The legacy attendance endpoints below remain available during the backend migration.
 
@@ -459,3 +461,5 @@ The frontend should display the returned `error` message without parsing server 
 ## Release rule
 
 Do not make frontend code depend on fields or endpoints not listed here unless the backend contract is deliberately changed and this document is updated in the same change.
+
+[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

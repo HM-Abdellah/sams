@@ -1,3 +1,5 @@
+[Reading 307 lines from start (total: 307 lines, 0 remaining)]
+
 # SAMS Architecture — Target Design
 
 Status: Phase 1 architecture baseline, 2026-09-26.
@@ -222,14 +224,16 @@ POST /attendance/bulk
   ↓
 server revalidates every entry
   ↓
-transaction + audit + signoff invalidation
+transaction + revision lock + stale-write check
+  ↓
+audit + signoff invalidation + revision increment
   ↓
 authoritative response
   ↓
 client marks changes saved
 ```
 
-A failed batch restores the prior client state for that batch and shows an error. Signed lessons remain read-only until explicitly reopened.
+A failed batch restores the prior client state for that batch and shows an error. A stale revision returns HTTP 409 and the client loads the latest register while preserving local edits for an explicit keep-or-discard decision. Signed lessons remain read-only until explicitly reopened.
 
 Desktop renders the full weekly register. Mobile renders the same data as Morning -> horizontal swipe -> Afternoon.
 
@@ -243,7 +247,7 @@ Required:
 - install UI where supported
 - update handling for new builds
 
-The first release is not offline-first. Attendance writes remain online. No offline queue or conflict-resolution engine.
+The first release is not offline-first. Attendance writes remain online. Phase 38 uses server-authoritative per-lesson revisions for stale-write conflict detection; it does not introduce an offline queue or a persistent real-time collaboration channel.
 
 ## 9. Testing architecture
 
@@ -303,3 +307,5 @@ Do not translate every old JS function mechanically into React. Preserve behavio
 Phase 1 is done when all 12 architecture areas are documented, repository rules are committed, migration ordering is explicit, and no working production path was deleted before its replacement was verified.
 
 Complete SAMS is done only after the later implementation phases also prove clean install, secure auth, correct enrollment-aware attendance, real teacher mobile UX, professional administration workflows, imports/archive/reports/signatures, CI, critical E2E, security review, and deployment/backup documentation.
+
+[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

@@ -1,3 +1,5 @@
+[Reading 205 lines from start (total: 205 lines, 0 remaining)]
+
 import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 
@@ -30,6 +32,7 @@ const attendanceData = {
   week_end: '2026-09-26',
   students: [student],
   attendance: [],
+  attendance_revisions: [],
   period_signoffs: [],
 }
 
@@ -202,3 +205,5 @@ test.describe('frontend Phase 18 accessibility', () => {
     expect(transitionSeconds).toBeLessThanOrEqual(0.00001)
   })
 })
+
+[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

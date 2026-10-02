@@ -1,3 +1,5 @@
+[Reading 131 lines from start (total: 131 lines, 0 remaining)]
+
 import { env } from '../../lib/env.ts'
 import { ApiError } from './errors.ts'
 import type { ApiEnvelope, AuthSessionData } from './types.ts'
@@ -57,7 +59,11 @@ export class ApiClient {
 
     const payload = await this.readEnvelope<T>(response)
     if (!payload.success) {
-      throw new ApiError(response.status, payload.error)
+      throw new ApiError(
+        response.status,
+        payload.error,
+        response.headers.get('X-SAMS-Error-Code') ?? undefined,
+      )
     }
 
     this.captureCsrf(payload.data)
@@ -125,3 +131,5 @@ const legacyApiBaseUrl = `${configuredBasePath}/api`
 
 export const apiClient = new ApiClient()
 export const legacyApiClient = new ApiClient(legacyApiBaseUrl)
+
+[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

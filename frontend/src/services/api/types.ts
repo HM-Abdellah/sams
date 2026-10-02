@@ -1,3 +1,5 @@
+[Reading 38 lines from start (total: 38 lines, 0 remaining)]
+
 export type ApiSuccess<T> = { success: true; data: T }
 export type ApiFailure = { success: false; error: string }
 export type ApiEnvelope<T> = ApiSuccess<T> | ApiFailure
@@ -34,4 +36,7 @@ export interface AttendanceEntry {
   period: number
   action: AttendanceMutation
   status?: AttendanceStatus
+  expected_revision: number
 }
+
+[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]
