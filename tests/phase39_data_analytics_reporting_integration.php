@@ -96,8 +96,14 @@ expect_true((float)$dashboard['attendance_trend'][13]['presence_rate'] === 50.0,
 $report = (new ReportService())->monthly($teacherId, 'teacher', $classId, substr($today, 0, 7), $schoolId);
 expect_true($report['summary']['recorded_count'] === 6, 'Report recorded-entry summary is incorrect.');
 expect_true((float)$report['summary']['presence_rate'] === 50.0, 'Report summary presence rate is inconsistent.');
-expect_true((float)$report['students'][0]['presence_rate'] === 66.7, 'Report first student rate is inconsistent.');
-expect_true((float)$report['students'][1]['presence_rate'] === 66.7, 'Report second student rate is inconsistent.');
+$reportByStudent = [];
+foreach ($report['students'] as $student) {
+    $reportByStudent[(int)$student['id']] = $student;
+}
+expect_true(isset($reportByStudent[$student1]), 'Report first student is missing.');
+expect_true(isset($reportByStudent[$student2]), 'Report second student is missing.');
+expect_true((float)$reportByStudent[$student1]['presence_rate'] === 66.7, 'Report first student rate is inconsistent.');
+expect_true((float)$reportByStudent[$student2]['presence_rate'] === 66.7, 'Report second student rate is inconsistent.');
 
 $archive = (new ArchiveService())->read($adminId, 'admin', $classId, 'month', substr($today, 0, 7), null, null, $schoolId);
 expect_true($archive['summary']['recorded_count'] === 6, 'Archive recorded-entry summary is incorrect.');
