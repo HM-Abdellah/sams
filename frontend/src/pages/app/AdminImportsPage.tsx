@@ -348,6 +348,9 @@ export function AdminImportsPage() {
         title={confirmKind === 'commit'
           ? t(TRANSLATION_KEYS.admin.confirmCommit)
           : t(TRANSLATION_KEYS.admin.confirmReconcile)}
+        description={confirmKind === 'commit'
+          ? t(TRANSLATION_KEYS.admin.importConfirmCommitDescription)
+          : t(TRANSLATION_KEYS.admin.importConfirmReconcileDescription)}
         cancelLabel={t(TRANSLATION_KEYS.admin.cancel)}
         confirmLabel={confirmKind === 'commit'
           ? t(TRANSLATION_KEYS.admin.commit)
