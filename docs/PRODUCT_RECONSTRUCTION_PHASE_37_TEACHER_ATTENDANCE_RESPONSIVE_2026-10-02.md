@@ -4,7 +4,7 @@
 
 **Phase 37 — Teacher Attendance Responsive Reconstruction**
 
-**Status:** CLOSED (local implementation and verification complete; remote CI closeout pending)
+**Status:** CLOSED after GitHub Actions run #981 passed all seven required remote verification gates on implementation head `f2c421bc195fda93215be3ba32562fad5b41aa66`.
 
 ## Goal
 
@@ -81,6 +81,17 @@ The 31-test regression bundle covered Phase 12 attendance reliability, Phase 13 
 
 `git diff --check`: PASS.
 
+Remote closeout:
+
+- GitHub Actions run #981: PASS
+- `frontend-build`: PASS after retrying the failed dependency-audit step; the initial attempt received an external npm audit HTTP 400 response (`Invalid package tree`).
+- `javascript`: PASS
+- `clean-school-acceptance`: PASS
+- `php`: PASS
+- `e2e`: PASS
+- `apache`: PASS
+- `production-integration`: PASS
+
 ## Security and data integrity impact
 
 No authorization boundary was relaxed. No attendance record is inferred client-side as authoritative. Mobile marking still passes the selected class, date, and period through the existing typed bulk API and waits for server confirmation before clearing the pending draft state.
@@ -101,4 +112,8 @@ The mobile roster intentionally focuses on one period at a time; teachers who ne
 
 ## Closeout
 
-Phase 37 can be marked fully closed after the implementation commit is pushed and the required GitHub Actions gates are green. No product change should be promoted to an administrative demo candidate until that CI closeout is verified.
+Phase 37 is CLOSED. The implementation head is `f2c421bc195fda93215be3ba32562fad5b41aa66`, and GitHub Actions run #981 finished successfully with all seven required gates green.
+
+The first frontend dependency-audit attempt returned an external npm audit HTTP 400; the failed `frontend-build` job was retried without changing project dependencies, and the final run state was green across all required jobs.
+
+No backend API or database migration was introduced by this phase.
