@@ -88,7 +88,7 @@ test.describe('frontend Phase 15 archive, reports and signatures', () => {
               month: '2027-01',
               start: '2027-01-01',
               end: '2027-01-31',
-              days: [{ attendance_date: '2027-01-12', recorded_count: 12, present_count: 10, absent_count: 2, late_count: 0, excused_count: 0, students_with_records: 12 }],
+              days: [{ attendance_date: '2027-01-12', recorded_count: 12, present_count: 10, absent_count: 2, late_count: 0, excused_count: 0, students_with_records: 12, presence_rate: 83.3 }],
             },
           }),
         })
@@ -107,6 +107,7 @@ test.describe('frontend Phase 15 archive, reports and signatures', () => {
               month: '2027-01',
               start: '2027-01-01',
               end: '2027-01-31',
+              summary: { present_count: 8, absent_count: 2, late_count: 1, excused_count: 0, recorded_count: 11, presence_rate: 72.7 },
               students: [{
                 id: 301,
                 student_number: 'E2E-301',
@@ -122,6 +123,7 @@ test.describe('frontend Phase 15 archive, reports and signatures', () => {
                 excused_count: 0,
                 recorded_count: 11,
                 recorded_days: 10,
+                presence_rate: 72.7,
               }],
             },
           }),
@@ -203,9 +205,11 @@ test.describe('frontend Phase 15 archive, reports and signatures', () => {
     await page.getByRole('combobox', { name: 'Class' }).selectOption('1')
     await expect(page.getByText('E2E-HISTORY-A').last()).toBeVisible()
     await expect(page.getByRole('cell', { name: '12', exact: true })).toBeVisible()
+    await expect(page.getByRole('cell', { name: '83.3%', exact: true })).toBeVisible()
 
     await page.getByRole('combobox', { name: 'View' }).selectOption('month')
     await expect(page.getByRole('cell', { name: 'Demo Student' })).toBeVisible()
+    await expect(page.getByRole('cell', { name: '72.7%', exact: true })).toBeVisible()
     await expect(page.getByRole('cell', { name: '2' }).last()).toBeVisible()
 
     await page.getByRole('combobox', { name: 'View' }).selectOption('day')
@@ -241,6 +245,7 @@ test.describe('frontend Phase 15 archive, reports and signatures', () => {
             month: '2027-01',
             start: '2027-01-01',
             end: '2027-01-31',
+            summary: { present_count: 8, absent_count: 2, late_count: 1, excused_count: 0, recorded_count: 11, presence_rate: 72.7 },
             students: [{
               id: 301,
               student_number: 'E2E-301',
@@ -254,6 +259,7 @@ test.describe('frontend Phase 15 archive, reports and signatures', () => {
               excused_count: 0,
               other_count: 1,
               recorded_count: 11,
+              presence_rate: 72.7,
             }],
           },
         }),
@@ -266,6 +272,7 @@ test.describe('frontend Phase 15 archive, reports and signatures', () => {
 
     await page.goto('/app/reports?class_id=1&month=2027-01')
     await expect(page.getByRole('heading', { name: 'Statistics' })).toBeVisible()
+    await expect(page.getByText('72.7%').first()).toBeVisible()
     await expect(page.getByText('Demo Student')).toBeVisible()
     await expect.poll(() => reportUrl).toContain('month=2027-01')
     await page.getByRole('button', { name: 'Print report' }).click()

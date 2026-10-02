@@ -89,6 +89,7 @@ const dashboard: AdminDashboard = {
       absent_count: 3,
       late_count: 1,
       excused_count: 0,
+      presence_rate: 75,
     },
   ],
   attention_students: [

@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import { useSearchParams } from 'react-router'
 import { useI18n } from '../../features/i18n/useI18n.ts'
 import { TRANSLATION_KEYS, type TranslationKey } from '../../features/i18n/types.ts'
@@ -21,19 +20,6 @@ export function TeacherReportsPage() {
   const report = useMonthlyReport(selectedClassId, month)
 
   const reportData = report.data
-  const totals = useMemo(() => {
-    if (reportData === null) return null
-    return reportData.students.reduce(
-      (sum, student) => ({
-        present: sum.present + student.present_count,
-        absent: sum.absent + student.absent_count,
-        late: sum.late + student.late_count,
-        excused: sum.excused + student.excused_count,
-        recorded: sum.recorded + student.recorded_count,
-      }),
-      { present: 0, absent: 0, late: 0, excused: 0, recorded: 0 },
-    )
-  }, [reportData])
 
   const updateParam = (key: string, value: string) => {
     const next = new URLSearchParams(params)
@@ -135,17 +121,19 @@ export function TeacherReportsPage() {
                 reloadLabel={t(TRANSLATION_KEYS.system.reload)}
                 onRetry={() => void report.reload()}
               />
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              <p className="text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.attendance.presenceRateDefinition)}</p>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                 {([
-                  [TRANSLATION_KEYS.teacher.present, totals?.present ?? 0],
-                  [TRANSLATION_KEYS.teacher.absent, totals?.absent ?? 0],
-                  [TRANSLATION_KEYS.teacher.late, totals?.late ?? 0],
-                  [TRANSLATION_KEYS.teacher.excused, totals?.excused ?? 0],
-                  [TRANSLATION_KEYS.teacher.totalRecorded, totals?.recorded ?? 0],
-                ] as Array<[TranslationKey, number]>).map(([key, value]) => (
+                  [TRANSLATION_KEYS.attendance.presenceRate, reportData.summary.presence_rate === null ? '—' : String(reportData.summary.presence_rate) + '%'],
+                  [TRANSLATION_KEYS.teacher.present, formatNumber(reportData.summary.present_count)],
+                  [TRANSLATION_KEYS.teacher.absent, formatNumber(reportData.summary.absent_count)],
+                  [TRANSLATION_KEYS.teacher.late, formatNumber(reportData.summary.late_count)],
+                  [TRANSLATION_KEYS.teacher.excused, formatNumber(reportData.summary.excused_count)],
+                  [TRANSLATION_KEYS.teacher.totalRecorded, formatNumber(reportData.summary.recorded_count)],
+                ] as Array<[TranslationKey, string]>).map(([key, value]) => (
                   <article key={key} className="sams-card p-4">
                     <p className="text-sm text-[var(--sams-muted)]">{t(key)}</p>
-                    <p className="mt-1 text-2xl font-semibold">{formatNumber(value as number)}</p>
+                    <p className="mt-1 text-2xl font-semibold">{value}</p>
                   </article>
                 ))}
               </div>
@@ -162,6 +150,7 @@ export function TeacherReportsPage() {
                     t(TRANSLATION_KEYS.teacher.late),
                     t(TRANSLATION_KEYS.teacher.excused),
                     t(TRANSLATION_KEYS.teacher.totalRecorded),
+                    t(TRANSLATION_KEYS.attendance.presenceRate),
                   ]}
                 >
                   {reportData.students.map((student) => (
@@ -172,6 +161,7 @@ export function TeacherReportsPage() {
                       <td className="px-3 py-2">{formatNumber(student.late_count)}</td>
                       <td className="px-3 py-2">{formatNumber(student.excused_count)}</td>
                       <td className="px-3 py-2">{formatNumber(student.recorded_count)}</td>
+                      <td className="px-3 py-2">{student.presence_rate === null ? '—' : String(student.presence_rate) + '%'}</td>
                     </tr>
                   ))}
                 </Table>

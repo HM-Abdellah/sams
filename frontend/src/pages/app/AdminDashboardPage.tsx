@@ -68,7 +68,10 @@ export function AdminDashboardPage() {
         <Metric label={t(TRANSLATION_KEYS.admin.activeStudents)} value={formatNumber(asNumber(summary.active_students))} />
         <Metric label={t(TRANSLATION_KEYS.admin.activeClasses)} value={formatNumber(asNumber(summary.active_classes))} />
         <Metric label={t(TRANSLATION_KEYS.admin.activeTeachers)} value={formatNumber(asNumber(summary.active_teachers))} />
-        <Metric label={t(TRANSLATION_KEYS.admin.todayPresenceRate)} value={`${summary.today_presence_rate}%`} />
+        <Metric
+          label={t(TRANSLATION_KEYS.attendance.presenceRate)}
+          value={summary.today_presence_rate === null ? '—' : `${summary.today_presence_rate}%`}
+        />
       </div>
 
       <section className="sams-card p-5 sm:p-6" aria-labelledby="attendance-today-title">
@@ -77,9 +80,10 @@ export function AdminDashboardPage() {
             <p className="sams-section-label">{t(TRANSLATION_KEYS.admin.overview)}</p>
             <h2 id="attendance-today-title" className="mt-1 text-xl font-semibold tracking-tight">{t(TRANSLATION_KEYS.admin.attendanceToday)}</h2>
           </div>
-          <p className="text-sm text-[var(--sams-muted)]">
-            {formatNumber(todayTotal)} · {t(TRANSLATION_KEYS.admin.todayRecords)}
-          </p>
+          <div className="space-y-1 text-sm text-[var(--sams-muted)]">
+            <p>{formatNumber(todayTotal)} · {t(TRANSLATION_KEYS.admin.todayRecords)}</p>
+            <p>{t(TRANSLATION_KEYS.attendance.presenceRateDefinition)}</p>
+          </div>
         </div>
 
         {todayTotal > 0 && statusTotal > 0 ? (
@@ -248,21 +252,19 @@ export function AdminDashboardPage() {
               t(TRANSLATION_KEYS.admin.className),
               t(TRANSLATION_KEYS.admin.students),
               t(TRANSLATION_KEYS.admin.recordsToday),
-              t(TRANSLATION_KEYS.admin.todayPresenceRate),
+              t(TRANSLATION_KEYS.attendance.presenceRate),
               t(TRANSLATION_KEYS.teacher.late),
               t(TRANSLATION_KEYS.admin.absent),
             ]}
           >
             {resource.data.class_stats.map((item) => {
               const records = asNumber(item.today_records)
-              const present = asNumber(item.present_count)
-              const rate = records > 0 ? Math.round((present / records) * 1000) / 10 : null
               return (
                 <tr key={item.id} className="border-b border-[var(--sams-border)] last:border-b-0">
                   <td className="px-3 py-3 font-medium">{item.name}</td>
                   <td className="px-3 py-3">{formatNumber(asNumber(item.student_count))}</td>
                   <td className="px-3 py-3">{formatNumber(records)}</td>
-                  <td className="px-3 py-3">{rate === null ? '—' : `${rate}%`}</td>
+                  <td className="px-3 py-3">{item.presence_rate === null ? '—' : `${item.presence_rate}%`}</td>
                   <td className="px-3 py-3">{formatNumber(asNumber(item.late_count))}</td>
                   <td className="px-3 py-3">{formatNumber(asNumber(item.absent_count))}</td>
                 </tr>

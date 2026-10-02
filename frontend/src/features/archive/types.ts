@@ -8,6 +8,7 @@ export interface ArchiveDay {
   late_count: number | string
   excused_count: number | string
   students_with_records: number | string
+  presence_rate: number | null
 }
 
 export interface ArchiveMonthStudent {
@@ -25,6 +26,7 @@ export interface ArchiveMonthStudent {
   excused_count: number | string
   recorded_count: number | string
   recorded_days: number | string
+  presence_rate: number | null
 }
 
 export interface ArchiveDailyRecord {
@@ -85,11 +87,21 @@ export interface ArchiveDaysData extends ArchiveBaseData {
   days: ArchiveDay[]
 }
 
+export interface ArchiveMonthSummary {
+  present_count: number | string
+  absent_count: number | string
+  late_count: number | string
+  excused_count: number | string
+  recorded_count: number | string
+  presence_rate: number | null
+}
+
 export interface ArchiveMonthData extends ArchiveBaseData {
   view: 'month'
   month: string
   start: string
   end: string
+  summary: ArchiveMonthSummary
   students: ArchiveMonthStudent[]
 }
 
