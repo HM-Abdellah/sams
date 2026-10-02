@@ -1,4 +1,4 @@
-[Reading 147 lines from start (total: 147 lines, 0 remaining)]
+[Reading 169 lines from start (total: 169 lines, 0 remaining)]
 
 name: SAMS Phase 38 Verification
 
@@ -56,6 +56,28 @@ jobs:
       - name: Install backend dependencies
         working-directory: backend
         run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Configure backend database
+        working-directory: backend
+        shell: sh
+        run: |
+          cat > config/database.php <<'PHP'
+          <?php
+          declare(strict_types=1);
+          return [
+              'host' => getenv('SAMS_TEST_DB_HOST') ?: 'db',
+              'port' => (int)(getenv('SAMS_TEST_DB_PORT') ?: 3306),
+              'database' => getenv('SAMS_TEST_DB_NAME') ?: 'sams',
+              'username' => getenv('SAMS_TEST_DB_USER') ?: 'root',
+              'password' => getenv('SAMS_TEST_DB_PASS') ?: 'root',
+              'charset' => 'utf8mb4',
+          ];
+          PHP
+
+      - name: Load current schema
+        shell: sh
+        run: |
+          mariadb -h "$SAMS_TEST_DB_HOST" -P "$SAMS_TEST_DB_PORT" -u"$SAMS_TEST_DB_USER" -p"$SAMS_TEST_DB_PASS" < database/schema.sql
 
       - name: Checkout release baseline
         uses: actions/checkout@v4
