@@ -43,20 +43,12 @@ export function TeacherClassDetailsPage() {
         eyebrow={t(TRANSLATION_KEYS.navigation.classes)}
         title={classInfo.name}
         actions={
-          <>
-            <Link
-              to={'/app/students?class_id=' + classInfo.id}
-              className="inline-flex min-h-10 items-center justify-center rounded-lg bg-[var(--sams-action)] px-4 text-sm font-semibold text-[var(--sams-action-foreground)] shadow-sm transition hover:bg-[var(--sams-action-hover)]"
-            >
-              {t(TRANSLATION_KEYS.teacher.openStudents)}
-            </Link>
-            <Link
-              to={'/app/attendance?class_id=' + classInfo.id}
-              className="inline-flex min-h-10 items-center justify-center rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] px-4 text-sm font-semibold text-[var(--sams-text)] shadow-sm transition hover:bg-[var(--sams-action-soft)]"
-            >
-              {t(TRANSLATION_KEYS.teacher.openAttendance)}
-            </Link>
-          </>
+          <Link
+            to="/app/classes"
+            className="inline-flex min-h-10 items-center justify-center rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] px-4 text-sm font-semibold text-[var(--sams-text)] shadow-sm transition hover:bg-[var(--sams-action-soft)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--sams-info-surface)]"
+          >
+            {t(TRANSLATION_KEYS.teacher.classes)}
+          </Link>
         }
       />
 
@@ -74,6 +66,20 @@ export function TeacherClassDetailsPage() {
           />
         </dl>
         <p className="mt-4 text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.teacher.teachingContext)}</p>
+        <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <Link to={'/app/attendance?class_id=' + classInfo.id} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] px-4 text-sm font-semibold text-[var(--sams-text)] transition hover:bg-[var(--sams-action-soft)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--sams-info-surface)]">
+            {t(TRANSLATION_KEYS.navigation.attendance)}
+          </Link>
+          <Link to={'/app/students?class_id=' + classInfo.id} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] px-4 text-sm font-semibold text-[var(--sams-text)] transition hover:bg-[var(--sams-action-soft)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--sams-info-surface)]">
+            {t(TRANSLATION_KEYS.navigation.students)}
+          </Link>
+          <Link to={'/app/signatures?class_id=' + classInfo.id} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] px-4 text-sm font-semibold text-[var(--sams-text)] transition hover:bg-[var(--sams-action-soft)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--sams-info-surface)]">
+            {t(TRANSLATION_KEYS.navigation.signatures)}
+          </Link>
+          <Link to={'/app/reports?class_id=' + classInfo.id} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] px-4 text-sm font-semibold text-[var(--sams-text)] transition hover:bg-[var(--sams-action-soft)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--sams-info-surface)]">
+            {t(TRANSLATION_KEYS.navigation.reports)}
+          </Link>
+        </div>
       </section>
 
       <AsyncStateFeedback
