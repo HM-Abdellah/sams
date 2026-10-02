@@ -18,7 +18,7 @@ test.describe('Final verification session error states', () => {
 
   test('protected route keeps the session failure state localized', async ({ page }) => {
     await installSessionFailure(page)
-    await page.goto('/sams/app/teacher')
+    await page.goto('/app/teacher')
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'ar')
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
@@ -28,7 +28,7 @@ test.describe('Final verification session error states', () => {
 
   test('public route keeps the session failure state localized', async ({ page }) => {
     await installSessionFailure(page)
-    await page.goto('/sams/login')
+    await page.goto('/login')
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'ar')
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
