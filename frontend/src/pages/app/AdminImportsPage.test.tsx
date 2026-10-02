@@ -114,6 +114,13 @@ describe('AdminImportsPage', () => {
     )
 
     await waitFor(() => {
+      expect(screen.getByRole('textbox', { name: 'Batch ID' })).toBeInTheDocument()
+    })
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Batch ID' }), { target: { value: '41' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Load batch' }))
+
+    await waitFor(() => {
       expect(screen.getByRole('table', { name: 'Imported classes' })).toBeInTheDocument()
     })
 
@@ -143,6 +150,13 @@ describe('AdminImportsPage', () => {
         </I18nProvider>
       </MemoryRouter>,
     )
+
+    await waitFor(() => {
+      expect(screen.getByRole('textbox', { name: 'Batch ID' })).toBeInTheDocument()
+    })
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Batch ID' }), { target: { value: '41' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Load batch' }))
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Reconcile' })).toBeInTheDocument()
