@@ -53,7 +53,7 @@ describe('AdminOnboardingPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Reject' }))
 
-    const dialog = screen.getByRole('alertdialog', { name: 'Confirm rejection' })
+    const dialog = screen.getByRole('alertdialog', { name: 'Confirm rejecting this request' })
     expect(within(dialog).getByText('Rejecting this request closes the teacher onboarding request. The request remains available in history.')).toBeInTheDocument()
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Reject' }))
