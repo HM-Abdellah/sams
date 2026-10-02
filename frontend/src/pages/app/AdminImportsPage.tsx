@@ -230,6 +230,8 @@ export function AdminImportsPage() {
           <dl className="mt-4 grid gap-3 sm:grid-cols-3">
             <Detail label={t(TRANSLATION_KEYS.navigation.classes)} value={String(asNumber(preview.batch.total_classes))} />
             <Detail label={t(TRANSLATION_KEYS.admin.rows)} value={String(asNumber(preview.batch.total_rows))} />
+            <Detail label={t(TRANSLATION_KEYS.admin.importWarnings)} value={String(asNumber(preview.batch.warning_rows) + asNumber(preview.batch.warning_classes))} />
+            <Detail label={t(TRANSLATION_KEYS.admin.importErrors)} value={String(asNumber(preview.batch.error_rows) + asNumber(preview.batch.error_classes))} />
             <Detail label={t(TRANSLATION_KEYS.admin.targetAcademicYear)} value={preview.batch.target_academic_year_name ?? '—'} />
           </dl>
           <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -252,9 +254,28 @@ export function AdminImportsPage() {
         </div>
         {preview.classes.length === 0 ? <EmptyState title={t(TRANSLATION_KEYS.admin.classes)} /> : (
           <Table caption={t(TRANSLATION_KEYS.admin.importClasses)} headers={[t(TRANSLATION_KEYS.admin.sourceClass), t(TRANSLATION_KEYS.admin.students), t(TRANSLATION_KEYS.admin.status), t(TRANSLATION_KEYS.admin.importIssues)]}>
-            {preview.classes.map((x) => <tr key={x.id} className="border-b border-[var(--sams-border)] last:border-b-0">
-              <td className="px-3 py-2 font-medium">{x.source_class_name}</td><td className="px-3 py-2">{asNumber(x.student_count)}</td><td className="px-3 py-2"><Badge variant={x.status === 'error' ? 'danger' : x.status === 'mapped' ? 'success' : 'neutral'}>{x.status}</Badge></td>
-            </tr>)}
+            {preview.classes.map((x) => {
+              const issues = Array.isArray(x.issues) ? x.issues : []
+              return (
+                <tr key={x.id} className="border-b border-[var(--sams-border)] last:border-b-0">
+                  <td className="px-3 py-2 font-medium">{x.source_class_name}</td>
+                  <td className="px-3 py-2">{asNumber(x.student_count)}</td>
+                  <td className="px-3 py-2"><Badge variant={statusVariant(x.status)}>{statusText(x.status, t)}</Badge></td>
+                  <td className="px-3 py-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={x.id === selectedClassId ? 'primary' : 'secondary'}
+                      onClick={() => void loadClassRows(x.id)}
+                    >
+                      {issues.length > 0
+                        ? issues.length + ' ' + t(TRANSLATION_KEYS.admin.importIssues)
+                        : t(TRANSLATION_KEYS.admin.importSelectClassRows)}
+                    </Button>
+                  </td>
+                </tr>
+              )
+            })}
           </Table>
         )}
         {selectedClass && (
@@ -321,6 +342,20 @@ export function AdminImportsPage() {
           </section>
         )}
       </section>}
+
+      <ConfirmDialog
+        open={confirmKind !== null}
+        title={confirmKind === 'commit'
+          ? t(TRANSLATION_KEYS.admin.confirmCommit)
+          : t(TRANSLATION_KEYS.admin.confirmReconcile)}
+        cancelLabel={t(TRANSLATION_KEYS.admin.cancel)}
+        confirmLabel={confirmKind === 'commit'
+          ? t(TRANSLATION_KEYS.admin.commit)
+          : t(TRANSLATION_KEYS.admin.reconcile)}
+        busy={busy !== null}
+        onCancel={() => setConfirmKind(null)}
+        onConfirm={executeWorkflow}
+      />
     </section>
   )
 }
