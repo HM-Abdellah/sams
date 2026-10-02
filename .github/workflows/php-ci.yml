@@ -913,19 +913,21 @@ jobs:
             exit 1
           fi
 
-          if grep -RInE 'test\.(skip|fixme|only)|describe\.(skip|only)' tests/e2e/frontend_phase22_real_backend_smoke.spec.js; then
+          if grep -RInE 'test\.(skip|fixme|only)|describe\.(skip|only)' tests/e2e/frontend_phase22_real_backend_smoke.spec.js tests/e2e/final_demo_real_backend.spec.js; then
             echo "Clean-school acceptance contains skipped/focused tests."
             exit 1
           fi
 
-          if grep -RIn 'waitForTimeout' tests/e2e/frontend_phase22_real_backend_smoke.spec.js; then
+          if grep -RIn 'waitForTimeout' tests/e2e/frontend_phase22_real_backend_smoke.spec.js tests/e2e/final_demo_real_backend.spec.js; then
             echo "Clean-school acceptance must synchronize on observable behavior, not fixed sleeps."
             exit 1
           fi
 
           node --check tests/e2e/frontend_phase22_real_backend_smoke.spec.js
+          node --check tests/e2e/final_demo_real_backend.spec.js
 
           npx playwright test tests/e2e/frontend_phase22_real_backend_smoke.spec.js --project=chromium --reporter=line
+          npx playwright test tests/e2e/final_demo_real_backend.spec.js --project=chromium --reporter=line
 
       - name: Verify persisted clean-school state
         shell: bash
