@@ -111,4 +111,34 @@ test.describe('Final demo real-backend rehearsal', () => {
     expect(rtlMetrics.bodyWidth).toBeLessThanOrEqual(rtlMetrics.viewport)
   })
 
+
+  test('admin real backend exposes every operational management workspace', async ({ page }) => {
+    await login(page, adminCode, adminPassword)
+    await expect(page).toHaveURL(/\/sams\/app\/admin\/dashboard$/)
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
+
+    await page.goto('/sams/app/admin/classes')
+    await expect(page.getByRole('heading', { name: 'Classes' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'E2E-2BAC-A' })).toBeVisible()
+
+    await page.goto('/sams/app/admin/students?class_id=1')
+    await expect(page.getByRole('heading', { name: 'Students' })).toBeVisible()
+    await expect(page.getByText('Jean Dupont', { exact: true })).toBeVisible()
+
+    await page.goto('/sams/app/admin/teachers')
+    await expect(page.getByRole('heading', { name: 'Teachers' })).toBeVisible()
+    await expect(page.getByText('E2E Teacher', { exact: true }).first()).toBeVisible()
+
+    await page.goto('/sams/app/admin/users')
+    await expect(page.getByRole('heading', { name: 'Users' })).toBeVisible()
+    await expect(page.getByText('teacher.e2e', { exact: true }).first()).toBeVisible()
+
+    await page.goto('/sams/app/admin/academic-years')
+    await expect(page.getByRole('heading', { name: 'Academic years' })).toBeVisible()
+    await expect(page.getByText('2026/2027', { exact: true }).first()).toBeVisible()
+
+    await page.goto('/sams/app/admin/audit')
+    await expect(page.getByRole('heading', { name: 'Audit' })).toBeVisible()
+  })
+
 })
