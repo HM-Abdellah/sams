@@ -301,6 +301,20 @@ test.describe('frontend Phase 14 admin platform', () => {
     await expect(page.getByText('2027/2028')).toBeVisible()
   })
 
+  test('onboarding rejection requires an accessible confirmation', async ({ page }) => {
+    await page.goto('/app/admin/onboarding')
+    await expect(page.getByText('New E2E Teacher')).toBeVisible()
+
+    await page.getByRole('button', { name: 'Reject' }).click()
+
+    const dialog = page.getByRole('alertdialog', { name: 'Confirm rejecting this request' })
+    await expect(dialog).toBeVisible()
+    await expect(dialog).toContainText('Rejecting this request closes the teacher onboarding request. The request remains available in history.')
+
+    await dialog.getByRole('button', { name: 'Reject' }).click()
+    await expect(page.getByRole('cell', { name: 'rejected' })).toBeVisible()
+  })
+
   test('imports use multipart form data and preserve staged workflow boundaries', async ({ page }) => {
     await page.goto('/app/admin/imports')
     const input = page.getByLabel('Import file')
