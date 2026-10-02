@@ -119,7 +119,7 @@ test.describe('Final demo real-backend rehearsal', () => {
 
     await page.goto('/sams/app/admin/classes')
     await expect(page.getByRole('heading', { name: 'Classes' })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'E2E-2BAC-A' })).toBeVisible()
+    await expect(page.getByRole('cell', { name: 'E2E-2BAC-A', exact: true })).toBeVisible()
 
     await page.goto('/sams/app/admin/students?class_id=1')
     await expect(page.getByRole('heading', { name: 'Students' })).toBeVisible()
