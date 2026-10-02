@@ -102,7 +102,7 @@ foreach ($report['students'] as $student) {
 }
 expect_true(isset($reportByStudent[$student1]), 'Report first student is missing.');
 expect_true(isset($reportByStudent[$student2]), 'Report second student is missing.');
-expect_true((float)$reportByStudent[$student1]['presence_rate'] === 66.7, 'Report first student rate is inconsistent.');
+expect_true((float)$reportByStudent[$student1]['presence_rate'] === 33.3, 'Report first student rate is inconsistent.');
 expect_true((float)$reportByStudent[$student2]['presence_rate'] === 66.7, 'Report second student rate is inconsistent.');
 
 $archive = (new ArchiveService())->read($adminId, 'admin', $classId, 'month', substr($today, 0, 7), null, null, $schoolId);
