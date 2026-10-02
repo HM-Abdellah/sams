@@ -11,9 +11,9 @@ permissions:
 
 on:
   push:
-    branches: [main, feat/phase-11-final-review, refactor/phase-2-backend-foundation, feat/phase-3-school-import-v2, feat/phase-4-teacher-attendance-backend, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-7-security-reliability, feat/phase-8-ci-base-v2, feat/phase-8-final-gate-v4, feat/phase-9-clean-school-acceptance]
+    branches: [main, reconstruction/product-system-2026-10-01, feat/phase-11-final-review, refactor/phase-2-backend-foundation, feat/phase-3-school-import-v2, feat/phase-4-teacher-attendance-backend, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-7-security-reliability, feat/phase-8-ci-base-v2, feat/phase-8-final-gate-v4, feat/phase-9-clean-school-acceptance]
   pull_request:
-    branches: [main, refactor/phase-2-backend-foundation, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-8-ci-base-v2]
+    branches: [main, reconstruction/product-system-2026-10-01, refactor/phase-2-backend-foundation, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-8-ci-base-v2]
 
 jobs:
   php:
