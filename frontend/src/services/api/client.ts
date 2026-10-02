@@ -57,7 +57,11 @@ export class ApiClient {
 
     const payload = await this.readEnvelope<T>(response)
     if (!payload.success) {
-      throw new ApiError(response.status, payload.error)
+      throw new ApiError(
+        response.status,
+        payload.error,
+        response.headers.get('X-SAMS-Error-Code') ?? undefined,
+      )
     }
 
     this.captureCsrf(payload.data)

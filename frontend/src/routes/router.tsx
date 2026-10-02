@@ -55,6 +55,7 @@ const router = createBrowserRouter([
               { path: '/app/admin', element: <Navigate to="/app/admin/dashboard" replace /> },
               { path: '/app/admin/dashboard', lazy: () => import('../pages/app/AdminDashboardPage.tsx').then((module) => ({ Component: module.AdminDashboardPage })) },
               { path: '/app/admin/classes', lazy: () => import('../pages/app/AdminClassesPage.tsx').then((module) => ({ Component: module.AdminClassesPage })) },
+              { path: '/app/admin/students', lazy: () => import('../pages/app/AdminStudentsPage.tsx').then((module) => ({ Component: module.AdminStudentsPage })) },
               { path: '/app/admin/teachers', lazy: () => import('../pages/app/AdminTeachersPage.tsx').then((module) => ({ Component: module.AdminTeachersPage })) },
               { path: '/app/admin/users', lazy: () => import('../pages/app/AdminUsersPage.tsx').then((module) => ({ Component: module.AdminUsersPage })) },
               { path: '/app/admin/onboarding', lazy: () => import('../pages/app/AdminOnboardingPage.tsx').then((module) => ({ Component: module.AdminOnboardingPage })) },

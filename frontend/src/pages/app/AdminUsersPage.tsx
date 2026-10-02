@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { adminApi } from '../../features/admin/api.ts'
 import type { AdminUser } from '../../features/admin/types.ts'
 import { useAdminResource } from '../../features/admin/useAdminResource.ts'
@@ -8,6 +8,7 @@ import { useI18n } from '../../features/i18n/useI18n.ts'
 import {
   Badge, Button, Dialog, ErrorState, FormField, Input, Loading, PageHeader, Select, Table,
 } from '../../components/ui/index.ts'
+import { AdminWorkspaceToolbar } from '../../components/admin/AdminWorkspaceToolbar.tsx'
 
 export function AdminUsersPage() {
   const { t } = useI18n()
@@ -25,6 +26,10 @@ export function AdminUsersPage() {
   const [busy, setBusy] = useState<number | 'form' | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [issuedCode, setIssuedCode] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
+  const [roleFilter, setRoleFilter] = useState<'all' | AdminUser['role']>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | AdminUser['account_status']>('all')
+  const [sort, setSort] = useState<'name' | 'role' | 'status' | 'activity'>('name')
 
   const resetForm = () => {
     setEditing(null)
@@ -128,6 +133,23 @@ export function AdminUsersPage() {
     }
   }
 
+  const filteredUsers = useMemo(() => {
+    const normalized = query.trim().toLocaleLowerCase()
+    return (resource.data?.users ?? []).filter((user) => {
+      const matchesQuery = normalized === '' || [user.full_name, user.username, user.employee_id, user.phone]
+        .filter(Boolean)
+        .some((value) => String(value).toLocaleLowerCase().includes(normalized))
+      const matchesRole = roleFilter === 'all' || user.role === roleFilter
+      const matchesStatus = statusFilter === 'all' || user.account_status === statusFilter
+      return matchesQuery && matchesRole && matchesStatus
+    }).sort((a, b) => {
+      if (sort === 'role') return a.role.localeCompare(b.role) || a.full_name.localeCompare(b.full_name)
+      if (sort === 'status') return a.account_status.localeCompare(b.account_status) || a.full_name.localeCompare(b.full_name)
+      if (sort === 'activity') return (b.last_seen_at ?? '').localeCompare(a.last_seen_at ?? '') || a.full_name.localeCompare(b.full_name)
+      return a.full_name.localeCompare(b.full_name)
+    })
+  }, [resource.data, query, roleFilter, statusFilter, sort])
+
   if (resource.status === 'idle' || resource.status === 'loading') {
     return <Loading label={t(TRANSLATION_KEYS.auth.loading)} />
   }
@@ -187,6 +209,23 @@ export function AdminUsersPage() {
             {editing && <Button type="button" variant="secondary" onClick={resetForm}>{t(TRANSLATION_KEYS.admin.cancel)}</Button>}
           </div>
         </section>
+        <AdminWorkspaceToolbar searchLabel={t(TRANSLATION_KEYS.admin.search)} searchPlaceholder={t(TRANSLATION_KEYS.admin.searchUsers)} searchValue={query} onSearchChange={setQuery}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField label={t(TRANSLATION_KEYS.admin.role)}>{({ id, ...aria }) => <Select id={id} {...aria} value={roleFilter} onChange={(event) => setRoleFilter(event.target.value as typeof roleFilter)}><option value="all">{t(TRANSLATION_KEYS.admin.allRoles)}</option><option value="teacher">Teacher</option><option value="admin">Admin</option><option value="counselor">Counselor</option></Select>}</FormField>
+            <FormField label={t(TRANSLATION_KEYS.admin.status)}>{({ id, ...aria }) => <Select id={id} {...aria} value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}><option value="all">{t(TRANSLATION_KEYS.admin.allStatuses)}</option><option value="active">{t(TRANSLATION_KEYS.admin.activeOnly)}</option><option value="suspended">{t(TRANSLATION_KEYS.admin.suspended)}</option><option value="deactivated">{t(TRANSLATION_KEYS.admin.deactivated)}</option></Select>}</FormField>
+          </div>
+        </AdminWorkspaceToolbar>
+        <div className="sams-admin-toolbar grid gap-4 p-4 sm:p-5">
+          <FormField label={t(TRANSLATION_KEYS.admin.sort)}>
+            {({ id, ...aria }) => <Select id={id} {...aria} value={sort} onChange={(event) => setSort(event.target.value as typeof sort)}>
+              <option value="name">{t(TRANSLATION_KEYS.admin.sortName)}</option>
+              <option value="role">{t(TRANSLATION_KEYS.admin.role)}</option>
+              <option value="status">{t(TRANSLATION_KEYS.admin.sortStatus)}</option>
+              <option value="activity">{t(TRANSLATION_KEYS.admin.sortOnline)}</option>
+            </Select>}
+          </FormField>
+        </div>
+        <p className="text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.admin.showingResults)}: {filteredUsers.length} / {data.users.length}</p>
         <Table caption={t(TRANSLATION_KEYS.navigation.users)} headers={[
           t(TRANSLATION_KEYS.admin.fullName),
           t(TRANSLATION_KEYS.admin.username),
@@ -195,7 +234,7 @@ export function AdminUsersPage() {
           t(TRANSLATION_KEYS.admin.security),
           t(TRANSLATION_KEYS.admin.actions),
         ]}>
-          {data.users.map((user) => (
+          {filteredUsers.map((user) => (
             <tr key={user.id} className="border-b border-[var(--sams-border)] last:border-b-0">
               <td className="px-3 py-2 font-medium">{user.full_name}</td>
               <td className="px-3 py-2">{user.username}</td>

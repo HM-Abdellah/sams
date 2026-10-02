@@ -113,6 +113,18 @@ JSON actions:
 - `activate`: `id`
 - `deactivate`: `id`
 
+## Shared attendance metric semantics
+
+All dashboard, report, and archive presence rates use the same canonical definition:
+
+- **Recorded entries**: persisted attendance rows in the requested school/class/date/enrollment scope.
+- **Present**: recorded rows whose status is `present`.
+- **Absent / Late / Excused**: recorded rows with the corresponding status.
+- **Presence rate**: `present / recorded entries * 100`, rounded to one decimal place.
+- When there are no recorded entries, the presence rate is `null`, not 0%.
+- This metric does **not** estimate scheduled-but-unrecorded lessons. SAMS currently has no timetable/expected-session contract that would make such a denominator authoritative.
+- The five-absence attention threshold remains a separate operational rule and must not be interpreted as a percentage metric.
+
 ## Administration dashboard
 
 ### GET `api/admin-dashboard.php`
@@ -127,6 +139,8 @@ Admin only. Returns the current school operational dashboard for the active acad
 - recent audit activity
 
 Branch statistics are derived from the separate class rows and are never used to grant access or merge historical classes.
+
+Dashboard metric fields follow the shared attendance metric semantics: `summary.today_presence_rate`, `attendance_trend[].presence_rate`, and `class_stats[].presence_rate` all use persisted recorded entries as the denominator; no-record scopes return `null`.
 
 ## Teachers
 
@@ -238,11 +252,11 @@ A transfer is transactional: the current enrollment is closed on the day before 
 
 ### GET `/api/v1/classes/{class_id}/attendance?week_start=YYYY-MM-DD`
 
-Authenticated users only. The class must be active in the active academic year, and teachers may read only assigned classes. The supplied date is normalized to Monday, the six-day school-week range is clamped to academic-year boundaries when it partially overlaps the year, and a fully out-of-year week returns an empty register. The response contains the active attendance roster using only first/last names, enrollment-aware attendance rows, and the selected week's per-lesson sign-off state so the client can respect protected lessons.
+Authenticated users only. The class must be active in the active academic year, and teachers may read only assigned classes. The supplied date is normalized to Monday, the six-day school-week range is clamped to academic-year boundaries when it partially overlaps the year, and a fully out-of-year week returns an empty register. The response contains the active attendance roster using only first/last names, enrollment-aware attendance rows, the selected week's per-lesson sign-off state, and per-lesson attendance revisions. A lesson with no revision history has revision 0.
 
 ### POST `/api/v1/classes/{class_id}/attendance/bulk`
 
-Admin and teacher only. Requires CSRF. JSON body contains `entries`, capped at 500. Each entry supports `upsert` or `delete`; upserts use the statuses `present`, `absent`, `late`, `excused`. Students must belong to the class and be active, dates must be inside the class academic year, and duplicate student/date/period keys within a batch are rejected. Signed lessons cannot be edited until reopened. The complete batch, audit records, and sign-off invalidation run in one transaction; a failure rolls the whole batch back. Exact no-op updates do not create audit noise.
+Admin and teacher only. Requires CSRF. JSON body contains `entries`, capped at 500. Each entry supports `upsert` or `delete`; upserts use the statuses `present`, `absent`, `late`, `excused`. Every entry must include a non-negative `expected_revision` for its class + attendance_date + period lesson. Students must belong to the class and be active, dates must be inside the class academic year, and duplicate student/date/period keys within a batch are rejected. All entries for the same lesson must use the same expected revision. Signed lessons cannot be edited until reopened. A stale expected revision returns HTTP 409 with `X-SAMS-Error-Code: ATTENDANCE_CONCURRENCY_CONFLICT`, unless the requested end state is already committed (idempotent retry). Successful mutations advance the lesson revision once, even when an attendance row is deleted. The complete batch, audit records, revision update, and sign-off invalidation run in one transaction; a failure rolls the whole batch back.
 
 The legacy attendance endpoints below remain available during the backend migration.
 
@@ -401,11 +415,19 @@ Supported views are `days`, `month`, `day`, and `student`.
 - `day`: requires `class_id` and `date=YYYY-MM-DD`; the date must be within the class academic year.
 - `student`: requires `class_id` and `student_id` and returns that student's history within the selected class.
 
+For `days`, each returned day includes `presence_rate` using the shared metric definition. For `month`, the response includes a `summary` with the shared status counts and `presence_rate`, and each enrollment-aware student row includes `presence_rate`.
+
 The canonical route is read-only, requires authentication and the `admin` role, and does not require CSRF.
 
 ### GET `/api/v1/classes/{id}/report?month=YYYY-MM`
 
-Authenticated users with operational access to the selected class. Returns enrollment-aware monthly attendance totals for the class.
+Authenticated users with operational access to the selected class. Returns enrollment-aware monthly attendance totals for the class. The response includes:
+
+- `summary.present_count`, `summary.absent_count`, `summary.late_count`, `summary.excused_count`, `summary.recorded_count`
+- `summary.presence_rate` using the shared metric definition above, or `null` when nothing was recorded
+- `students[].presence_rate` using the same denominator for each enrollment-aware student row
+
+Existing count fields remain available for compatibility.
 
 ### GET `/api/v1/classes/{id}/signature`
 

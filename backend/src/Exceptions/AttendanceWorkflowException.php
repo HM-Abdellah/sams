@@ -8,7 +8,8 @@ final class AttendanceWorkflowException extends \RuntimeException
 {
     public function __construct(
         string $message,
-        private readonly int $httpStatus = 409
+        private readonly int $httpStatus = 409,
+        private readonly ?string $errorCode = null
     ) {
         parent::__construct($message);
     }
@@ -16,5 +17,10 @@ final class AttendanceWorkflowException extends \RuntimeException
     public function httpStatus(): int
     {
         return $this->httpStatus;
+    }
+
+    public function errorCode(): ?string
+    {
+        return $this->errorCode;
     }
 }

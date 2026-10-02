@@ -126,6 +126,60 @@ final class AttendanceRepository
         $stmt->execute([$enrollmentId, $date, $period]);
     }
 
+    public function revisionsForClassRange(int $classId, string $start, string $end): array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT attendance_date, period, revision
+             FROM attendance_register_revisions
+             WHERE class_id = ?
+               AND attendance_date BETWEEN ? AND ?
+             ORDER BY attendance_date, period'
+        );
+        $stmt->execute([$classId, $start, $end]);
+
+        return $stmt->fetchAll();
+    }
+
+    public function lessonRevisionForUpdate(int $classId, string $date, int $period): int
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT revision
+             FROM attendance_register_revisions
+             WHERE class_id = ?
+               AND attendance_date = ?
+               AND period = ?
+             FOR UPDATE'
+        );
+        $stmt->execute([$classId, $date, $period]);
+        $revision = $stmt->fetchColumn();
+
+        return $revision === false ? 0 : (int)$revision;
+    }
+
+    public function incrementLessonRevision(int $classId, string $date, int $period): int
+    {
+        $stmt = Database::connection()->prepare(
+            'INSERT INTO attendance_register_revisions
+                (class_id, attendance_date, period, revision)
+             VALUES (?, ?, ?, 1)
+             ON DUPLICATE KEY UPDATE
+                revision = revision + 1,
+                updated_at = CURRENT_TIMESTAMP'
+        );
+        $stmt->execute([$classId, $date, $period]);
+
+        $select = Database::connection()->prepare(
+            'SELECT revision
+             FROM attendance_register_revisions
+             WHERE class_id = ?
+               AND attendance_date = ?
+               AND period = ?'
+        );
+        $select->execute([$classId, $date, $period]);
+
+        return (int)$select->fetchColumn();
+    }
+
     public function allForClass(int $classId): array
     {
         $stmt = Database::connection()->prepare(

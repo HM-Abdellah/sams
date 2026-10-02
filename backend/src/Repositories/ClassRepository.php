@@ -68,9 +68,26 @@ final class ClassRepository
                     c.academic_year_id,
                     c.is_active,
                     ay.name AS academic_year_name,
-                    ay.is_active AS academic_year_active
+                    ay.is_active AS academic_year_active,
+                    COUNT(DISTINCT CASE
+                        WHEN e.starts_on <= CURDATE()
+                         AND (e.ends_on IS NULL OR e.ends_on >= CURDATE())
+                         AND s.status = \'active\'
+                        THEN s.id
+                    END) AS student_count,
+                    COUNT(DISTINCT CASE
+                         WHEN u.is_active = 1
+                         AND u.role = \'teacher\'
+                        THEN u.id
+                    END) AS teacher_count
                 FROM classes c
-                INNER JOIN academic_years ay ON ay.id = c.academic_year_id';
+                INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+                LEFT JOIN student_enrollments e ON e.class_id = c.id
+                    AND e.starts_on <= CURDATE()
+                    AND (e.ends_on IS NULL OR e.ends_on >= CURDATE())
+                LEFT JOIN students s ON s.id = e.student_id
+                LEFT JOIN teacher_teachings tt ON tt.class_id = c.id
+                LEFT JOIN users u ON u.id = tt.teacher_id';
         $params = [];
 
         if ($schoolId !== null) {
@@ -79,7 +96,8 @@ final class ClassRepository
             $params[] = $schoolId;
         }
 
-        $sql .= ' ORDER BY ay.starts_on DESC, c.name, c.id';
+        $sql .= ' GROUP BY c.id, c.name, c.level, c.branch, c.academic_year_id, c.is_active, ay.name, ay.is_active, ay.starts_on
+                   ORDER BY ay.starts_on DESC, c.name, c.id';
         $stmt = Database::connection()->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll();

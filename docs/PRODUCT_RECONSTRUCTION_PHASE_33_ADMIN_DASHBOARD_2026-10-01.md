@@ -1,0 +1,148 @@
+# SAMS — Product Reconstruction Phase 33
+## Admin Dashboard Reconstruction
+### 2026-10-01
+
+Status: **CLOSED — implementation, external CI verification, and reconstruction-branch closeout complete.**
+
+## 1. Explore
+
+The pre-phase Admin dashboard already exposed active classes, students, teachers, today's presence rate, today's records, class statistics, high-absence students, missing-class detection, and recent audit activity.
+
+Phase 30 identified the main product gaps: online teachers were visible only as a count; active academic-year context was absent; no attendance trend existed; operational attention areas were mixed into a generic page; and there was no deliberate quick-action hierarchy.
+
+The existing SAMS backend/schema was treated as authoritative. Attendance still has no subject_id, so this phase does not fabricate subject context.
+
+## 2. Research
+
+Research was intentionally broader than Figma.
+
+### School administration / product references
+
+- openSIS Administrator Dashboard Overview: https://help.opensis.com/portal/en/kb/articles/administrator-dashboard-overview
+- openSIS Administrator Dashboard concepts: https://help.opensis.com/portal/en/kb/articles/understanding-the-administrator-dashboard
+- openSIS navigation: https://help.opensis.com/portal/en/kb/articles/understanding-opensis-navigation
+- PowerSchool Dashboards: https://ps.powerschool-docs.com/pssis-admin/latest/dashboards
+- PowerSchool Attendance Overview: https://uc.powerschool-docs.com/unified-insights/latest/attendance-overview
+- SchoolHub attendance dashboard reference: https://schoolhub.tech/school-attendance-system
+
+Recurring useful patterns were: clear academic context, KPI summaries, attendance distribution, time trends, missing/incomplete records, high-absence attention, teacher presence visibility, and drill-down links to operational workspaces.
+
+### UI / composition references
+
+- 21st.dev dashboard components: https://21st.dev/blog/dashboard-component-libraries
+- 21st.dev React dashboards: https://21st.dev/blog/react-dashboard-components
+- shadcn/ui: https://ui.shadcn.com/
+- Refero: https://refero.design/
+- styles.refero.design: https://styles.refero.design/
+- Lightswind: https://www.lightswind.com/blocks/navigation
+- React Bits: https://pro.reactbits.dev/docs/blocks/navigation
+
+### Accessibility references
+
+- WCAG 2.2: https://www.w3.org/TR/WCAG22/
+- W3C complex images / charts guidance: https://www.w3.org/WAI/tutorials/images/complex/
+- WAI-ARIA APG: https://www.w3.org/WAI/ARIA/apg/
+
+Figma remains a visual reference only. Product behavior is decided from research plus the existing SAMS API, database, security rules, tests, and real workflows.
+
+## 3. Decide
+
+Dashboard hierarchy:
+
+Context → KPIs → Attendance Today → Trend → Needs Attention → Teachers Online → Classes → Quick Actions
+
+Data decisions:
+- active academic year is loaded from the current school-scoped year
+- attendance trend covers 14 calendar days
+- days with no records stay null rather than becoming false 0% attendance
+- online teachers use the existing 90-second last-seen rule
+- the existing /admin/dashboard endpoint remains the canonical transport
+- no chart package was added; the trend uses inline SVG
+- class presence rate is calculated from recorded rows only
+- quick actions point only to existing admin routes
+- no admin Students route was invented
+- no attendance subject field was invented
+
+Accessibility decisions:
+- status counts accompany the color distribution
+- the trend has SVG title/description plus textual data
+- class statistics remain a semantic HTML table
+- responsive layouts use the existing shared target/focus conventions
+
+## 4. Construct
+
+Backend changes:
+- backend/src/Repositories/AdminDashboardRepository.php: activeAcademicYear(), attendanceTrend(), onlineTeachers()
+- backend/src/Services/AdminDashboardService.php: exposes academic_year, attendance_trend, online_teachers
+
+Frontend changes:
+- frontend/src/features/admin/types.ts
+- frontend/src/pages/app/AdminDashboardPage.tsx
+- frontend/src/features/i18n/types.ts
+- frontend/src/features/i18n/dictionary.ts
+
+The UI now contains the academic context, KPI grid, today's status distribution, 14-day trend, needs-attention panels, online teacher identities, class metrics, recent activity, and quick actions.
+
+Test coverage changes:
+- tests/administration_backend_integration.php validates the new dashboard contract
+- tests/e2e/frontend_phase14_admin_platform.spec.js uses the expanded dashboard fixture and checks new operational sections
+- frontend/src/pages/app/AdminDashboardPage.test.tsx covers rendering from the canonical snapshot
+
+## 5. Verification
+
+Verified by repository inspection:
+- GET /admin/dashboard remains the dashboard endpoint
+- admin authorization remains enforced by the controller
+- tenant scoping still derives from authenticated school_id
+- new queries use the current schema and existing indexes
+- no new frontend runtime dependency was introduced
+- no speculative route or attendance subject context was added
+
+Local Codespace execution remained unavailable because the connected device was offline during the final gate. Independent GitHub Actions verification was used instead.
+
+Independent GitHub Actions verification completed successfully on run **#875** for commit `984ab986f8077dc8ac11383467bf325c486e9cb1`:
+- `frontend-build`: PASS
+- `javascript`: PASS
+- `php`: PASS
+- `e2e`: PASS — 42/42 active frontend tests passed in the Phase 12–19 group, with the full E2E job green
+- `clean-school-acceptance`: PASS
+- `apache`: PASS
+- `production-integration`: PASS
+
+No merge to main has been performed.
+
+## 6. Git-check
+
+All phase writes target `reconstruction/product-system-2026-10-01`.
+The final implementation head before this closeout documentation is `984ab986f8077dc8ac11383467bf325c486e9cb1`.
+The branch is based directly on main commit `64a081294f7ec08612c85007d671aeb13f49c4c6` with no merge to main.
+
+
+## 7. Close criteria
+
+Phase 33 is closed after:
+- CI completes successfully across all seven release jobs
+- the E2E regression is corrected and re-verified
+- the dashboard contract and accessibility decisions are documented
+- no merge to main is performed before the later release gate
+
+The Codespace remained offline, so local working-tree synchronization could not be re-verified from the remote device; CI is the authoritative final execution evidence for this phase.
+
+Phase 34 is **not started** by this closeout.
+
+
+## 8. Verification corrections discovered by CI
+
+CI exposed two real regressions introduced by the phase implementation:
+
+1. `DateTimeImmutable` inside the namespaced repository needed a global namespace qualifier. This was corrected with the minimal change to `new \\DateTimeImmutable('today')`. The failure had prevented the real-backend admin dashboard from rendering in the Phase 22/23 acceptance paths.
+2. The new Quick Actions introduced additional visible `Classes` links, making one legacy Phase 14 E2E selector ambiguous. The final test fix navigates explicitly to `/app/admin/classes`, then verifies the canonical Classes form before interacting with its fields.
+
+The first CI run after these corrections already showed:
+- frontend production build: **PASS**
+- JavaScript syntax job: **PASS**
+- Apache job: **PASS**
+- PHP tests before the dashboard integration point: **PASS**
+- clean-school / E2E failures were traced to the dashboard namespace issue and legacy selector ambiguity rather than a new data contract error.
+
+The final verification run is GitHub Actions **#875** (`36927781315`) on `984ab986f8077dc8ac11383467bf325c486e9cb1`, and all seven jobs passed. This closeout documentation records that verified state; the branch remains unmerged into main.

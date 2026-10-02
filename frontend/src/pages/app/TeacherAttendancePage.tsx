@@ -70,6 +70,7 @@ export function TeacherAttendancePage() {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<AttendanceFilter>('all')
   const [selectedDay, setSelectedDay] = useState('')
+  const [selectedPeriod, setSelectedPeriod] = useState(1)
   const [markMode, setMarkMode] = useState<MarkStatus>('present')
   const [signingPeriod, setSigningPeriod] = useState<number | null>(null)
   const [signError, setSignError] = useState<string | null>(null)
@@ -128,6 +129,10 @@ export function TeacherAttendancePage() {
   useEffect(() => {
     if (!days.includes(selectedDay)) setSelectedDay(days[0] ?? weekStart)
   }, [days, selectedDay, weekStart])
+
+  useEffect(() => {
+    if (selectedPeriod < 1 || selectedPeriod > PERIODS.length) setSelectedPeriod(1)
+  }, [selectedPeriod])
 
   const activeDay = days.includes(selectedDay) ? selectedDay : (days[0] ?? weekStart)
   const students = data?.students ?? EMPTY_STUDENTS
@@ -257,15 +262,15 @@ export function TeacherAttendancePage() {
               {classes.classes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
             </Select>
           </label>
-          <div className="flex items-center justify-center gap-2 lg:justify-end">
+          <div className="flex min-w-0 flex-wrap items-center justify-center gap-2 lg:justify-end">
             <Button type="button" variant="secondary" size="sm" onClick={() => void setWeek(-1)} aria-label={t(TRANSLATION_KEYS.attendance.previousWeek)}>←</Button>
-            <span className="min-w-40 text-center text-sm font-semibold">{weekLabel}</span>
+            <span className="min-w-0 flex-1 text-center text-sm font-semibold lg:min-w-40 lg:flex-none">{weekLabel}</span>
             <Button type="button" variant="secondary" size="sm" onClick={() => void setWeek(1)} aria-label={t(TRANSLATION_KEYS.attendance.nextWeek)}>→</Button>
             <Button type="button" variant="ghost" size="sm" onClick={() => void setWeek(0)}>{t(TRANSLATION_KEYS.attendance.today)}</Button>
           </div>
         </div>
 
-        <div role="group" aria-label={t(TRANSLATION_KEYS.attendance.title)} className="mt-5 flex gap-2 overflow-x-auto pb-1">
+        <div role="group" aria-label={t(TRANSLATION_KEYS.attendance.title)} className="mt-5 flex min-w-0 max-w-full gap-2 overflow-x-auto pb-1">
           {days.map((day) => (
             <button
               key={day}
@@ -349,7 +354,35 @@ export function TeacherAttendancePage() {
                   </div>
                 </StatusMessage>
               )}
-              <p className="mt-4 text-xs text-[var(--sams-muted)] md:hidden">{t(TRANSLATION_KEYS.attendance.swipeHint)}</p>
+              <div className="mt-4 md:hidden">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.attendance.period)}</span>
+                  <span className="text-xs font-medium text-[var(--sams-muted)]">{PERIODS[selectedPeriod - 1]}</span>
+                </div>
+                <div className="mt-2 flex min-w-0 max-w-full gap-2 overflow-x-auto pb-1" role="group" aria-label={t(TRANSLATION_KEYS.attendance.period)}>
+                  {PERIODS.map((time, index) => {
+                    const period = index + 1
+                    const summary = periodSummary[index]
+                    const signed = getSignoff(activeDay, period)?.status === 'signed'
+                    return (
+                      <button
+                        key={time}
+                        type="button"
+                        aria-pressed={selectedPeriod === period}
+                        onClick={() => setSelectedPeriod(period)}
+                        className={selectedPeriod === period
+                          ? 'min-h-11 min-w-16 shrink-0 rounded-xl bg-[var(--sams-action)] px-3 text-left text-white shadow-sm'
+                          : 'min-h-11 min-w-16 shrink-0 rounded-xl border border-[var(--sams-border)] bg-[var(--sams-surface)] px-3 text-left hover:bg-[var(--sams-action-soft)]'}
+                      >
+                        <span className="block text-xs font-bold">{t(TRANSLATION_KEYS.attendance.period)} {period}</span>
+                        <span className="block text-[10px] font-medium opacity-80">{time}</span>
+                        <span className="mt-1 block text-[10px] font-semibold">{signed ? t(TRANSLATION_KEYS.attendance.signedLesson) : (summary?.unmarked ?? students.length) + ' ' + t(TRANSLATION_KEYS.attendance.unmarked)}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
               <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                 <Search
                   aria-label={t(TRANSLATION_KEYS.attendance.searchStudents)}
@@ -388,7 +421,38 @@ export function TeacherAttendancePage() {
             ) : filteredStudents.length === 0 ? (
               <div className="p-6"><EmptyState title={t(TRANSLATION_KEYS.attendance.noMatches)} /></div>
             ) : (
-              <div className="sams-scroll-surface overflow-x-auto">
+              <>
+                <div className="md:hidden">
+                  <div className="divide-y divide-[var(--sams-border)]">
+                  {filteredStudents.map((student, index) => {
+                    const status = getStatus(student.id, activeDay, selectedPeriod)
+                    const signed = getSignoff(activeDay, selectedPeriod)?.status === 'signed'
+                    const label = status === 'clear' ? t(TRANSLATION_KEYS.attendance.unmarked) : t(TRANSLATION_KEYS.attendance[status])
+                    return (
+                      <article key={student.id} data-attendance-row className="flex min-h-20 items-center gap-3 px-4 py-3">
+                        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--sams-muted-surface)] text-[11px] font-bold text-[var(--sams-muted)]">{index + 1}</span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold" dir="auto">{displayName(student.first_name, student.last_name)}</p>
+                          <p className="mt-0.5 text-xs tabular-nums text-[var(--sams-muted)]">{absenceCounts.get(student.id) ?? 0} {t(TRANSLATION_KEYS.attendance.withAbsences)}</p>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={signed}
+                          aria-label={displayName(student.first_name, student.last_name) + ' — ' + t(TRANSLATION_KEYS.attendance.period) + ' ' + selectedPeriod + ' — ' + label}
+                          data-attendance-period={selectedPeriod}
+                          onClick={() => register.changeStatus(student.id, activeDay, selectedPeriod, status === markMode ? 'clear' : markMode)}
+                          className={'sams-touch-cell grid shrink-0 place-items-center rounded-xl border px-3 text-xs font-bold shadow-sm transition-[background-color,border-color,box-shadow] duration-150 hover:shadow focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--sams-action-soft)] disabled:cursor-not-allowed disabled:opacity-60 ' + STATUS_STYLES[status]}
+                        >
+                          <span aria-hidden="true">{STATUS_SYMBOLS[status]}</span>
+                          <span>{label}</span>
+                        </button>
+                      </article>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div className="sams-scroll-surface hidden overflow-x-auto md:block">
                 <table className="w-full min-w-[960px] border-separate border-spacing-0 text-sm">
                   <caption className="sr-only">{t(TRANSLATION_KEYS.attendance.title)}</caption>
                   <colgroup>
@@ -446,7 +510,7 @@ export function TeacherAttendancePage() {
 
                   <tbody>
                     {filteredStudents.map((student, index) => (
-                      <tr key={student.id}>
+                      <tr key={student.id} data-attendance-row>
                         <th scope="row" className="sticky start-0 z-10 border-b border-e border-[var(--sams-border)] bg-[var(--sams-surface)] px-4 py-2.5 text-start">
                           <div className="flex items-center gap-3">
                             <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-[var(--sams-muted-surface)] text-[11px] font-bold text-[var(--sams-muted)]">{index + 1}</span>
@@ -468,6 +532,7 @@ export function TeacherAttendancePage() {
                                 type="button"
                                 disabled={signed}
                                 aria-label={displayName(student.first_name, student.last_name) + ' — ' + t(TRANSLATION_KEYS.attendance.period) + ' ' + period + ' — ' + label}
+                                data-attendance-period={period}
                                 onClick={() => register.changeStatus(student.id, activeDay, period, status === markMode ? 'clear' : markMode)}
                                 className={'sams-touch-cell mx-auto grid aspect-square w-12 place-items-center rounded-xl border text-base font-bold shadow-sm transition-[background-color,border-color,box-shadow] duration-150 hover:shadow focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--sams-action-soft)] disabled:cursor-not-allowed disabled:opacity-60 ' + STATUS_STYLES[status]}
                               >
@@ -480,7 +545,8 @@ export function TeacherAttendancePage() {
                     ))}
                   </tbody>
                 </table>
-              </div>
+                </div>
+              </>
             )}
           </section>
 
@@ -495,7 +561,7 @@ export function TeacherAttendancePage() {
             </div>
             <div className="flex items-center gap-2">
               {register.isDirty && <Badge variant="warning">{register.dirtyCount} {t(TRANSLATION_KEYS.attendance.unsavedChanges)}</Badge>}
-              <Button type="button" size="sm" loading={register.mutationState === 'saving'} disabled={!register.isDirty || register.mutationState === 'saving'} onClick={() => void register.flush()}>
+              <Button type="button" size="sm" loading={register.mutationState === 'saving'} disabled={!register.isDirty || register.mutationState === 'saving' || register.mutationState === 'conflict'} onClick={() => void register.flush()}>
                 {t(TRANSLATION_KEYS.attendance.saveNow)}
               </Button>
             </div>
@@ -509,11 +575,26 @@ export function TeacherAttendancePage() {
               </div>
             </StatusMessage>
           )}
+          {register.mutationState === 'conflict' && register.hasConflict && (
+            <StatusMessage variant="warning" title={t(TRANSLATION_KEYS.attendance.conflictTitle)}>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <span>{t(TRANSLATION_KEYS.attendance.conflictHint)}</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button type="button" size="sm" onClick={() => void register.keepChanges()}>
+                    {t(TRANSLATION_KEYS.attendance.keepChanges)}
+                  </Button>
+                  <Button type="button" size="sm" variant="secondary" onClick={() => register.useLatest()}>
+                    {t(TRANSLATION_KEYS.attendance.useLatest)}
+                  </Button>
+                </div>
+              </div>
+            </StatusMessage>
+          )}
           {register.mutationState === 'saving' && <StatusMessage>{t(TRANSLATION_KEYS.attendance.saving)}</StatusMessage>}
           {register.mutationState === 'retrying' && <StatusMessage>{t(TRANSLATION_KEYS.attendance.retrying)}</StatusMessage>}
           {register.mutationState === 'blocked' && <StatusMessage variant="warning" title={t(TRANSLATION_KEYS.attendance.blocked)}>{t(TRANSLATION_KEYS.attendance.blockedHint)}</StatusMessage>}
           {register.mutationState === 'saved' && !register.isDirty && <StatusMessage variant="success">{t(TRANSLATION_KEYS.attendance.saved)}</StatusMessage>}
-          {register.isDirty && register.mutationState !== 'saving' && <StatusMessage variant="warning" title={t(TRANSLATION_KEYS.attendance.unsavedChanges)}>{register.dirtyCount}</StatusMessage>}
+          {register.isDirty && register.mutationState !== 'saving' && register.mutationState !== 'conflict' && <StatusMessage variant="warning" title={t(TRANSLATION_KEYS.attendance.unsavedChanges)}>{register.dirtyCount}</StatusMessage>}
         </>
       )}
     </section>
