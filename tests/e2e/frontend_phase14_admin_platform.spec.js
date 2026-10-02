@@ -314,7 +314,7 @@ test.describe('frontend Phase 14 admin platform', () => {
     await reconcileDialog.getByRole('button', { name: 'Reconcile' }).click()
     await expect(page.getByText('Validated', { exact: true })).toBeVisible()
     await page.getByRole('button', { name: 'Commit import' }).click()
-    const commitDialog = page.getByRole('alertdialog', { name: 'Confirm import commit' })
+    const commitDialog = page.getByRole('alertdialog', { name: 'Confirm committing this import' })
     await expect(commitDialog).toBeVisible()
     await commitDialog.getByRole('button', { name: 'Commit import' }).click()
     await expect(page.getByText('Imported', { exact: true })).toBeVisible()
