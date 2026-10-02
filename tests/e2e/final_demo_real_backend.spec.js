@@ -24,7 +24,7 @@ test.describe('Final demo real-backend rehearsal', () => {
 
     await page.goto('/sams/app/attendance?class_id=1&week_start=2026-09-21')
     await expect(page.getByRole('heading', { name: 'Attendance register' })).toBeVisible()
-    await expect(page.getByText('E2E-2BAC-A').first()).toBeVisible()
+    await expect(page.locator('#attendance-class')).toHaveValue('1')
 
     const dayGroup = page.getByRole('group', { name: 'Attendance register' }).first()
     await dayGroup.getByRole('button').nth(4).click()
@@ -60,7 +60,7 @@ test.describe('Final demo real-backend rehearsal', () => {
 
     await page.goto('/sams/app/admin/archive?class_id=1&view=month&month=2026-09')
     await expect(page.getByRole('heading', { name: 'Archive' })).toBeVisible()
-    await expect(page.getByText('E2E-2BAC-A').last()).toBeVisible()
+    await expect(page.getByRole('heading', { name: /E2E-2BAC-A/ })).toBeVisible()
     const archiveStudent = page.getByRole('row').filter({ hasText: 'Jean Dupont' }).last()
     await expect(archiveStudent).toContainText('25.0%')
     await expect(archiveStudent).toContainText('8')
