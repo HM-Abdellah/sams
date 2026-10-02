@@ -8,7 +8,7 @@ export function ProtectedRoute() {
   const { t } = useI18n()
 
   if (session.status === 'loading') {
-    return <div role="status" aria-live="polite" className="grid min-h-screen place-items-center bg-[var(--sams-background)] p-6 text-[var(--sams-text)]">Loading…</div>
+    return <div role="status" aria-live="polite" className="grid min-h-screen place-items-center bg-[var(--sams-background)] p-6 text-[var(--sams-text)]">{t('auth.loading')}</div>
   }
 
   if (session.status === 'error') {
