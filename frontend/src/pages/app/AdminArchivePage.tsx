@@ -12,6 +12,26 @@ import { AsyncStateFeedback, Badge, Button, EmptyState, ErrorState, FormField, I
 
 type ArchiveView = 'days' | 'month' | 'day' | 'student'
 
+const attendanceStatus = (
+  status: string | null | undefined,
+  t: (key: TranslationKey) => string,
+) => {
+  switch (status) {
+    case 'present': return t(TRANSLATION_KEYS.attendance.present)
+    case 'absent': return t(TRANSLATION_KEYS.attendance.absent)
+    case 'late': return t(TRANSLATION_KEYS.attendance.late)
+    case 'excused': return t(TRANSLATION_KEYS.attendance.excused)
+    default: return t(TRANSLATION_KEYS.attendance.unmarked)
+  }
+}
+
+const attendanceStatusVariant = (status: string | null | undefined) => {
+  if (status === 'absent') return 'danger' as const
+  if (status === 'present') return 'success' as const
+  if (status === 'late') return 'warning' as const
+  return 'neutral' as const
+}
+
 const currentMonth = () => {
   const date = new Date()
   return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0')
@@ -254,8 +274,8 @@ function ArchiveResult({
               <td className="px-3 py-2 font-medium">{item.first_name} {item.last_name}</td>
               <td className="px-3 py-2">{item.period ?? '—'}</td>
               <td className="px-3 py-2">
-                <Badge variant={item.status === 'absent' ? 'danger' : item.status === 'present' ? 'success' : 'info'}>
-                  {item.status ?? t(TRANSLATION_KEYS.archive.unmarked)}
+                <Badge variant={attendanceStatusVariant(item.status)}>
+                  {attendanceStatus(item.status, t)}
                 </Badge>
               </td>
               <td className="px-3 py-2">{formatDate(item.enrollment_starts_on)}{item.enrollment_ends_on ? ' → ' + formatDate(item.enrollment_ends_on) : ''}</td>
@@ -280,7 +300,7 @@ function ArchiveResult({
                 <td className="px-3 py-2">{item.class_name}</td>
                 <td className="px-3 py-2">{item.academic_year_name}</td>
                 <td className="px-3 py-2">{item.period ?? '—'}</td>
-                <td className="px-3 py-2">{item.status ?? t(TRANSLATION_KEYS.archive.unmarked)}</td>
+                <td className="px-3 py-2">{attendanceStatus(item.status, t)}</td>
                 <td className="px-3 py-2">{formatDate(item.starts_on)}{item.ends_on ? ' → ' + formatDate(item.ends_on) : ''}</td>
               </tr>
             ))}
