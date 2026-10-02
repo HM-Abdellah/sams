@@ -350,7 +350,10 @@ test.describe('frontend Phase 14 admin platform', () => {
     await expect(html).toHaveAttribute('dir', 'rtl')
     await expect(page.getByRole('heading', { name: 'تدقيق' })).toBeVisible()
 
-    await page.goto('/app/admin/users')
+    const usersLink = page.getByRole('navigation', { name: 'Application' }).getByRole('link', { name: 'المستخدمون', exact: true })
+    await expect(usersLink).toBeVisible()
+    await usersLink.click()
+    await expect(page).toHaveURL(/\/app\/admin\/users$/)
     await expect(page.getByRole('heading', { name: 'المستخدمون' })).toBeVisible()
     await expect(page.getByRole('row').filter({ hasText: 'teacher.e2e' }).getByText('الأستاذ', { exact: true })).toBeVisible()
     await expect(page.getByRole('row').filter({ hasText: 'teacher.e2e' }).getByText('نشط', { exact: true })).toBeVisible()
