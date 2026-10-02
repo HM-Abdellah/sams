@@ -249,11 +249,13 @@ Every phase records: goal, evidence, files changed, technical decisions, tests, 
 Correctness → Data integrity → Security → Core workflow → Responsive usability → Accessibility → Performance → Visual polish.
 
 ## Current position
-Phase 35 — Admin Operations + Data Workspaces.
-Phase 30 baseline reconciliation, Phase 31 shared design-system/responsive foundation, Phase 32 application shell + information architecture, Phase 33 Admin Dashboard Reconstruction, and Phase 34 Admin Management Workspaces are closed on the reconstruction branch.
-Phase 34 verification is complete on branch head `23d727495bd6eba01542a808310934bfd59e1b45`; GitHub Actions run #944 passed all seven required gates.
+Phase 35 — Admin Operations + Data Workspaces is closed on the reconstruction branch.
+Phase 30 baseline reconciliation, Phase 31 shared design-system/responsive foundation, Phase 32 application shell + information architecture, Phase 33 Admin Dashboard Reconstruction, Phase 34 Admin Management Workspaces, and Phase 35 Admin Operations + Data Workspaces are closed.
+Phase 34 verification is complete on exact implementation head `23d727495bd6eba01542a808310934bfd59e1b45`; GitHub Actions run #944 passed all seven required gates.
+Phase 35 implementation verification is complete on exact implementation head `300e28a67e1d015eb88766ccb1089b9286d6fbac`; GitHub Actions run #974 passed all seven required gates.
 The working branch remains isolated from main: reconstruction/product-system-2026-10-01.
 
 ## Current status
-Phase 35 is IN PROGRESS. Implementation has started on the Admin Operations + Data Workspaces scope, beginning with the real XLSX import review workflow, onboarding lifecycle clarity, and archive status consistency.
+Phase 35 is CLOSED.
+The next phase is not started. Admin Reports, Calendar, and Alerts remain future scope where no dedicated backend contract currently exists.
 
