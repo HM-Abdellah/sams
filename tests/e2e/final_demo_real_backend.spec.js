@@ -100,7 +100,7 @@ test.describe('Final demo real-backend rehearsal', () => {
     await expect(page.locator('html')).toHaveAttribute('lang', 'ar')
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
     await expect(page.locator('#sams-language')).toHaveValue('ar')
-    await expect(page.getByRole('button', { name: 'فتح التنقل' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'فتح قائمة التنقل' })).toBeVisible()
 
     const rtlMetrics = await page.evaluate(() => ({
       viewport: window.innerWidth,
