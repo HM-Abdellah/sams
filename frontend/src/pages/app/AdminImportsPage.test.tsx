@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest'
 import { I18nProvider } from '../../app/providers/I18nProvider.tsx'
@@ -150,9 +150,10 @@ describe('AdminImportsPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Reconcile' }))
 
-    expect(screen.getByRole('dialog', { name: 'Confirm reconciliation' })).toBeInTheDocument()
+    const dialog = screen.getByRole('dialog', { name: 'Confirm reconciliation' })
+    expect(dialog).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Reconcile', exact: true }).lastElementChild ?? screen.getByRole('button', { name: 'Reconcile' }))
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Reconcile', exact: true }))
 
     await waitFor(() => {
       expect(reconcileSpy).toHaveBeenCalledWith(41)
