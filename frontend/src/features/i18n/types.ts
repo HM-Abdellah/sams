@@ -34,6 +34,7 @@ export const TRANSLATION_KEYS = {
     signingIn: 'auth.signingIn',
     loading: 'auth.loading',
     genericError: 'auth.genericError',
+    sessionUnavailable: 'auth.sessionUnavailable',
     productName: 'auth.productName',
     tagline: 'auth.tagline',
     description: 'auth.description',
