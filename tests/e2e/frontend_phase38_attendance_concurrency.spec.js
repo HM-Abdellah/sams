@@ -1,5 +1,3 @@
-[Reading 163 lines from start (total: 163 lines, 0 remaining)]
-
 import { test, expect } from '@playwright/test'
 
 const student = { id: 801, first_name: 'Phase38', last_name: 'Student' }
@@ -163,5 +161,3 @@ test.describe('frontend Phase 38 shared attendance concurrency', () => {
     await expect(page.locator('[data-attendance-row]:visible').first().locator('button[data-attendance-period="1"]')).toHaveAttribute('aria-label', /Period 1 — Absent/)
   })
 })
-
-[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

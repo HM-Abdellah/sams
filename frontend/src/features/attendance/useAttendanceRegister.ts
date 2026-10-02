@@ -1,5 +1,3 @@
-[Reading 375 lines from start (total: 375 lines, 0 remaining)]
-
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { attendanceApi } from './api.ts'
 import type { AttendanceRecord, AttendanceRevision, WeeklyRegisterData } from './api.ts'
@@ -375,5 +373,3 @@ export function useAttendanceRegister(classId: number | null, weekStart: string)
     recordsWithDrafts,
   }
 }
-
-[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

@@ -1,5 +1,3 @@
-[Reading 1000 lines from start (total: 1107 lines, 107 remaining)]
-
 name: SAMS PHP CI
 
 concurrency:
@@ -1001,4 +999,109 @@ jobs:
         shell: bash
         run: composer install --no-interaction --prefer-dist --no-progress
 
-[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]
+      - name: Configure production-path test runtime
+        shell: bash
+        run: |
+          cat > backend/config/app.php <<'PHP'
+          <?php
+          return [
+              'name' => 'SAMS',
+              'environment' => 'test',
+              'debug' => true,
+              'base_path' => '/sams/public',
+              'session_name' => 'SAMS_PRODUCTION_E2E_SESSION',
+              'session_lifetime' => 3600,
+              'session_idle_timeout' => 3600,
+              'session_absolute_timeout' => 43200,
+              'login_max_attempts' => 5,
+              'login_lock_minutes' => 15,
+          ];
+          PHP
+
+          cat > backend/config/database.php <<'PHP'
+          <?php
+          return [
+              'host' => getenv('SAMS_TEST_DB_HOST') ?: 'db',
+              'port' => (int)(getenv('SAMS_TEST_DB_PORT') ?: 3306),
+              'database' => getenv('SAMS_TEST_DB_NAME') ?: 'sams',
+              'username' => getenv('SAMS_TEST_DB_USER') ?: 'root',
+              'password' => getenv('SAMS_TEST_DB_PASS') ?: 'root',
+              'charset' => 'utf8mb4',
+          ];
+          PHP
+
+      - name: Seed deterministic production integration database
+        shell: bash
+        run: php scripts/e2e_seed.php
+
+      - name: Mount repository into Apache
+        shell: bash
+        run: |
+          rm -rf /var/www/html/sams
+          mkdir -p /var/www/html/sams
+          cp -a "$GITHUB_WORKSPACE/." /var/www/html/sams/
+
+      - name: Configure Apache overrides
+        shell: bash
+        run: |
+          a2enmod rewrite headers
+          cat > /etc/apache2/conf-enabled/sams.conf <<'APACHE'
+          <Directory /var/www/html>
+              AllowOverride All
+              Require all granted
+          </Directory>
+          APACHE
+          printf '%s\n' 'ServerName localhost' > /etc/apache2/conf-enabled/server-name.conf
+          apachectl -t
+
+      - name: Run Phase 23 production integration
+        shell: bash
+        run: |
+          : > /tmp/sams-production-integration.log
+          exec > >(tee -a /tmp/sams-production-integration.log) 2>&1
+
+          apachectl -D FOREGROUND > /tmp/sams-production-apache.log 2>&1 &
+          apache_pid=$!
+          cleanup() { kill "$apache_pid" 2>/dev/null || true; }
+          trap cleanup EXIT
+
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1/sams/login > /dev/null 2>&1; then break; fi
+            if ! kill -0 "$apache_pid" 2>/dev/null; then cat /tmp/sams-production-apache.log; exit 1; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1/sams/login > /dev/null
+
+          static_headers=$(curl -sSI http://127.0.0.1/sams/login)
+          printf '%s\n' "$static_headers" | grep -Fqi 'X-Content-Type-Options: nosniff'
+          printf '%s\n' "$static_headers" | grep -Fqi 'X-Frame-Options: DENY'
+          printf '%s\n' "$static_headers" | grep -Fqi 'Referrer-Policy: same-origin'
+          printf '%s\n' "$static_headers" | grep -Fqi 'Permissions-Policy: camera=(), geolocation=(), microphone=()'
+          printf '%s\n' "$static_headers" | grep -Fqi 'Content-Security-Policy:'
+          echo "[PASS] React static responses expose baseline security headers."
+
+          if grep -RInE 'test\.(skip|fixme|only)|describe\.(skip|only)' tests/e2e/frontend_phase22_real_backend_smoke.spec.js tests/e2e/frontend_phase23_production_integration.spec.js; then
+            echo "Production integration suite contains skipped/focused tests."
+            exit 1
+          fi
+          if grep -RIn 'waitForTimeout' tests/e2e/frontend_phase22_real_backend_smoke.spec.js tests/e2e/frontend_phase23_production_integration.spec.js; then
+            echo "Production integration suite must synchronize on observable behavior, not fixed sleeps."
+            exit 1
+          fi
+
+          node --check tests/e2e/frontend_phase22_real_backend_smoke.spec.js
+          node --check tests/e2e/frontend_phase23_production_integration.spec.js
+          SAMS_BASE_URL=http://127.0.0.1/sams/ npx playwright test tests/e2e/frontend_phase22_real_backend_smoke.spec.js tests/e2e/frontend_phase23_production_integration.spec.js --project=chromium --reporter=line
+
+          test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1/sams/backend/src/Helpers/Auth.php)" = "403"
+          test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1/sams/public/login.php)" = "410"
+          test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1/sams/public/index.php)" = "410"
+          echo "[PASS] Apache + PHP + MariaDB production integration path verified."
+
+      - name: Verify production integration database state
+        shell: bash
+        run: |
+          result=$(mariadb --protocol=tcp -h "$SAMS_TEST_DB_HOST" -P "$SAMS_TEST_DB_PORT" -u "$SAMS_TEST_DB_USER" -p"$SAMS_TEST_DB_PASS" -D "$SAMS_TEST_DB_NAME" -N -B -e "SELECT (SELECT COUNT(*) FROM academic_years),(SELECT COUNT(*) FROM users),(SELECT COUNT(*) FROM classes),(SELECT COUNT(*) FROM users WHERE role='teacher' AND is_active=1),(SELECT COUNT(*) FROM students),(SELECT COUNT(*) FROM attendance),(SELECT COUNT(*) FROM student_enrollments);")
+          expected=$'1\t2\t2\t1\t4\t8\t4'
+          test "$result" = "$expected"
+          echo "[PASS] Production integration database state remains deterministic after browser acceptance."

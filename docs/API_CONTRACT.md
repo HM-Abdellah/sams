@@ -1,5 +1,3 @@
-[Reading 461 lines from start (total: 461 lines, 0 remaining)]
-
 # SAMS API Contract
 
 This document is the frontend/backend contract for the release candidate.
@@ -461,5 +459,3 @@ The frontend should display the returned `error` message without parsing server 
 ## Release rule
 
 Do not make frontend code depend on fields or endpoints not listed here unless the backend contract is deliberately changed and this document is updated in the same change.
-
-[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

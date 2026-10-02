@@ -1,5 +1,3 @@
-[Reading 624 lines from start (total: 624 lines, 0 remaining)]
-
 -- SAMS (Student Attendance Management System)
 -- Production-oriented MySQL/MariaDB schema for XAMPP.
 --
@@ -624,5 +622,3 @@ CREATE TABLE teacher_onboarding_requests (
 
 -- Business rule: the application must keep at most one currently usable
 -- onboarding code per school. Rotation is enforced by the service layer.
-
-[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

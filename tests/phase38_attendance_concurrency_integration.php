@@ -1,5 +1,3 @@
-[Reading 337 lines from start (total: 337 lines, 0 remaining)]
-
 <?php
 
 declare(strict_types=1);
@@ -337,5 +335,3 @@ try {
 
 echo "[PASS] Phase 38 shared attendance revision/concurrency integration\n";
 echo "[PASS] stale-write protection, idempotent retry, delete/recreate protection, atomic conflict, per-lesson revisions, and authorization verified\n";
-
-[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

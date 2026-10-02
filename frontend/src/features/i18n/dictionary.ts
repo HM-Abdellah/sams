@@ -1,5 +1,3 @@
-[Reading 1000 lines from start (total: 1313 lines, 313 remaining)]
-
 import type { Locale, TranslationKey } from './types.ts'
 
 const dictionary: Record<Locale, Record<TranslationKey, string>> = {
@@ -1000,5 +998,3 @@ const dictionary: Record<Locale, Record<TranslationKey, string>> = {
     'attendance.clear': 'Not marked',
     'attendance.status': 'Status',
     'attendance.unmarked': 'Not marked',
-
-[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

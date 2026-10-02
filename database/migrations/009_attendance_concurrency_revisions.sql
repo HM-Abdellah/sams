@@ -1,5 +1,3 @@
-[Reading 17 lines from start (total: 17 lines, 0 remaining)]
-
 -- Phase 38: server-authoritative attendance lesson revisions.
 CREATE TABLE IF NOT EXISTS attendance_register_revisions (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -17,5 +15,3 @@ CREATE TABLE IF NOT EXISTS attendance_register_revisions (
         ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT chk_attendance_register_revisions_period CHECK (period BETWEEN 1 AND 8)
 ) ENGINE=InnoDB;
-
-[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

@@ -1,5 +1,3 @@
-[Reading 307 lines from start (total: 307 lines, 0 remaining)]
-
 # SAMS Architecture — Target Design
 
 Status: Phase 1 architecture baseline, 2026-09-26.
@@ -307,5 +305,3 @@ Do not translate every old JS function mechanically into React. Preserve behavio
 Phase 1 is done when all 12 architecture areas are documented, repository rules are committed, migration ordering is explicit, and no working production path was deleted before its replacement was verified.
 
 Complete SAMS is done only after the later implementation phases also prove clean install, secure auth, correct enrollment-aware attendance, real teacher mobile UX, professional administration workflows, imports/archive/reports/signatures, CI, critical E2E, security review, and deployment/backup documentation.
-
-[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

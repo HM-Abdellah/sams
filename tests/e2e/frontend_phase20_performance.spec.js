@@ -1,5 +1,3 @@
-[Reading 138 lines from start (total: 138 lines, 0 remaining)]
-
 import { test, expect } from '@playwright/test'
 
 const enforcePerformanceBudget = process.env.SAMS_PERFORMANCE_MODE === '1'
@@ -138,5 +136,3 @@ test.describe('frontend Phase 20 performance', () => {
     expect(metrics.scripts.some(({ file }) => file.startsWith('Admin'))).toBeFalsy()
   })
 })
-
-[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

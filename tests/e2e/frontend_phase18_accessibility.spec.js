@@ -1,5 +1,3 @@
-[Reading 205 lines from start (total: 205 lines, 0 remaining)]
-
 import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 
@@ -205,5 +203,3 @@ test.describe('frontend Phase 18 accessibility', () => {
     expect(transitionSeconds).toBeLessThanOrEqual(0.00001)
   })
 })
-
-[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

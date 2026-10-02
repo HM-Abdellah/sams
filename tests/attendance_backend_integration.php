@@ -1,5 +1,3 @@
-[Reading 196 lines from start (total: 196 lines, 0 remaining)]
-
 <?php
 
 declare(strict_types=1);
@@ -196,5 +194,3 @@ expect_true($recovered['changed'] === 2, 'Attendance batch did not recover after
 
 echo "[PASS] Phase 4 attendance workflow integration\n";
 echo "[PASS] weekly register, authorization, bulk save, no-op, conflict, signed-lock, rollback, and recovery verified\n";
-
-[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

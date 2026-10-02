@@ -1,5 +1,3 @@
-[Reading 43 lines from start (total: 43 lines, 0 remaining)]
-
 import type { AttendanceEntry, AttendanceStatus } from '../../services/api/types.ts'
 
 export type AttendanceViewStatus = AttendanceStatus | 'clear'
@@ -43,5 +41,3 @@ export interface AttendanceSummary {
 export type AttendanceMutationEntry = AttendanceDraft & {
   key: string
 }
-
-[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

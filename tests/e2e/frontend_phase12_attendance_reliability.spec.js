@@ -1,5 +1,3 @@
-[Reading 333 lines from start (total: 333 lines, 0 remaining)]
-
 import { test, expect } from '@playwright/test'
 
 const students = [
@@ -333,5 +331,3 @@ test.describe('frontend Phase 12 attendance reliability', () => {
     }))
   })
 })
-
-[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

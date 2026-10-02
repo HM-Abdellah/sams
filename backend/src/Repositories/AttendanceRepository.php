@@ -1,5 +1,3 @@
-[Reading 228 lines from start (total: 228 lines, 0 remaining)]
-
 <?php
 
 declare(strict_types=1);
@@ -228,5 +226,3 @@ final class AttendanceRepository
         return (int)$id;
     }
 }
-
-[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

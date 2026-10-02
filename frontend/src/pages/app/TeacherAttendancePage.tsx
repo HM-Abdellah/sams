@@ -1,5 +1,3 @@
-[Reading 602 lines from start (total: 602 lines, 0 remaining)]
-
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useBeforeUnload, useBlocker, useSearchParams } from 'react-router'
 import { useI18n } from '../../features/i18n/useI18n.ts'
@@ -602,5 +600,3 @@ export function TeacherAttendancePage() {
     </section>
   )
 }
-
-[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

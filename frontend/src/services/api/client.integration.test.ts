@@ -1,5 +1,3 @@
-[Reading 96 lines from start (total: 96 lines, 0 remaining)]
-
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { ApiClient } from './client.ts'
 import { ApiError } from './errors.ts'
@@ -96,5 +94,3 @@ describe('ApiClient transport boundary', () => {
     await expect(client.request('/broken')).rejects.toMatchObject({ status: 200 })
   })
 })
-
-[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

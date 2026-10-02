@@ -1,5 +1,3 @@
-[Reading 36 lines from start (total: 36 lines, 0 remaining)]
-
 export class ApiError extends Error {
   readonly status: number
   readonly code: string
@@ -36,5 +34,3 @@ function statusCode(status: number): string {
       return status >= 500 ? 'SERVER_ERROR' : 'API_ERROR'
   }
 }
-
-[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

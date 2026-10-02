@@ -1,5 +1,3 @@
-[Reading 67 lines from start (total: 67 lines, 0 remaining)]
-
 # SAMS Database Migration Guide
 
 ## Fresh installation
@@ -67,5 +65,3 @@ That check is part of the release CI gate.
 `database/migrations/009_attendance_concurrency_revisions.sql` adds the server-authoritative per-lesson attendance revision ledger. CI executes `tests/migration_009_integration.php` against the supported release baseline and verifies the table shape, class foreign key, and persistence of a revision row.
 
 This migration is part of Phase 38 verification; it becomes part of the supported production upgrade path only when the Phase 38 release gate is closed.
-
-[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]

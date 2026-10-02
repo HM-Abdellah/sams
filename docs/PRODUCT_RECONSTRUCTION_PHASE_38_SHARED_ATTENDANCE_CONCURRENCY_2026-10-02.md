@@ -1,5 +1,3 @@
-[Reading 69 lines from start (total: 69 lines, 0 remaining)]
-
 # SAMS Phase 38 — Shared Attendance + Concurrency
 
 Status: **In progress**
@@ -69,5 +67,3 @@ Phase 38 requires evidence for:
 - frontend conflict/reconciliation state;
 - migration creation;
 - regression suites and production build.
-
-[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]
