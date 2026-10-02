@@ -23,7 +23,7 @@ Keep the database and the web application on the same trusted server unless ther
 2. Enable Apache `mod_rewrite` and `mod_headers`, and allow `.htaccess` overrides for the SAMS directory (`AllowOverride All`).
 3. Start Apache and MySQL/MariaDB.
 4. Create the SAMS database by importing `database/schema.sql` only for a fresh installation with no existing SAMS data.
-5. For an existing installation, back up the database and apply the documented migrations in `database/MIGRATIONS.md` instead of rebuilding the schema.
+5. For an existing installation, back up the database and apply the supported in-place migrations in `database/MIGRATIONS.md` in the documented order instead of rebuilding the schema.
 6. Import `database/seed.sql` only for development/demo environments.
 7. Copy `backend/config/app.example.php` to `backend/config/app.php` and set `environment=production`, `debug=false`, the production base path, and the required session/login settings.
 8. Copy `backend/config/database.example.php` to `backend/config/database.php`.
@@ -105,7 +105,7 @@ For a release deployment:
 
 1. Back up the current database.
 2. Review `database/MIGRATIONS.md` and confirm the database is at the supported release baseline.
-3. Apply only the migration(s) documented for that baseline; for this release, that is `005_school_import_staging.sql`.
+3. Apply the current release migrations in the documented order: 005, 006, 007, 008, then 009. Do not skip or reorder migrations.
 4. Run the integration test suite against the target schema where possible.
 5. Verify the application with a read-only smoke test before opening teacher access.
 
