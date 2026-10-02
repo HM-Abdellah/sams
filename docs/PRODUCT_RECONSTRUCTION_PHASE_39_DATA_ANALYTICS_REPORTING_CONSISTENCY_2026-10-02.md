@@ -1,7 +1,7 @@
 # SAMS — Phase 39 Data + Analytics + Reporting Consistency
 
 Date: 2026-10-02
-Status: **In Progress**
+Status: **Closed**
 Branch: `reconstruction/phase-39-data-analytics-reporting-2026-10-02`
 
 ## Goal
@@ -160,13 +160,15 @@ The Codespace PHP CLI currently lacks `pdo_mysql` and `ZipArchive`. Therefore:
 - the new DB integration cannot be executed locally in this environment;
 - the full backend PHPUnit suite currently errors in 14 PhpSpreadsheet tests because `ZipArchive` is unavailable.
 
-This is treated as an environment limitation, not as evidence that the Phase 39 backend integration is passing. The dedicated CI installs the required PHP extensions and runs the real MariaDB integration.
+This is treated as an environment limitation, not as evidence of a failing Phase 39 implementation. The dedicated CI installs the required PHP extensions and runs the real MariaDB integration successfully.
 
 ### Dedicated CI
 
 Added:
 
 - `.github/workflows/phase39-analytics-reporting.yml`
+
+Dedicated run for commit `3768197202f57281afb16eb21a0dbc1e5a725b6c`: GitHub Actions run **#8** completed successfully. Both backend and frontend jobs passed every defined step.
 
 The workflow verifies:
 
@@ -218,4 +220,4 @@ Phase 39 can close only when:
 
 ## Current exit status
 
-**IN PROGRESS — implementation and local frontend verification complete; dedicated remote backend + frontend CI pending.**
+**CLOSED — shared metric semantics implemented, documented, covered by unit/integration/E2E verification, and confirmed by dedicated remote Backend + Frontend CI.**
