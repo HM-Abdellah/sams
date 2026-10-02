@@ -193,7 +193,7 @@ export function TeacherStudentsPage() {
                   refreshingLabel={t(TRANSLATION_KEYS.auth.loading)}
                   errorTitle={t(TRANSLATION_KEYS.system.errorTitle)}
                   genericError={t(TRANSLATION_KEYS.system.genericError)}
-                  staleErrorLabel={t(TRANSLATION_KEYS.system.genericError)}
+                  staleErrorLabel={t(TRANSLATION_KEYS.system.staleError)}
                   reloadLabel={t(TRANSLATION_KEYS.system.reload)}
                   onRetry={() => void students.reload()}
                 />
