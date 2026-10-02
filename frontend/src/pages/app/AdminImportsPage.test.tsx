@@ -164,7 +164,7 @@ describe('AdminImportsPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Reconcile' }))
 
-    const dialog = screen.getByRole('dialog', { name: 'Confirm reconciliation' })
+    const dialog = screen.getByRole('alertdialog', { name: 'Confirm reconciliation' })
     expect(dialog).toBeInTheDocument()
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Reconcile', exact: true }))
