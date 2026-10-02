@@ -7,6 +7,7 @@ export interface DialogProps {
   open: boolean
   title: string
   description?: string
+  role?: 'dialog' | 'alertdialog'
   children?: ReactNode
   closeLabel?: string
   onClose: () => void
@@ -21,6 +22,7 @@ export function Dialog({
   closeLabel = 'Close',
   onClose,
   className,
+  role = 'dialog',
 }: DialogProps) {
   const titleId = useId()
   const descriptionId = useId()
@@ -38,7 +40,7 @@ export function Dialog({
       }}
     >
       <section
-        role="dialog"
+        role={role}
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
