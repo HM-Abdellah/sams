@@ -131,7 +131,7 @@ export interface DashboardSummary {
   today_absent: number | string
   today_late: number | string
   today_excused: number | string
-  today_presence_rate: number
+  today_presence_rate: number | null
 }
 
 export interface DashboardClassStat {
@@ -147,6 +147,7 @@ export interface DashboardClassStat {
   absent_count: number | string
   late_count: number | string
   excused_count: number | string
+  presence_rate: number | null
 }
 
 export interface DashboardAttentionStudent {

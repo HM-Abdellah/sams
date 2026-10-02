@@ -6,6 +6,7 @@ namespace SAMS\Services;
 
 use DateTimeImmutable;
 use SAMS\Exceptions\ArchiveReportException;
+use SAMS\Helpers\AttendanceMetrics;
 use SAMS\Repositories\ArchiveRepository;
 use SAMS\Repositories\ClassRepository;
 
@@ -90,15 +91,47 @@ final class ArchiveService
         }
 
         if ($view === 'month') {
+            $students = array_map(
+                static function (array $row): array {
+                    return array_merge($row, AttendanceMetrics::counts($row));
+                },
+                $this->archive->monthlyStudents($classId, $start, $end),
+            );
+
+            $summary = [
+                'present_count' => 0,
+                'absent_count' => 0,
+                'late_count' => 0,
+                'excused_count' => 0,
+                'recorded_count' => 0,
+            ];
+            foreach ($students as $student) {
+                foreach ($summary as $key => $value) {
+                    $summary[$key] = $value + (int)$student[$key];
+                }
+            }
+            $summary['presence_rate'] = AttendanceMetrics::presenceRate(
+                $summary['present_count'],
+                $summary['recorded_count'],
+            );
+
             return [
                 'view' => 'month',
                 'class' => $class,
                 'month' => $month,
                 'start' => $start,
                 'end' => $end,
-                'students' => $this->archive->monthlyStudents($classId, $start, $end),
+                'summary' => $summary,
+                'students' => $students,
             ];
         }
+
+        $days = array_map(
+            static function (array $row): array {
+                return array_merge($row, AttendanceMetrics::counts($row));
+            },
+            $this->archive->days($classId, $start, $end),
+        );
 
         return [
             'view' => 'days',
@@ -106,7 +139,7 @@ final class ArchiveService
             'month' => $month,
             'start' => $start,
             'end' => $end,
-            'days' => $this->archive->days($classId, $start, $end),
+            'days' => $days,
         ];
     }
 }

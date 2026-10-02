@@ -218,6 +218,7 @@ function ArchiveResult({
             t(TRANSLATION_KEYS.archive.absent),
             t(TRANSLATION_KEYS.archive.late),
             t(TRANSLATION_KEYS.archive.excused),
+            t(TRANSLATION_KEYS.attendance.presenceRate),
           ]}>
             {data.days.map((item) => (
               <tr key={item.attendance_date} className="border-b border-[var(--sams-border)] last:border-b-0">
@@ -227,6 +228,7 @@ function ArchiveResult({
                 <td className="px-3 py-2">{formatNumber(asNumber(item.absent_count))}</td>
                 <td className="px-3 py-2">{formatNumber(asNumber(item.late_count))}</td>
                 <td className="px-3 py-2">{formatNumber(asNumber(item.excused_count))}</td>
+                <td className="px-3 py-2">{item.presence_rate === null ? '—' : String(item.presence_rate) + '%'}</td>
               </tr>
             ))}
           </Table>
@@ -235,6 +237,22 @@ function ArchiveResult({
 
       {data.view === 'month' && (
         data.students.length === 0 ? <EmptyState title={t(TRANSLATION_KEYS.archive.month)} description={t(TRANSLATION_KEYS.archive.noRecords)} /> : (
+          <div className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+              {([
+                [TRANSLATION_KEYS.attendance.presenceRate, data.summary.presence_rate === null ? '—' : String(data.summary.presence_rate) + '%'],
+                [TRANSLATION_KEYS.archive.present, formatNumber(asNumber(data.summary.present_count))],
+                [TRANSLATION_KEYS.archive.absent, formatNumber(asNumber(data.summary.absent_count))],
+                [TRANSLATION_KEYS.archive.late, formatNumber(asNumber(data.summary.late_count))],
+                [TRANSLATION_KEYS.archive.excused, formatNumber(asNumber(data.summary.excused_count))],
+                [TRANSLATION_KEYS.archive.records, formatNumber(asNumber(data.summary.recorded_count))],
+              ] as Array<[TranslationKey, string]>).map(([key, value]) => (
+                <article key={key} className="sams-card p-4">
+                  <p className="text-sm text-[var(--sams-muted)]">{t(key)}</p>
+                  <p className="mt-1 text-2xl font-semibold">{value}</p>
+                </article>
+              ))}
+            </div>
           <Table caption={t(TRANSLATION_KEYS.archive.month)} headers={[
             t(TRANSLATION_KEYS.archive.student),
             t(TRANSLATION_KEYS.archive.enrollment),
@@ -243,6 +261,7 @@ function ArchiveResult({
             t(TRANSLATION_KEYS.archive.late),
             t(TRANSLATION_KEYS.archive.excused),
             t(TRANSLATION_KEYS.archive.records),
+            t(TRANSLATION_KEYS.attendance.presenceRate),
           ]}>
             {data.students.map((item) => (
               <tr key={item.id + '-' + item.enrollment_starts_on} className="border-b border-[var(--sams-border)] last:border-b-0">
@@ -256,9 +275,11 @@ function ArchiveResult({
                 <td className="px-3 py-2">{formatNumber(asNumber(item.late_count))}</td>
                 <td className="px-3 py-2">{formatNumber(asNumber(item.excused_count))}</td>
                 <td className="px-3 py-2">{formatNumber(asNumber(item.recorded_count))}</td>
+                <td className="px-3 py-2">{item.presence_rate === null ? '—' : String(item.presence_rate) + '%'}</td>
               </tr>
             ))}
           </Table>
+          </div>
         )
       )}
 

@@ -1,0 +1,151 @@
+name: SAMS Phase 39 Verification
+
+on:
+  push:
+    branches:
+      - reconstruction/phase-39-data-analytics-reporting-2026-10-02
+  pull_request:
+    branches:
+      - reconstruction/product-system-2026-10-01
+
+permissions:
+  contents: read
+
+jobs:
+  backend-analytics-reporting:
+    name: Backend — Phase 39 analytics/reporting consistency
+    runs-on: ubuntu-latest
+    container:
+      image: php:8.3-cli
+    services:
+      db:
+        image: mariadb:11.4
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: sams
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      SAMS_TEST_DB_HOST: db
+      SAMS_TEST_DB_PORT: 3306
+      SAMS_TEST_DB_NAME: sams
+      SAMS_TEST_DB_USER: root
+      SAMS_TEST_DB_PASS: root
+      SAMS_ALLOW_EXAMPLE_CONFIG: 1
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install PHP extensions and Composer
+        shell: sh
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends git libxml2-dev libonig-dev libzip-dev libfreetype6-dev libjpeg62-turbo-dev libpng-dev curl unzip mariadb-client
+          docker-php-ext-configure gd --with-freetype --with-jpeg
+          docker-php-ext-install dom gd mbstring pdo_mysql xml xmlwriter zip
+          EXPECTED_CHECKSUM="$(curl -fsSL https://composer.github.io/installer.sig)"
+          curl -fsSL https://getcomposer.org/installer -o composer-setup.php
+          echo "${EXPECTED_CHECKSUM}  composer-setup.php" | sha384sum -c -
+          php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+          rm composer-setup.php
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Configure backend database
+        working-directory: backend
+        shell: sh
+        run: |
+          mkdir -p config
+          cat > config/database.php <<'PHP'
+          <?php
+          declare(strict_types=1);
+          return [
+              'host' => getenv('SAMS_TEST_DB_HOST') ?: 'db',
+              'port' => (int)(getenv('SAMS_TEST_DB_PORT') ?: 3306),
+              'database' => getenv('SAMS_TEST_DB_NAME') ?: 'sams',
+              'username' => getenv('SAMS_TEST_DB_USER') ?: 'root',
+              'password' => getenv('SAMS_TEST_DB_PASS') ?: 'root',
+              'charset' => 'utf8mb4',
+          ];
+          PHP
+
+      - name: Load current schema
+        shell: sh
+        run: |
+          mariadb -h "$SAMS_TEST_DB_HOST" -P "$SAMS_TEST_DB_PORT" -u"$SAMS_TEST_DB_USER" -p"$SAMS_TEST_DB_PASS" < database/schema.sql
+
+      - name: Lint Phase 39 PHP sources and integration
+        shell: sh
+        run: |
+          php -l backend/src/Helpers/AttendanceMetrics.php
+          php -l backend/src/Repositories/AdminDashboardRepository.php
+          php -l backend/src/Services/AdminDashboardService.php
+          php -l backend/src/Services/ArchiveService.php
+          php -l backend/src/Services/ReportService.php
+          php -l backend/tests/Unit/AttendanceMetricsTest.php
+          php -l tests/phase39_data_analytics_reporting_integration.php
+
+      - name: Backend unit tests
+        working-directory: backend
+        run: vendor/bin/phpunit --testsuite unit
+
+      - name: Existing administration dashboard regression
+        run: php tests/administration_backend_integration.php
+
+      - name: Phase 39 data/analytics/reporting integration
+        run: php tests/phase39_data_analytics_reporting_integration.php
+
+  frontend-analytics-reporting:
+    name: Frontend — Phase 39 analytics/reporting UX
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install root dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck
+        working-directory: frontend
+        run: npm run typecheck
+
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Unit tests
+        working-directory: frontend
+        run: npm run test:unit
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
+      - name: Start Vite
+        shell: bash
+        run: |
+          npm --prefix frontend run dev -- --host 0.0.0.0 --port 5173 > /tmp/sams-vite.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:5173/login > /dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/sams-vite.log
+          exit 1
+
+      - name: Phase 39 dashboard/report/archive E2E
+        env:
+          SAMS_BASE_URL: http://127.0.0.1:5173/
+        run: npx playwright test tests/e2e/frontend_phase14_admin_platform.spec.js tests/e2e/frontend_phase15_archive_reports_signatures.spec.js --project=chromium --grep "admin dashboard and class administration|admin archive exposes|teacher monthly report stays" --reporter=line

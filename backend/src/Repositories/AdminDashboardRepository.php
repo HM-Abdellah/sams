@@ -67,11 +67,6 @@ final class AdminDashboardRepository
                  WHERE c.is_active = 1 AND ay.is_active = 1{$yearScope} AND a.attendance_date = CURDATE()) AS today_excused"
         )->fetch();
 
-        $todayTotal = (int)($summary['today_records'] ?? 0);
-        $summary['today_presence_rate'] = $todayTotal > 0
-            ? round(((int)$summary['today_present'] / $todayTotal) * 100, 1)
-            : 0.0;
-
         return $summary ?: [];
     }
 
@@ -251,9 +246,6 @@ final class AdminDashboardRepository
                 'absent_count' => (int)($row['absent_count'] ?? 0),
                 'late_count' => (int)($row['late_count'] ?? 0),
                 'excused_count' => (int)($row['excused_count'] ?? 0),
-                'presence_rate' => $total > 0
-                    ? round(((int)$row['present_count'] / $total) * 100, 1)
-                    : null,
             ];
         }
 

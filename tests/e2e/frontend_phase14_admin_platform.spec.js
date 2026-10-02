@@ -62,15 +62,15 @@ test.describe('frontend Phase 14 admin platform', () => {
         data: {
           date: '2026-09-29', absence_alert_threshold: 5,
           academic_year: { id: 1, name: '2026/2027', starts_on: '2026-09-01', ends_on: '2027-07-31' },
-          summary: { active_classes: 2, active_students: 72, active_teachers: 2, online_teachers: 1, unverified_teachers: 1, locked_teachers: 1, today_records: 60, today_present: 52, today_absent: 5, today_late: 2, today_excused: 1, today_presence_rate: 86.67 },
+          summary: { active_classes: 2, active_students: 72, active_teachers: 2, online_teachers: 1, unverified_teachers: 1, locked_teachers: 1, today_records: 60, today_present: 52, today_absent: 5, today_late: 2, today_excused: 1, today_presence_rate: 86.7 },
           attendance_trend: [
-            { date: '2026-09-26', record_count: 56, present_count: 48, absent_count: 5, late_count: 2, excused_count: 1, presence_rate: 85.71 },
+            { date: '2026-09-26', record_count: 56, present_count: 48, absent_count: 5, late_count: 2, excused_count: 1, presence_rate: 85.7 },
             { date: '2026-09-27', record_count: 0, present_count: 0, absent_count: 0, late_count: 0, excused_count: 0, presence_rate: null },
-            { date: '2026-09-28', record_count: 58, present_count: 50, absent_count: 4, late_count: 3, excused_count: 1, presence_rate: 86.21 },
-            { date: '2026-09-29', record_count: 60, present_count: 52, absent_count: 5, late_count: 2, excused_count: 1, presence_rate: 86.67 },
+            { date: '2026-09-28', record_count: 58, present_count: 50, absent_count: 4, late_count: 3, excused_count: 1, presence_rate: 86.2 },
+            { date: '2026-09-29', record_count: 60, present_count: 52, absent_count: 5, late_count: 2, excused_count: 1, presence_rate: 86.7 },
           ],
           online_teachers: [{ id: 10, full_name: 'E2E Teacher', employee_id: 'teacher.e2e', last_seen_at: '2026-09-29T08:05:00Z' }],
-          class_stats: [{ id: 1, name: 'E2E-2BAC-A', level: '2BAC', branch: 'SP', academic_year_id: 1, academic_year_name: '2026/2027', student_count: 40, today_records: 32, present_count: 29, absent_count: 2, late_count: 1, excused_count: 0 }],
+          class_stats: [{ id: 1, name: 'E2E-2BAC-A', level: '2BAC', branch: 'SP', academic_year_id: 1, academic_year_name: '2026/2027', student_count: 40, today_records: 32, present_count: 29, absent_count: 2, late_count: 1, excused_count: 0, presence_rate: 90.6 }],
           attention_students: [{ id: 301, first_name: 'Demo', last_name: 'Student', class_id: 1, class_name: 'E2E-2BAC-A', class_level: '2BAC', class_branch: 'SP', absent_count: 6, late_count: 1 }],
           classes_without_today_records: [{ id: 2, name: 'E2E-1BAC-B', level: '1BAC', branch: 'SVT', academic_year_name: '2026/2027' }],
           recent_audit: [{ id: 900, action: 'user.create', entity_type: 'user', entity_id: 11, created_at: '2026-09-29T08:00:00Z', full_name: 'E2E Admin', username: 'admin.e2e' }],
@@ -214,6 +214,8 @@ test.describe('frontend Phase 14 admin platform', () => {
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
     await expect(page.getByText('72')).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Attendance today' })).toBeVisible()
+    await expect(page.getByText('86.7%', { exact: true }).first()).toBeVisible()
+    await expect(page.getByText('Present ÷ recorded attendance entries. This rate does not measure scheduled lessons.')).toBeVisible()
     await expect(page.getByText('E2E Teacher').first()).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Needs attention' })).toBeVisible()
     await page.goto('/app/admin/classes')

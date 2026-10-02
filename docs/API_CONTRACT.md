@@ -113,6 +113,18 @@ JSON actions:
 - `activate`: `id`
 - `deactivate`: `id`
 
+## Shared attendance metric semantics
+
+All dashboard, report, and archive presence rates use the same canonical definition:
+
+- **Recorded entries**: persisted attendance rows in the requested school/class/date/enrollment scope.
+- **Present**: recorded rows whose status is `present`.
+- **Absent / Late / Excused**: recorded rows with the corresponding status.
+- **Presence rate**: `present / recorded entries * 100`, rounded to one decimal place.
+- When there are no recorded entries, the presence rate is `null`, not 0%.
+- This metric does **not** estimate scheduled-but-unrecorded lessons. SAMS currently has no timetable/expected-session contract that would make such a denominator authoritative.
+- The five-absence attention threshold remains a separate operational rule and must not be interpreted as a percentage metric.
+
 ## Administration dashboard
 
 ### GET `api/admin-dashboard.php`
@@ -127,6 +139,8 @@ Admin only. Returns the current school operational dashboard for the active acad
 - recent audit activity
 
 Branch statistics are derived from the separate class rows and are never used to grant access or merge historical classes.
+
+Dashboard metric fields follow the shared attendance metric semantics: `summary.today_presence_rate`, `attendance_trend[].presence_rate`, and `class_stats[].presence_rate` all use persisted recorded entries as the denominator; no-record scopes return `null`.
 
 ## Teachers
 
@@ -401,11 +415,19 @@ Supported views are `days`, `month`, `day`, and `student`.
 - `day`: requires `class_id` and `date=YYYY-MM-DD`; the date must be within the class academic year.
 - `student`: requires `class_id` and `student_id` and returns that student's history within the selected class.
 
+For `days`, each returned day includes `presence_rate` using the shared metric definition. For `month`, the response includes a `summary` with the shared status counts and `presence_rate`, and each enrollment-aware student row includes `presence_rate`.
+
 The canonical route is read-only, requires authentication and the `admin` role, and does not require CSRF.
 
 ### GET `/api/v1/classes/{id}/report?month=YYYY-MM`
 
-Authenticated users with operational access to the selected class. Returns enrollment-aware monthly attendance totals for the class.
+Authenticated users with operational access to the selected class. Returns enrollment-aware monthly attendance totals for the class. The response includes:
+
+- `summary.present_count`, `summary.absent_count`, `summary.late_count`, `summary.excused_count`, `summary.recorded_count`
+- `summary.presence_rate` using the shared metric definition above, or `null` when nothing was recorded
+- `students[].presence_rate` using the same denominator for each enrollment-aware student row
+
+Existing count fields remain available for compatibility.
 
 ### GET `/api/v1/classes/{id}/signature`
 
