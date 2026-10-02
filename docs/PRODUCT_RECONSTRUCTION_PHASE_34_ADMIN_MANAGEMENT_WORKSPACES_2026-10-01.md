@@ -2,7 +2,7 @@
 ## Admin Management Workspaces
 ### 2026-10-01
 
-Status: CLOSED — verified by GitHub Actions run #943 on branch head.
+Status: CLOSED — verified by GitHub Actions run #944 on branch head `23d727495bd6eba01542a808310934bfd59e1b45`.
 
 ## 1. Explore
 Phase 33 established the operational admin dashboard, but the management routes were still mostly form-plus-table surfaces. Classes lacked relationship summaries and deliberate discovery controls; teachers and users needed better search/filter workflows; academic years had limited management filtering; and students had no dedicated admin workspace.
@@ -68,7 +68,7 @@ The admin student lifecycle regression passed inside the Playwright E2E gate, an
 ## 8. Git
 Branch: `reconstruction/product-system-2026-10-01`
 Verified head: `935b066634ccd41aac33eddadc6739b35fdb0fc9`
-CI verification: GitHub Actions run `#943`
+CI verification: GitHub Actions run `#944`
 Main base: `64a081294f7ec08612c85007d671aeb13f49c4c6`
 No merge to main is performed in this phase.
 
@@ -80,4 +80,4 @@ All close criteria are satisfied:
 - final documentation records the verified branch head and CI run;
 - Phase 35 is the next planned phase; it has not started.
 
-Phase 34 is formally closed. Phase 35 starts only from this verified branch state.
+Phase 34 is formally closed. Its exact release gate was verified at `23d727495bd6eba01542a808310934bfd59e1b45` by GitHub Actions run `#944`. Phase 35 now continues from that verified state.
