@@ -354,6 +354,8 @@ export const TRANSLATION_KEYS = {
     importConfirmReconcileDescription: 'admin.importConfirmReconcileDescription',
     importConfirmCommitDescription: 'admin.importConfirmCommitDescription',
     onboardingConfirmRejectDescription: 'admin.onboardingConfirmRejectDescription',
+    onboardingExpiresAt: 'admin.onboardingExpiresAt',
+    onboardingRejectionReason: 'admin.onboardingRejectionReason',
     auditHint: 'admin.auditHint',
     user: 'admin.user',
     allUsers: 'admin.allUsers',
