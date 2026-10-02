@@ -349,6 +349,11 @@ test.describe('frontend Phase 14 admin platform', () => {
     await expect(html).toHaveAttribute('lang', 'ar')
     await expect(html).toHaveAttribute('dir', 'rtl')
     await expect(page.getByRole('heading', { name: 'تدقيق' })).toBeVisible()
+
+    await page.goto('/app/admin/users')
+    await expect(page.getByRole('heading', { name: 'المستخدمون' })).toBeVisible()
+    await expect(page.getByRole('row').filter({ hasText: 'teacher.e2e' }).getByText('الأستاذ', { exact: true })).toBeVisible()
+    await expect(page.getByRole('row').filter({ hasText: 'teacher.e2e' }).getByText('نشط', { exact: true })).toBeVisible()
   })
 
   test('teacher role is denied from the admin route group', async ({ page }) => {
