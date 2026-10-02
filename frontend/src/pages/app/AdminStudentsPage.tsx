@@ -248,7 +248,7 @@ export function AdminStudentsPage() {
                       <td className="px-3 py-3 font-medium">{student.first_name} {student.last_name}</td>
                       <td className="px-3 py-3">{student.massar_code ?? '—'}</td>
                       <td className="px-3 py-3">{student.birth_date ? formatDate(student.birth_date) : '—'}</td>
-                      <td className="px-3 py-3"><Badge variant={student.status === 'active' ? 'success' : 'neutral'}>{student.status}</Badge></td>
+                      <td className="px-3 py-3"><Badge variant={student.status === 'active' ? 'success' : 'neutral'}>{student.status === 'active' ? t(TRANSLATION_KEYS.admin.active) : t(TRANSLATION_KEYS.admin.inactive)}</Badge></td>
                       <td className="px-3 py-3">
                         <div className="flex flex-wrap gap-2">
                           {student.status === 'active' && <Button type="button" size="sm" variant="secondary" disabled={busy !== null} onClick={() => openEdit(student)}>{t(TRANSLATION_KEYS.admin.edit)}</Button>}
