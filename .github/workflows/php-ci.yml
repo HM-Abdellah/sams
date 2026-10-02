@@ -757,6 +757,7 @@ jobs:
           SAMS_BASE_URL=http://127.0.0.1:4173/ SAMS_PERFORMANCE_MODE=1 npx playwright test tests/e2e/frontend_phase20_performance.spec.js --reporter=line || overall_status=1
 
           run_frontend_group "phase-24-final-audit" "http://127.0.0.1:4173/" tests/e2e/frontend_phase24_final_audit.spec.js
+          run_frontend_group "final-verification-session-error" "http://127.0.0.1:5173/" tests/e2e/final_verification_session_error.spec.js
 
           kill "$server_pid" "$vite_pid" "$preview_pid" 2>/dev/null || true
           exit "$overall_status"
