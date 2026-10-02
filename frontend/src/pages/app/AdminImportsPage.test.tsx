@@ -167,7 +167,7 @@ describe('AdminImportsPage', () => {
     const dialog = screen.getByRole('alertdialog', { name: 'Confirm reconciliation' })
     expect(dialog).toBeInTheDocument()
 
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Reconcile', exact: true }))
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Reconcile' }))
 
     await waitFor(() => {
       expect(reconcileSpy).toHaveBeenCalledWith(41)
