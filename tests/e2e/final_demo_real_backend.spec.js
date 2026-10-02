@@ -30,8 +30,9 @@ test.describe('Final demo real-backend rehearsal', () => {
     await dayGroup.getByRole('button').nth(4).click()
 
     await page.getByRole('group', { name: 'Mark as' }).getByRole('button', { name: 'Absent' }).click()
-    const firstStudent = page.locator('[data-attendance-row]:visible').first()
-    const periodOne = firstStudent.locator('button[data-attendance-period="1"]')
+    const jeanRow = page.locator('[data-attendance-row]:visible').filter({ hasText: 'Jean Dupont' }).first()
+    await expect(jeanRow).toBeVisible()
+    const periodOne = jeanRow.locator('button[data-attendance-period="1"]')
     await expect(periodOne).toHaveAttribute('aria-label', /Period 1.*Present/)
     await periodOne.click()
     await expect(periodOne).toHaveAttribute('aria-label', /Period 1.*Absent/)
@@ -40,7 +41,9 @@ test.describe('Final demo real-backend rehearsal', () => {
     await page.reload()
     await expect(page.getByRole('heading', { name: 'Attendance register' })).toBeVisible()
     await page.getByRole('group', { name: 'Attendance register' }).first().getByRole('button').nth(4).click()
-    await expect(page.locator('[data-attendance-row]:visible').first().locator('button[data-attendance-period="1"]')).toHaveAttribute('aria-label', /Period 1.*Absent/)
+    const jeanRowAfterReload = page.locator('[data-attendance-row]:visible').filter({ hasText: 'Jean Dupont' }).first()
+    await expect(jeanRowAfterReload).toBeVisible()
+    await expect(jeanRowAfterReload.locator('button[data-attendance-period="1"]')).toHaveAttribute('aria-label', /Period 1.*Absent/)
 
     await page.goto('/sams/app/reports?class_id=1&month=2026-09')
     await expect(page.getByRole('heading', { name: 'Statistics' })).toBeVisible()
