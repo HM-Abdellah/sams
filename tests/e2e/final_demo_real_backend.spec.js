@@ -68,4 +68,47 @@ test.describe('Final demo real-backend rehearsal', () => {
     await expect(archiveStudent).toContainText('25%')
     await expect(archiveStudent).toContainText('8')
   })
+
+  test('real backend attendance remains usable on narrow mobile and supports RTL language switching', async ({ page }) => {
+    await login(page, teacherCode, teacherPassword)
+    await expect(page).toHaveURL(/\/sams\/app\/teacher$/)
+
+    await page.setViewportSize({ width: 320, height: 640 })
+    await page.goto('/sams/app/attendance?class_id=1&week_start=2026-09-21')
+    await expect(page.getByRole('heading', { name: 'Attendance register' })).toBeVisible()
+
+    const metrics = await page.evaluate(() => ({
+      viewport: window.innerWidth,
+      documentWidth: document.documentElement.scrollWidth,
+      bodyWidth: document.body.scrollWidth,
+    }))
+    expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewport)
+    expect(metrics.bodyWidth).toBeLessThanOrEqual(metrics.viewport)
+
+    await expect(page.locator('[data-attendance-row]:visible').filter({ hasText: 'Jean Dupont' })).toBeVisible()
+    const periodSelector = page.getByRole('group', { name: 'Period' })
+    await expect(periodSelector.getByRole('button')).toHaveCount(8)
+    await periodSelector.getByRole('button', { name: /Period 8/ }).click()
+
+    const statusCell = page.locator('button.sams-touch-cell:visible').first()
+    const cellBox = await statusCell.boundingBox()
+    expect(cellBox).not.toBeNull()
+    expect(cellBox.width).toBeGreaterThanOrEqual(48)
+    expect(cellBox.height).toBeGreaterThanOrEqual(48)
+
+    await page.locator('#sams-language').selectOption('ar')
+    await expect(page.locator('html')).toHaveAttribute('lang', 'ar')
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
+    await expect(page.locator('#sams-language')).toHaveValue('ar')
+    await expect(page.getByRole('button', { name: 'فتح التنقل' })).toBeVisible()
+
+    const rtlMetrics = await page.evaluate(() => ({
+      viewport: window.innerWidth,
+      documentWidth: document.documentElement.scrollWidth,
+      bodyWidth: document.body.scrollWidth,
+    }))
+    expect(rtlMetrics.documentWidth).toBeLessThanOrEqual(rtlMetrics.viewport)
+    expect(rtlMetrics.bodyWidth).toBeLessThanOrEqual(rtlMetrics.viewport)
+  })
+
 })
