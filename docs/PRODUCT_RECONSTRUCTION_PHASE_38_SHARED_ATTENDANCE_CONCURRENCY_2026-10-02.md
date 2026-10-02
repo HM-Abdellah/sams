@@ -1,6 +1,6 @@
 # SAMS Phase 38 — Shared Attendance + Concurrency
 
-Status: **In progress**
+Status: **Closed**
 
 Remote verification is isolated in `.github/workflows/phase38-concurrency.yml` so Phase 38 concurrency checks do not alter the canonical full-project CI workflow.
 
@@ -53,9 +53,33 @@ On HTTP 409:
 
 There is no silent overwrite and no automatic destructive merge.
 
+## Verification
+
+Phase 38 verification is complete. Local verification and the dedicated remote GitHub Actions run both passed with real MariaDB 11.4 coverage, including concurrent teacher processes.
+
+Local evidence:
+
+- migration 009 integration: PASS;
+- attendance backend integration: PASS;
+- concurrency regression: 8/8 rounds PASS;
+- tenant isolation integration: PASS;
+- Phase 38 shared attendance concurrency integration: PASS;
+- frontend typecheck: PASS;
+- Oxlint: 0 warnings / 0 errors;
+- frontend unit suite: 15 files / 58 tests PASS;
+- production build: PASS;
+- Phase 38 Playwright E2E: 1/1 PASS.
+
+Remote evidence:
+
+- dedicated Phase 38 GitHub Actions backend job: PASS;
+- dedicated Phase 38 GitHub Actions frontend job: PASS.
+
+The pre-existing grouped smoke suite remains outside the Phase 38 closeout scope; its two Phase 20 performance assertions are unrelated to the concurrency implementation.
+
 ## Verification target
 
-Phase 38 requires evidence for:
+Phase 38 required evidence for:
 
 - assigned teacher authorization;
 - stale-write rejection;
