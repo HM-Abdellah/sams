@@ -160,7 +160,7 @@ test.describe('frontend Phase 14 admin platform', () => {
       }) })
     })
     await page.route('**/api/v1/imports/school/55/reconcile', async (route) => {
-      importStatus = 'reconciled'
+      importStatus = 'validated'
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: { batch_id: 55, ready_to_import: true, already_imported: false, summary: { mapped_classes: 1, conflict_rows: 0 } } }) })
     })
     await page.route('**/api/v1/imports/school/55/commit', async (route) => {
@@ -308,12 +308,16 @@ test.describe('frontend Phase 14 admin platform', () => {
     await page.getByRole('button', { name: 'Upload' }).click()
     await expect.poll(() => uploadContentType).toContain('multipart/form-data')
     await expect(page.getByRole('heading', { name: 'synthetic.md' })).toBeVisible()
-    await page.once('dialog', (dialog) => dialog.accept())
     await page.getByRole('button', { name: 'Reconcile' }).click()
-    await expect(page.getByText('reconciled', { exact: true })).toBeVisible()
-    await page.once('dialog', (dialog) => dialog.accept())
+    const reconcileDialog = page.getByRole('alertdialog', { name: 'Confirm reconciliation' })
+    await expect(reconcileDialog).toBeVisible()
+    await reconcileDialog.getByRole('button', { name: 'Reconcile' }).click()
+    await expect(page.getByText('Validated', { exact: true })).toBeVisible()
     await page.getByRole('button', { name: 'Commit import' }).click()
-    await expect(page.getByText('imported', { exact: true })).toBeVisible()
+    const commitDialog = page.getByRole('alertdialog', { name: 'Confirm import commit' })
+    await expect(commitDialog).toBeVisible()
+    await commitDialog.getByRole('button', { name: 'Commit import' }).click()
+    await expect(page.getByText('Imported', { exact: true })).toBeVisible()
   })
 
   test('audit filters are sent to the server and Arabic admin stays RTL', async ({ page }) => {
