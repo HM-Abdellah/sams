@@ -12,11 +12,20 @@ For a new school installation, use the current release schema:
 
 ## Supported in-place upgrade for this release
 
-The supported existing-installation upgrade path is intentionally narrow and verified:
+The supported existing-installation upgrade path for this release is:
 
-`SAMS main baseline` → `005_school_import_staging.sql`
+`SAMS main baseline` → `005_school_import_staging.sql` → `006_school_auth_identity.sql` → `007_revoke_predictable_login_codes.sql` → `008_onboarding_rate_limit_metadata.sql` → `009_attendance_concurrency_revisions.sql`
 
-Phase 38 adds a separate verified migration for the shared-attendance revision ledger. It is not part of the older baseline support statement until the Phase 38 release gate is closed.
+The release CI verifies these migration steps against the appropriate isolated baselines. The migration tests are separate upgrade-step checks, not a substitute for validating the target school's actual database state.
+
+For an existing production database at the supported `main` baseline:
+
+1. Take and verify a full backup.
+2. Apply 005, then 006, then 007, then 008, then 009 exactly once and in that order.
+3. Run the isolated regression/integration checks for the deployed release where practical.
+4. Perform a read-only smoke test before returning the system to teacher use.
+
+Migration 009 is now included in the supported production upgrade path because Phase 38 is closed.
 
 The baseline is the `database/schema.sql` from `main` commit `4daaeb492923a7cdfb909b13c72ae39fb63d0e48`.
 That baseline already contains the schema changes represented by the historical 001–004 migrations, teacher management, and attendance sign-off/administration-receipt tables.
@@ -64,4 +73,4 @@ That check is part of the release CI gate.
 
 `database/migrations/009_attendance_concurrency_revisions.sql` adds the server-authoritative per-lesson attendance revision ledger. CI executes `tests/migration_009_integration.php` against the supported release baseline and verifies the table shape, class foreign key, and persistence of a revision row.
 
-This migration is part of Phase 38 verification; it becomes part of the supported production upgrade path only when the Phase 38 release gate is closed.
+This migration is part of the supported production upgrade path for the current release because the Phase 38 release gate is closed.
