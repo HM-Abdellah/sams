@@ -1,8 +1,10 @@
-[Reading 67 lines from start (total: 67 lines, 0 remaining)]
+[Reading 69 lines from start (total: 69 lines, 0 remaining)]
 
 # SAMS Phase 38 — Shared Attendance + Concurrency
 
 Status: **In progress**
+
+Remote verification is isolated in `.github/workflows/phase38-concurrency.yml` so Phase 38 concurrency checks do not alter the canonical full-project CI workflow.
 
 ## Objective
 
