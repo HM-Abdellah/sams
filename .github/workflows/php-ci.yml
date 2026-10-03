@@ -261,11 +261,7 @@ jobs:
       - name: Audit tracked secrets and local config paths
         shell: sh
         run: |
-          tree_json=$(curl -fsSL \
-            -H 'Accept: application/vnd.github+json' \
-            "https://api.github.com/repos/$GITHUB_REPOSITORY/git/trees/$GITHUB_SHA?recursive=1")
-          printf '%s' "$tree_json" | php -r '
-          $tree = json_decode(stream_get_contents(STDIN), true, 512, JSON_THROW_ON_ERROR);
+          git ls-tree -r --name-only "$GITHUB_SHA" | php -r '
           $forbidden = [
               ".env",
               "config/app.php",
@@ -273,8 +269,8 @@ jobs:
               "backend/config/app.php",
               "backend/config/database.php",
           ];
-          foreach ((array)($tree["tree"] ?? []) as $entry) {
-              $path = (string)($entry["path"] ?? "");
+          while (($line = fgets(STDIN)) !== false) {
+              $path = trim($line);
               if (in_array($path, $forbidden, true) || (str_starts_with($path, ".env.") && $path !== ".env.example")) {
                   fwrite(STDERR, "forbidden tracked path: {$path}\n");
                   exit(1);
