@@ -173,6 +173,8 @@ Browser verification:
     npm ci --no-audit --no-fund
     npm run test:e2e
 
+The release CI also rehearses the supported in-place migration sequence 005 → 006 → 007 → 008 → 009 on one isolated database, runs backup/restore regression, validates production configuration fail-closed behavior, and checks Apache from both loopback and the server/container network address. These checks are deployment-topology verification; a real school-LAN acceptance still needs to be performed on the target server before first operational use.
+
 The database-dependent tests expect `SAMS_TEST_DB_HOST`, `SAMS_TEST_DB_PORT`, `SAMS_TEST_DB_NAME`, `SAMS_TEST_DB_USER`, and `SAMS_TEST_DB_PASS` for the isolated test database. CI supplies these values and also runs the clean-school acceptance gate.
 
 ## Demo / presentation data

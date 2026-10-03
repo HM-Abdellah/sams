@@ -79,12 +79,42 @@ jobs:
       - name: Verify application configuration fails closed
         shell: sh
         run: |
-          if SAMS_ALLOW_EXAMPLE_CONFIG=0 php -r 'require "backend/src/bootstrap.php";'; then
-            echo "Application bootstrap unexpectedly accepted missing application configuration."
+          if SAMS_ALLOW_EXAMPLE_CONFIG=0 SAMS_ENV=production php -r 'require "backend/src/bootstrap.php";'; then
+            echo "Application bootstrap unexpectedly accepted missing application configuration in production."
             exit 1
           fi
+
           SAMS_ALLOW_EXAMPLE_CONFIG=1 php -r 'require "backend/src/bootstrap.php";'
-          echo "[PASS] Application bootstrap requires explicit configuration outside test/development fallback."
+          if SAMS_ALLOW_EXAMPLE_CONFIG=1 SAMS_ENV=production php -r 'require "backend/src/bootstrap.php";'; then
+            echo "Example application configuration was unexpectedly accepted in production."
+            exit 1
+          fi
+
+          cp backend/config/app.example.php backend/config/app.php
+          cleanup_app_config() { rm -f backend/config/app.php; }
+          trap cleanup_app_config EXIT
+
+          python3 - <<'PYCFG'
+          from pathlib import Path
+          p=Path("backend/config/app.php")
+          s=p.read_text().replace("'environment' => 'development'", "'environment' => 'production'")
+          p.write_text(s)
+          PYCFG
+          if SAMS_ENV=production php -r 'require "backend/src/bootstrap.php";'; then
+            echo "Production configuration with debug=true was unexpectedly accepted."
+            exit 1
+          fi
+
+          python3 - <<'PYCFG'
+          from pathlib import Path
+          p=Path("backend/config/app.php")
+          s=p.read_text().replace("'debug' => true", "'debug' => false")
+          p.write_text(s)
+          PYCFG
+          SAMS_ENV=production php -r 'require "backend/src/bootstrap.php";'
+          rm -f backend/config/app.php
+          trap - EXIT
+          echo "[PASS] Production configuration is fail-closed: missing config, example config, and debug=true are rejected."
 
       - name: Configure backend database
         shell: sh
@@ -140,6 +170,51 @@ jobs:
         shell: sh
         run: |
           php tests/migration_008_integration.php
+
+      - name: Rehearse supported 005→009 in-place upgrade on one isolated database
+        shell: sh
+        run: |
+          upgrade_db="sams_release_upgrade_rehearsal"
+          mariadb -h "$SAMS_TEST_DB_HOST" -P "$SAMS_TEST_DB_PORT" -u "$SAMS_TEST_DB_USER" -p"$SAMS_TEST_DB_PASS" -e "DROP DATABASE IF EXISTS ${upgrade_db}; CREATE DATABASE ${upgrade_db} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+          rewrite_sql() {
+            python3 - "$1" "$2" "$upgrade_db" <<'PYSQL'
+          import re
+          import sys
+          from pathlib import Path
+          src, dst, db = sys.argv[1:]
+          s=Path(src).read_text()
+          s=re.sub(r'\bCREATE DATABASE IF NOT EXISTS\s+sams\b', f'CREATE DATABASE IF NOT EXISTS {db}', s, flags=re.I)
+          s=re.sub(r'\bUSE\s+sams\b', f'USE {db}', s, flags=re.I)
+          Path(dst).write_text(s)
+          PYSQL
+          }
+
+          workdir=$(mktemp -d)
+          cleanup_upgrade() {
+            rm -rf "$workdir"
+            mariadb -h "$SAMS_TEST_DB_HOST" -P "$SAMS_TEST_DB_PORT" -u "$SAMS_TEST_DB_USER" -p"$SAMS_TEST_DB_PASS" -e "DROP DATABASE IF EXISTS ${upgrade_db};"
+          }
+          trap cleanup_upgrade EXIT
+
+          rewrite_sql release-baseline/database/schema.sql "$workdir/schema.sql"
+          mariadb -h "$SAMS_TEST_DB_HOST" -P "$SAMS_TEST_DB_PORT" -u "$SAMS_TEST_DB_USER" -p"$SAMS_TEST_DB_PASS" < "$workdir/schema.sql"
+
+          for migration in \
+            database/migrations/005_school_import_staging.sql \
+            database/migrations/006_school_auth_identity.sql \
+            database/migrations/007_revoke_predictable_login_codes.sql \
+            database/migrations/008_onboarding_rate_limit_metadata.sql \
+            database/migrations/009_attendance_concurrency_revisions.sql; do
+            target="$workdir/$(basename "$migration")"
+            rewrite_sql "$migration" "$target"
+            mariadb -h "$SAMS_TEST_DB_HOST" -P "$SAMS_TEST_DB_PORT" -u "$SAMS_TEST_DB_USER" -p"$SAMS_TEST_DB_PASS" < "$target"
+          done
+
+          result=$(mariadb -h "$SAMS_TEST_DB_HOST" -P "$SAMS_TEST_DB_PORT" -u "$SAMS_TEST_DB_USER" -p"$SAMS_TEST_DB_PASS" -D "$upgrade_db" -N -B -e "SELECT (SELECT COUNT(*) FROM school_import_batches),(SELECT COUNT(*) FROM teacher_onboarding_requests),(SELECT COUNT(*) FROM attendance_register_revisions);")
+          expected=$(printf '0\t0\t0')
+          test "$result" = "$expected"
+          echo "[PASS] Supported in-place migration sequence 005 → 009 applied cleanly on one isolated database."
 
       - name: Verify tenant isolation boundaries
         shell: sh
@@ -545,6 +620,11 @@ jobs:
           login_status=$(curl -sS -o /tmp/sams-apache-login.html -w "%{http_code}" http://127.0.0.1/sams/login)
           test "$login_status" = "200"
           grep -q 'SAMS — Student Attendance Management System' /tmp/sams-apache-login.html
+
+          container_ip=$(hostname -i | awk '{print $1}')
+          network_login_status=$(curl -sS --max-time 5 -o /tmp/sams-apache-network-login.html -w "%{http_code}" "http://${container_ip}/sams/login")
+          test "$network_login_status" = "200"
+          grep -q 'SAMS — Student Attendance Management System' /tmp/sams-apache-network-login.html
 
           legacy_login_headers=/tmp/sams-apache-legacy-login.headers
           curl -sS -D "$legacy_login_headers" -o /dev/null http://127.0.0.1/sams/public/login.php
