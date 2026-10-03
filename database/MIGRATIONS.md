@@ -34,11 +34,15 @@ For a database at that baseline:
 
 1. Take and verify a full backup.
 2. Apply `database/migrations/005_school_import_staging.sql`.
-3. Run the isolated regression/integration checks.
-4. Perform a read-only smoke test before returning the system to teacher use.
+3. Apply `database/migrations/006_school_auth_identity.sql`.
+4. Apply `database/migrations/007_revoke_predictable_login_codes.sql`.
+5. Apply `database/migrations/008_onboarding_rate_limit_metadata.sql`.
+6. Apply `database/migrations/009_attendance_concurrency_revisions.sql`.
+7. Run the isolated regression/integration checks for the deployed release.
+8. Perform a read-only smoke test before returning the system to teacher use.
 
 Do not apply `database/schema.sql` to an existing database containing real data.
-Do not apply historical migrations 001–004 or the other legacy migration files to this baseline.
+Do not apply historical migrations 001–004 to this baseline; those changes are already included in it.
 
 ## Historical migration files
 
