@@ -187,7 +187,7 @@ export function AdminUsersPage() {
           <div className="grid gap-4 md:grid-cols-2">
             {!editing && <FormField label={t(TRANSLATION_KEYS.admin.username)}>{({ id, ...aria }) => <Input id={id} {...aria} value={username} onChange={(e) => setUsername(e.target.value)} />}</FormField>}
             <FormField label={t(TRANSLATION_KEYS.admin.fullName)}>{({ id, ...aria }) => <Input id={id} {...aria} value={fullName} onChange={(e) => setFullName(e.target.value)} />}</FormField>
-            <FormField label={t(TRANSLATION_KEYS.admin.role)}>{({ id, ...aria }) => <Select id={id} {...aria} value={role} onChange={(e) => setRole(e.target.value as AdminUser['role'])}><option value="teacher">Teacher</option><option value="admin">Admin</option><option value="counselor">Counselor</option></Select>}</FormField>
+            <FormField label={t(TRANSLATION_KEYS.admin.role)}>{({ id, ...aria }) => <Select id={id} {...aria} value={role} onChange={(e) => setRole(e.target.value as AdminUser['role'])}><option value="teacher">{t(TRANSLATION_KEYS.admin.teacher)}</option><option value="admin">{t(TRANSLATION_KEYS.admin.administrator)}</option><option value="counselor">{t(TRANSLATION_KEYS.admin.counselor)}</option></Select>}</FormField>
             <FormField label={t(TRANSLATION_KEYS.admin.employeeId)}>{({ id, ...aria }) => <Input id={id} {...aria} value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} />}</FormField>
             <FormField label={t(TRANSLATION_KEYS.admin.phone)}>{({ id, ...aria }) => <Input id={id} {...aria} value={phone} onChange={(e) => setPhone(e.target.value)} />}</FormField>
             {!editing && <FormField label={t(TRANSLATION_KEYS.admin.password)}>{({ id, ...aria }) => <Input id={id} {...aria} type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />}</FormField>}
@@ -211,7 +211,7 @@ export function AdminUsersPage() {
         </section>
         <AdminWorkspaceToolbar searchLabel={t(TRANSLATION_KEYS.admin.search)} searchPlaceholder={t(TRANSLATION_KEYS.admin.searchUsers)} searchValue={query} onSearchChange={setQuery}>
           <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label={t(TRANSLATION_KEYS.admin.role)}>{({ id, ...aria }) => <Select id={id} {...aria} value={roleFilter} onChange={(event) => setRoleFilter(event.target.value as typeof roleFilter)}><option value="all">{t(TRANSLATION_KEYS.admin.allRoles)}</option><option value="teacher">Teacher</option><option value="admin">Admin</option><option value="counselor">Counselor</option></Select>}</FormField>
+            <FormField label={t(TRANSLATION_KEYS.admin.role)}>{({ id, ...aria }) => <Select id={id} {...aria} value={roleFilter} onChange={(event) => setRoleFilter(event.target.value as typeof roleFilter)}><option value="all">{t(TRANSLATION_KEYS.admin.allRoles)}</option><option value="teacher">{t(TRANSLATION_KEYS.admin.teacher)}</option><option value="admin">{t(TRANSLATION_KEYS.admin.administrator)}</option><option value="counselor">{t(TRANSLATION_KEYS.admin.counselor)}</option></Select>}</FormField>
             <FormField label={t(TRANSLATION_KEYS.admin.status)}>{({ id, ...aria }) => <Select id={id} {...aria} value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}><option value="all">{t(TRANSLATION_KEYS.admin.allStatuses)}</option><option value="active">{t(TRANSLATION_KEYS.admin.activeOnly)}</option><option value="suspended">{t(TRANSLATION_KEYS.admin.suspended)}</option><option value="deactivated">{t(TRANSLATION_KEYS.admin.deactivated)}</option></Select>}</FormField>
           </div>
         </AdminWorkspaceToolbar>
@@ -238,9 +238,9 @@ export function AdminUsersPage() {
             <tr key={user.id} className="border-b border-[var(--sams-border)] last:border-b-0">
               <td className="px-3 py-2 font-medium">{user.full_name}</td>
               <td className="px-3 py-2">{user.username}</td>
-              <td className="px-3 py-2">{user.role}</td>
+              <td className="px-3 py-2">{user.role === 'teacher' ? t(TRANSLATION_KEYS.admin.teacher) : user.role === 'admin' ? t(TRANSLATION_KEYS.admin.administrator) : t(TRANSLATION_KEYS.admin.counselor)}</td>
               <td className="px-3 py-2">
-                <Badge variant={user.account_status === 'active' ? 'success' : user.account_status === 'suspended' ? 'warning' : 'neutral'}>{user.account_status}</Badge>
+                <Badge variant={user.account_status === 'active' ? 'success' : user.account_status === 'suspended' ? 'warning' : 'neutral'}>{user.account_status === 'active' ? t(TRANSLATION_KEYS.admin.statusActive) : user.account_status === 'suspended' ? t(TRANSLATION_KEYS.admin.statusSuspended) : t(TRANSLATION_KEYS.admin.statusDeactivated)}</Badge>
               </td>
               <td className="px-3 py-2 text-sm">
                 {asNumber(user.failed_login_attempts)} {t(TRANSLATION_KEYS.admin.failedAttempts)}

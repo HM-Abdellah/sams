@@ -286,7 +286,7 @@ test.describe('frontend Phase 14 admin platform', () => {
     await expect(page.getByText('E2E-ONCE-CODE')).toBeVisible()
     page.once('dialog', (dialog) => dialog.accept())
     await page.getByRole('button', { name: 'Suspend' }).nth(1).click()
-    await expect(page.getByRole('row').filter({ hasText: 'teacher.e2e' }).getByText('suspended', { exact: true })).toBeVisible()
+    await expect(page.getByRole('row').filter({ hasText: 'teacher.e2e' }).getByText('Suspended', { exact: true })).toBeVisible()
 
     await page.goto('/app/admin/onboarding')
     await expect(page.getByText('New E2E Teacher')).toBeVisible()
@@ -349,6 +349,14 @@ test.describe('frontend Phase 14 admin platform', () => {
     await expect(html).toHaveAttribute('lang', 'ar')
     await expect(html).toHaveAttribute('dir', 'rtl')
     await expect(page.getByRole('heading', { name: 'تدقيق' })).toBeVisible()
+
+    const usersLink = page.locator('aside').getByRole('link', { name: 'المستخدمون', exact: true })
+    await expect(usersLink).toBeVisible()
+    await usersLink.click()
+    await expect(page).toHaveURL(/\/app\/admin\/users$/)
+    await expect(page.getByRole('heading', { name: 'المستخدمون' })).toBeVisible()
+    await expect(page.getByRole('row').filter({ hasText: 'teacher.e2e' }).getByText('الأستاذ', { exact: true })).toBeVisible()
+    await expect(page.getByRole('row').filter({ hasText: 'teacher.e2e' }).getByText('نشط', { exact: true })).toBeVisible()
   })
 
   test('teacher role is denied from the admin route group', async ({ page }) => {
