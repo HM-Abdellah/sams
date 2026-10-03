@@ -168,9 +168,12 @@ jobs:
           mariadb -h "$SAMS_TEST_DB_HOST" -P "$SAMS_TEST_DB_PORT" -u "$SAMS_TEST_DB_USER" -p"$SAMS_TEST_DB_PASS" -e "DROP DATABASE IF EXISTS ${upgrade_db}; CREATE DATABASE ${upgrade_db} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
           rewrite_sql() {
-            sed -e "s/CREATE DATABASE IF NOT EXISTS sams/CREATE DATABASE IF NOT EXISTS $upgrade_db/g" \
-                -e "s/USE sams/USE $upgrade_db/g" \
-                "$1" > "$2"
+            {
+              printf 'USE %s;\n' "$upgrade_db"
+              sed -e "s/CREATE DATABASE IF NOT EXISTS sams/CREATE DATABASE IF NOT EXISTS $upgrade_db/g" \
+                  -e "s/USE sams/USE $upgrade_db/g" \
+                  "$1"
+            } > "$2"
           }
 
           workdir=$(mktemp -d)
