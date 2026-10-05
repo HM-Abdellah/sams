@@ -27,6 +27,7 @@ export const TRANSLATION_KEYS = {
   auth: {
     signIn: 'auth.signIn',
     samsCode: 'auth.samsCode',
+    loginIdentifier: 'auth.loginIdentifier',
     password: 'auth.password',
     signInHint: 'auth.signInHint',
     signingIn: 'auth.signingIn',
@@ -254,6 +255,7 @@ export const TRANSLATION_KEYS = {
     suspend: 'admin.suspend',
     revokeSessions: 'admin.revokeSessions',
     reissueCode: 'admin.reissueCode',
+    generateSamsCode: 'admin.generateSamsCode',
     resetPassword: 'admin.resetPassword',
     newSamsCode: 'admin.newSamsCode',
     oneTimeSecret: 'admin.oneTimeSecret',
