@@ -8,6 +8,6 @@ export interface SessionState {
 
 export interface SessionContextValue extends SessionState {
   refresh: () => Promise<void>
-  login: (samsCode: string, password: string) => Promise<AuthUser>
+  login: (identifier: string, password: string) => Promise<AuthUser>
   logout: () => Promise<void>
 }
