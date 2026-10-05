@@ -83,12 +83,17 @@ JSON body:
 
 ```json
 {
-  "sams_code": "T123456",
+  "identifier": "admin.demo",
   "password": "..."
 }
 ```
 
-The SAMS Code is case-insensitive and is a login identifier, not a password. Only active accounts with a valid password can authenticate. Successful login returns the internal user id, role, school scope, and CSRF/session state. Password hashes and SAMS Code hashes are never returned.
+The identifier is role-aware:
+- administrators authenticate with their unique username;
+- teachers authenticate with their assigned SAMS Code;
+- existing counselor SAMS-Code authentication remains supported.
+
+SAMS Codes are case-insensitive login identifiers, not passwords. Teacher SAMS Codes are generated once per active teacher account, stored only as hashes, and remain fixed for that account. They are not regenerated or rotated by ordinary account administration. Only active accounts with a valid password can authenticate. Successful login returns the internal user id, role, school scope, and CSRF/session state. Password hashes and SAMS Code hashes are never returned.
 
 #### POST `/api/v1/auth/logout`
 
@@ -176,7 +181,7 @@ Supported roles are exactly: `admin`, `teacher`, `counselor`.
 
 Admin only. Requires CSRF.
 
-JSON action `reissue_sams_code`: `id`. The response contains the new plaintext SAMS Code exactly once. The previous active code is revoked and the target user's `session_version` is incremented; user identity is preserved.
+JSON action `generate_sams_code`: `id`. This is an issuance operation for an active non-admin account that does not already have an active SAMS Code. The response contains the plaintext SAMS Code exactly once. Existing active teacher codes are fixed and cannot be regenerated; administrators do not receive SAMS Codes and authenticate with username instead.
 
 ## Teacher/class assignments
 
