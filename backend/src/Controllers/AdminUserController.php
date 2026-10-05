@@ -136,7 +136,7 @@ final class AdminUserController extends AdminApiController
                 ]);
             }
 
-            if ($action === 'reissue_sams_code') {
+            if ($action === 'generate_sams_code' || $action === 'reissue_sams_code') {
                 $schoolId = (int)($admin['school_id'] ?? 0);
                 if ($schoolId < 1) {
                     return Response::json([
