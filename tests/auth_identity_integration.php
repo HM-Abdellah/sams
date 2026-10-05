@@ -51,31 +51,31 @@ auth_assert($pdo->query("SELECT code_hash FROM sams_login_codes WHERE user_id = 
 auth_assert((int)$pdo->query("SELECT COUNT(*) FROM sams_login_codes WHERE user_id = {$teacherId} AND code_hash = " . $pdo->quote($code))->fetchColumn() === 0, 'Plaintext SAMS Code was stored.');
 
 $auth = new AuthService();
-$authenticated = $auth->authenticateBySamsCode($code, 'TeacherPassword123!');
-auth_assert((int)$authenticated['id'] === $teacherId, 'SAMS Code login returned the wrong user.');
-auth_assert((int)$authenticated['school_id'] === $schoolId, 'SAMS Code login returned the wrong school.');
-auth_assert($authenticated['role'] === 'teacher', 'SAMS Code login returned the wrong role.');
+$adminAuthenticated = $auth->authenticateByLoginIdentifier('auth-admin', 'AdminPassword123!');
+auth_assert((int)$adminAuthenticated['id'] === $adminId, 'Admin username login returned the wrong user.');
+auth_assert($adminAuthenticated['role'] === 'admin', 'Admin username login returned the wrong role.');
+
+$authenticated = $auth->authenticateByLoginIdentifier($code, 'TeacherPassword123!');
+auth_assert((int)$authenticated['id'] === $teacherId, 'Teacher SAMS Code login returned the wrong user.');
+auth_assert((int)$authenticated['school_id'] === $schoolId, 'Teacher SAMS Code login returned the wrong school.');
+auth_assert($authenticated['role'] === 'teacher', 'Teacher SAMS Code login returned the wrong role.');
 
 auth_expect_failure(
-    static fn() => $auth->authenticateBySamsCode($code, 'WrongPassword123!'),
+    static fn() => $auth->authenticateByLoginIdentifier($code, 'WrongPassword123!'),
     'Invalid password was accepted for a valid SAMS Code.'
 );
 
-$beforeReissueVersion = (int)$pdo->query("SELECT session_version FROM users WHERE id = {$teacherId}")->fetchColumn();
-$reissued = $loginCodes->issueForUser($adminId, $teacherId, $schoolId);
-$oldActive = (int)$pdo->query("SELECT COUNT(*) FROM sams_login_codes WHERE user_id = {$teacherId} AND revoked_at IS NULL")->fetchColumn();
-$oldCode = $code;
-auth_assert($oldActive === 1, 'Reissue should leave exactly one active code.');
-auth_assert($reissued['sams_code'] !== $oldCode, 'Reissue generated the same SAMS Code.');
-auth_assert($reissued['session_version'] === $beforeReissueVersion + 1, 'SAMS Code reissue did not invalidate sessions.');
-auth_assert((int)$pdo->query("SELECT COUNT(*) FROM sams_login_codes WHERE user_id = {$teacherId} AND revoked_at IS NOT NULL")->fetchColumn() === 1, 'Old SAMS Code was not revoked.');
-
+$beforeSecondIssueVersion = (int)$pdo->query("SELECT session_version FROM users WHERE id = {$teacherId}")->fetchColumn();
 auth_expect_failure(
-    static fn() => $auth->authenticateBySamsCode($oldCode, 'TeacherPassword123!'),
-    'Revoked SAMS Code was accepted.'
+    static fn() => $loginCodes->issueForUser($adminId, $teacherId, $schoolId),
+    'A teacher SAMS Code was regenerated instead of remaining fixed.'
 );
-$authenticatedAgain = $auth->authenticateBySamsCode($reissued['sams_code'], 'TeacherPassword123!');
-auth_assert((int)$authenticatedAgain['id'] === $teacherId, 'Reissued SAMS Code cannot authenticate the same user.');
+$afterSecondIssueVersion = (int)$pdo->query("SELECT session_version FROM users WHERE id = {$teacherId}")->fetchColumn();
+auth_assert($afterSecondIssueVersion === $beforeSecondIssueVersion, 'Stable SAMS Code generation changed the teacher session version.');
+auth_assert((int)$pdo->query("SELECT COUNT(*) FROM sams_login_codes WHERE user_id = {$teacherId} AND revoked_at IS NOT NULL")->fetchColumn() === 0, 'Stable SAMS Code issuance unexpectedly revoked the active code.');
+
+$authenticatedAgain = $auth->authenticateByLoginIdentifier($code, 'TeacherPassword123!');
+auth_assert((int)$authenticatedAgain['id'] === $teacherId, 'The original fixed SAMS Code no longer authenticates.');
 
 $users->updateProfile($teacherId, 'Auth Teacher', 'teacher', false, 'T-AUTH', 'T-AUTH', null, $schoolId);
 auth_expect_failure(
