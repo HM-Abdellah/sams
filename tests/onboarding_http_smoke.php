@@ -33,7 +33,7 @@ expect_ok($status === 200 && ($session['data']['authenticated'] ?? true) === fal
 $csrf = (string)$session['data']['csrf'];
 
 [$status, $login, $loginCookie] = req('POST', $base . '/auth/login', [
-    'sams_code' => $fixture['admin_code'],
+    'identifier' => $fixture['admin_username'],
     'password' => $fixture['admin_password'],
 ], $cookie, $csrf);
 expect_ok($status === 200 && ($login['success'] ?? false) === true, 'Admin canonical login failed.');
