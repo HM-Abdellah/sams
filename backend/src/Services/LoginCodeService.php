@@ -52,12 +52,18 @@ final class LoginCodeService
                 throw new AdministrationException('Only active accounts can receive a SAMS Code.', 409);
             }
 
+            if ((string)$user['role'] === 'admin') {
+                throw new AdministrationException('Administrators authenticate with their username.', 409);
+            }
+
             $prefix = self::PREFIXES[(string)$user['role']] ?? null;
             if ($prefix === null) {
                 throw new AdministrationException('Unsupported user role.', 422);
             }
 
-            $this->codes->revokeActiveForUser($userId, $schoolId);
+            if ($this->codes->findActiveForUserForUpdate($userId, $schoolId) !== null) {
+                throw new AdministrationException('This user already has a SAMS Code. The code is fixed and cannot be regenerated.', 409);
+            }
 
             $samsCode = null;
             $codeId = null;
@@ -83,10 +89,9 @@ final class LoginCodeService
                 throw new \RuntimeException('Unable to issue a unique SAMS Code.');
             }
 
-            $sessionVersion = $this->users->bumpSessionVersion($userId, $schoolId);
             $this->audit->record(
                 $adminId,
-                'user.sams_code_reissued',
+                'user.sams_code_issued',
                 'user',
                 $userId,
                 ['login_code_id' => $codeId]
@@ -98,7 +103,6 @@ final class LoginCodeService
                 'user_id' => $userId,
                 'school_id' => $schoolId,
                 'sams_code' => $samsCode,
-                'session_version' => $sessionVersion,
             ];
         } catch (\Throwable $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();
@@ -129,12 +133,19 @@ final class LoginCodeService
                 throw new AdministrationException('Only active accounts can receive a SAMS Code.', 409);
             }
 
+            if ((string)$user['role'] === 'admin') {
+                throw new AdministrationException('Administrators authenticate with their username.', 409);
+            }
+
             $prefix = self::PREFIXES[(string)$user['role']] ?? null;
             if ($prefix === null) {
                 throw new AdministrationException('Unsupported user role.', 422);
             }
 
-            $this->codes->revokeActiveForUser($userId, $schoolId);
+            if ($this->codes->findActiveForUserForUpdate($userId, $schoolId) !== null) {
+                throw new AdministrationException('This user already has a SAMS Code. The code is fixed and cannot be regenerated.', 409);
+            }
+
             $samsCode = null;
             for ($attempt = 0; $attempt < 8; ++$attempt) {
                 $candidate = $prefix . str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
