@@ -14,7 +14,7 @@ export function LoginPage() {
   const session = useSession()
   const navigate = useNavigate()
   const location = useLocation()
-  const [samsCode, setSamsCode] = useState('')
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -114,7 +114,7 @@ export function LoginPage() {
                 setError(null)
                 setSubmitting(true)
                 try {
-                  await session.login(samsCode, password)
+                  await session.login(identifier, password)
                   navigate(from, { replace: true })
                 } catch (cause) {
                   setError(cause instanceof ApiError ? cause.message : t(TRANSLATION_KEYS.auth.genericError))
@@ -124,11 +124,11 @@ export function LoginPage() {
               }}
             >
               <label className="block text-sm font-medium">
-                {t(TRANSLATION_KEYS.auth.samsCode)}
+                {t(TRANSLATION_KEYS.auth.loginIdentifier)}
                 <Input
                   autoComplete="username"
-                  value={samsCode}
-                  onChange={(event) => setSamsCode(event.target.value)}
+                  value={identifier}
+                  onChange={(event) => setIdentifier(event.target.value)}
                   className="mt-2"
                   required
                 />
