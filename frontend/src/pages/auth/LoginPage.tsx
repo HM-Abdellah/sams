@@ -1,5 +1,3 @@
-[Reading 247 lines from start (total: 247 lines, 0 remaining)]
-
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 import { ApiError } from '../../services/api/errors.ts'
@@ -247,5 +245,3 @@ export function LoginPage() {
     </main>
   )
 }
-
-[executed on device: codespaces-052ecf (81686ebc-c2a3-4f3f-931c-1c91ab9990de)]
