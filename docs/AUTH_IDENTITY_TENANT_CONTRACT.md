@@ -8,11 +8,11 @@ The legacy PHP UI/API remains supported during migration.
 ## Identity decisions
 
 - users.id remains the immutable internal identity and historical foreign-key target.
-- username remains a legacy compatibility field; it is not the future primary login identity.
+- username is the canonical login identity for administrators.
 - A user belongs to exactly one school through users.school_id.
-- SAMS Code is a reissuable login identifier, not a password and not a database ID.
-- SAMS Codes are stored as SHA-256 hashes; plaintext is shown only at explicit issuance/reissue time.
-- The application issues role-prefixed random codes, revokes the previous active code on reissue, and increments the target user's session_version.
+- Teacher SAMS Code is a stable login identifier, not a password and not a database ID.
+- SAMS Codes are stored as SHA-256 hashes; plaintext is shown only at explicit one-time issuance/assignment.
+- Teacher SAMS Codes are generated once for an active account and are not rotated during normal administration.
 - Account recovery never creates a second user record.
 - Existing session_version invalidation remains the global session-revocation primitive.
 
@@ -63,7 +63,7 @@ No new endpoint may grant class access independently of a valid teaching assignm
 
 ## Recovery
 
-- Reissuing a SAMS Code keeps the same users.id and revokes the previous active code.
+- A teacher SAMS Code remains associated with the same users.id for the account lifetime unless a future explicit security/recovery policy changes this contract.
 - Password reset keeps the same users.id and increments session_version.
 - Explicit session revocation increments session_version and clears presence.
 - Account suspension/deactivation invalidates existing sessions through session_version; reactivation also creates a fresh session boundary.
@@ -76,7 +76,12 @@ The canonical React-facing Auth and onboarding endpoints are now implemented und
 Legacy `api/auth.php` remains for the current PHP UI until React parity is complete; it is a compatibility surface, not the target identity model.
 
 Target login payload:
-{ "sams_code": "T024", "password": "..." }
+{ "identifier": "admin.demo", "password": "..." }
+
+For teachers:
+{ "identifier": "T123456", "password": "..." }
+
+The backend determines the account from the identifier and applies the corresponding role-bound authentication path.
 
 Successful login returns internal user identity, role, school scope, and CSRF/session state.
 It never returns password hashes or SAMS Code hashes.
@@ -96,7 +101,7 @@ The fresh-install schema now also requires users.school_id and academic_years.sc
 
 1. Introduce school/identity/onboarding tables and backfill the existing single-school data into one tenant.
 2. Add strict tenant scoping to repositories/services.
-3. Add SAMS Code issuance/reissue and canonical auth endpoints.
+3. Add role-bound username/SAMS Code login and one-time teacher SAMS Code issuance with canonical auth endpoints.
 4. Add teacher join request + admin approval/activation workflow.
 5. Add recovery/session revocation verification.
 6. Freeze the backend contract.
@@ -109,8 +114,9 @@ Before React auth work is accepted:
 - one existing school is migrated without changing user IDs;
 - old attendance/history foreign keys remain valid;
 - cross-school resource reads/writes are denied;
-- SAMS Code login works for active accounts only;
-- reissue/reset does not duplicate users;
+- administrator username login and teacher SAMS Code login work for active accounts;
+- a teacher receives at most one active SAMS Code and normal administration cannot rotate it;
+- password reset does not duplicate users;
 - approval does not grant class access without an assignment;
 - suspension/deactivation invalidates access;
 - security-sensitive mutations remain authenticated, authorized, CSRF-protected where applicable, transactional, and audited.
