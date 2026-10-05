@@ -37,8 +37,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const login = useCallback(async (samsCode: string, password: string) => {
-    const result = await authApi.login({ sams_code: samsCode, password })
+  const login = useCallback(async (identifier: string, password: string) => {
+    const result = await authApi.login({ identifier, password })
     setState(stateFromUser(result.user))
     return result.user
   }, [])
