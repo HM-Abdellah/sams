@@ -65,6 +65,7 @@ export interface AdminUser {
   last_seen_at: string | null
   created_at: string
   updated_at: string
+  has_active_sams_code: boolean | number
 }
 
 export interface AcademicYear {
@@ -266,7 +267,7 @@ export interface AuditSearch {
 
 export interface IdResult { id: number }
 export interface ChangedResult { changed: boolean }
-export interface SamsCodeResult { user_id: number; sams_code: string }
+export interface SamsCodeResult { user_id: number; school_id?: number; sams_code: string }
 export interface OnboardingCodeResult {
   school_id: number
   onboarding_code: string
