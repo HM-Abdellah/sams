@@ -3,13 +3,13 @@ import { test, expect } from "@playwright/test";
 const teacherCode = process.env.SAMS_E2E_TEACHER_SAMS_CODE || "T100002";
 const teacherPassword =
   process.env.SAMS_E2E_TEACHER_PASSWORD || "e2e-teacher-password-2026";
-const adminCode = process.env.SAMS_E2E_ADMIN_SAMS_CODE || "A100001";
+const adminUsername = process.env.SAMS_E2E_USERNAME || "admin";
 const adminPassword =
   process.env.SAMS_E2E_PASSWORD || "e2e-admin-password-2026";
 
-async function login(page, samsCode, password) {
+async function login(page, identifier, password) {
   await page.goto("/sams/login");
-  await page.getByLabel("SAMS Code").fill(samsCode);
+  await page.getByLabel("Username or SAMS Code").fill(identifier);
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
 }
@@ -72,7 +72,7 @@ test.describe("frontend Phase 23 production integration", () => {
   test("admin reaches the production console and logout closes access", async ({
     page,
   }) => {
-    await login(page, adminCode, adminPassword);
+    await login(page, adminUsername, adminPassword);
     await expect(page).toHaveURL(/\/sams\/app\/admin\/dashboard$/);
     await expect(
       page.getByRole("heading", { name: "Dashboard" }),
