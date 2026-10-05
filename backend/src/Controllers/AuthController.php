@@ -18,10 +18,11 @@ final class AuthController
 {
     public function validateLogin(array $input): array
     {
-        $samsCode = LoginCodeService::normalize((string)($input['sams_code'] ?? ''));
+        $identifier = trim((string)($input['identifier'] ?? ''));
         $password = (string)($input['password'] ?? '');
+        if ($identifier === '') throw new \InvalidArgumentException('Username or SAMS Code is required.');
         if ($password === '') throw new \InvalidArgumentException('Password is required.');
-        return ['sams_code' => $samsCode, 'password' => $password];
+        return ['identifier' => $identifier, 'password' => $password];
     }
 
     public function __invoke(Request $request, array $params = []): Response
@@ -88,8 +89,8 @@ final class AuthController
         $maxAttempts = max(1, (int)($config['login_max_attempts'] ?? 5));
 
         try {
-            $user = (new AuthService())->authenticateBySamsCode(
-                $input['sams_code'],
+            $user = (new AuthService())->authenticateByLoginIdentifier(
+                $input['identifier'],
                 $input['password'],
                 $lockMinutes,
                 $maxAttempts
