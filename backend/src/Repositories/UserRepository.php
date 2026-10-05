@@ -105,7 +105,13 @@ final class UserRepository
     public function forAdmin(?int $schoolId = null): array
     {
         $sql = 'SELECT id, school_id, username, employee_id, full_name, phone, phone_verified, role, account_status, is_active, failed_login_attempts,
-                       locked_until, last_login_at, last_seen_at, created_at, updated_at
+                       locked_until, last_login_at, last_seen_at, created_at, updated_at,
+                       EXISTS (
+                           SELECT 1
+                           FROM sams_login_codes lc
+                           WHERE lc.user_id = users.id
+                             AND lc.revoked_at IS NULL
+                       ) AS has_active_sams_code
                 FROM users';
         $params = [];
 
