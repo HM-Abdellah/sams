@@ -28,7 +28,8 @@ final class AuthService
         string $username,
         string $password,
         int $lockMinutes = 5,
-        int $maxAttempts = 5
+        int $maxAttempts = 5,
+        ?string $requiredRole = null
     ): array {
         if ($username === '' || $password === '') {
             throw new RuntimeException('Invalid credentials.');
@@ -49,6 +50,11 @@ final class AuthService
                 || !(bool)$user['is_active']
                 || (string)($user['account_status'] ?? 'active') !== 'active'
             ) {
+                $pdo->commit();
+                throw new RuntimeException('Invalid credentials.');
+            }
+
+            if ($requiredRole !== null && (string)$user['role'] !== $requiredRole) {
                 $pdo->commit();
                 throw new RuntimeException('Invalid credentials.');
             }
@@ -100,6 +106,35 @@ final class AuthService
         }
     }
 
+    public function authenticateByLoginIdentifier(
+        string $identifier,
+        string $password,
+        int $lockMinutes = 5,
+        int $maxAttempts = 5
+    ): array {
+        $identifier = trim($identifier);
+        if ($identifier === '' || $password === '') {
+            throw new RuntimeException('Invalid credentials.');
+        }
+
+        if (preg_match('/^[TC][0-9]{6}$/i', $identifier) === 1) {
+            return $this->authenticateBySamsCode(
+                LoginCodeService::normalize($identifier),
+                $password,
+                $lockMinutes,
+                $maxAttempts
+            );
+        }
+
+        return $this->authenticate(
+            $identifier,
+            $password,
+            $lockMinutes,
+            $maxAttempts,
+            'admin'
+        );
+    }
+
     public function authenticateBySamsCode(
         string $samsCode,
         string $password,
@@ -127,6 +162,11 @@ final class AuthService
                 || (string)($user['account_status'] ?? 'active') !== 'active'
                 || (string)($user['password_hash'] ?? '') === ''
             ) {
+                $pdo->commit();
+                throw new RuntimeException('Invalid credentials.');
+            }
+
+            if ((string)$user['role'] === 'admin') {
                 $pdo->commit();
                 throw new RuntimeException('Invalid credentials.');
             }
