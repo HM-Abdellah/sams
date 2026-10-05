@@ -73,8 +73,8 @@ export const adminApi = {
     post<SessionVersionResult>('/admin/users', { action: 'set_status', id, status }),
   revokeSessions: (id: number) =>
     post<SessionVersionResult>('/admin/users', { action: 'revoke_sessions', id }),
-  reissueSamsCode: (id: number) =>
-    post<SamsCodeResult>('/admin/users', { action: 'reissue_sams_code', id }),  createAcademicYear: (body: {
+  generateSamsCode: (id: number) =>
+    post<SamsCodeResult>('/admin/users', { action: 'generate_sams_code', id }),  createAcademicYear: (body: {
     name: string
     starts_on: string
     ends_on: string
