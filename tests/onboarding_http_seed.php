@@ -7,7 +7,6 @@ require_once __DIR__ . '/../backend/vendor/autoload.php';
 use SAMS\Helpers\Database;
 use SAMS\Helpers\Security;
 use SAMS\Repositories\UserRepository;
-use SAMS\Services\LoginCodeService;
 use SAMS\Services\OnboardingService;
 
 $pdo = Database::connection();
@@ -22,11 +21,10 @@ $schoolId = (int)$pdo->lastInsertId();
 $users = new UserRepository();
 $adminId = $users->create('onb-http-admin', 'Onboarding HTTP Admin', Security::hashPassword('OnbHttpAdmin123!'), 'admin', null, null, $schoolId);
 
-$adminCode = (new LoginCodeService())->issueForUser($adminId, $adminId, $schoolId)['sams_code'];
 $onboardingCode = (new OnboardingService())->issueSchoolCode($adminId, $schoolId)['onboarding_code'];
 
 $fixture = [
-    'admin_code' => $adminCode,
+    'admin_username' => 'onb-http-admin',
     'admin_id' => $adminId,
     'school_id' => $schoolId,
     'admin_password' => 'OnbHttpAdmin123!',
