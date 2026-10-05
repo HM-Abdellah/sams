@@ -25,12 +25,11 @@ if ($teacher === null) {
 } else {
     $teacherId = (int)$teacher['id'];
 }
-$adminIssued = (new LoginCodeService())->issueForUser($adminId, $adminId, $schoolId);
 $teacherIssued = (new LoginCodeService())->issueForUser($adminId, $teacherId, $schoolId);
 $fixture = [
-    'admin_code' => $adminIssued['sams_code'],
+    'admin_username' => 'http-admin',
+    'admin_password' => 'HttpAdminPassword123!',
     'teacher_code' => $teacherIssued['sams_code'],
-    'admin_id' => $adminId,
     'teacher_id' => $teacherId,
 ];
 file_put_contents('/tmp/sams_auth_http_seed.json', json_encode($fixture, JSON_THROW_ON_ERROR));
