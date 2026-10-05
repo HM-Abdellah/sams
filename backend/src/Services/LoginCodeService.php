@@ -24,7 +24,7 @@ final class LoginCodeService
         private readonly AuditLogRepository $audit = new AuditLogRepository(),
     ) {}
 
-    /** @return array{user_id:int,school_id:int,sams_code:string,session_version:int} */
+    /** @return array{user_id:int,school_id:int,sams_code:string} */
     public function issueForUser(int $adminId, int $userId, int $schoolId): array
     {
         if ($adminId < 1 || $userId < 1 || $schoolId < 1) {
