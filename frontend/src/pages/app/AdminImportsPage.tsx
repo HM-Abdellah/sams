@@ -204,7 +204,7 @@ export function AdminImportsPage() {
             {data.academic_years.map((x) => <option key={x.id} value={x.id}>{x.name}{isActive(x.is_active) ? ' · active' : ''}</option>)}
           </Select>}
         </FormField>
-        <input aria-label={t(TRANSLATION_KEYS.admin.importFile)} type="file" accept=".xlsx,.xls,.md" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+        <input className="block w-full min-w-0 max-w-full" aria-label={t(TRANSLATION_KEYS.admin.importFile)} type="file" accept=".xlsx,.xls,.md" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
         <Button type="button" disabled={!file || busy !== null} loading={busy === 'upload'} onClick={() => void upload()}>{t(TRANSLATION_KEYS.admin.upload)}</Button>
       </section>
 
