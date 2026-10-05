@@ -8,6 +8,24 @@ use SAMS\Helpers\Database;
 
 final class LoginCodeRepository
 {
+    public function findActiveForUserForUpdate(int $userId, int $schoolId): ?array
+    {
+        $stmt = Database::connection()->prepare(
+            "SELECT lc.id, lc.user_id, lc.code_hash, lc.issued_at
+             FROM sams_login_codes lc
+             INNER JOIN users u ON u.id = lc.user_id
+             WHERE lc.user_id = ?
+               AND u.school_id = ?
+               AND lc.revoked_at IS NULL
+             ORDER BY lc.id DESC
+             LIMIT 1
+             FOR UPDATE"
+        );
+        $stmt->execute([$userId, $schoolId]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     public function findUserByCodeHashForUpdate(string $codeHash): ?array
     {
         $stmt = Database::connection()->prepare(
