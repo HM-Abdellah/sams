@@ -97,7 +97,7 @@ export function AdminUsersPage() {
     setError(null)
     try {
       if (kind === 'code') {
-        const result = await adminApi.reissueSamsCode(user.id)
+        const result = await adminApi.generateSamsCode(user.id)
         setIssuedCode(result.sams_code)
         return
       }
@@ -216,7 +216,11 @@ export function AdminUsersPage() {
                   {user.account_status === 'active' && <Button type="button" size="sm" variant="secondary" disabled={busy === user.id} onClick={() => void action(user, 'deactivated')}>{t(TRANSLATION_KEYS.admin.deactivate)}</Button>}
                   <Button type="button" size="sm" variant="secondary" disabled={busy === user.id} onClick={() => { setResetTarget(user); setResetPasswordValue(''); setError(null) }}>{t(TRANSLATION_KEYS.admin.resetPassword)}</Button>
                   <Button type="button" size="sm" variant="secondary" disabled={busy === user.id} onClick={() => void action(user, 'revoke')}>{t(TRANSLATION_KEYS.admin.revokeSessions)}</Button>
-                  <Button type="button" size="sm" variant="secondary" disabled={busy === user.id} onClick={() => void action(user, 'code')}>{t(TRANSLATION_KEYS.admin.reissueCode)}</Button>
+                  {user.role !== 'admin' && !Boolean(user.has_active_sams_code) && (
+                    <Button type="button" size="sm" variant="secondary" disabled={busy === user.id} onClick={() => void action(user, 'code')}>
+                      {t(TRANSLATION_KEYS.admin.generateSamsCode)}
+                    </Button>
+                  )}
                   </div>
                 </div>
               </td>
