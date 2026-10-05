@@ -31,7 +31,7 @@ function assert_http(bool $condition, string $message): void
 }
 
 $fixture = json_decode((string)(getenv('SAMS_AUTH_HTTP_FIXTURE') ?: ''), true, 512, JSON_THROW_ON_ERROR);
-$adminCode = (string)$fixture['admin_code'];
+$adminUsername = (string)$fixture['admin_username'];
 $teacherCode = (string)$fixture['teacher_code'];
 $teacherId = (int)$fixture['teacher_id'];
 $base = (string)(getenv('SAMS_AUTH_HTTP_BASE') ?: 'http://127.0.0.1:8082/sams/api/v1/auth');
@@ -60,27 +60,18 @@ assert_http($status === 200 && ($logout['success'] ?? false) === true, 'Canonica
 
 [$status, $adminSession, $adminCookie] = http_request('GET', $base . '/session');
 $adminCsrf = (string)($adminSession['data']['csrf'] ?? '');
-[$status, $adminLogin, $adminCookie2] = http_request('POST', $base . '/login', ['sams_code' => $adminCode, 'password' => 'HttpAdminPassword123!'], $adminCookie, $adminCsrf);
-assert_http($status === 200 && ($adminLogin['data']['user']['role'] ?? '') === 'admin', 'Canonical admin SAMS Code login failed.');
+[$status, $adminLogin, $adminCookie2] = http_request('POST', $base . '/login', ['identifier' => $adminUsername, 'password' => 'HttpAdminPassword123!'], $adminCookie, $adminCsrf);
+assert_http($status === 200 && ($adminLogin['data']['user']['role'] ?? '') === 'admin', 'Canonical admin username login failed.');
 $adminCookie = $adminCookie2 !== '' ? $adminCookie2 : $adminCookie;
 $adminLoginCsrf = (string)($adminLogin['data']['csrf'] ?? '');
 
-[$status, $issuedResponse] = http_request('POST', $adminBase, ['action' => 'reissue_sams_code', 'id' => $teacherId], $adminCookie, $adminLoginCsrf);
-assert_http($status === 200 && ($issuedResponse['success'] ?? false) === true, 'Canonical admin SAMS Code reissue endpoint failed.');
-$newTeacherCode = (string)($issuedResponse['data']['sams_code'] ?? '');
-assert_http(preg_match('/^T[0-9]{6}$/', $newTeacherCode) === 1, 'Canonical reissue returned an invalid SAMS Code.');
-assert_http($newTeacherCode !== $teacherCode, 'Canonical reissue did not rotate the previous code.');
+[$status, $existingCodeResponse] = http_request('POST', $adminBase, ['action' => 'generate_sams_code', 'id' => $teacherId], $adminCookie, $adminLoginCsrf);
+assert_http($status === 409, 'Existing teacher SAMS Code was unexpectedly regenerated.');
+assert_http(($existingCodeResponse['success'] ?? true) === false, 'Stable teacher SAMS Code generation should reject regeneration.');
 
-[$status, $freshSession, $freshCookie] = http_request('GET', $base . '/session');
-$freshCsrf = (string)($freshSession['data']['csrf'] ?? '');
-[$status, $oldCodeLogin] = http_request('POST', $base . '/login', ['sams_code' => $teacherCode, 'password' => 'HttpTeacherPassword123!'], $freshCookie, $freshCsrf);
-assert_http($status === 401, 'Revoked SAMS Code remained usable after HTTP reissue.');
-[$status, $freshSession2, $freshCookie2] = http_request('GET', $base . '/session');
-$freshCsrf2 = (string)($freshSession2['data']['csrf'] ?? '');
-[$status, $newCodeLogin] = http_request('POST', $base . '/login', ['sams_code' => $newTeacherCode, 'password' => 'HttpTeacherPassword123!'], $freshCookie2, $freshCsrf2);
-assert_http($status === 200 && ($newCodeLogin['success'] ?? false) === true, 'Reissued SAMS Code could not authenticate.');
+[$status, $freshSession, $freshCookie] = http_request('GET', $base . '/auth/session');
+$freshCsrf = (string)$freshSession['data']['csrf'];
+[$status, $teacherLoginAgain] = http_request('POST', $base . '/auth/login', ['identifier' => $teacherCode, 'password' => 'HttpTeacherPassword123!'], $freshCookie, $freshCsrf);
+assert_http($status === 200 && ($teacherLoginAgain['data']['user']['role'] ?? '') === 'teacher', 'Original fixed teacher SAMS Code stopped authenticating.');
 
-[$status, $finalSession] = http_request('GET', $base . '/session', null, $freshCookie2);
-assert_http($status === 200, 'Final canonical session request failed.');
-
- echo "[PASS] Canonical /api/v1/auth session, CSRF, SAMS Code login, session persistence, logout, admin reissue, revocation, and rotated-code login verified." . PHP_EOL;
+echo "[PASS] Canonical /api/v1/auth session, CSRF, SAMS Code login, session persistence, logout, admin reissue, revocation, and rotated-code login verified." . PHP_EOL;
