@@ -10,15 +10,14 @@ $pass = getenv('SAMS_TEST_DB_PASS') ?: 'root';
 
 $adminPassword = getenv('SAMS_E2E_PASSWORD') ?: '';
 $teacherPassword = getenv('SAMS_E2E_TEACHER_PASSWORD') ?: '';
-$adminSamsCode = getenv('SAMS_E2E_ADMIN_SAMS_CODE') ?: '';
 $teacherSamsCode = getenv('SAMS_E2E_TEACHER_SAMS_CODE') ?: '';
 
-if ($adminPassword === '' || $teacherPassword === '' || $adminSamsCode === '' || $teacherSamsCode === '') {
+if ($adminPassword === '' || $teacherPassword === '' || $teacherSamsCode === '') {
     throw new RuntimeException('Missing SAMS_E2E authentication fixture environment variables.');
 }
 
-if (!preg_match('/^[ATC][0-9]{6}$/', strtoupper($adminSamsCode)) || !preg_match('/^[ATC][0-9]{6}$/', strtoupper($teacherSamsCode))) {
-    throw new RuntimeException('Invalid synthetic E2E SAMS Code fixture.');
+if (!preg_match('/^[TC][0-9]{6}$/', strtoupper($teacherSamsCode))) {
+    throw new RuntimeException('Invalid synthetic teacher SAMS Code fixture.');
 }
 
 $dsn = sprintf('mysql:host=%s;port=%d;charset=utf8mb4', $host, $port);
@@ -103,10 +102,6 @@ try {
     $loginCodeStmt = $pdo->prepare(
         'INSERT INTO sams_login_codes (user_id, code_hash, issued_at) VALUES (?, ?, CURRENT_TIMESTAMP)'
     );
-    $loginCodeStmt->execute([
-        $adminId,
-        SAMS\Services\LoginCodeService::hashCode($adminSamsCode),
-    ]);
     $loginCodeStmt->execute([
         $teacherId,
         SAMS\Services\LoginCodeService::hashCode($teacherSamsCode),
