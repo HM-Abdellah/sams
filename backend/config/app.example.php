@@ -21,3 +21,4 @@ return [
     // One-time browser setup secret. Set SAMS_SETUP_KEY on the server; never commit the secret.
     'setup_key' => getenv('SAMS_SETUP_KEY') ?: '',
 ];
+

@@ -190,4 +190,3 @@ final class SetupService
         return $name;
     }
 }
-

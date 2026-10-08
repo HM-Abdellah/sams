@@ -320,6 +320,23 @@ Expose as relevant:
 
 Do not hide critical save state in a temporary toast only.
 
+### Attendance print artifact
+
+The weekly register print view is a paper-first record, not a dashboard.
+
+Required behavior:
+- print the complete selected-class roster, regardless of the current screen search/filter;
+- preserve the backend's per-period attendance truth for each school day;
+- present = `○`;
+- absent = `×`;
+- late = `L`;
+- excused = `E`;
+- unmarked = `·`;
+- place teacher signature and date lines below the complete register;
+- use A4 landscape with compact, grayscale-readable borders and typography.
+
+Print action must flush pending attendance changes before opening the browser print dialog.
+
 ## 16. Teacher Students
 
 Purpose:
@@ -457,3 +474,4 @@ Verify shared consumers
 ~~~
 
 If the desired change cannot fit the current specification, update the specification first or in the same change. Never let implementation become the undocumented source of a new design rule.
+

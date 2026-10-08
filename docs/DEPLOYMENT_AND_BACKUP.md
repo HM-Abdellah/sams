@@ -42,6 +42,18 @@ Keep the database and the web application on the same trusted server unless ther
 
 12. Create the first administrator with:
    C:\xampp\php\php.exe scripts\create_admin.php
+
+   The bootstrap is CLI-only and asks for the school (when needed), administrator
+   name, username, and password. It refuses to create a second administrator
+   for a school. Passwords are never passed as command-line arguments.
+
+   For non-interactive deployment, use the same script with explicit non-secret
+   identity options and read the password from STDIN:
+   C:\xampp\php\php.exe scripts\create_admin.php --school-id=1 --username=admin --full-name="School Administrator" --password-stdin
+
+   The bootstrap creates a school only when no active school exists. After this
+   first administrator is created, all other user lifecycle operations are
+   performed from the authenticated administrator workspace.
 13. Open the application entry point:
    http://server-name-or-ip/sams/
 
@@ -59,9 +71,9 @@ Then open:
 
 This is for development/testing. The router serves the React production bundle and routes /api/v1/* to the PHP backend. It is not a replacement for the intended Apache deployment.
 
-### CS50.dev clean demo setup
+### Clean demo setup
 
-For a clean local/demo database in CS50.dev:
+For a clean local/demo database in VScode:
 
     cp backend/config/database.example.php backend/config/database.php
     sudo service mariadb start
@@ -186,3 +198,14 @@ For local/manual demo setup, use:
     php scripts/seed_demo.php
 
 This creates only clearly labeled demo users/classes/students and must never be used against a real school database.
+
+## First-time web setup
+
+For an online/browser deployment, configure a strong SAMS_SETUP_KEY environment secret on the server before exposing /setup. The page is available only while the installation has no schools and no administrator, requires the setup key and CSRF protection, creates the first school and administrator in one transaction, and then becomes permanently unavailable for that installation.
+
+For self-hosted deployments where browser setup is not appropriate, the supported CLI fallback remains:
+
+php scripts/create_admin.php
+
+Never put SAMS_SETUP_KEY or any administrator password in source control, URLs, client-side configuration, or logs.
+
