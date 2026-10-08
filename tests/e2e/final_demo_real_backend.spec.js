@@ -126,12 +126,14 @@ test.describe('Final demo real-backend rehearsal', () => {
     await expect(page.getByText('Jean Dupont', { exact: true })).toBeVisible()
 
     await page.goto('/sams/app/admin/teachers')
-    await expect(page.getByRole('heading', { name: 'Teachers' })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: 'Teachers' })).toBeVisible()
     await expect(page.getByRole('table', { name: 'Teacher directory' }).getByRole('row').filter({ hasText: 'E2E Teacher' }).last()).toBeVisible()
 
     await page.goto('/sams/app/admin/users')
-    await expect(page.getByRole('heading', { name: 'Users' })).toBeVisible()
-    await expect(page.getByText('teacher.e2e', { exact: true }).first()).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: 'Users' })).toBeVisible()
+    await expect(page.getByText('admin.demo', { exact: true }).first()).toBeVisible()
+    await expect(page.getByText('teacher.demo', { exact: true })).toHaveCount(0)
+    await expect(page.getByRole('combobox', { name: 'Status', exact: true })).toBeVisible()
 
     await page.goto('/sams/app/admin/academic-years')
     await expect(page.getByRole('heading', { name: 'Academic years' })).toBeVisible()
@@ -142,3 +144,4 @@ test.describe('Final demo real-backend rehearsal', () => {
   })
 
 })
+

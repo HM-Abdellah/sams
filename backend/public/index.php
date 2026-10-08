@@ -20,6 +20,8 @@ use SAMS\Controllers\HealthController;
 use SAMS\Controllers\ReportController;
 use SAMS\Controllers\SchoolImportController;
 use SAMS\Controllers\SignatureController;
+use SAMS\Controllers\ProfileController;
+use SAMS\Controllers\SetupController;
 use SAMS\Exceptions\RequestPayloadTooLargeException;
 use SAMS\Http\Request;
 use SAMS\Http\Response;
@@ -66,9 +68,18 @@ try {
 
     $router = new Router();
 
+    $setup = new SetupController();
+    $router->get('/setup/status', $setup);
+    $router->post('/setup', $setup);
+
     $auth = new AuthController();
     $router->get('/auth/{action}', $auth);
     $router->post('/auth/{action}', $auth);
+
+    $profile = new ProfileController();
+    $router->get('/profile', $profile);
+    $router->post('/profile', $profile);
+    $router->get('/profile/avatar', $profile);
 
     $router->get('/health', new HealthController());
     $attendance = new AttendanceController();
@@ -156,3 +167,4 @@ try {
         'error' => 'Server error.',
     ], 500)->send();
 }
+

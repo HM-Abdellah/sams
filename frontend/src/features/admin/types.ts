@@ -65,6 +65,7 @@ export interface AdminUser {
   locked_until: string | null
   last_login_at: string | null
   last_seen_at: string | null
+  is_online: boolean | number
   created_at: string
   updated_at: string
 }
@@ -306,3 +307,4 @@ export interface SessionVersionResult {
   id: number
   session_version: number
 }
+

@@ -176,7 +176,7 @@ test.describe('frontend Phase 17 responsive engineering', () => {
     await assertNoPageOverflow(page)
   })
 
-  test('admin class management keeps forms and wide tables inside the mobile viewport', async ({ page }) => {
+  test('admin class management keeps the filter workspace and table inside the mobile viewport', async ({ page }) => {
     await page.route('**/api/v1/auth/session', async (route) => {
       await route.fulfill({
         status: 200,
@@ -188,6 +188,7 @@ test.describe('frontend Phase 17 responsive engineering', () => {
             user: { id: 10, school_id: 20, employee_id: 'admin.e2e', full_name: 'E2E Admin', role: 'admin', account_status: 'active' },
             csrf: 'e2e-csrf',
           },
+          csrf: 'e2e-csrf',
         }),
       })
     })
@@ -199,7 +200,7 @@ test.describe('frontend Phase 17 responsive engineering', () => {
           success: true,
           data: {
             classes: [
-              { id: 1, name: 'E2E-RESPONSIVE-CLASS-WITH-A-LONG-NAME', level: '2BAC', branch: 'SP', academic_year_id: 1, is_active: 1, academic_year_name: '2026/2027', academic_year_active: 1 },
+              { id: 1, name: 'E2E-RESPONSIVE-CLASS-WITH-A-LONG-NAME', level: '2BAC', branch: 'SP', academic_year_id: 1, is_active: 1, academic_year_name: '2026/2027', academic_year_active: 1, student_count: 36, teacher_count: 1 },
             ],
           },
         }),
@@ -210,15 +211,12 @@ test.describe('frontend Phase 17 responsive engineering', () => {
     await page.setViewportSize({ width: 320, height: 640 })
     await assertNoPageOverflow(page)
 
-    const formGrid = page.locator('section.sams-card').filter({ has: page.getByRole('heading', { name: 'Create class' }) }).locator('div.mt-4.grid').first()
-    await expect(formGrid).toBeVisible()
-    expect(await formGrid.evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(1)
-
-    const tableScroller = page.locator('.sams-scroll-x').last()
-    await expect(tableScroller).toBeVisible()
-    const scrollerBox = await tableScroller.boundingBox()
-    expect(scrollerBox).not.toBeNull()
-    expect(scrollerBox.width).toBeLessThanOrEqual(320)
+    await expect(page.getByRole('heading', { name: 'Create class' })).toHaveCount(0)
+    await expect(page.getByLabel('Search')).toBeVisible()
+    await expect(page.getByLabel('Academic year')).toBeVisible()
+    await expect(page.getByLabel('Level')).toBeVisible()
+    await expect(page.getByRole('columnheader', { name: 'Status' })).toHaveCount(0)
     await expect(page.getByText('E2E-RESPONSIVE-CLASS-WITH-A-LONG-NAME')).toBeVisible()
   })
 })
+

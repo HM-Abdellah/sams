@@ -52,8 +52,7 @@ final class AdminOnboardingController extends AdminApiController
             $csrfError = $this->requireCsrf($request);
             if ($csrfError !== null) return $csrfError;
 
-            $body = $request->jsonBody();
-            $action = (string)($params['action'] ?? ($body['action'] ?? ''));
+            $action = (string)($params['action'] ?? '');
 
             if ($action === 'code') {
                 return Response::json([
@@ -66,6 +65,7 @@ final class AdminOnboardingController extends AdminApiController
             }
 
             if ($action === 'review') {
+                $body = $request->jsonBody();
                 $requestId = isset($params['id']) && ctype_digit((string)$params['id'])
                     ? (int)$params['id']
                     : 0;
@@ -107,3 +107,4 @@ final class AdminOnboardingController extends AdminApiController
         }
     }
 }
+

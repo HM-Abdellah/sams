@@ -25,6 +25,25 @@ final class UserAdministrationService
         return $this->repository->forAdmin($schoolId);
     }
 
+    public function createAdministrator(
+        int $adminId,
+        string $username,
+        string $fullName,
+        string $password,
+        ?int $schoolId = null
+    ): int {
+        return $this->create(
+            $adminId,
+            $username,
+            $fullName,
+            'admin',
+            $password,
+            null,
+            null,
+            $schoolId
+        );
+    }
+
     public function create(
         int $adminId,
         string $username,
@@ -198,6 +217,66 @@ final class UserAdministrationService
                 throw new AdministrationException('Username or employee ID already exists.', 409);
             }
 
+            throw $e;
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    public function deleteAdministrator(
+        int $adminId,
+        int $userId,
+        ?int $schoolId = null
+    ): void {
+        $this->assertAdminId($adminId);
+        $schoolId = $this->requireSchoolId($schoolId);
+        if ($userId < 1) {
+            throw new \InvalidArgumentException('Invalid user.');
+        }
+        if ($userId === $adminId) {
+            throw new AdministrationException('You cannot delete your own administrator account.', 409);
+        }
+
+        $pdo = Database::connection();
+        $pdo->beginTransaction();
+
+        try {
+            $existing = $this->repository->findByIdForUpdate($userId, $schoolId);
+            if ($existing === null || (string)$existing['role'] !== 'admin') {
+                throw new AdministrationException('Administrator account not found.', 404);
+            }
+
+            if ((bool)$existing['is_active']) {
+                $activeAdmins = $this->repository->activeAdminIdsForUpdate($schoolId);
+                if (count($activeAdmins) <= 1) {
+                    throw new AdministrationException(
+                        'The system must keep at least one active administrator.',
+                        409
+                    );
+                }
+            }
+
+            $blockers = $this->repository->deleteBlockers($userId);
+            $blocking = array_filter($blockers, static fn(int $count): bool => $count > 0);
+            if ($blocking !== []) {
+                throw new AdministrationException(
+                    'This administrator owns retained records and cannot be deleted. Deactivate the account instead.',
+                    409
+                );
+            }
+
+            $this->audit->record(
+                $adminId,
+                'user.delete',
+                'user',
+                $userId,
+                ['username' => (string)$existing['username']]
+            );
+            $this->repository->deleteById($userId, $schoolId);
+            $pdo->commit();
+        } catch (AdministrationException $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
             throw $e;
         } catch (\Throwable $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();
@@ -413,3 +492,4 @@ final class UserAdministrationService
         return $schoolId;
     }
 }
+

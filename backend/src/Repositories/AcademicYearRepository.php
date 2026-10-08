@@ -166,6 +166,44 @@ final class AcademicYearRepository
         return (int)Database::connection()->lastInsertId();
     }
 
+    /** @return array{classes:int,imports:int} */
+    public function dependencyCounts(int $id, int $schoolId): array
+    {
+        $this->assertSchoolId($schoolId);
+        $result = ['classes' => 0, 'imports' => 0];
+
+        $stmt = Database::connection()->prepare(
+            'SELECT COUNT(*) FROM classes c
+             INNER JOIN academic_years ay ON ay.id = c.academic_year_id
+             WHERE c.academic_year_id = ? AND ay.school_id = ?'
+        );
+        $stmt->execute([$id, $schoolId]);
+        $result['classes'] = (int)$stmt->fetchColumn();
+
+        $stmt = Database::connection()->prepare(
+            'SELECT COUNT(*) FROM school_import_batches b
+             INNER JOIN academic_years ay ON ay.id = b.target_academic_year_id
+             WHERE b.target_academic_year_id = ? AND ay.school_id = ?'
+        );
+        $stmt->execute([$id, $schoolId]);
+        $result['imports'] = (int)$stmt->fetchColumn();
+
+        return $result;
+    }
+
+    public function delete(int $id, int $schoolId): void
+    {
+        $this->assertSchoolId($schoolId);
+        $stmt = Database::connection()->prepare(
+            'DELETE FROM academic_years WHERE id = ? AND school_id = ?'
+        );
+        $stmt->execute([$id, $schoolId]);
+
+        if ($stmt->rowCount() !== 1) {
+            throw new \RuntimeException('Academic year could not be deleted.');
+        }
+    }
+
     public function deactivateAll(?int $schoolId = null): void
     {
         $sql = 'UPDATE academic_years SET is_active = 0 WHERE is_active = 1';
@@ -203,3 +241,4 @@ final class AcademicYearRepository
         }
     }
 }
+

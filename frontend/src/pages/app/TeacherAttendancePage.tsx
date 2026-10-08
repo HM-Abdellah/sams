@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useBeforeUnload, useBlocker, useSearchParams } from 'react-router'
 import { useI18n } from '../../features/i18n/useI18n.ts'
-import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
+import { useSession } from '../../features/auth/useSession.ts'
+import { TRANSLATION_KEYS, type TranslationKey } from '../../features/i18n/types.ts'
 import { useTeacherClasses } from '../../features/classes/useTeacherClasses.ts'
 import { useAttendanceRegister } from '../../features/attendance/useAttendanceRegister.ts'
 import { attendanceApi, type AttendanceStudent } from '../../features/attendance/api.ts'
@@ -28,7 +29,7 @@ const STATUS_STYLES: Record<AttendanceViewStatus, string> = {
 }
 
 const STATUS_SYMBOLS: Record<AttendanceViewStatus, string> = {
-  clear: '·', present: '✓', absent: 'A', late: 'L', excused: 'E',
+  clear: '·', present: '○', absent: '×', late: 'L', excused: 'E',
 }
 
 function isIsoDate(value: string | null): value is string {
@@ -63,8 +64,119 @@ function displayName(firstName: string, lastName: string) {
   return (firstName + ' ' + lastName).trim()
 }
 
+function WeeklyPrintRegister({
+  classTitle,
+  teacherName,
+  weekStart,
+  weekEnd,
+  days,
+  students,
+  getStatus,
+  locale,
+  t,
+}: {
+  classTitle: string
+  teacherName: string
+  weekStart: string
+  weekEnd: string
+  days: string[]
+  students: AttendanceStudent[]
+  getStatus: (studentId: number, day: string, period: number) => AttendanceViewStatus
+  locale: string
+  t: (key: TranslationKey) => string
+}) {
+  return (
+    <article className="sams-attendance-print" aria-label={t(TRANSLATION_KEYS.attendance.weeklyRegister)}>
+      <div className="sams-print-paper">
+        <header className="sams-print-header">
+          <div>
+            <p className="sams-print-kicker">SAMS</p>
+            <h2>{t(TRANSLATION_KEYS.attendance.weeklyRegister)}</h2>
+          </div>
+          <dl className="sams-print-meta">
+            <div><dt>{t(TRANSLATION_KEYS.attendance.selectClass)}</dt><dd>{classTitle || '—'}</dd></div>
+            <div><dt>{t(TRANSLATION_KEYS.admin.teacher)}</dt><dd>{teacherName || '—'}</dd></div>
+            <div><dt>{t(TRANSLATION_KEYS.admin.date)}</dt><dd>{formatDate(weekStart, locale, { day: '2-digit', month: '2-digit', year: 'numeric' })} – {formatDate(weekEnd, locale, { day: '2-digit', month: '2-digit', year: 'numeric' })}</dd></div>
+          </dl>
+        </header>
+
+        <div className="sams-print-legend">
+          <span><strong>○</strong> {t(TRANSLATION_KEYS.attendance.present)}</span>
+          <span><strong>×</strong> {t(TRANSLATION_KEYS.attendance.absent)}</span>
+          <span><strong>L</strong> {t(TRANSLATION_KEYS.attendance.late)}</span>
+          <span><strong>E</strong> {t(TRANSLATION_KEYS.attendance.excused)}</span>
+          <span><strong>·</strong> {t(TRANSLATION_KEYS.attendance.unmarked)}</span>
+        </div>
+
+        <table className="sams-print-table">
+          <caption>{t(TRANSLATION_KEYS.attendance.weeklyRegister)}</caption>
+          <thead>
+            <tr>
+              <th scope="col">N°</th>
+              <th scope="col">{t(TRANSLATION_KEYS.teacher.studentName)}</th>
+              {days.map((day) => (
+                <th key={day} scope="col">
+                  <span className="sams-print-day">{formatDate(day, locale, { weekday: 'short' })}</span>
+                  <span className="sams-print-date">{formatDate(day, locale, { day: '2-digit', month: '2-digit' })}</span>
+                </th>
+              ))}
+              <th scope="col">{t(TRANSLATION_KEYS.attendance.absent)}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {students.map((student, index) => {
+              let weeklyAbsences = 0
+              const dailyCells = days.map((day) => {
+                const statuses = PERIODS.map((_, periodIndex) => getStatus(student.id, day, periodIndex + 1))
+                weeklyAbsences += statuses.filter((status) => status === 'absent').length
+                return statuses
+              })
+              return (
+                <tr key={student.id}>
+                  <td className="sams-print-number">{index + 1}</td>
+                  <th scope="row" dir="auto">{displayName(student.first_name, student.last_name)}</th>
+                  {dailyCells.map((statuses, dayIndex) => (
+                    <td key={days[dayIndex]} className="sams-print-day-cell">
+                      <span className="sams-print-periods">
+                        {statuses.map((status, periodIndex) => (
+                          <span key={periodIndex} className={status === 'absent' ? 'is-absent' : status === 'present' ? 'is-present' : status === 'late' ? 'is-late' : status === 'excused' ? 'is-excused' : 'is-clear'}>
+                            {STATUS_SYMBOLS[status]}
+                          </span>
+                        ))}
+                      </span>
+                    </td>
+                  ))}
+                  <td className="sams-print-total">{weeklyAbsences}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+
+        <footer className="sams-print-footer">
+          <div className="sams-print-note">
+            <span>{t(TRANSLATION_KEYS.attendance.morning)}: 1–4</span>
+            <span>{t(TRANSLATION_KEYS.attendance.afternoon)}: 5–8</span>
+          </div>
+          <div className="sams-print-signature">
+            <div>
+              <span>{t(TRANSLATION_KEYS.attendance.teacherSignature)}</span>
+              <span className="sams-print-line" />
+            </div>
+            <div>
+              <span>{t(TRANSLATION_KEYS.admin.date)}</span>
+              <span className="sams-print-line sams-print-date-line" />
+            </div>
+          </div>
+        </footer>
+      </div>
+    </article>
+  )
+}
+
 export function TeacherAttendancePage() {
   const { t, locale } = useI18n()
+  const session = useSession()
   const classes = useTeacherClasses()
   const [params, setParams] = useSearchParams()
   const [search, setSearch] = useState('')
@@ -92,6 +204,11 @@ export function TeacherAttendancePage() {
     event.preventDefault()
     event.returnValue = ''
   }, [register.isBusy]))
+
+  useEffect(() => {
+    document.body.classList.add('sams-printing')
+    return () => document.body.classList.remove('sams-printing')
+  }, [])
 
   useEffect(() => {
     if (blocker.state !== 'blocked') return
@@ -225,6 +342,12 @@ export function TeacherAttendancePage() {
     setParams(next)
   }
 
+  const printWeeklyRegister = async () => {
+    if (selectedClassId === null || students.length === 0) return
+    if (!(await register.flush())) return
+    window.print()
+  }
+
   if (classes.data === null) {
     return <AsyncStateFeedback state={classes} loadingLabel={t(TRANSLATION_KEYS.auth.loading)} refreshingLabel={t(TRANSLATION_KEYS.system.refreshing)} errorTitle={t(TRANSLATION_KEYS.system.errorTitle)} genericError={t(TRANSLATION_KEYS.system.genericError)} staleErrorLabel={t(TRANSLATION_KEYS.system.staleError)} reloadLabel={t(TRANSLATION_KEYS.system.reload)} onRetry={() => void classes.reload()} />
   }
@@ -238,22 +361,33 @@ export function TeacherAttendancePage() {
     : formatDate(weekStart, locale, { day: '2-digit', month: 'short', year: 'numeric' })
 
   return (
-    <section className="space-y-5">
-      <header className="flex flex-wrap items-end justify-between gap-4">
+    <section className="sams-attendance-page space-y-5">
+      <header className="sams-attendance-screen flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="sams-section-label">{t(TRANSLATION_KEYS.navigation.attendance)}</p>
           <h1 className="mt-1 text-3xl font-semibold tracking-[-0.035em]">{t(TRANSLATION_KEYS.attendance.title)}</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.attendance.description)}</p>
         </div>
-        <Link
-          to={selectedClassId ? '/app/signatures?class_id=' + selectedClassId : '/app/signatures'}
-          className="inline-flex min-h-10 items-center justify-center rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] px-4 text-sm font-semibold text-[var(--sams-text)] shadow-sm hover:bg-[var(--sams-action-soft)]"
-        >
-          {t(TRANSLATION_KEYS.navigation.signatures)}
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={selectedClassId === null || students.length === 0 || register.isBusy}
+            loading={register.mutationState === 'saving'}
+            onClick={() => void printWeeklyRegister()}
+          >
+            {t(TRANSLATION_KEYS.attendance.printWeek)}
+          </Button>
+          <Link
+            to={selectedClassId ? '/app/signatures?class_id=' + selectedClassId : '/app/signatures'}
+            className="inline-flex min-h-10 items-center justify-center rounded-lg border border-[var(--sams-border)] bg-[var(--sams-surface)] px-4 text-sm font-semibold text-[var(--sams-text)] shadow-sm hover:bg-[var(--sams-action-soft)]"
+          >
+            {t(TRANSLATION_KEYS.navigation.signatures)}
+          </Link>
+        </div>
       </header>
 
-      <div className="sams-card p-4 sm:p-5">
+      <div className="sams-attendance-screen sams-card p-4 sm:p-5">
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
           <label className="block text-sm font-semibold" htmlFor="attendance-class">
             {t(TRANSLATION_KEYS.attendance.selectClass)}
@@ -597,6 +731,19 @@ export function TeacherAttendancePage() {
           {register.isDirty && register.mutationState !== 'saving' && register.mutationState !== 'conflict' && <StatusMessage variant="warning" title={t(TRANSLATION_KEYS.attendance.unsavedChanges)}>{register.dirtyCount}</StatusMessage>}
         </>
       )}
+
+      <WeeklyPrintRegister
+        classTitle={selectedClass?.name ?? ''}
+        teacherName={session.user?.full_name ?? ''}
+        weekStart={data?.week_start ?? weekStart}
+        weekEnd={data?.week_end ?? days[days.length - 1] ?? weekStart}
+        days={days}
+        students={students}
+        getStatus={getStatus}
+        locale={locale}
+        t={t}
+      />
     </section>
   )
 }
+

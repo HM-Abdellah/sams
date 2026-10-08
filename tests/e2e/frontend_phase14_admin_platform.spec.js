@@ -11,6 +11,7 @@ test.describe('frontend Phase 14 admin platform', () => {
   let onboarding
   let importStatus
   let uploadContentType
+  let rotateContentType
   let auditQuery
   let studentsByClass
 
@@ -30,8 +31,9 @@ test.describe('frontend Phase 14 admin platform', () => {
     ]
     teachings = []
     users = [
-      { id: 10, school_id: 20, username: 'admin.e2e', employee_id: 'admin.e2e', full_name: 'E2E Admin', phone: null, phone_verified: 1, role: 'admin', account_status: 'active', is_active: 1, failed_login_attempts: 0, locked_until: null, last_login_at: null, last_seen_at: null, created_at: '2026-09-01T08:00:00Z', updated_at: '2026-09-01T08:00:00Z' },
+      { id: 10, school_id: 20, username: 'admin.e2e', employee_id: 'admin.e2e', full_name: 'E2E Admin', phone: null, phone_verified: 1, role: 'admin', account_status: 'active', is_active: 1, failed_login_attempts: 0, locked_until: null, last_login_at: null, last_seen_at: '2026-09-29T08:05:00Z', is_online: 1, avatar_path: null, created_at: '2026-09-01T08:00:00Z', updated_at: '2026-09-01T08:00:00Z' },
       { id: 11, school_id: 20, username: 'teacher.e2e', employee_id: 'teacher.e2e', full_name: 'E2E Teacher', phone: null, phone_verified: 1, role: 'teacher', account_status: 'active', is_active: 1, failed_login_attempts: 0, locked_until: null, last_login_at: null, last_seen_at: null, created_at: '2026-09-01T08:00:00Z', updated_at: '2026-09-01T08:00:00Z' },
+      { id: 12, school_id: 20, username: 'delete.e2e', employee_id: null, full_name: 'Disposable E2E Admin', phone: null, phone_verified: 0, role: 'admin', account_status: 'active', is_active: 1, failed_login_attempts: 0, locked_until: null, last_login_at: null, last_seen_at: null, is_online: 0, avatar_path: null, created_at: '2026-09-01T08:00:00Z', updated_at: '2026-09-01T08:00:00Z' },
     ]
     academicYears = [
       { id: 1, school_id: 20, name: '2026/2027', starts_on: '2026-09-01', ends_on: '2027-07-31', is_active: 1, created_at: '2026-08-01T08:00:00Z' },
@@ -40,6 +42,7 @@ test.describe('frontend Phase 14 admin platform', () => {
     onboarding = { id: 1, school_id: 20, full_name: 'New E2E Teacher', employee_id: 'new.teacher', phone: '+212600000000', status: 'pending', expires_at: '2026-10-01T00:00:00Z', reviewed_by: null, reviewed_at: null, rejection_reason: null, created_user_id: null, created_at: '2026-09-29T08:00:00Z', updated_at: '2026-09-29T08:00:00Z' }
     importStatus = 'validated'
     uploadContentType = null
+    rotateContentType = null
     auditQuery = null
     studentsByClass = {
       1: [
@@ -117,12 +120,65 @@ test.describe('frontend Phase 14 admin platform', () => {
       }
       const payload = route.request().postDataJSON()
       const user = users.find((x) => x.id === payload.id)
-      if (payload.action === 'set_status') { user.account_status = payload.status; user.is_active = payload.status === 'active' ? 1 : 0 }
+      if (payload.action === 'create_admin') {
+        users.push({
+          id: 20,
+          school_id: 20,
+          username: payload.username,
+          employee_id: null,
+          full_name: payload.full_name,
+          phone: null,
+          phone_verified: 0,
+          role: 'admin',
+          account_status: 'active',
+          is_active: 1,
+          failed_login_attempts: 0,
+          locked_until: null,
+          last_login_at: null,
+          last_seen_at: null,
+          is_online: 0,
+          avatar_path: null,
+          created_at: '2026-09-29T08:00:00Z',
+          updated_at: '2026-09-29T08:00:00Z',
+        })
+        await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ success: true, data: { id: 20 } }) })
+        return
+      }
+      if (payload.action === 'delete') {
+        users = users.filter((x) => x.id !== payload.id)
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: null }) })
+        return
+      }
+      if (payload.action === 'set_status' && user) { user.account_status = payload.status; user.is_active = payload.status === 'active' ? 1 : 0 }
       if (payload.action === 'reissue_sams_code') {
         await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: { user_id: payload.id, sams_code: 'E2E-ONCE-CODE' } }) })
         return
       }
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: { id: payload.id ?? 12, session_version: 2 } }) })
+    })
+
+    let profile = {
+      id: 10,
+      username: 'admin.e2e',
+      full_name: 'E2E Admin',
+      role: 'admin',
+      avatar_url: null,
+    }
+    await page.route('**/api/v1/profile', async (route) => {
+      if (route.request().method() === 'GET') {
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: profile }) })
+        return
+      }
+      profile = {
+        ...profile,
+        username: 'updated.admin',
+        full_name: 'Updated E2E Admin',
+        avatar_url: '/api/v1/profile/avatar',
+      }
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: { ...profile, csrf: 'e2e-csrf-token' } }) })
+    })
+    await page.route('**/api/v1/profile/avatar', async (route) => {
+      await route.fulfill({ status: 200, contentType: 'image/png', body: Buffer.from([137,80,78,71,13,10,26,10]) })
     })
     await page.route('**/api/v1/admin/academic-years', async (route) => {
       if (route.request().method() === 'GET') {
@@ -132,12 +188,17 @@ test.describe('frontend Phase 14 admin platform', () => {
       const payload = route.request().postDataJSON()
       if (payload.action === 'create') academicYears.push({ id: 3, school_id: 20, name: payload.name, starts_on: payload.starts_on, ends_on: payload.ends_on, is_active: payload.activate ? 1 : 0, created_at: '2026-09-29T08:00:00Z' })
       if (payload.action === 'activate') academicYears.forEach((x) => { x.is_active = x.id === payload.id ? 1 : 0 })
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: { id: payload.id ?? 3 } }) })
+      if (payload.action === 'delete') {
+        const index = academicYears.findIndex((x) => x.id === payload.id)
+        if (index >= 0) academicYears.splice(index, 1)
+      }
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: null }) })
     })
     await page.route('**/api/v1/admin/onboarding/requests*', async (route) => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: { requests: [onboarding] } }) })
     })
     await page.route('**/api/v1/admin/onboarding/code', async (route) => {
+      rotateContentType = route.request().headers()['content-type'] ?? null
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: { school_id: 20, onboarding_code: 'E2E-NEW-CODE', expires_at: '2026-10-01T00:00:00Z' } }) })
     })
     await page.route('**/api/v1/admin/onboarding/1/review', async (route) => {
@@ -148,13 +209,13 @@ test.describe('frontend Phase 14 admin platform', () => {
 
     await page.route('**/api/v1/imports/school', async (route) => {
       uploadContentType = route.request().headers()['content-type'] ?? null
-      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ success: true, data: { id: 55, status: 'validated' } }) })
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ success: true, data: { batch_id: 55, status: 'validated' } }) })
     })
     await page.route('**/api/v1/imports/school/55*', async (route) => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
         success: true,
         data: {
-          batch: { id: 55, created_by: 10, created_by_name: 'E2E Admin', target_academic_year_id: 1, target_academic_year_name: '2026/2027', source_academic_year: '2025/2026', original_filename: 'synthetic.md', file_sha256: 'abc', file_size: 100, status: importStatus, total_classes: 1, valid_classes: 1, warning_classes: 0, error_classes: 0, total_rows: 2, valid_rows: 2, warning_rows: 0, error_rows: 0, imported_at: importStatus === 'imported' ? '2026-09-29T08:10:00Z' : null, created_at: '2026-09-29T08:00:00Z', updated_at: '2026-09-29T08:00:00Z' },
+          batch: { id: 55, created_by: 10, created_by_name: 'E2E Admin', target_academic_year_id: 1, target_academic_year_name: '2026/2027', source_academic_year: '2025/2026', original_filename: 'synthetic.xlsx', file_sha256: 'abc', file_size: 100, status: importStatus, total_classes: 1, valid_classes: 1, warning_classes: 0, error_classes: 0, total_rows: 2, valid_rows: 2, warning_rows: 0, error_rows: 0, imported_at: importStatus === 'imported' ? '2026-09-29T08:10:00Z' : null, created_at: '2026-09-29T08:00:00Z', updated_at: '2026-09-29T08:00:00Z' },
           classes: [{ id: 501, batch_id: 55, source_sheet: 'Synthetic', source_block_start_row: 1, source_block_end_row: 3, source_class_name: 'E2E-2BAC-A', source_level: '2BAC', source_academic_year: '2025/2026', target_class_id: 1, status: importStatus === 'validated' ? 'staged' : 'mapped', student_count: 2, issues: [] }],
         },
       }) })
@@ -218,17 +279,20 @@ test.describe('frontend Phase 14 admin platform', () => {
     await expect(page.getByText('Present ÷ recorded attendance entries. This rate does not measure scheduled lessons.')).toBeVisible()
     await expect(page.getByText('E2E Teacher').first()).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Needs attention' })).toBeVisible()
+
     await page.goto('/app/admin/classes')
     await expect(page).toHaveURL(/\/app\/admin\/classes$/)
     await expect(page.getByRole('heading', { name: 'Classes' })).toBeVisible()
-    await page.getByLabel('Class').fill('E2E-CREATED')
-    await page.getByLabel('Level').fill('2BAC')
-    await page.getByLabel('Branch').fill('SP')
-    const create = page.waitForRequest((request) => request.url().endsWith('/api/v1/admin/classes') && request.method() === 'POST')
-    await page.getByRole('button', { name: 'Save' }).click()
-    const createRequest = await create
-    expect(createRequest.postDataJSON()).toEqual(expect.objectContaining({ action: 'create', name: 'E2E-CREATED' }))
-    await expect(page.getByText('E2E-CREATED')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Create class' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Create' })).toHaveCount(0)
+    await expect(page.getByLabel('Search')).toBeVisible()
+    await expect(page.getByLabel('Academic year')).toBeVisible()
+    await expect(page.getByLabel('Level')).toBeVisible()
+    await expect(page.getByLabel('Level')).toHaveValue('all')
+    await expect(page.getByLabel('Level').locator('option[value="all"]')).toHaveText('All levels')
+    await expect(page.getByText('Status', { exact: true })).toHaveCount(0)
+    await expect(page.getByRole('columnheader', { name: 'Status' })).toHaveCount(0)
+    await expect(page.getByText('E2E-2BAC-A')).toBeVisible()
   })
 
   test('admin students workspace manages roster lifecycle within class context', async ({ page }) => {
@@ -257,41 +321,65 @@ test.describe('frontend Phase 14 admin platform', () => {
     await expect(page.getByRole('row').filter({ hasText: 'Amina Updated Student' })).toBeVisible()
 
     await page.getByLabel('Select class').selectOption('1')
-    await page.getByLabel('Status').selectOption('all')
-    await page.once('dialog', (dialog) => dialog.accept())
-    await page.getByRole('button', { name: 'Deactivate' }).first().click()
-    await expect(page.getByText('Youssef Student')).toBeVisible()
-    await page.getByLabel('Status').selectOption('inactive')
+    await expect(page.getByLabel('Select class')).toHaveCount(1)
+    await expect(page.getByLabel('Status')).toHaveCount(0)
+    await expect(page.getByRole('columnheader', { name: 'Status' })).toHaveCount(0)
     await expect(page.getByText('Youssef Student')).toBeVisible()
   })
 
-  test('teachers, users, onboarding and academic years execute mutations and refresh server state', async ({ page }) => {
+  test('profile settings update name, username and profile picture', async ({ page }) => {
+    await page.goto('/app/settings')
+    await expect(page.getByRole('heading', { level: 1, name: 'Profile settings' })).toBeVisible()
+    await expect(page.getByLabel('Full name')).toHaveValue('E2E Admin')
+    await expect(page.getByLabel('Username')).toHaveValue('admin.e2e')
+
+    await page.getByLabel('Full name').fill('Updated E2E Admin')
+    await page.getByLabel('Username').fill('updated.admin')
+    await page.getByLabel('Profile picture').setInputFiles({
+      name: 'avatar.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    })
+
+    await page.getByRole('button', { name: 'Save changes' }).click()
+    await expect(page.getByText('Profile updated successfully.')).toBeVisible()
+    await expect(page.getByLabel('Full name')).toHaveValue('Updated E2E Admin')
+    await expect(page.getByLabel('Username')).toHaveValue('updated.admin')
+    await expect(page.locator('img[src="/api/v1/profile/avatar"]')).toBeVisible()
+  })
+
+  test('teachers, users, onboarding and academic years execute the intended management workflow', async ({ page }) => {
     await page.goto('/app/admin/teachers')
-    await expect(page.getByRole('heading', { name: 'Teachers' })).toBeVisible()
-    await page.getByRole('combobox', { name: 'Teacher', exact: true }).selectOption('10')
-    await page.getByRole('combobox', { name: 'Subject', exact: true }).selectOption('21')
-    await page.getByLabel('Class').selectOption('1')
-    await page.getByRole('button', { name: 'Assign' }).click()
-    await expect(page.getByRole('button', { name: 'Assign', exact: true })).toBeEnabled()
+    await expect(page.getByRole('heading', { level: 1, name: 'Teachers' })).toBeVisible()
+    await expect(page.getByRole('combobox', { name: 'Status', exact: true })).toBeVisible()
+    await expect(page.getByRole('combobox', { name: 'Teacher', exact: true })).toHaveCount(0)
+    await expect(page.getByRole('combobox', { name: 'Subject', exact: true })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Assign', exact: true })).toHaveCount(0)
     await expect(page.getByText('E2E Teacher').last()).toBeVisible()
-    await page.getByLabel('Subject code').fill('BIO')
-    await page.getByLabel('Français').fill('Biologie')
-    await page.getByLabel('العربية').fill('الأحياء')
-    await page.getByLabel('English').fill('Biology')
-    await page.getByRole('button', { name: 'Save' }).click()
 
     await page.goto('/app/admin/users')
-    await expect(page.getByRole('heading', { name: 'Users' })).toBeVisible()
-    await page.getByRole('button', { name: 'Reissue SAMS Code' }).nth(1).click()
+    await expect(page.getByRole('heading', { level: 1, name: 'Users' })).toBeVisible()
+    await expect(page.getByRole('row').filter({ hasText: 'admin.e2e' })).toBeVisible()
+    await expect(page.getByRole('row').filter({ hasText: 'teacher.e2e' })).toHaveCount(0)
+    await expect(page.getByRole('combobox', { name: 'Status', exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Reissue SAMS Code' }).first()).toBeVisible()
+    await page.getByRole('button', { name: 'Reissue SAMS Code' }).first().click()
     await expect(page.getByText('E2E-ONCE-CODE')).toBeVisible()
-    page.once('dialog', (dialog) => dialog.accept())
-    await page.getByRole('button', { name: 'Suspend' }).nth(1).click()
-    await expect(page.getByRole('row').filter({ hasText: 'teacher.e2e' }).getByText('Suspended', { exact: true })).toBeVisible()
+
+    const disposable = users.find((entry) => entry.username === 'delete.e2e')
+    expect(disposable).toBeTruthy()
+    await expect(page.getByRole('row').filter({ hasText: 'delete.e2e' })).toBeVisible()
+    await page.getByRole('row').filter({ hasText: 'delete.e2e' }).getByRole('button', { name: 'Delete account', exact: true }).click()
+    const deleteDialog = page.getByRole('alertdialog', { name: 'Permanently delete this administrator account?' })
+    await expect(deleteDialog).toBeVisible()
+    await deleteDialog.getByRole('button', { name: 'Delete account', exact: true }).click()
+    await expect(page.getByRole('row').filter({ hasText: 'delete.e2e' })).toHaveCount(0)
 
     await page.goto('/app/admin/onboarding')
     await expect(page.getByText('New E2E Teacher')).toBeVisible()
     await page.getByRole('button', { name: 'Rotate code' }).click()
     await expect(page.getByText('E2E-NEW-CODE')).toBeVisible()
+    await expect.poll(() => rotateContentType).toBe(null)
     await page.getByRole('button', { name: 'Approve' }).click()
     await expect(page.getByRole('cell', { name: 'approved' })).toBeVisible()
 
@@ -301,6 +389,9 @@ test.describe('frontend Phase 14 admin platform', () => {
     await page.getByLabel('Ends on').fill('2028-07-31')
     await page.getByRole('button', { name: 'Create' }).click()
     await expect(page.getByText('2027/2028')).toBeVisible()
+    page.once('dialog', (dialog) => dialog.accept())
+    await page.getByRole('button', { name: 'Delete year' }).last().click()
+    await expect(page.getByText('2027/2028')).toHaveCount(0)
   })
 
   test('onboarding rejection requires an accessible confirmation', async ({ page }) => {
@@ -312,6 +403,8 @@ test.describe('frontend Phase 14 admin platform', () => {
     const dialog = page.getByRole('alertdialog', { name: 'Confirm rejecting this request' })
     await expect(dialog).toBeVisible()
     await expect(dialog).toContainText('Rejecting this request closes the teacher onboarding request. The request remains available in history.')
+    await expect(dialog.getByLabel('Rejection reason')).toBeVisible()
+    await dialog.getByLabel('Rejection reason').fill('E2E review reason')
 
     await dialog.getByRole('button', { name: 'Reject' }).click()
     await expect(page.getByRole('cell', { name: 'rejected' })).toBeVisible()
@@ -320,10 +413,12 @@ test.describe('frontend Phase 14 admin platform', () => {
   test('imports use multipart form data and preserve staged workflow boundaries', async ({ page }) => {
     await page.goto('/app/admin/imports')
     const input = page.getByLabel('Import file')
-    await input.setInputFiles({ name: 'synthetic.md', mimeType: 'text/markdown', buffer: Buffer.from('SYNTHETIC FIXTURE ONLY') })
+    await expect(page.locator('label[for="admin-import-file"]')).toBeVisible()
+    await input.setInputFiles({ name: 'synthetic.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: Buffer.from('SYNTHETIC FIXTURE ONLY') })
     await page.getByRole('button', { name: 'Upload' }).click()
     await expect.poll(() => uploadContentType).toContain('multipart/form-data')
-    await expect(page.getByRole('heading', { name: 'synthetic.md' })).toBeVisible()
+    await expect(page.getByText('synthetic.xlsx', { exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'synthetic.xlsx' })).toBeVisible()
     await page.getByRole('button', { name: 'Reconcile' }).click()
     const reconcileDialog = page.getByRole('alertdialog', { name: 'Confirm reconciliation' })
     await expect(reconcileDialog).toBeVisible()
@@ -354,9 +449,10 @@ test.describe('frontend Phase 14 admin platform', () => {
     await expect(usersLink).toBeVisible()
     await usersLink.click()
     await expect(page).toHaveURL(/\/app\/admin\/users$/)
-    await expect(page.getByRole('heading', { name: 'المستخدمون' })).toBeVisible()
-    await expect(page.getByRole('row').filter({ hasText: 'teacher.e2e' }).getByText('الأستاذ', { exact: true })).toBeVisible()
-    await expect(page.getByRole('row').filter({ hasText: 'teacher.e2e' }).getByText('نشط', { exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: 'المستخدمون' })).toBeVisible()
+    await expect(page.getByRole('row').filter({ hasText: 'admin.e2e' })).toBeVisible()
+    await expect(page.getByRole('row').filter({ hasText: 'teacher.e2e' })).toHaveCount(0)
+    await expect(page.getByRole('combobox', { name: 'الحالة', exact: true })).toBeVisible()
   })
 
   test('teacher role is denied from the admin route group', async ({ page }) => {
@@ -365,3 +461,4 @@ test.describe('frontend Phase 14 admin platform', () => {
     await expect(page).toHaveURL(/\/unauthorized$/)
   })
 })
+

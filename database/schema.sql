@@ -64,6 +64,7 @@ CREATE TABLE users (
     username VARCHAR(50) NOT NULL,
     employee_id VARCHAR(50) NULL,
     full_name VARCHAR(120) NOT NULL,
+    avatar_path VARCHAR(255) NULL,
     phone VARCHAR(30) NULL,
     phone_verified BOOLEAN NOT NULL DEFAULT FALSE,
     password_hash VARCHAR(255) NOT NULL,
@@ -622,3 +623,4 @@ CREATE TABLE teacher_onboarding_requests (
 
 -- Business rule: the application must keep at most one currently usable
 -- onboarding code per school. Rotation is enforced by the service layer.
+

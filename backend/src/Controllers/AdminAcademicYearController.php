@@ -64,6 +64,20 @@ final class AdminAcademicYearController extends AdminApiController
                 ], 201);
             }
 
+            if ($action === 'delete') {
+                $id = (int)($body['id'] ?? 0);
+                $this->service->delete(
+                    (int)$admin['id'],
+                    $id,
+                    isset($admin['school_id']) ? (int)$admin['school_id'] : null
+                );
+
+                return Response::json([
+                    'success' => true,
+                    'data' => null,
+                ]);
+            }
+
             if ($action === 'activate') {
                 $id = (int)($body['id'] ?? 0);
                 $this->service->activate(
@@ -87,3 +101,4 @@ final class AdminAcademicYearController extends AdminApiController
         }
     }
 }
+

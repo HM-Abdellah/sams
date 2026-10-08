@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/Button.tsx'
 import { Input } from '../../components/ui/Input.tsx'
 import { LanguageSelect } from '../../components/ui/LanguageSelect.tsx'
 import { StatusMessage } from '../../components/ui/Feedback.tsx'
+import { Dialog } from '../../components/ui/Dialog.tsx'
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
 import { useI18n } from '../../features/i18n/useI18n.ts'
 import { safeReturnTo } from '../../routes/safeReturnTo.ts'
@@ -15,14 +16,14 @@ function SamsMark({ inverted = false }: { inverted?: boolean }) {
     <div
       aria-hidden="true"
       className={[
-        'grid size-10 shrink-0 place-items-center rounded-xl shadow-sm',
+        'grid size-11 shrink-0 place-items-center rounded-[0.8rem] shadow-sm',
         inverted ? 'bg-[#dffcff]' : 'bg-[#e2f3ff]',
       ].join(' ')}
     >
       <img
-        src="./assets/brand/sams-logo.svg"
+        src={`${import.meta.env.BASE_URL}assets/brand/sams-logo.svg`}
         alt=""
-        className="size-6 object-contain"
+        className="size-8 object-contain"
       />
     </div>
   )
@@ -35,6 +36,7 @@ export function LoginPage() {
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [recoveryOpen, setRecoveryOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const { t } = useI18n()
@@ -52,10 +54,13 @@ export function LoginPage() {
   if (session.status === 'authenticated') return null
 
   return (
-    <main className="h-[100dvh] overflow-hidden overscroll-none bg-[#e8f4ff] text-[#17324d]">
+    <main className="h-[100dvh] overflow-hidden overscroll-none bg-[#eaf6ff] text-[#17324d]">
       <div className="grid h-full lg:grid-cols-[1.08fr_0.92fr]">
-        <aside className="relative hidden min-h-0 overflow-hidden bg-[linear-gradient(145deg,#123b73_0%,#0c6f91_62%,#078786_100%)] px-10 py-9 text-white lg:flex lg:flex-col lg:justify-between xl:px-14 xl:py-11">
-          <div className="relative z-10 flex items-center gap-3">
+        <aside className="relative hidden min-h-0 overflow-hidden bg-[linear-gradient(145deg,#123b73_0%,#0d668f_58%,#087f84_100%)] px-10 py-9 text-white lg:flex lg:flex-col lg:justify-between xl:px-14 xl:py-11">
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-[0.16] [background-image:linear-gradient(rgba(255,255,255,0.14)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.14)_1px,transparent_1px)] [background-size:28px_28px]" />
+          <div aria-hidden="true" className="pointer-events-none absolute -end-24 -top-28 size-[30rem] rounded-full bg-[#67e9f9]/10 blur-3xl" />
+          <div aria-hidden="true" className="sams-login-float pointer-events-none absolute end-20 top-28 size-16 rotate-12 rounded-2xl border border-white/10 bg-white/[0.04]" />
+          <div className="relative z-10 flex items-center gap-3 sams-login-reveal">
             <SamsMark inverted />
             <div>
               <p className="text-base font-semibold tracking-[0.1em]">SAMS</p>
@@ -65,7 +70,7 @@ export function LoginPage() {
             </div>
           </div>
 
-          <div className="relative z-10 max-w-xl">
+          <div className="relative z-10 max-w-xl sams-login-reveal sams-login-reveal-delay-1">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6fe6ee]">
               {t(TRANSLATION_KEYS.auth.productName)}
             </p>
@@ -76,7 +81,7 @@ export function LoginPage() {
               {t(TRANSLATION_KEYS.auth.description)}
             </p>
 
-            <div className="mt-8 max-w-lg rounded-2xl border border-white/12 bg-white/[0.06] p-4">
+            <div className="mt-8 max-w-lg rounded-[1.15rem] border border-white/12 bg-white/[0.065] p-4 shadow-[0_18px_45px_rgba(4,24,48,0.10)] backdrop-blur-sm sams-login-reveal sams-login-reveal-delay-2">
               <div className="flex items-center justify-between gap-4">
                 <span className="text-xs font-semibold text-white/80">
                   {t(TRANSLATION_KEYS.auth.registerPreview)}
@@ -96,17 +101,20 @@ export function LoginPage() {
                       {item}
                     </div>
                   ))}
-                  {['Amal B.', 'Youssef A.', 'Sara M.'].map((student, rowIndex) => (
-                    <div key={student} className="contents">
+                  {[
+                    TRANSLATION_KEYS.auth.studentAmal,
+                    TRANSLATION_KEYS.auth.studentYoussef,
+                    TRANSLATION_KEYS.auth.studentSara,
+                  ].map((studentKey, rowIndex) => (
+                    <div key={studentKey} className="contents">
                       <div className="border-r border-[#c9e0eb] px-3 py-2 text-[11px] font-medium text-[#23445e]">
-                        {student}
+                        {t(studentKey)}
                       </div>
                       {[0, 1, 2, 3].map((cell) => {
-                        const absent = rowIndex === 1 && cell === 2
+                        const absent = (rowIndex === 0 && cell === 1) || (rowIndex === 1 && cell === 2)
                         return (
                           <div
                             key={cell}
-                            aria-label={absent ? 'Absence enregistrée' : 'Présence'}
                             className={[
                               'border-r last:border-r-0 px-2 py-2 text-center text-[12px] font-extrabold',
                               absent ? 'bg-[#fff0ef] text-[#d4473f]' : 'bg-[#f7fcff] text-transparent',
@@ -123,7 +131,7 @@ export function LoginPage() {
             </div>
           </div>
 
-          <p className="relative z-10 text-xs text-white/40">
+          <p className="relative z-10 text-xs text-white/40 sams-login-reveal sams-login-reveal-delay-2">
             {t(TRANSLATION_KEYS.auth.secureHint)}
           </p>
 
@@ -132,9 +140,11 @@ export function LoginPage() {
           <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-[#29c7d8]/25" />
         </aside>
 
-        <section className="flex h-full min-h-0 items-center justify-center overflow-hidden px-4 py-4 sm:px-6 lg:px-10">
-          <div className="w-full max-w-md rounded-[1.5rem] border border-[#b9d8eb] bg-[#f7fbff] px-5 py-5 shadow-[0_20px_55px_rgba(22,73,112,0.12)] sm:px-7 sm:py-7 lg:border lg:px-8 lg:py-8 lg:shadow-[0_20px_55px_rgba(22,73,112,0.10)]">
-            <div className="flex items-center justify-between gap-3">
+        <section className="relative flex h-full min-h-0 items-center justify-center overflow-hidden bg-[#edf6fb] px-0 py-0 lg:bg-[radial-gradient(circle_at_20%_18%,rgba(60,200,231,0.14),transparent_26%),radial-gradient(circle_at_92%_82%,rgba(29,78,216,0.08),transparent_30%)] lg:px-10">
+          <div aria-hidden="true" className="pointer-events-none absolute -end-24 bottom-10 hidden size-64 rounded-full border-[36px] border-[#1687b5]/[0.05] lg:block" />
+          <div className="sams-login-mobile-shell relative flex h-full w-full flex-col justify-center overflow-hidden bg-[#f8fcff] sams-login-reveal lg:h-auto lg:w-full lg:max-w-md lg:rounded-[1.25rem] lg:border lg:border-[#b9d8eb] lg:bg-[#f8fcff]/95 lg:px-8 lg:py-8 lg:shadow-[0_24px_60px_rgba(22,73,112,0.11)] lg:backdrop-blur-sm">
+            <div aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#1d4ed8_0%,#1687b5_52%,#29c7d8_100%)]" />
+            <div className="sams-login-header flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 lg:hidden">
                 <SamsMark />
                 <div>
@@ -147,18 +157,18 @@ export function LoginPage() {
               <LanguageSelect />
             </div>
 
-            <div className="mt-5 sm:mt-7">
+            <div className="sams-login-intro mt-4 sm:mt-7 sams-login-reveal sams-login-reveal-delay-1 lg:mt-7">
               <p className="sams-section-label">{t(TRANSLATION_KEYS.auth.secureAccess)}</p>
-              <h1 className="mt-1.5 text-[1.75rem] font-semibold tracking-[-0.035em] text-[#0b1f33] sm:text-3xl">
+              <h1 className="sams-login-title mt-1.5 text-[1.75rem] font-semibold tracking-[-0.035em] text-[#0b1f33] sm:text-3xl">
                 {t(TRANSLATION_KEYS.auth.signIn)}
               </h1>
-              <p className="mt-2 max-w-sm text-sm leading-5 text-[var(--sams-muted)]">
+              <p className="sams-login-subtitle mt-2 max-w-sm text-sm leading-5 text-[var(--sams-muted)]">
                 {t(TRANSLATION_KEYS.auth.signInHint)}
               </p>
             </div>
 
             <form
-              className="mt-5 space-y-4 sm:mt-6"
+              className="sams-login-form mt-4 space-y-3 sm:mt-6 sm:space-y-4"
               onSubmit={async (event) => {
                 event.preventDefault()
                 setError(null)
@@ -231,17 +241,62 @@ export function LoginPage() {
                 {t(TRANSLATION_KEYS.auth.signIn)}
               </Button>
 
-              <div className="flex items-start gap-2 pt-0.5 text-xs leading-5 text-[var(--sams-muted)]">
+              <div className="sams-login-secure-hint flex items-start gap-2 pt-0.5 text-xs leading-5 text-[var(--sams-muted)]">
                 <svg aria-hidden="true" viewBox="0 0 24 24" className="mt-0.5 size-4 shrink-0 text-[#1d78a6]" fill="none" stroke="currentColor" strokeWidth="1.9">
                   <rect x="5" y="10" width="14" height="10" rx="2" />
                   <path d="M8 10V7.5a4 4 0 0 1 8 0V10" />
                 </svg>
                 <p>{t(TRANSLATION_KEYS.auth.secureHint)}</p>
               </div>
+
+              <div className="pt-1 flex flex-col items-center gap-2 text-center text-xs leading-5 text-[var(--sams-muted)]">
+                <div>
+                  <span>{t(TRANSLATION_KEYS.auth.forgotPasswordPrompt)} </span>
+                  <button
+                    type="button"
+                    onClick={() => setRecoveryOpen(true)}
+                    className="font-semibold text-[#1477ad] underline decoration-[#1477ad]/30 underline-offset-2 transition-colors hover:text-[#0d628f] hover:decoration-[#0d628f]/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1687b5]/30 focus-visible:ring-offset-2"
+                  >
+                    {t(TRANSLATION_KEYS.auth.forgotPasswordLink)}
+                  </button>
+                </div>
+                <div>
+                  <span>{t(TRANSLATION_KEYS.auth.onboardingPrompt)} </span>
+                <button
+                  type="button"
+                  onClick={() => navigate('/onboarding')}
+                  className="font-semibold text-[#1477ad] underline decoration-[#1477ad]/30 underline-offset-2 transition-colors hover:text-[#0d628f] hover:decoration-[#0d628f]/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1687b5]/30 focus-visible:ring-offset-2"
+                >
+                    {t(TRANSLATION_KEYS.auth.onboardingLink)}
+                  </button>
+                </div>
+              </div>
             </form>
+
+            <Dialog
+              open={recoveryOpen}
+              title={t(TRANSLATION_KEYS.auth.forgotPasswordTitle)}
+              description={t(TRANSLATION_KEYS.auth.forgotPasswordDescription)}
+              closeLabel={t(TRANSLATION_KEYS.auth.close)}
+              onClose={() => setRecoveryOpen(false)}
+              className="border-[#b9d8eb]"
+            >
+              <div className="rounded-xl border border-[#c9e0eb] bg-[#f5fbff] p-4 text-sm leading-6 text-[#35536a]">
+                <div className="flex items-start gap-3">
+                  <div aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-lg bg-[#e3f6fb] text-[#1477ad]">
+                    <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8">
+                      <rect x="5" y="10" width="14" height="10" rx="2" />
+                      <path d="M8 10V7.5a4 4 0 0 1 8 0V10" />
+                    </svg>
+                  </div>
+                  <p>{t(TRANSLATION_KEYS.auth.forgotPasswordStep)}</p>
+                </div>
+              </div>
+            </Dialog>
           </div>
         </section>
       </div>
     </main>
   )
 }
+

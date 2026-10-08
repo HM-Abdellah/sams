@@ -22,30 +22,30 @@ const dashboard: AdminDashboard = {
     online_teachers: 2,
     unverified_teachers: 1,
     locked_teachers: 1,
-    today_records: 32,
+    today_records: 29,
     today_present: 24,
     today_absent: 5,
-    today_late: 2,
-    today_excused: 1,
+    today_late: 0,
+    today_excused: 0,
     today_presence_rate: 75,
   },
   attendance_trend: [
     {
       date: '2026-09-28',
-      record_count: 30,
+      record_count: 27,
       present_count: 21,
       absent_count: 6,
-      late_count: 2,
-      excused_count: 1,
+      late_count: 0,
+      excused_count: 0,
       presence_rate: 70,
     },
     {
       date: '2026-09-29',
-      record_count: 31,
+      record_count: 28,
       present_count: 23,
       absent_count: 5,
-      late_count: 2,
-      excused_count: 1,
+      late_count: 0,
+      excused_count: 0,
       presence_rate: 74.2,
     },
     {
@@ -59,11 +59,11 @@ const dashboard: AdminDashboard = {
     },
     {
       date: '2026-10-01',
-      record_count: 32,
+      record_count: 29,
       present_count: 24,
       absent_count: 5,
-      late_count: 2,
-      excused_count: 1,
+      late_count: 0,
+      excused_count: 0,
       presence_rate: 75,
     },
   ],
@@ -84,10 +84,10 @@ const dashboard: AdminDashboard = {
       academic_year_id: 1,
       academic_year_name: '2026-2027',
       student_count: 20,
-      today_records: 16,
+      today_records: 15,
       present_count: 12,
       absent_count: 3,
-      late_count: 1,
+      late_count: 0,
       excused_count: 0,
       presence_rate: 75,
     },
@@ -141,5 +141,8 @@ describe('AdminDashboardPage', () => {
     expect(screen.getByText('Needs attention')).toBeInTheDocument()
     expect(screen.getByText('Quick actions')).toBeInTheDocument()
     expect(screen.getByRole('table', { name: 'Class statistics' })).toBeInTheDocument()
+    expect(screen.queryByText('Late', { exact: true })).not.toBeInTheDocument()
+    expect(screen.queryByText('Excused', { exact: true })).not.toBeInTheDocument()
   })
 })
+

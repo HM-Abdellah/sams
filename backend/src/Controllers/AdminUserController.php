@@ -48,15 +48,12 @@ final class AdminUserController extends AdminApiController
             $body = $request->jsonBody();
             $action = (string)($body['action'] ?? '');
 
-            if ($action === 'create') {
-                $id = $this->service->create(
+            if ($action === 'create_admin') {
+                $id = $this->service->createAdministrator(
                     (int)$admin['id'],
                     (string)($body['username'] ?? ''),
                     (string)($body['full_name'] ?? ''),
-                    (string)($body['role'] ?? ''),
                     (string)($body['password'] ?? ''),
-                    isset($body['employee_id']) ? (string)$body['employee_id'] : null,
-                    isset($body['phone']) ? (string)$body['phone'] : null,
                     isset($admin['school_id']) ? (int)$admin['school_id'] : null
                 );
 
@@ -82,6 +79,16 @@ final class AdminUserController extends AdminApiController
                     'success' => true,
                     'data' => ['id' => $id],
                 ]);
+            }
+
+            if ($action === 'delete') {
+                $this->service->deleteAdministrator(
+                    (int)$admin['id'],
+                    (int)($body['id'] ?? 0),
+                    isset($admin['school_id']) ? (int)$admin['school_id'] : null
+                );
+
+                return Response::json(['success' => true, 'data' => null]);
             }
 
             if ($action === 'reset_password') {
@@ -169,3 +176,4 @@ final class AdminUserController extends AdminApiController
         }
     }
 }
+

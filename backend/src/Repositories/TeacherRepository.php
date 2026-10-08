@@ -8,7 +8,7 @@ use SAMS\Helpers\Database;
 
 final class TeacherRepository
 {
-    public const ONLINE_WINDOW_SECONDS = 90;
+    public const ONLINE_WINDOW_SECONDS = UserRepository::ONLINE_WINDOW_SECONDS;
 
     public function all(?int $schoolId = null): array
     {
@@ -229,3 +229,4 @@ final class TeacherRepository
         }
     }
 }
+

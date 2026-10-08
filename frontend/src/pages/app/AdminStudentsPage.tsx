@@ -11,7 +11,7 @@ import { StudentFormDialog } from '../../features/students/StudentFormDialog.tsx
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
 import { useI18n } from '../../features/i18n/useI18n.ts'
 import {
-  Badge, Button, Dialog, EmptyState, ErrorState, FormField, Input, Loading, PageHeader, Select, Table,
+  Button, Dialog, EmptyState, ErrorState, FormField, Input, Loading, PageHeader, Select, Table,
 } from '../../components/ui/index.ts'
 import { AdminWorkspaceToolbar } from '../../components/admin/AdminWorkspaceToolbar.tsx'
 
@@ -27,8 +27,6 @@ export function AdminStudentsPage() {
   const requestedClassId = Number(searchParams.get('class_id') ?? 0) || null
   const [selectedClassId, setSelectedClassId] = useState<number | null>(requestedClassId)
   const [query, setQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('active')
-  const [sort, setSort] = useState<'name' | 'student_number' | 'status'>('name')
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Student | null>(null)
   const [transferTarget, setTransferTarget] = useState<Student | null>(null)
@@ -39,9 +37,30 @@ export function AdminStudentsPage() {
 
   const classes = classesResource.data?.classes ?? []
   const activeClasses = useMemo(
-    () => (classesResource.data?.classes ?? []).filter((item) => isActive(item.is_active) && isActive(item.academic_year_active)),
+    () => (classesResource.data?.classes ?? []).filter(
+      (item) => isActive(item.is_active) && isActive(item.academic_year_active),
+    ),
     [classesResource.data?.classes],
   )
+
+  const classGroups = useMemo(() => {
+    const groups: Record<'TC' | '1BAC' | '2BAC' | 'other', AdminClass[]> = {
+      TC: [],
+      '1BAC': [],
+      '2BAC': [],
+      other: [],
+    }
+
+    for (const item of activeClasses) {
+      const level = (item.level ?? '').trim().toUpperCase()
+      if (level === 'TC') groups.TC.push(item)
+      else if (level === '1BAC') groups['1BAC'].push(item)
+      else if (level === '2BAC') groups['2BAC'].push(item)
+      else groups.other.push(item)
+    }
+
+    return groups
+  }, [activeClasses])
 
   const requestedActiveClassId = activeClasses.some((item) => item.id === requestedClassId)
     ? requestedClassId
@@ -54,22 +73,17 @@ export function AdminStudentsPage() {
 
   const visibleStudents = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase()
-    return students.students.filter((student) => {
-      const matchesQuery = normalized === '' || [
+    return [...students.students]
+      .filter((student) => normalized === '' || [
         student.first_name,
         student.last_name,
         student.student_number,
         student.massar_code,
-      ].filter(Boolean).some((value) => String(value).toLocaleLowerCase().includes(normalized))
-      const active = student.status === 'active'
-      const matchesStatus = statusFilter === 'all' || (statusFilter === 'active' ? active : !active)
-      return matchesQuery && matchesStatus
-    }).sort((a, b) => {
-      if (sort === 'student_number') return (a.student_number ?? '').localeCompare(b.student_number ?? '') || a.last_name.localeCompare(b.last_name)
-      if (sort === 'status') return a.status.localeCompare(b.status) || a.last_name.localeCompare(b.last_name)
-      return `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`)
-    })
-  }, [students.students, query, statusFilter, sort])
+      ].filter(Boolean).some((value) => String(value).toLocaleLowerCase().includes(normalized)))
+      .sort((a, b) => (
+        (a.last_name + ' ' + a.first_name).localeCompare(b.last_name + ' ' + b.first_name)
+      ))
+  }, [students.students, query])
 
   const transferClasses = useMemo(() => (
     selectedClass === null
@@ -98,21 +112,6 @@ export function AdminStudentsPage() {
       : await students.updateStudent(editing.id, input)
     if (!saved && students.mutationError) setError(students.mutationError)
     return saved
-  }
-
-  const deactivate = async (student: Student) => {
-    if (effectiveClassId === null) return
-    if (!window.confirm(t(TRANSLATION_KEYS.admin.confirmDeactivateStudent) + ': ' + student.first_name + ' ' + student.last_name + '?')) return
-    setBusy(student.id)
-    setError(null)
-    try {
-      await studentsApi.deactivate(effectiveClassId, student.id)
-      await students.reload()
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t(TRANSLATION_KEYS.system.genericError))
-    } finally {
-      setBusy(null)
-    }
   }
 
   const openTransfer = (student: Student) => {
@@ -161,44 +160,41 @@ export function AdminStudentsPage() {
           searchValue={query}
           onSearchChange={setQuery}
         >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label={t(TRANSLATION_KEYS.admin.selectStudentClass)}>
-              {({ id, ...aria }) => (
-                <Select
-                  id={id}
-                  {...aria}
-                  value={effectiveClassId ? String(effectiveClassId) : ''}
-                  onChange={(event) => {
-                    const nextId = Number(event.target.value) || null
-                    setSelectedClassId(nextId)
-                    const nextParams = new URLSearchParams(searchParams)
-                    if (nextId === null) nextParams.delete('class_id')
-                    else nextParams.set('class_id', String(nextId))
-                    setSearchParams(nextParams, { replace: true })
-                  }}
-                >
-                  <option value="">{t(TRANSLATION_KEYS.admin.selectStudentClass)}</option>
-                  {activeClasses.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.academic_year_name}</option>)}
-                </Select>
-              )}
-            </FormField>
-            <FormField label={t(TRANSLATION_KEYS.admin.sort)}>
-              {({ id, ...aria }) => <Select id={id} {...aria} value={sort} onChange={(event) => setSort(event.target.value as typeof sort)}>
-                <option value="name">{t(TRANSLATION_KEYS.admin.sortName)}</option>
-                <option value="student_number">{t(TRANSLATION_KEYS.teacher.studentNumber)}</option>
-                <option value="status">{t(TRANSLATION_KEYS.admin.sortStatus)}</option>
-              </Select>}
-            </FormField>
-            <FormField label={t(TRANSLATION_KEYS.admin.status)}>
-              {({ id, ...aria }) => (
-                <Select id={id} {...aria} value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}>
-                  <option value="all">{t(TRANSLATION_KEYS.admin.allStatuses)}</option>
-                  <option value="active">{t(TRANSLATION_KEYS.admin.activeOnly)}</option>
-                  <option value="inactive">{t(TRANSLATION_KEYS.admin.inactiveOnly)}</option>
-                </Select>
-              )}
-            </FormField>
-          </div>
+          <FormField label={t(TRANSLATION_KEYS.admin.selectStudentClass)}>
+            {({ id, ...aria }) => (
+              <Select
+                id={id}
+                {...aria}
+                value={effectiveClassId ? String(effectiveClassId) : ''}
+                onChange={(event) => {
+                  const nextId = Number(event.target.value) || null
+                  setSelectedClassId(nextId)
+                  const nextParams = new URLSearchParams(searchParams)
+                  if (nextId === null) nextParams.delete('class_id')
+                  else nextParams.set('class_id', String(nextId))
+                  setSearchParams(nextParams, { replace: true })
+                }}
+              >
+                <option value="">{t(TRANSLATION_KEYS.admin.selectStudentClass)}</option>
+                {(['TC', '1BAC', '2BAC'] as const).map((group) => (
+                  classGroups[group].length > 0 && (
+                    <optgroup key={group} label={group}>
+                      {classGroups[group].map((item) => (
+                        <option key={item.id} value={item.id}>{item.name} · {item.academic_year_name}</option>
+                      ))}
+                    </optgroup>
+                  )
+                ))}
+                {classGroups.other.length > 0 && (
+                  <optgroup label={t(TRANSLATION_KEYS.admin.level)}>
+                    {classGroups.other.map((item) => (
+                      <option key={item.id} value={item.id}>{item.name} · {item.academic_year_name}</option>
+                    ))}
+                  </optgroup>
+                )}
+              </Select>
+            )}
+          </FormField>
         </AdminWorkspaceToolbar>
 
         {selectedClass ? (
@@ -214,7 +210,7 @@ export function AdminStudentsPage() {
               </div>
               <div>
                 <p className="sams-section-label">{t(TRANSLATION_KEYS.admin.students)}</p>
-                <p className="mt-1 font-semibold">{students.students.filter((student) => student.status === 'active').length}</p>
+                <p className="mt-1 font-semibold">{students.students.length}</p>
               </div>
             </div>
 
@@ -238,7 +234,6 @@ export function AdminStudentsPage() {
                     t(TRANSLATION_KEYS.admin.fullName),
                     t(TRANSLATION_KEYS.teacher.massarCode),
                     t(TRANSLATION_KEYS.teacher.birthDate),
-                    t(TRANSLATION_KEYS.admin.status),
                     t(TRANSLATION_KEYS.admin.actions),
                   ]}
                 >
@@ -248,12 +243,10 @@ export function AdminStudentsPage() {
                       <td className="px-3 py-3 font-medium">{student.first_name} {student.last_name}</td>
                       <td className="px-3 py-3">{student.massar_code ?? '—'}</td>
                       <td className="px-3 py-3">{student.birth_date ? formatDate(student.birth_date) : '—'}</td>
-                      <td className="px-3 py-3"><Badge variant={student.status === 'active' ? 'success' : 'neutral'}>{student.status === 'active' ? t(TRANSLATION_KEYS.admin.active) : t(TRANSLATION_KEYS.admin.inactive)}</Badge></td>
                       <td className="px-3 py-3">
                         <div className="flex flex-wrap gap-2">
-                          {student.status === 'active' && <Button type="button" size="sm" variant="secondary" disabled={busy !== null} onClick={() => openEdit(student)}>{t(TRANSLATION_KEYS.admin.edit)}</Button>}
-                          {student.status === 'active' && <Button type="button" size="sm" variant="secondary" disabled={busy !== null} onClick={() => openTransfer(student)}>{t(TRANSLATION_KEYS.admin.transferStudent)}</Button>}
-                          {student.status === 'active' && <Button type="button" size="sm" disabled={busy !== null && busy !== student.id} onClick={() => void deactivate(student)}>{t(TRANSLATION_KEYS.admin.deactivate)}</Button>}
+                          <Button type="button" size="sm" variant="secondary" disabled={busy !== null} onClick={() => openEdit(student)}>{t(TRANSLATION_KEYS.admin.edit)}</Button>
+                          <Button type="button" size="sm" variant="secondary" disabled={busy !== null || transferClasses.length === 0} onClick={() => openTransfer(student)}>{t(TRANSLATION_KEYS.admin.transferStudent)}</Button>
                         </div>
                       </td>
                     </tr>
@@ -289,7 +282,7 @@ export function AdminStudentsPage() {
             {({ id, ...aria }) => (
               <Select id={id} {...aria} value={targetClassId} onChange={(event) => setTargetClassId(event.target.value)}>
                 <option value="">{t(TRANSLATION_KEYS.admin.targetClass)}</option>
-                {transferClasses.map((item: AdminClass) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                {transferClasses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
               </Select>
             )}
           </FormField>
@@ -306,3 +299,4 @@ export function AdminStudentsPage() {
     </>
   )
 }
+

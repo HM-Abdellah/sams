@@ -64,10 +64,15 @@ if ($relativePath !== '' && !str_contains($relativePath, "\0")) {
             'woff2' => 'font/woff2',
         ];
         header('Content-Type: ' . ($contentTypes[$extension] ?? 'application/octet-stream'));
+        if ($extension === 'html') {
+            header('Cache-Control: no-store, max-age=0');
+        }
         readfile($candidate);
         return;
     }
 }
 
 header('Content-Type: text/html; charset=UTF-8');
+header('Cache-Control: no-store, max-age=0');
 readfile($frontendRoot . '/index.html');
+

@@ -110,13 +110,17 @@ final class Auth
             return null;
         }
 
+        (new UserRepository())->touchPresence((int)$user['id']);
+
         return [
             'id' => (int)$user['id'],
             'school_id' => isset($user['school_id']) ? (int)$user['school_id'] : null,
+            'username' => (string)$user['username'],
             'employee_id' => (string)($user['employee_id'] ?? $user['username'] ?? ''),
             'full_name' => (string)$user['full_name'],
             'role' => (string)$user['role'],
             'account_status' => (string)($user['account_status'] ?? ($user['is_active'] ? 'active' : 'deactivated')),
+            'avatar_url' => !empty($user['avatar_path']) ? '/api/v1/profile/avatar' : null,
         ];
     }
 
@@ -147,3 +151,4 @@ final class Auth
 
     private function __construct() {}
 }
+

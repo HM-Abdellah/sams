@@ -204,6 +204,11 @@ cd C:\xampp\htdocs\sams
 C:\xampp\php\php.exe scripts\create_admin.php
 ```
 
+The bootstrap is CLI-only. It collects the first administrator's name,
+username, and password, creates a school only when no active school exists,
+and refuses to create a second administrator for a school. Passwords are
+never supplied as command-line arguments.
+
 10. Open:
 
 ```text
@@ -405,3 +410,13 @@ PWA / offline attendance synchronization is **not** part of the current release 
 **SAMS — school attendance, engineered around the real workflow.**
 
 </div>
+### First-time web setup
+
+Fresh installations can use the /setup page for the one-time browser bootstrap. Configure a strong SAMS_SETUP_KEY environment secret on the server before enabling this route. The setup creates exactly one first school and one administrator inside a transaction, then locks itself once initialization is detected.
+
+For self-hosted installations where browser setup is not appropriate, the existing CLI bootstrap remains available:
+
+php scripts/create_admin.php
+
+The web setup never lets the visitor choose a role. The account is always created as the first administrator; teacher accounts continue through school onboarding and administrator approval.
+

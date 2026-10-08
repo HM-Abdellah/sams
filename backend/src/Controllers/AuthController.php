@@ -12,16 +12,22 @@ use SAMS\Http\Request;
 use SAMS\Http\Response;
 use SAMS\Repositories\AuditLogRepository;
 use SAMS\Services\AuthService;
-use SAMS\Services\LoginCodeService;
 
 final class AuthController
 {
     public function validateLogin(array $input): array
     {
-        $samsCode = LoginCodeService::normalize((string)($input['sams_code'] ?? ''));
+        $identifier = trim((string)($input['identifier'] ?? $input['sams_code'] ?? $input['username'] ?? ''));
         $password = (string)($input['password'] ?? '');
-        if ($password === '') throw new \InvalidArgumentException('Password is required.');
-        return ['sams_code' => $samsCode, 'password' => $password];
+
+        if ($identifier === '' || mb_strlen($identifier) > 50) {
+            throw new \InvalidArgumentException('Invalid credentials.');
+        }
+        if ($password === '') {
+            throw new \InvalidArgumentException('Password is required.');
+        }
+
+        return ['identifier' => $identifier, 'password' => $password];
     }
 
     public function __invoke(Request $request, array $params = []): Response
@@ -88,14 +94,40 @@ final class AuthController
         $maxAttempts = max(1, (int)($config['login_max_attempts'] ?? 5));
 
         try {
-            $user = (new AuthService())->authenticateBySamsCode(
-                $input['sams_code'],
-                $input['password'],
-                $lockMinutes,
-                $maxAttempts
-            );
+            $service = new AuthService();
+            $identifier = $input['identifier'];
+
+            // Admin accounts use their username. Teacher/counselor accounts use
+            // the fixed SAMS Code issued by the server. The backend decides which
+            // authentication path applies; the browser never chooses a role.
+            $user = preg_match('/^[ATC][0-9]{6}$/i', $identifier) === 1
+                ? $service->authenticateBySamsCode(
+                    $identifier,
+                    $input['password'],
+                    $lockMinutes,
+                    $maxAttempts
+                )
+                : $service->authenticate(
+                    $identifier,
+                    $input['password'],
+                    $lockMinutes,
+                    $maxAttempts
+                );
         } catch (RuntimeException $e) {
-            $status = str_contains($e->getMessage(), 'temporarily locked') ? 429 : 401;
+            $message = $e->getMessage();
+            $isAuthenticationFailure = $message === 'Invalid credentials.'
+                || $message === 'Account temporarily locked.';
+
+            if (!$isAuthenticationFailure) {
+                error_log('[SAMS auth] ' . $message);
+
+                return Response::json([
+                    'success' => false,
+                    'error' => 'Authentication service temporarily unavailable.',
+                ], 503);
+            }
+
+            $status = $message === 'Account temporarily locked.' ? 429 : 401;
 
             try {
                 (new AuditLogRepository())->record(
@@ -149,3 +181,4 @@ final class AuthController
         return null;
     }
 }
+
