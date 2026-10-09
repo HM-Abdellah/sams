@@ -4,7 +4,8 @@ import { onboardingApi, type OnboardingStatusData } from '../../features/onboard
 import { ApiError } from '../../services/api/errors.ts'
 import { useI18n } from '../../features/i18n/useI18n.ts'
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
-import { Button, FormField, Input, LanguageSelect, Loading, StatusMessage } from '../../components/ui/index.ts'
+import { Button, FormField, Input, Loading, StatusMessage } from '../../components/ui/index.ts'
+import { AuthPublicShell } from '../../components/ui/AuthPublicShell.tsx'
 
 const labels = {
   pending: TRANSLATION_KEYS.onboarding.pending,
@@ -21,23 +22,33 @@ const descriptions = {
 } as const
 
 export function OnboardingStatusPage() {
-  const location = useLocation(); const navigate = useNavigate(); const { t } = useI18n()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { t } = useI18n()
+
   const stateToken = typeof location.state === 'object' && location.state !== null
     && 'requestToken' in location.state && typeof location.state.requestToken === 'string'
     ? location.state.requestToken.trim()
     : ''
   const queryToken = new URLSearchParams(location.search).get('request_token')?.trim() ?? ''
   const initialToken = stateToken || queryToken
+
   const [token, setToken] = useState(initialToken)
   const [data, setData] = useState<OnboardingStatusData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(initialToken !== '')
 
   const load = useCallback(async (requestToken: string) => {
-    setError(null); setLoading(true)
-    try { setData(await onboardingApi.status(requestToken)) }
-    catch (cause) { setData(null); setError(cause instanceof ApiError ? cause.message : t(TRANSLATION_KEYS.system.genericError)) }
-    finally { setLoading(false) }
+    setError(null)
+    setLoading(true)
+    try {
+      setData(await onboardingApi.status(requestToken))
+    } catch (cause) {
+      setData(null)
+      setError(cause instanceof ApiError ? cause.message : t(TRANSLATION_KEYS.system.genericError))
+    } finally {
+      setLoading(false)
+    }
   }, [t])
 
   useEffect(() => {
@@ -55,21 +66,78 @@ export function OnboardingStatusPage() {
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-[var(--sams-background)] p-6 text-[var(--sams-text)]"><section className="w-full max-w-md rounded-xl border border-[var(--sams-border)] bg-[var(--sams-surface)] p-6 shadow-sm">
-      <div className="flex items-center justify-between gap-3"><p className="text-sm font-medium text-[var(--sams-muted)]">SAMS</p><LanguageSelect /></div>
-      <h1 className="mt-1 text-2xl font-semibold">{t(TRANSLATION_KEYS.onboarding.statusTitle)}</h1>
-      <form className="mt-6 flex gap-2" onSubmit={(e) => { e.preventDefault(); updateToken() }}><div className="min-w-0 flex-1"><FormField label={t(TRANSLATION_KEYS.onboarding.requestToken)}>{({ id, ...aria }) => <Input id={id} {...aria} value={token} onChange={(e) => setToken(e.target.value)} autoComplete="off" required />}</FormField></div><Button type="submit" className="mt-6">{t(TRANSLATION_KEYS.onboarding.checkStatus)}</Button></form>
-      {initialToken === '' && <StatusMessage className="mt-4" variant="info">{t(TRANSLATION_KEYS.onboarding.missingToken)}</StatusMessage>}
-      {loading && <div className="mt-6"><Loading label={t(TRANSLATION_KEYS.auth.loading)} /></div>}
-      {error && <div className="mt-6"><StatusMessage variant="danger">{error}</StatusMessage></div>}
-      {data && !loading && <div className="mt-6 space-y-4">
-        <StatusMessage variant={data.status === 'approved' ? 'success' : data.status === 'pending' ? 'warning' : 'danger'} title={t(labels[data.status])}>{t(descriptions[data.status])}</StatusMessage>
-        <p className="text-sm text-[var(--sams-muted)]">{data.activated ? t(TRANSLATION_KEYS.onboarding.activated) : t(TRANSLATION_KEYS.onboarding.notActivated)}</p>
-        {data.status === 'approved' && !data.activated && <Button type="button" className="w-full" onClick={() => navigate('/onboarding/activate', { state: { requestToken: token } })}>{t(TRANSLATION_KEYS.onboarding.activateTitle)}</Button>}
-        {data.activated && <Button type="button" className="w-full" onClick={() => navigate('/login')}>{t(TRANSLATION_KEYS.onboarding.goToLogin)}</Button>}
-        {data.status !== 'rejected' && data.status !== 'expired' && <Button type="button" variant="secondary" className="w-full" loading={loading} onClick={() => void load(token.trim())}>{t(TRANSLATION_KEYS.onboarding.refreshStatus)}</Button>}
-      </div>}
-      <Button type="button" variant="ghost" className="mt-4 w-full" onClick={() => navigate('/onboarding')}>{t(TRANSLATION_KEYS.onboarding.backToRequest)}</Button>
-    </section></main>
+    <AuthPublicShell
+      title={t(TRANSLATION_KEYS.onboarding.statusTitle)}
+      description={t(TRANSLATION_KEYS.onboarding.hint)}
+    >
+      <form className="flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={(event) => { event.preventDefault(); updateToken() }}>
+        <div className="min-w-0 flex-1">
+          <FormField label={t(TRANSLATION_KEYS.onboarding.requestToken)}>
+            {({ id, ...aria }) => (
+              <Input id={id} {...aria} value={token} onChange={(event) => setToken(event.target.value)} autoComplete="off" required />
+            )}
+          </FormField>
+        </div>
+        <Button type="submit" className="sm:mb-0.5 !bg-[#1477ad] !text-white hover:!bg-[#0d628f]">
+          {t(TRANSLATION_KEYS.onboarding.checkStatus)}
+        </Button>
+      </form>
+
+      {initialToken === '' && (
+        <StatusMessage className="mt-4" variant="info">
+          {t(TRANSLATION_KEYS.onboarding.missingToken)}
+        </StatusMessage>
+      )}
+
+      {loading && (
+        <div className="mt-6">
+          <Loading label={t(TRANSLATION_KEYS.auth.loading)} />
+        </div>
+      )}
+
+      {error && (
+        <div className="mt-6">
+          <StatusMessage variant="danger">{error}</StatusMessage>
+        </div>
+      )}
+
+      {data && !loading && (
+        <div className="mt-6 space-y-4">
+          <StatusMessage
+            variant={data.status === 'approved' ? 'success' : data.status === 'pending' ? 'warning' : 'danger'}
+            title={t(labels[data.status])}
+          >
+            {t(descriptions[data.status])}
+          </StatusMessage>
+
+          <p className="text-sm text-[var(--sams-muted)]">
+            {data.activated ? t(TRANSLATION_KEYS.onboarding.activated) : t(TRANSLATION_KEYS.onboarding.notActivated)}
+          </p>
+
+          {data.status === 'approved' && !data.activated && (
+            <Button type="button" className="w-full !bg-[#1477ad] !text-white hover:!bg-[#0d628f]" onClick={() => navigate('/onboarding/activate', { state: { requestToken: token } })}>
+              {t(TRANSLATION_KEYS.onboarding.activateTitle)}
+            </Button>
+          )}
+
+          {data.activated && (
+            <Button type="button" className="w-full !bg-[#1477ad] !text-white hover:!bg-[#0d628f]" onClick={() => navigate('/login')}>
+              {t(TRANSLATION_KEYS.onboarding.goToLogin)}
+            </Button>
+          )}
+
+          {data.status !== 'rejected' && data.status !== 'expired' && (
+            <Button type="button" variant="secondary" className="w-full" loading={loading} onClick={() => void load(token.trim())}>
+              {t(TRANSLATION_KEYS.onboarding.refreshStatus)}
+            </Button>
+          )}
+        </div>
+      )}
+
+      <Button type="button" variant="ghost" className="mt-4 w-full" onClick={() => navigate('/onboarding')}>
+        {t(TRANSLATION_KEYS.onboarding.backToRequest)}
+      </Button>
+    </AuthPublicShell>
   )
 }
+

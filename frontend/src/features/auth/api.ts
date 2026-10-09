@@ -2,7 +2,7 @@ import { apiClient } from '../../services/api/client.ts'
 import type { AuthSessionData, LoginData } from '../../services/api/types.ts'
 
 export interface LoginInput {
-  sams_code: string
+  identifier: string
   password: string
 }
 
@@ -24,3 +24,4 @@ export const authApi = {
     return apiClient.request<null>('/auth/logout', { method: 'POST' })
   },
 }
+

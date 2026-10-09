@@ -23,7 +23,7 @@ Keep the database and the web application on the same trusted server unless ther
 2. Enable Apache `mod_rewrite` and `mod_headers`, and allow `.htaccess` overrides for the SAMS directory (`AllowOverride All`).
 3. Start Apache and MySQL/MariaDB.
 4. Create the SAMS database by importing `database/schema.sql` only for a fresh installation with no existing SAMS data.
-5. For an existing installation, back up the database and apply the documented migrations in `database/MIGRATIONS.md` instead of rebuilding the schema.
+5. For an existing installation, back up the database and apply the supported in-place migrations in `database/MIGRATIONS.md` in the documented order instead of rebuilding the schema.
 6. Import `database/seed.sql` only for development/demo environments.
 7. Copy `backend/config/app.example.php` to `backend/config/app.php` and set `environment=production`, `debug=false`, the production base path, and the required session/login settings.
 8. Copy `backend/config/database.example.php` to `backend/config/database.php`.
@@ -42,6 +42,18 @@ Keep the database and the web application on the same trusted server unless ther
 
 12. Create the first administrator with:
    C:\xampp\php\php.exe scripts\create_admin.php
+
+   The bootstrap is CLI-only and asks for the school (when needed), administrator
+   name, username, and password. It refuses to create a second administrator
+   for a school. Passwords are never passed as command-line arguments.
+
+   For non-interactive deployment, use the same script with explicit non-secret
+   identity options and read the password from STDIN:
+   C:\xampp\php\php.exe scripts\create_admin.php --school-id=1 --username=admin --full-name="School Administrator" --password-stdin
+
+   The bootstrap creates a school only when no active school exists. After this
+   first administrator is created, all other user lifecycle operations are
+   performed from the authenticated administrator workspace.
 13. Open the application entry point:
    http://server-name-or-ip/sams/
 
@@ -59,9 +71,9 @@ Then open:
 
 This is for development/testing. The router serves the React production bundle and routes /api/v1/* to the PHP backend. It is not a replacement for the intended Apache deployment.
 
-### CS50.dev clean demo setup
+### Clean demo setup
 
-For a clean local/demo database in CS50.dev:
+For a clean local/demo database in VScode:
 
     cp backend/config/database.example.php backend/config/database.php
     sudo service mariadb start
@@ -105,7 +117,7 @@ For a release deployment:
 
 1. Back up the current database.
 2. Review `database/MIGRATIONS.md` and confirm the database is at the supported release baseline.
-3. Apply only the migration(s) documented for that baseline; for this release, that is `005_school_import_staging.sql`.
+3. Apply the current release migrations in the documented order: 005, 006, 007, 008, then 009. Do not skip or reorder migrations.
 4. Run the integration test suite against the target schema where possible.
 5. Verify the application with a read-only smoke test before opening teacher access.
 
@@ -173,6 +185,8 @@ Browser verification:
     npm ci --no-audit --no-fund
     npm run test:e2e
 
+The release CI also rehearses the supported in-place migration sequence 005 → 006 → 007 → 008 → 009 on one isolated database, runs backup/restore regression, validates production configuration fail-closed behavior, and checks Apache from both loopback and the server/container network address. These checks are deployment-topology verification; a real school-LAN acceptance still needs to be performed on the target server before first operational use.
+
 The database-dependent tests expect `SAMS_TEST_DB_HOST`, `SAMS_TEST_DB_PORT`, `SAMS_TEST_DB_NAME`, `SAMS_TEST_DB_USER`, and `SAMS_TEST_DB_PASS` for the isolated test database. CI supplies these values and also runs the clean-school acceptance gate.
 
 ## Demo / presentation data
@@ -184,3 +198,14 @@ For local/manual demo setup, use:
     php scripts/seed_demo.php
 
 This creates only clearly labeled demo users/classes/students and must never be used against a real school database.
+
+## First-time web setup
+
+For an online/browser deployment, configure a strong SAMS_SETUP_KEY environment secret on the server before exposing /setup. The page is available only while the installation has no schools and no administrator, requires the setup key and CSRF protection, creates the first school and administrator in one transaction, and then becomes permanently unavailable for that installation.
+
+For self-hosted deployments where browser setup is not appropriate, the supported CLI fallback remains:
+
+php scripts/create_admin.php
+
+Never put SAMS_SETUP_KEY or any administrator password in source control, URLs, client-side configuration, or logs.
+

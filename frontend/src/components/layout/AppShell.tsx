@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { useSession } from '../../features/auth/useSession.ts'
 import {
   navigationForRole,
@@ -11,6 +11,7 @@ import { onAttendancePendingWork } from '../../features/attendance/pendingWork.t
 import { LanguageSelect } from '../ui/LanguageSelect.tsx'
 import { useI18n } from '../../features/i18n/useI18n.ts'
 import { TRANSLATION_KEYS, type TranslationKey } from '../../features/i18n/types.ts'
+import { profileAvatarUrl } from '../../features/profile/avatar.ts'
 
 function initials(name: string) {
   return name
@@ -89,8 +90,8 @@ function NavigationLink({
         'group relative flex min-h-10 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-[background-color,color,transform] duration-150',
         'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--sams-info-surface)]',
         isActive
-          ? 'bg-[var(--sams-action-soft)] text-[var(--sams-text)] shadow-[inset_3px_0_0_var(--sams-focus)]'
-          : 'text-[var(--sams-muted)] hover:bg-[var(--sams-muted-surface)] hover:text-[var(--sams-text)]',
+          ? 'bg-[var(--sams-brand-surface)] text-[var(--sams-brand-navy)] shadow-[inset_3px_0_0_var(--sams-brand-primary)]'
+          : 'text-[var(--sams-muted)] hover:bg-[var(--sams-brand-surface)] hover:text-[var(--sams-brand-navy)]',
       ].join(' ')}
     >
       {navIcon(link.path)}
@@ -187,10 +188,17 @@ export function AppShell() {
   if (session.user === null) return null
 
   const workspaceLabel = roleWorkspaceLabel(session.user.role, t)
+  const isAdminWorkspace = session.user.role === 'admin'
 
   return (
-    <div className="sams-app-bg min-h-screen">
-      <header className="sticky top-0 z-30 min-h-[var(--sams-app-header-height)] border-b border-[var(--sams-border)] bg-[color-mix(in_srgb,var(--sams-surface)_94%,transparent)] backdrop-blur-xl">
+    <div className={[
+      'sams-app-bg min-h-screen',
+      isAdminWorkspace ? 'sams-admin-app-bg' : '',
+    ].join(' ')}>
+      <header className={[
+        'sticky top-0 z-30 min-h-[var(--sams-app-header-height)] border-b border-[var(--sams-border)] bg-[color-mix(in_srgb,var(--sams-surface)_94%,transparent)] backdrop-blur-xl',
+        isAdminWorkspace ? 'sams-admin-app-header' : '',
+      ].join(' ')}>
         <div className="mx-auto flex min-h-[var(--sams-app-header-height)] max-w-[var(--sams-app-shell-max)] items-center justify-between gap-3 px-[var(--sams-page-gutter)]">
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <Button
@@ -207,8 +215,10 @@ export function AppShell() {
                 <path d="M3 5h14M3 10h14M3 15h14" />
               </svg>
             </Button>
-            <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--sams-action)] text-sm font-bold text-white shadow-sm">
-              SA
+            <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-[linear-gradient(135deg,var(--sams-brand-navy),var(--sams-brand-primary)_62%,var(--sams-brand-teal))] p-1 shadow-[0_7px_18px_rgba(18,59,115,0.16)]">
+              <div className="grid size-full place-items-center rounded-[0.65rem] bg-white/95">
+                <img src={`${import.meta.env.BASE_URL}assets/brand/sams-logo.svg`} alt="" className="size-7 object-contain" />
+              </div>
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold tracking-tight text-[var(--sams-text)]">SAMS</p>
@@ -217,6 +227,18 @@ export function AppShell() {
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
+            <Link
+              to="/app/settings"
+              aria-label={t(TRANSLATION_KEYS.settings.title)}
+              title={t(TRANSLATION_KEYS.settings.title)}
+              className="sams-interactive-target inline-flex min-h-10 items-center gap-2 rounded-[var(--sams-radius-control)] border border-[var(--sams-border)] bg-[var(--sams-surface)] px-2.5 text-sm font-medium text-[var(--sams-text)] shadow-sm hover:border-[var(--sams-brand-border)] hover:bg-[var(--sams-brand-surface)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--sams-info-surface)]"
+            >
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true" className="size-4">
+                <circle cx="10" cy="10" r="2.5" />
+                <path d="M10 2.8v2M10 15.2v2M17.2 10h-2M4.8 10h-2M15.1 4.9l-1.4 1.4M6.3 13.7l-1.4 1.4M15.1 15.1l-1.4-1.4M6.3 6.3 4.9 4.9" />
+              </svg>
+              <span className="hidden sm:inline">{t(TRANSLATION_KEYS.settings.title)}</span>
+            </Link>
             <LanguageSelect />
             <Button
               type="button"
@@ -241,19 +263,30 @@ export function AppShell() {
       </header>
 
       <div className="mx-auto grid max-w-[var(--sams-app-shell-max)] lg:grid-cols-[var(--sams-app-sidebar-width)_minmax(0,1fr)]">
-        <aside className="hidden min-w-0 flex-col border-e border-[var(--sams-border)] bg-[color-mix(in_srgb,var(--sams-surface)_88%,transparent)] lg:sticky lg:top-[var(--sams-app-header-height)] lg:flex lg:h-[calc(100dvh-var(--sams-app-header-height))]">
+        <aside className={[
+          'hidden min-w-0 flex-col border-e border-[var(--sams-border)] bg-[color-mix(in_srgb,var(--sams-surface)_88%,transparent)] lg:sticky lg:top-[var(--sams-app-header-height)] lg:flex lg:h-[calc(100dvh-var(--sams-app-header-height))]',
+          isAdminWorkspace ? 'sams-admin-app-sidebar' : '',
+        ].join(' ')}>
           <div className="shrink-0 border-b border-[var(--sams-border)] p-4">
-            <div className="rounded-[var(--sams-radius-elevated)] border border-[var(--sams-border)] bg-[var(--sams-surface)] p-3.5 shadow-[0_6px_18px_rgba(22,32,51,0.035)]">
+            <Link
+              to="/app/settings"
+              className="group block rounded-[var(--sams-radius-elevated)] border border-[var(--sams-border)] bg-[var(--sams-surface)] p-3.5 shadow-[0_6px_18px_rgba(22,32,51,0.035)] transition-[background-color,border-color,box-shadow] duration-150 hover:border-[var(--sams-brand-border)] hover:bg-[var(--sams-brand-surface)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--sams-info-surface)]"
+            >
               <div className="flex items-center gap-3">
-                <div className="grid size-9 shrink-0 place-items-center rounded-full bg-[var(--sams-action-soft)] text-xs font-bold text-[var(--sams-action)]">
-                  {initials(session.user.full_name)}
+                <div className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-[var(--sams-action-soft)] text-xs font-bold text-[var(--sams-action)]">
+                  {profileAvatarUrl(session.user.avatar_url) ? (
+                    <img src={profileAvatarUrl(session.user.avatar_url)!} alt="" className="size-full object-cover" />
+                  ) : (
+                    initials(session.user.full_name)
+                  )}
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold">{session.user.full_name}</p>
                   <p className="truncate text-xs text-[var(--sams-muted)]">{workspaceLabel}</p>
                 </div>
+                <span aria-hidden="true" className="text-sm text-[var(--sams-muted)] transition-transform duration-150 group-hover:translate-x-0.5">→</span>
               </div>
-            </div>
+            </Link>
           </div>
 
           <nav
@@ -268,7 +301,10 @@ export function AppShell() {
           </nav>
         </aside>
 
-        <main className="min-w-0 w-full max-w-[var(--sams-content-max)] px-[var(--sams-page-gutter)] py-6 sm:py-8">
+        <main className={[
+          'min-w-0 w-full max-w-[var(--sams-content-max)] px-[var(--sams-page-gutter)] py-6 sm:py-8',
+          isAdminWorkspace ? 'sams-admin-app-main' : '',
+        ].join(' ')}>
           <Outlet />
         </main>
       </div>

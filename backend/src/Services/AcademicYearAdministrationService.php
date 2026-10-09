@@ -83,6 +83,62 @@ final class AcademicYearAdministrationService
         }
     }
 
+    public function delete(
+        int $adminId,
+        int $yearId,
+        ?int $schoolId = null
+    ): void {
+        $this->assertAdminId($adminId);
+        $schoolId = $this->requireSchoolId($schoolId);
+        if ($yearId < 1) {
+            throw new \InvalidArgumentException('Invalid academic year.');
+        }
+
+        $pdo = Database::connection();
+        $pdo->beginTransaction();
+
+        try {
+            $target = $this->repository->findForUpdate($yearId, $schoolId);
+            if ($target === null) {
+                throw new AdministrationException('Academic year not found.', 404);
+            }
+
+            if ((int)$target['is_active'] === 1) {
+                throw new AdministrationException('Deactivate the academic year before deleting it.', 409);
+            }
+
+            $dependencies = $this->repository->dependencyCounts($yearId, $schoolId);
+            if ($dependencies['classes'] > 0 || $dependencies['imports'] > 0) {
+                throw new AdministrationException(
+                    sprintf(
+                        'Academic year cannot be deleted because it is linked to %d class(es) and %d import batch(es).',
+                        $dependencies['classes'],
+                        $dependencies['imports']
+                    ),
+                    409
+                );
+            }
+
+            $this->repository->delete($yearId, $schoolId);
+
+            $this->audit->record(
+                $adminId,
+                'academic_year.delete',
+                'academic_year',
+                $yearId,
+                ['name' => (string)$target['name']]
+            );
+
+            $pdo->commit();
+        } catch (AdministrationException $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        }
+    }
+
     public function activate(
         int $adminId,
         int $yearId,
@@ -160,3 +216,4 @@ final class AcademicYearAdministrationService
         return $schoolId;
     }
 }
+

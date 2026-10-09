@@ -37,8 +37,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const login = useCallback(async (samsCode: string, password: string) => {
-    const result = await authApi.login({ sams_code: samsCode, password })
+  const login = useCallback(async (identifier: string, password: string) => {
+    const result = await authApi.login({ identifier, password })
     setState(stateFromUser(result.user))
     return result.user
   }, [])
@@ -60,6 +60,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     void refresh()
   }, [refresh])
 
+  useEffect(() => {
+    if (state.status !== 'authenticated') return undefined
+
+    const intervalId = window.setInterval(() => {
+      void refresh()
+    }, 45_000)
+
+    return () => window.clearInterval(intervalId)
+  }, [refresh, state.status])
+
   const value = useMemo<SessionContextValue>(
     () => ({ ...state, refresh, login, logout }),
     [state, refresh, login, logout],
@@ -67,3 +77,4 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   return <SessionContext value={value}>{children}</SessionContext>
 }
+

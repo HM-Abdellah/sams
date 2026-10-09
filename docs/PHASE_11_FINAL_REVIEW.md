@@ -50,13 +50,15 @@ Subsequent release verification also exposed additional correctness/reliability 
 
 The final review corrected the supported release behavior without redesigning the domain.
 
-### Migration contract
+### Migration contract (Phase 11 snapshot)
 
-- Fresh installation uses the complete current `database/schema.sql`.
-- The supported in-place upgrade for this release starts from `main` commit `4daaeb492923a7cdfb909b13c72ae39fb63d0e48`.
-- Only `005_school_import_staging.sql` is applied from that baseline.
-- Older migration files remain historical artifacts and are not presented as a current linear sequence.
-- Schemas older than the supported baseline remain outside the verified automated upgrade path.
+This section records the migration contract that was valid when Phase 11 was closed. It is retained for historical traceability and is not the current release deployment instruction.
+
+- Fresh installation uses the complete `database/schema.sql` for the release available at that time.
+- The Phase 11 supported in-place upgrade started from `main` commit `4daaeb492923a7cdfb909b13c72ae39fb63d0e48`.
+- At Phase 11 close, only `005_school_import_staging.sql` was part of the then-current upgrade path.
+- Later release work added further verified migrations.
+- The current production migration contract is maintained in `database/MIGRATIONS.md`; do not use this Phase 11 snapshot as the current deployment sequence.
 - CI migration verification is pinned to the exact release baseline.
 
 ### Final release hardening

@@ -16,6 +16,7 @@ const router = createBrowserRouter([
     errorElement: <RouteErrorPage />,
     element: <PublicOnlyRoute />,
     children: [
+      { path: '/setup', lazy: () => import('../pages/setup/SetupPage.tsx').then((module) => ({ Component: module.SetupPage })) },
       { path: '/login', lazy: () => import('../pages/auth/LoginPage.tsx').then((module) => ({ Component: module.LoginPage })) },
       { path: '/onboarding', lazy: () => import('../pages/onboarding/OnboardingPage.tsx').then((module) => ({ Component: module.OnboardingPage })) },
       { path: '/onboarding/status', lazy: () => import('../pages/onboarding/OnboardingStatusPage.tsx').then((module) => ({ Component: module.OnboardingStatusPage })) },
@@ -31,6 +32,7 @@ const router = createBrowserRouter([
         element: <AppShell />,
         children: [
           { path: '/app', lazy: () => import('../pages/app/WorkspaceLandingPage.tsx').then((module) => ({ Component: module.WorkspaceLandingPage })) },
+          { path: '/app/settings', lazy: () => import('../pages/app/SettingsPage.tsx').then((module) => ({ Component: module.SettingsPage })) },
           {
             element: <RoleRoute roles={['teacher']} />,
             children: [
@@ -76,3 +78,4 @@ const router = createBrowserRouter([
 export function AppRouter() {
   return <RouterProvider router={router} />
 }
+

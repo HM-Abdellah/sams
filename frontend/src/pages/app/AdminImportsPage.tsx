@@ -81,6 +81,13 @@ const matchText = (row: ImportRow, t: (key: TranslationKey) => string) => {
   return t(TRANSLATION_KEYS.admin.importNotChecked)
 }
 
+function formatBytes(value: number | string): string {
+  const bytes = asNumber(value)
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+}
+
 export function AdminImportsPage() {
   const { t } = useI18n()
   const yearsLoad = useCallback(() => adminApi.academicYears(), [])
@@ -109,16 +116,27 @@ export function AdminImportsPage() {
       setError(cause instanceof Error ? cause.message : t(TRANSLATION_KEYS.system.genericError))
     }
   }
+
+  const selectFile = (next: File | null) => {
+    setError(null)
+    setFile(next)
+  }
+
   const upload = async () => {
     if (!file) return
-    setBusy('upload'); setError(null)
+    setBusy('upload')
+    setError(null)
     try {
       const result = await adminApi.uploadSchoolImport(file, yearId ? Number(yearId) : undefined)
-      await loadPreview(result.id)
+      await loadPreview(result.batch_id)
       setFile(null)
-    } catch (cause) { setError(cause instanceof Error ? cause.message : t(TRANSLATION_KEYS.system.genericError)) }
-    finally { setBusy(null) }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : t(TRANSLATION_KEYS.system.genericError))
+    } finally {
+      setBusy(null)
+    }
   }
+
   const loadClassRows = async (classId: number, page = 1) => {
     if (previewId === null) return
     setError(null)
@@ -158,10 +176,28 @@ export function AdminImportsPage() {
   const canReconcile = preview !== null && preview.batch.status !== 'imported'
   const canCommit = preview !== null && preview.batch.status !== 'imported' && readyToImport
 
-  if (years.status === 'idle' || years.status === 'loading') return <Loading label={t(TRANSLATION_KEYS.auth.loading)} />
-  if (years.status === 'error' || years.data === null) return <ErrorState title={t(TRANSLATION_KEYS.system.errorTitle)} description={years.error ?? t(TRANSLATION_KEYS.system.genericError)} action={<Button type="button" variant="secondary" onClick={() => void years.reload()}>{t(TRANSLATION_KEYS.system.reload)}</Button>} />
+  if (years.status === 'idle' || years.status === 'loading') {
+    return <Loading label={t(TRANSLATION_KEYS.auth.loading)} />
+  }
+
+  if (years.status === 'error' || years.data === null) {
+    return (
+      <ErrorState
+        title={t(TRANSLATION_KEYS.system.errorTitle)}
+        description={years.error ?? t(TRANSLATION_KEYS.system.genericError)}
+        action={<Button type="button" variant="secondary" onClick={() => void years.reload()}>{t(TRANSLATION_KEYS.system.reload)}</Button>}
+      />
+    )
+  }
+
   const data = years.data
   const selectedClass = preview?.classes.find((item) => item.id === selectedClassId) ?? null
+  const totalErrors = preview
+    ? asNumber(preview.batch.error_rows) + asNumber(preview.batch.error_classes)
+    : 0
+  const totalWarnings = preview
+    ? asNumber(preview.batch.warning_rows) + asNumber(preview.batch.warning_classes)
+    : 0
 
   const stepState = (step: 1 | 2 | 3 | 4): StepState => {
     if (preview === null) return step === 1 ? 'current' : 'locked'
@@ -172,176 +208,345 @@ export function AdminImportsPage() {
   }
 
   return (
-    <section className="sams-admin-page space-y-8">
+    <section className="sams-admin-page space-y-7">
       <PageHeader
+        className="sams-admin-page-header"
+        eyebrow={t(TRANSLATION_KEYS.admin.operations)}
         title={t(TRANSLATION_KEYS.navigation.imports)}
         description={t(TRANSLATION_KEYS.admin.importHint)}
       />
+
       {error && <StatusMessage variant="danger" role="alert">{error}</StatusMessage>}
 
-      <ol aria-label={t(TRANSLATION_KEYS.admin.importBatch)} className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        {([
-          [1, TRANSLATION_KEYS.admin.importStepUpload],
-          [2, TRANSLATION_KEYS.admin.importStepValidate],
-          [3, TRANSLATION_KEYS.admin.importStepReconcile],
-          [4, TRANSLATION_KEYS.admin.importStepCommit],
-        ] as const).map(([step, key]) => {
-          const state = stepState(step)
-          return (
-            <li key={step} className="sams-card flex items-start gap-3 p-4">
-              <Badge variant={state === 'done' ? 'success' : state === 'current' ? 'info' : 'neutral'}>{step}</Badge>
-              <p className="font-medium">{t(key)}</p>
-            </li>
-          )
-        })}
-      </ol>
+      <section className="relative overflow-hidden rounded-[1.4rem] border border-[var(--sams-brand-border)] bg-[var(--sams-brand-surface)] shadow-[0_16px_44px_rgba(18,59,115,0.08)]">
+        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(18,59,115,0.07),transparent_48%,rgba(8,127,132,0.08))]" aria-hidden="true" />
+        <div className="relative grid gap-0 xl:grid-cols-[minmax(0,0.74fr)_minmax(0,1.26fr)]">
+          <div className="border-b border-[var(--sams-brand-border)] p-6 sm:p-7 xl:border-b-0 xl:border-e">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--sams-brand-primary)]">
+              {t(TRANSLATION_KEYS.admin.stageImport)}
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--sams-brand-navy)]">
+              {t(TRANSLATION_KEYS.admin.importFile)}
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-[var(--sams-muted)]">
+              {t(TRANSLATION_KEYS.admin.importHint)}
+            </p>
 
-      <section className="sams-card p-5 space-y-4">
-        <h2 className="text-lg font-semibold">{t(TRANSLATION_KEYS.admin.stageImport)}</h2>
-        <FormField label={t(TRANSLATION_KEYS.admin.targetAcademicYear)}>
-          {({ id, ...aria }) => <Select id={id} {...aria} value={yearId} onChange={(e) => setYearId(e.target.value)}>
-            <option value="">{t(TRANSLATION_KEYS.admin.selectAcademicYear)}</option>
-            {data.academic_years.map((x) => <option key={x.id} value={x.id}>{x.name}{isActive(x.is_active) ? ' · active' : ''}</option>)}
-          </Select>}
-        </FormField>
-        <input aria-label={t(TRANSLATION_KEYS.admin.importFile)} type="file" accept=".xlsx,.xls,.md" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-        <Button type="button" disabled={!file || busy !== null} loading={busy === 'upload'} onClick={() => void upload()}>{t(TRANSLATION_KEYS.admin.upload)}</Button>
-      </section>
-
-      <section className="sams-card p-5 space-y-4">
-        <h2 className="text-lg font-semibold">{t(TRANSLATION_KEYS.admin.importBatch)}</h2>
-        <div className="flex flex-wrap gap-3 items-end">
-          <FormField label={t(TRANSLATION_KEYS.admin.batchId)}>{({ id, ...aria }) => <Input id={id} {...aria} inputMode="numeric" value={batchId} onChange={(e) => setBatchId(e.target.value)} />}</FormField>
-          <Button type="button" variant="secondary" disabled={!/^[1-9]\d*$/.test(batchId)} onClick={() => void loadPreview(Number(batchId))}>{t(TRANSLATION_KEYS.admin.loadBatch)}</Button>
-        </div>
-      </section>
-      {preview && <section className="space-y-4">
-        <div className="sams-card p-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-semibold">{preview.batch.original_filename}</h2>
-              <p className="mt-1 text-sm text-[var(--sams-muted)]">
-                {t(TRANSLATION_KEYS.admin.batchId)}: {preview.batch.id}
-                {preview.batch.target_academic_year_name ? ' · ' + preview.batch.target_academic_year_name : ''}
+            <div className="mt-6 rounded-xl border border-[var(--sams-brand-border)] bg-[var(--sams-surface)] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.13em] text-[var(--sams-muted)]">
+                {t(TRANSLATION_KEYS.admin.targetAcademicYear)}
+              </p>
+              <p className="mt-2 text-sm font-semibold text-[var(--sams-brand-navy)]">
+                {yearId
+                  ? data.academic_years.find((year) => String(year.id) === yearId)?.name ?? '—'
+                  : t(TRANSLATION_KEYS.admin.selectAcademicYear)}
               </p>
             </div>
-            <Badge variant={statusVariant(preview.batch.status)}>{statusText(preview.batch.status, t)}</Badge>
-          </div>
-          <dl className="mt-4 grid gap-3 sm:grid-cols-3">
-            <Detail label={t(TRANSLATION_KEYS.navigation.classes)} value={String(asNumber(preview.batch.total_classes))} />
-            <Detail label={t(TRANSLATION_KEYS.admin.rows)} value={String(asNumber(preview.batch.total_rows))} />
-            <Detail label={t(TRANSLATION_KEYS.admin.importWarnings)} value={String(asNumber(preview.batch.warning_rows) + asNumber(preview.batch.warning_classes))} />
-            <Detail label={t(TRANSLATION_KEYS.admin.importErrors)} value={String(asNumber(preview.batch.error_rows) + asNumber(preview.batch.error_classes))} />
-            <Detail label={t(TRANSLATION_KEYS.admin.targetAcademicYear)} value={preview.batch.target_academic_year_name ?? '—'} />
-          </dl>
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <StatusMessage
-              variant={asNumber(preview.batch.error_rows) + asNumber(preview.batch.error_classes) > 0 ? 'warning' : 'success'}
-              role="status"
-              className="flex-1"
+
+            <label
+              htmlFor="admin-import-file"
+              className="mt-4 block cursor-pointer rounded-xl border-2 border-dashed border-[var(--sams-brand-border)] bg-white/85 p-5 transition-[background-color,border-color,box-shadow] duration-150 hover:border-[var(--sams-brand-primary)] hover:bg-white focus-within:border-[var(--sams-brand-primary)] focus-within:ring-4 focus-within:ring-[var(--sams-info-surface)]"
             >
-              {asNumber(preview.batch.error_rows) + asNumber(preview.batch.error_classes) > 0
-                ? t(TRANSLATION_KEYS.admin.importNeedsAttention)
-                : readyToImport
-                  ? t(TRANSLATION_KEYS.admin.importReady)
-                  : t(TRANSLATION_KEYS.admin.importValidationSummary)}
-            </StatusMessage>
+              <span className="flex items-center gap-3">
+                <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[var(--sams-brand-surface)] text-[var(--sams-brand-primary)]" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="size-6">
+                    <path d="M12 16V4m0 0L7 9m5-5 5 5" />
+                    <path d="M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14" />
+                  </svg>
+                </span>
+                <span className="min-w-0">
+                  <span className="block font-semibold text-[var(--sams-text)]">
+                    {file ? file.name : t(TRANSLATION_KEYS.admin.importFile)}
+                  </span>
+                  <span className="mt-1 block text-xs text-[var(--sams-muted)]">
+                    {file ? formatBytes(file.size) : '.xlsx / .xls'}
+                  </span>
+                </span>
+              </span>
+              <input
+                id="admin-import-file"
+                className="sr-only"
+                aria-label={t(TRANSLATION_KEYS.admin.importFile)}
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={(event) => selectFile(event.target.files?.[0] ?? null)}
+              />
+            </label>
+
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <Button type="button" disabled={!file || busy !== null} loading={busy === 'upload'} onClick={() => void upload()}>
+                {t(TRANSLATION_KEYS.admin.upload)}
+              </Button>
+              {file && (
+                <Button type="button" variant="secondary" disabled={busy !== null} onClick={() => setFile(null)}>
+                  {t(TRANSLATION_KEYS.admin.cancel)}
+                </Button>
+              )}
+            </div>
           </div>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Button type="button" disabled={!canReconcile || busy !== null} loading={busy === 'reconcile'} onClick={() => requestWorkflow('reconcile')}>{t(TRANSLATION_KEYS.admin.reconcile)}</Button>
-            <Button type="button" variant="secondary" disabled={!canCommit || busy !== null} loading={busy === 'commit'} onClick={() => requestWorkflow('commit')}>{t(TRANSLATION_KEYS.admin.commit)}</Button>
+
+          <div className="p-6 sm:p-7">
+            <div className="grid gap-3 sm:grid-cols-4">
+              {([
+                [1, TRANSLATION_KEYS.admin.importStepUpload],
+                [2, TRANSLATION_KEYS.admin.importStepValidate],
+                [3, TRANSLATION_KEYS.admin.importStepReconcile],
+                [4, TRANSLATION_KEYS.admin.importStepCommit],
+              ] as const).map(([step, key]) => {
+                const state = stepState(step)
+                return (
+                  <div key={step} className="rounded-xl border border-[var(--sams-border)] bg-[var(--sams-surface)] p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <Badge variant={state === 'done' ? 'success' : state === 'current' ? 'info' : 'neutral'}>{String(step)}</Badge>
+                      {state === 'done' ? <span className="text-xs font-semibold text-[var(--sams-success)]">✓</span> : null}
+                    </div>
+                    <p className="mt-3 text-sm font-semibold">{t(key)}</p>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="mt-5 rounded-xl border border-[var(--sams-border)] bg-[var(--sams-muted-surface)] p-4">
+              <FormField label={t(TRANSLATION_KEYS.admin.targetAcademicYear)}>
+                {({ id, ...aria }) => (
+                  <Select id={id} {...aria} value={yearId} onChange={(event) => setYearId(event.target.value)}>
+                    <option value="">{t(TRANSLATION_KEYS.admin.selectAcademicYear)}</option>
+                    {data.academic_years.map((year) => (
+                      <option key={year.id} value={year.id}>
+                        {year.name}{isActive(year.is_active) ? ' · active' : ''}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </FormField>
+              {!yearId && (
+                <p className="mt-2 text-xs leading-5 text-[var(--sams-warning)]">
+                  {t(TRANSLATION_KEYS.admin.importIssueTargetYearRequired)}
+                </p>
+              )}
+            </div>
+
+            {preview === null ? (
+              <div className="mt-5 rounded-xl border border-dashed border-[var(--sams-brand-border)] bg-[var(--sams-brand-surface)] p-5">
+                <p className="text-sm font-semibold text-[var(--sams-brand-navy)]">{t(TRANSLATION_KEYS.admin.importValidationSummary)}</p>
+                <p className="mt-1 text-sm leading-6 text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.admin.importHint)}</p>
+              </div>
+            ) : (
+              <div className="mt-5 grid gap-3 sm:grid-cols-4">
+                <Metric label={t(TRANSLATION_KEYS.admin.batchId)} value={String(preview.batch.id)} />
+                <Metric label={t(TRANSLATION_KEYS.navigation.classes)} value={String(asNumber(preview.batch.total_classes))} />
+                <Metric label={t(TRANSLATION_KEYS.admin.rows)} value={String(asNumber(preview.batch.total_rows))} />
+                <Metric label={t(TRANSLATION_KEYS.admin.importWarnings)} value={String(totalWarnings)} />
+              </div>
+            )}
           </div>
         </div>
-        {preview.classes.length === 0 ? <EmptyState title={t(TRANSLATION_KEYS.admin.classes)} /> : (
-          <Table caption={t(TRANSLATION_KEYS.admin.importClasses)} headers={[t(TRANSLATION_KEYS.admin.sourceClass), t(TRANSLATION_KEYS.admin.students), t(TRANSLATION_KEYS.admin.status), t(TRANSLATION_KEYS.admin.importIssues)]}>
-            {preview.classes.map((x) => {
-              const issues = Array.isArray(x.issues) ? x.issues : []
-              return (
-                <tr key={x.id} className="border-b border-[var(--sams-border)] last:border-b-0">
-                  <td className="px-3 py-2 font-medium">{x.source_class_name}</td>
-                  <td className="px-3 py-2">{asNumber(x.student_count)}</td>
-                  <td className="px-3 py-2"><Badge variant={statusVariant(x.status)}>{statusText(x.status, t)}</Badge></td>
-                  <td className="px-3 py-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={x.id === selectedClassId ? 'primary' : 'secondary'}
-                      onClick={() => void loadClassRows(x.id)}
-                    >
-                      {issues.length > 0
-                        ? issues.length + ' ' + t(TRANSLATION_KEYS.admin.importIssues)
-                        : t(TRANSLATION_KEYS.admin.importSelectClassRows)}
-                    </Button>
-                  </td>
-                </tr>
-              )
-            })}
-          </Table>
-        )}
-        {selectedClass && (
-          <section className="sams-card p-5 space-y-4">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-semibold">{selectedClass.source_class_name}</h2>
-                <p className="mt-1 text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.admin.importSelectClassRows)}</p>
-              </div>
-              <Badge variant={statusVariant(selectedClass.status)}>{statusText(selectedClass.status, t)}</Badge>
-            </div>
-            {Array.isArray(selectedClass.issues) && selectedClass.issues.length > 0 ? (
-              <div>
-                <h3 className="font-medium">{t(TRANSLATION_KEYS.admin.importIssues)}</h3>
-                <ul className="mt-2 space-y-1 text-sm text-[var(--sams-muted)]">
-                  {selectedClass.issues.map((issue, index) => <li key={String(issue) + '-' + index}>• {issueText(issue, t)}</li>)}
-                </ul>
-              </div>
-            ) : (
-              <StatusMessage variant="success" role="status">{t(TRANSLATION_KEYS.admin.importNoIssues)}</StatusMessage>
-            )}
-            {preview.rows ? (
-              <div className="space-y-4">
-                <Table caption={t(TRANSLATION_KEYS.admin.importRows)} headers={[
-                  t(TRANSLATION_KEYS.admin.importSourceRow),
-                  t(TRANSLATION_KEYS.admin.name),
-                  'Massar',
-                  t(TRANSLATION_KEYS.admin.status),
-                  t(TRANSLATION_KEYS.admin.importMatch),
-                  t(TRANSLATION_KEYS.admin.importIssues),
-                ]}>
-                  {preview.rows.items.map((row) => {
-                    const issues = Array.isArray(row.issues) ? row.issues : []
-                    return (
-                      <tr key={row.id} className="border-b border-[var(--sams-border)] last:border-b-0">
-                        <td className="px-3 py-2">{asNumber(row.source_row)}</td>
-                        <td className="px-3 py-2 font-medium">{row.first_name} {row.last_name}</td>
-                        <td className="px-3 py-2">{row.massar_code ?? '—'}</td>
-                        <td className="px-3 py-2"><Badge variant={statusVariant(row.status)}>{statusText(row.status, t)}</Badge></td>
-                        <td className="px-3 py-2 text-sm">{matchText(row, t)}</td>
-                        <td className="px-3 py-2">
-                          {issues.length === 0 ? t(TRANSLATION_KEYS.admin.importNoIssues) : (
-                            <ul className="space-y-1 text-xs text-[var(--sams-muted)]">
-                              {issues.map((issue, index) => <li key={String(issue) + '-' + index}>{issueText(issue, t)}</li>)}
-                            </ul>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </Table>
-                <Pagination
-                  page={preview.rows.page}
-                  pageCount={preview.rows.total_pages}
-                  previousLabel={t(TRANSLATION_KEYS.admin.previous)}
-                  nextLabel={t(TRANSLATION_KEYS.admin.next)}
-                  ariaLabel={t(TRANSLATION_KEYS.admin.pagination)}
-                  onPageChange={(page) => void loadClassRows(selectedClass.id, page)}
+      </section>
+
+      <section className="sams-card flex flex-col gap-4 p-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <p className="sams-section-label">{t(TRANSLATION_KEYS.admin.importBatch)}</p>
+          <h2 className="mt-1 text-lg font-semibold">{t(TRANSLATION_KEYS.admin.loadBatch)}</h2>
+          <p className="mt-1 text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.admin.batchId)}</p>
+        </div>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[22rem] sm:flex-row sm:items-end">
+          <div className="min-w-0 flex-1">
+            <FormField label={t(TRANSLATION_KEYS.admin.batchId)}>
+              {({ id, ...aria }) => (
+                <Input
+                  id={id}
+                  {...aria}
+                  inputMode="numeric"
+                  value={batchId}
+                  onChange={(event) => setBatchId(event.target.value)}
+                  placeholder="42"
                 />
+              )}
+            </FormField>
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={!/^[1-9]\d*$/.test(batchId) || busy !== null}
+            onClick={() => void loadPreview(Number(batchId))}
+          >
+            {t(TRANSLATION_KEYS.admin.loadBatch)}
+          </Button>
+        </div>
+      </section>
+
+      {preview && (
+        <section className="space-y-5">
+          <div className="sams-card overflow-hidden p-0">
+            <div className="flex flex-col gap-4 border-b border-[var(--sams-border)] bg-[var(--sams-surface)] p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
+              <div className="min-w-0">
+                <p className="sams-section-label">{t(TRANSLATION_KEYS.admin.importBatch)} #{preview.batch.id}</p>
+                <h2 className="mt-1 truncate text-xl font-semibold">{preview.batch.original_filename}</h2>
+                <p className="mt-1 text-sm text-[var(--sams-muted)]">
+                  {preview.batch.target_academic_year_name ?? t(TRANSLATION_KEYS.admin.selectAcademicYear)}
+                  {' · '}
+                  {formatBytes(preview.batch.file_size)}
+                </p>
               </div>
-            ) : (
-              <StatusMessage variant="info" role="status">{t(TRANSLATION_KEYS.admin.importSelectClassRows)}</StatusMessage>
-            )}
-          </section>
-        )}
-      </section>}
+              <Badge variant={statusVariant(preview.batch.status)}>{statusText(preview.batch.status, t)}</Badge>
+            </div>
+
+            <div className="grid gap-4 bg-[var(--sams-muted-surface)] p-5 sm:grid-cols-2 lg:grid-cols-5">
+              <Metric label={t(TRANSLATION_KEYS.navigation.classes)} value={String(asNumber(preview.batch.total_classes))} />
+              <Metric label={t(TRANSLATION_KEYS.admin.rows)} value={String(asNumber(preview.batch.total_rows))} />
+              <Metric label={t(TRANSLATION_KEYS.admin.importWarnings)} value={String(totalWarnings)} />
+              <Metric label={t(TRANSLATION_KEYS.admin.importErrors)} value={String(totalErrors)} />
+              <Metric label={t(TRANSLATION_KEYS.admin.sourceClass)} value={preview.batch.source_academic_year ?? '—'} />
+            </div>
+
+            <div className="p-5 sm:p-6">
+              <StatusMessage
+                variant={totalErrors > 0 ? 'warning' : readyToImport ? 'success' : 'info'}
+                role="status"
+              >
+                {totalErrors > 0
+                  ? t(TRANSLATION_KEYS.admin.importNeedsAttention)
+                  : readyToImport
+                    ? t(TRANSLATION_KEYS.admin.importReady)
+                    : t(TRANSLATION_KEYS.admin.importValidationSummary)}
+              </StatusMessage>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  disabled={!canReconcile || busy !== null || totalErrors > 0}
+                  loading={busy === 'reconcile'}
+                  onClick={() => requestWorkflow('reconcile')}
+                >
+                  {t(TRANSLATION_KEYS.admin.reconcile)}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={!canCommit || busy !== null || totalErrors > 0}
+                  loading={busy === 'commit'}
+                  onClick={() => requestWorkflow('commit')}
+                >
+                  {t(TRANSLATION_KEYS.admin.commit)}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {preview.classes.length === 0 ? (
+            <EmptyState title={t(TRANSLATION_KEYS.admin.classes)} />
+          ) : (
+            <Table
+              caption={t(TRANSLATION_KEYS.admin.importClasses)}
+              headers={[
+                t(TRANSLATION_KEYS.admin.sourceClass),
+                t(TRANSLATION_KEYS.admin.level),
+                t(TRANSLATION_KEYS.admin.students),
+                t(TRANSLATION_KEYS.admin.status),
+                t(TRANSLATION_KEYS.admin.importIssues),
+              ]}
+            >
+              {preview.classes.map((item) => {
+                const issues = Array.isArray(item.issues) ? item.issues : []
+                return (
+                  <tr key={item.id} className="border-b border-[var(--sams-border)] last:border-b-0">
+                    <td className="px-3 py-3 font-medium">{item.source_class_name}</td>
+                    <td className="px-3 py-3">{item.source_level ?? '—'}</td>
+                    <td className="px-3 py-3 tabular-nums">{asNumber(item.student_count)}</td>
+                    <td className="px-3 py-3"><Badge variant={statusVariant(item.status)}>{statusText(item.status, t)}</Badge></td>
+                    <td className="px-3 py-3">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={item.id === selectedClassId ? 'primary' : 'secondary'}
+                        onClick={() => void loadClassRows(item.id)}
+                      >
+                        {issues.length > 0
+                          ? issues.length + ' ' + t(TRANSLATION_KEYS.admin.importIssues)
+                          : t(TRANSLATION_KEYS.admin.importSelectClassRows)}
+                      </Button>
+                    </td>
+                  </tr>
+                )
+              })}
+            </Table>
+          )}
+
+          {selectedClass && (
+            <section className="sams-card space-y-5 p-5 sm:p-6">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="sams-section-label">{t(TRANSLATION_KEYS.admin.importRows)}</p>
+                  <h2 className="mt-1 text-xl font-semibold">{selectedClass.source_class_name}</h2>
+                </div>
+                <Badge variant={statusVariant(selectedClass.status)}>{statusText(selectedClass.status, t)}</Badge>
+              </div>
+
+              {Array.isArray(selectedClass.issues) && selectedClass.issues.length > 0 ? (
+                <div className="rounded-xl border border-[var(--sams-warning)]/20 bg-[var(--sams-warning-surface)] p-4">
+                  <h3 className="font-semibold">{t(TRANSLATION_KEYS.admin.importIssues)}</h3>
+                  <ul className="mt-2 space-y-1.5 text-sm text-[var(--sams-muted)]">
+                    {selectedClass.issues.map((issue, index) => (
+                      <li key={String(issue) + '-' + index}>• {issueText(issue, t)}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <StatusMessage variant="success" role="status">{t(TRANSLATION_KEYS.admin.importNoIssues)}</StatusMessage>
+              )}
+
+              {preview.rows ? (
+                <div className="space-y-4">
+                  <Table
+                    caption={t(TRANSLATION_KEYS.admin.importRows)}
+                    headers={[
+                      t(TRANSLATION_KEYS.admin.importSourceRow),
+                      t(TRANSLATION_KEYS.admin.name),
+                      'Massar',
+                      t(TRANSLATION_KEYS.admin.status),
+                      t(TRANSLATION_KEYS.admin.importMatch),
+                      t(TRANSLATION_KEYS.admin.importIssues),
+                    ]}
+                  >
+                    {preview.rows.items.map((row) => {
+                      const issues = Array.isArray(row.issues) ? row.issues : []
+                      return (
+                        <tr key={row.id} className="border-b border-[var(--sams-border)] last:border-b-0">
+                          <td className="px-3 py-3 tabular-nums">{asNumber(row.source_row)}</td>
+                          <td className="px-3 py-3 font-medium">{row.first_name} {row.last_name}</td>
+                          <td className="px-3 py-3">{row.massar_code ?? '—'}</td>
+                          <td className="px-3 py-3"><Badge variant={statusVariant(row.status)}>{statusText(row.status, t)}</Badge></td>
+                          <td className="px-3 py-3 text-sm">{matchText(row, t)}</td>
+                          <td className="px-3 py-3">
+                            {issues.length === 0
+                              ? t(TRANSLATION_KEYS.admin.importNoIssues)
+                              : (
+                                <ul className="space-y-1 text-xs text-[var(--sams-muted)]">
+                                  {issues.map((issue, index) => <li key={String(issue) + '-' + index}>{issueText(issue, t)}</li>)}
+                                </ul>
+                              )}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </Table>
+
+                  <Pagination
+                    page={preview.rows.page}
+                    pageCount={preview.rows.total_pages}
+                    previousLabel={t(TRANSLATION_KEYS.admin.previous)}
+                    nextLabel={t(TRANSLATION_KEYS.admin.next)}
+                    ariaLabel={t(TRANSLATION_KEYS.admin.pagination)}
+                    onPageChange={(page) => void loadClassRows(selectedClass.id, page)}
+                  />
+                </div>
+              ) : (
+                <StatusMessage variant="info" role="status">{t(TRANSLATION_KEYS.admin.importSelectClassRows)}</StatusMessage>
+              )}
+            </section>
+          )}
+        </section>
+      )}
 
       <ConfirmDialog
         open={confirmKind !== null}
@@ -363,6 +568,12 @@ export function AdminImportsPage() {
   )
 }
 
-function Detail({ label, value }: { label: string; value: string }) {
-  return <div><dt className="text-xs font-medium text-[var(--sams-muted)]">{label}</dt><dd className="mt-1 text-sm">{value}</dd></div>
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-xs font-medium text-[var(--sams-muted)]">{label}</dt>
+      <dd className="mt-1 truncate text-lg font-semibold tabular-nums text-[var(--sams-text)]">{value}</dd>
+    </div>
+  )
 }
+

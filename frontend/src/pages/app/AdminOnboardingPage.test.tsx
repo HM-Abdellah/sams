@@ -55,11 +55,14 @@ describe('AdminOnboardingPage', () => {
 
     const dialog = screen.getByRole('alertdialog', { name: 'Confirm rejecting this request' })
     expect(within(dialog).getByText('Rejecting this request closes the teacher onboarding request. The request remains available in history.')).toBeInTheDocument()
+    fireEvent.change(within(dialog).getByRole('textbox', { name: 'Rejection reason' }), {
+      target: { value: 'Missing employee verification' },
+    })
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Reject' }))
 
     await waitFor(() => {
-      expect(reviewSpy).toHaveBeenCalledWith(17, 'reject', undefined)
+      expect(reviewSpy).toHaveBeenCalledWith(17, 'reject', 'Missing employee verification')
     })
   })
 })

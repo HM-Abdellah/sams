@@ -17,4 +17,8 @@ return [
     'session_absolute_timeout' => 43200,
     'login_max_attempts' => 5,
     'login_lock_minutes' => 15,
+
+    // One-time browser setup secret. Set SAMS_SETUP_KEY on the server; never commit the secret.
+    'setup_key' => getenv('SAMS_SETUP_KEY') ?: '',
 ];
+

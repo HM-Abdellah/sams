@@ -15,9 +15,19 @@ async function login(page, samsCode, password) {
 }
 
 test.describe("frontend Phase 23 production integration", () => {
-  test("Apache serves the React mount, assets, and SPA routes", async ({
+  test("Apache serves a mounted React app without a blank screen or broken UI assets", async ({
     page,
   }) => {
+    const pageErrors = [];
+    const failedUiAssets = [];
+    page.on("pageerror", (error) => pageErrors.push(error.message));
+    page.on("response", (response) => {
+      const type = response.request().resourceType();
+      if (["script", "stylesheet"].includes(type) && response.status() >= 400) {
+        failedUiAssets.push(`${response.status()} ${response.url()}`);
+      }
+    });
+
     const rootResponse = await page.goto("/sams/");
     expect(rootResponse?.status()).toBe(200);
     await expect(page).toHaveTitle(
@@ -26,8 +36,13 @@ test.describe("frontend Phase 23 production integration", () => {
 
     await page.goto("/sams/login");
     await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+    await expect(page.locator("#root > *").first()).toBeVisible();
+    const script = page.locator('script[type="module"][src]').first();
+    await expect(script).toHaveAttribute("src", /\/sams\/assets\/.+\.js$/);
     const stylesheet = page.locator('link[rel="stylesheet"]').first();
-    await expect(stylesheet).toHaveAttribute("href", /\/sams\/assets\//);
+    await expect(stylesheet).toHaveAttribute("href", /\/sams\/assets\/.+\.css$/);
+    expect(pageErrors).toEqual([]);
+    expect(failedUiAssets).toEqual([]);
 
     const clientRoute = await page.request.get("/sams/app/teacher");
     expect(clientRoute.status()).toBe(200);

@@ -1,4 +1,14 @@
 @import "tailwindcss";
+@import "@fontsource/manrope/400.css";
+@import "@fontsource/manrope/500.css";
+@import "@fontsource/manrope/600.css";
+@import "@fontsource/manrope/700.css";
+@import "@fontsource/manrope/800.css";
+@import "@dawod/thmanyah-font-web/sans.css";
+
+html[dir="rtl"] {
+  font-family: "Thmanyah Sans", Inter, ui-sans-serif, system-ui, sans-serif;
+}
 
 :root {
   --sams-background: #f5f5f5;
@@ -43,7 +53,17 @@
   --sams-brand-accent: #1d4ed8;
   --sams-brand-accent-soft: #eff6ff;
 
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+  /* SAMS brand family: shared visual DNA, available to any page composition. */
+  --sams-brand-primary: #1477ad;
+  --sams-brand-primary-hover: #0d628f;
+  --sams-brand-cobalt: #1d4ed8;
+  --sams-brand-teal: #29c7d8;
+  --sams-brand-navy: #123b73;
+  --sams-brand-canvas: #edf6fb;
+  --sams-brand-surface: #f8fcff;
+  --sams-brand-border: #b9d8eb;
+
+  font-family: "Manrope", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif;
   color: var(--sams-text);
   background: var(--sams-background);
@@ -68,11 +88,10 @@ body {
   margin: 0;
 }
 
-button,
-input,
-textarea,
-select {
-  font: inherit;
+@layer base {
+  :where(button, input, textarea, select) {
+    font: inherit;
+  }
 }
 
 button {
@@ -124,11 +143,63 @@ button {
   -webkit-overflow-scrolling: touch;
 }
 
+.sams-admin-app-bg {
+  background: var(--sams-brand-canvas);
+}
+
+.sams-admin-app-header {
+  border-color: var(--sams-brand-border);
+  background: color-mix(in srgb, var(--sams-brand-surface) 94%, transparent);
+}
+
+.sams-admin-app-sidebar {
+  border-color: var(--sams-brand-border);
+  background: color-mix(in srgb, var(--sams-brand-surface) 92%, transparent);
+}
+
+.sams-admin-app-main {
+  background: transparent;
+}
+
 .sams-admin-page {
   width: 100%;
   max-width: var(--sams-content-max);
   margin-inline: auto;
   animation: sams-admin-page-in 180ms ease-out both;
+}
+
+.sams-admin-page-header {
+  position: relative;
+  overflow: hidden;
+  padding: 0.125rem 0.125rem 0.875rem;
+}
+
+.sams-admin-page-header::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  bottom: 0;
+  width: 5rem;
+  height: 0.22rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--sams-brand-navy), var(--sams-brand-primary), var(--sams-brand-teal));
+}
+
+.sams-admin-page-header .sams-section-label {
+  color: var(--sams-brand-primary);
+}
+
+.sams-admin-page-header h1 {
+  color: var(--sams-brand-navy);
+}
+
+.sams-admin-page h2 {
+  color: var(--sams-brand-navy);
+}
+
+.sams-admin-page > .sams-section-label,
+.sams-admin-page .sams-section-label {
+  color: var(--sams-brand-primary);
 }
 
 .sams-admin-page .sams-card {
@@ -196,3 +267,422 @@ button {
     animation-iteration-count: 1 !important;
   }
 }
+
+@keyframes sams-login-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sams-login-float {
+  0%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -8px, 0);
+  }
+}
+
+.sams-login-reveal {
+  animation: sams-login-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.sams-login-reveal-delay-1 {
+  animation-delay: 80ms;
+}
+
+.sams-login-reveal-delay-2 {
+  animation-delay: 160ms;
+}
+
+.sams-login-float {
+  animation: sams-login-float 7s ease-in-out infinite;
+}
+
+/* Mobile auth shell: the viewport is the composition canvas. Safe-area insets
+   stay outside the content, while the layout can relax when the keyboard
+   materially reduces the available height. */
+.sams-login-mobile-shell {
+  padding-inline-start: max(clamp(1rem, 5vw, 1.5rem), env(safe-area-inset-left));
+  padding-inline-end: max(clamp(1rem, 5vw, 1.5rem), env(safe-area-inset-right));
+  padding-block-start: max(1rem, env(safe-area-inset-top));
+  padding-block-end: max(1rem, env(safe-area-inset-bottom));
+}
+
+/* Public auth pages share Login’s fixed viewport composition. On shorter
+   phones, reduce vertical density rather than introducing page scrolling. */
+@media (max-width: 1023px) and (max-height: 720px) {
+  .sams-auth-public-shell .sams-login-intro {
+    margin-top: 0.75rem;
+  }
+
+  .sams-auth-public-shell .sams-login-title {
+    margin-top: 0.25rem;
+    font-size: 1.5rem;
+    line-height: 1.12;
+  }
+
+  .sams-auth-public-shell .sams-login-subtitle {
+    margin-top: 0.375rem;
+    line-height: 1.35;
+  }
+
+  .sams-auth-public-form {
+    margin-top: 0.75rem;
+  }
+
+  .sams-auth-public-form > form > * + * {
+    margin-top: 0.75rem;
+  }
+}
+
+@media (max-width: 1023px) and (max-height: 600px) {
+  .sams-auth-public-shell {
+    padding-block-start: max(0.625rem, env(safe-area-inset-top));
+    padding-block-end: max(0.625rem, env(safe-area-inset-bottom));
+  }
+
+  .sams-auth-public-shell .sams-login-header {
+    min-height: 2.5rem;
+  }
+
+  .sams-auth-public-shell .sams-login-intro {
+    margin-top: 0.5rem;
+  }
+
+  .sams-auth-public-form {
+    margin-top: 0.5rem;
+  }
+
+  .sams-auth-public-form > form > * + * {
+    margin-top: 0.625rem;
+  }
+}
+
+@media (max-width: 1023px) and (max-height: 480px) {
+  .sams-login-mobile-shell:not(.sams-auth-public-shell) {
+    justify-content: flex-start;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    padding-block-start: max(0.875rem, env(safe-area-inset-top));
+    padding-block-end: max(0.875rem, env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 1023px) and (orientation: landscape) and (max-height: 480px) {
+  .sams-login-mobile-shell:not(.sams-auth-public-shell) {
+    overflow-y: hidden;
+    padding-block-start: max(0.625rem, env(safe-area-inset-top));
+    padding-block-end: max(0.625rem, env(safe-area-inset-bottom));
+  }
+
+  .sams-login-mobile-shell:not(.sams-auth-public-shell) .sams-login-header {
+    min-height: 2.5rem;
+  }
+
+  .sams-login-mobile-shell:not(.sams-auth-public-shell) .sams-login-intro {
+    margin-top: 0.5rem;
+  }
+
+  .sams-login-mobile-shell:not(.sams-auth-public-shell) .sams-login-title {
+    margin-top: 0.125rem;
+    font-size: 1.5rem;
+    line-height: 1.1;
+  }
+
+  .sams-login-mobile-shell:not(.sams-auth-public-shell) .sams-login-subtitle {
+    display: none;
+  }
+
+  .sams-login-mobile-shell:not(.sams-auth-public-shell) .sams-login-form {
+    margin-top: 0.5rem;
+  }
+
+  .sams-login-mobile-shell:not(.sams-auth-public-shell) .sams-login-form > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.5rem;
+  }
+
+  .sams-login-mobile-shell:not(.sams-auth-public-shell) .sams-login-secure-hint {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sams-login-reveal,
+  .sams-login-reveal-delay-1,
+  .sams-login-reveal-delay-2,
+  .sams-login-float {
+    animation: none;
+  }
+}
+
+/* Weekly classroom register: screen UI stays operational; print is a paper-first A4 artifact. */
+.sams-attendance-print {
+  display: none;
+}
+
+.sams-print-paper {
+  width: 100%;
+  color: #111;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 8mm;
+  }
+
+  html,
+  body {
+    min-width: 0;
+    background: #fff !important;
+  }
+
+  body.sams-printing {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  body.sams-printing .sams-app-bg > header,
+  body.sams-printing .sams-app-bg > .grid > aside,
+  body.sams-printing .sams-app-bg > .grid > div[role='dialog'] {
+    display: none !important;
+  }
+
+  body.sams-printing .sams-app-bg > .grid {
+    display: block !important;
+    max-width: none !important;
+  }
+
+  body.sams-printing .sams-app-bg main {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  body.sams-printing .sams-attendance-screen,
+  body.sams-printing .sams-attendance-screen * {
+    display: none !important;
+  }
+
+  body.sams-printing .sams-attendance-print {
+    display: block !important;
+    width: 100%;
+  }
+
+  body.sams-printing .sams-print-paper {
+    break-inside: avoid;
+  }
+
+  .sams-print-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12mm;
+    padding-bottom: 4mm;
+    border-bottom: 1.5px solid #111;
+  }
+
+  .sams-print-kicker {
+    margin: 0 0 1mm;
+    font-size: 8pt;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+  }
+
+  .sams-print-header h2 {
+    margin: 0;
+    font-size: 17pt;
+    line-height: 1.05;
+    font-weight: 700;
+  }
+
+  .sams-print-meta {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(32mm, 1fr));
+    gap: 4mm;
+    margin: 0;
+  }
+
+  .sams-print-meta div {
+    min-width: 0;
+  }
+
+  .sams-print-meta dt {
+    margin: 0 0 1mm;
+    font-size: 6.5pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .sams-print-meta dd {
+    margin: 0;
+    font-size: 8.5pt;
+    font-weight: 600;
+  }
+
+  .sams-print-legend {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4mm;
+    padding: 2.5mm 0;
+    font-size: 6.5pt;
+    line-height: 1;
+  }
+
+  .sams-print-legend strong {
+    font-size: 8pt;
+  }
+
+  .sams-print-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 6.8pt;
+  }
+
+  .sams-print-table caption {
+    height: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .sams-print-table th,
+  .sams-print-table td {
+    border: 0.45pt solid #777;
+    padding: 1.1mm 1.2mm;
+    vertical-align: middle;
+  }
+
+  .sams-print-table thead th {
+    height: 10mm;
+    background: #f2f2f2;
+    text-align: center;
+    font-weight: 700;
+  }
+
+  .sams-print-table thead th:nth-child(2) {
+    text-align: start;
+  }
+
+  .sams-print-table tbody th {
+    text-align: start;
+    font-weight: 600;
+  }
+
+  .sams-print-table tbody tr {
+    break-inside: avoid;
+  }
+
+  .sams-print-number,
+  .sams-print-total {
+    width: 9mm;
+    text-align: center !important;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .sams-print-table thead th:nth-child(2) {
+    width: 45mm;
+  }
+
+  .sams-print-day {
+    display: block;
+    font-size: 7pt;
+    text-transform: uppercase;
+  }
+
+  .sams-print-date {
+    display: block;
+    margin-top: 0.7mm;
+    font-size: 6pt;
+    font-weight: 600;
+  }
+
+  .sams-print-day-cell {
+    text-align: center;
+  }
+
+  .sams-print-periods {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 0.7mm;
+    align-items: center;
+  }
+
+  .sams-print-periods span {
+    display: grid;
+    place-items: center;
+    min-width: 3.2mm;
+    min-height: 3.8mm;
+    font-size: 6.3pt;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .sams-print-periods .is-absent {
+    font-size: 8pt;
+  }
+
+  .sams-print-footer {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12mm;
+    margin-top: 4mm;
+    padding-top: 3mm;
+    border-top: 1px solid #111;
+  }
+
+  .sams-print-note {
+    display: flex;
+    gap: 6mm;
+    font-size: 6.5pt;
+  }
+
+  .sams-print-signature {
+    display: flex;
+    min-width: 82mm;
+    justify-content: flex-end;
+    gap: 12mm;
+    font-size: 7pt;
+  }
+
+  .sams-print-signature > div {
+    display: flex;
+    min-width: 42mm;
+    align-items: flex-end;
+    gap: 2mm;
+  }
+
+  .sams-print-line {
+    flex: 1;
+    min-width: 28mm;
+    height: 5mm;
+    border-bottom: 1px solid #111;
+  }
+
+  .sams-print-date-line {
+    min-width: 20mm;
+  }
+}
+
+
+@media print {
+  body.sams-printing .sams-attendance-page > *:not(.sams-attendance-print) {
+    display: none !important;
+  }
+
+  body.sams-printing .sams-attendance-page > .sams-attendance-print {
+    display: block !important;
+  }
+}
+

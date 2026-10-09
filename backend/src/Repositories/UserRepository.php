@@ -8,6 +8,8 @@ use SAMS\Helpers\Database;
 
 final class UserRepository
 {
+    public const ONLINE_WINDOW_SECONDS = 90;
+    private const PRESENCE_TOUCH_MIN_INTERVAL_SECONDS = 30;
     public function findByUsername(string $username): ?array
     {
         $stmt = Database::connection()->prepare(
@@ -34,7 +36,7 @@ final class UserRepository
     public function findActiveById(int $userId): ?array
     {
         $stmt = Database::connection()->prepare(
-            "SELECT id, school_id, username, employee_id, full_name, phone, phone_verified, role, account_status, is_active, session_version
+            "SELECT id, school_id, username, employee_id, full_name, avatar_path, phone, phone_verified, role, account_status, is_active, session_version
              FROM users
              WHERE id = ? AND is_active = 1 AND account_status = 'active'
              LIMIT 1"
@@ -92,7 +94,7 @@ final class UserRepository
     public function findById(int $userId): ?array
     {
         $stmt = Database::connection()->prepare(
-            'SELECT id, school_id, username, employee_id, full_name, phone, phone_verified, role, account_status, is_active, failed_login_attempts, locked_until, session_version, last_login_at, last_seen_at, created_at, updated_at
+            'SELECT id, school_id, username, employee_id, full_name, avatar_path, phone, phone_verified, role, account_status, is_active, failed_login_attempts, locked_until, session_version, last_login_at, last_seen_at, created_at, updated_at
              FROM users
              WHERE id = ?
              LIMIT 1'
@@ -104,8 +106,15 @@ final class UserRepository
 
     public function forAdmin(?int $schoolId = null): array
     {
+        $onlineWindow = self::ONLINE_WINDOW_SECONDS;
         $sql = 'SELECT id, school_id, username, employee_id, full_name, phone, phone_verified, role, account_status, is_active, failed_login_attempts,
-                       locked_until, last_login_at, last_seen_at, created_at, updated_at
+                       locked_until, last_login_at, last_seen_at,
+                       CASE
+                           WHEN last_seen_at IS NOT NULL
+                            AND last_seen_at >= CURRENT_TIMESTAMP - INTERVAL ' . $onlineWindow . ' SECOND
+                           THEN 1 ELSE 0
+                       END AS is_online,
+                       created_at, updated_at
                 FROM users';
         $params = [];
 
@@ -172,6 +181,86 @@ final class UserRepository
 
         $stmt = Database::connection()->prepare($sql);
         $stmt->execute($params);
+    }
+
+    public function updateSelfProfile(
+        int $userId,
+        int $schoolId,
+        string $username,
+        string $fullName,
+        ?string $avatarPath = null,
+        bool $clearAvatar = false
+    ): void {
+        $this->assertSchoolId($schoolId);
+        $stmt = Database::connection()->prepare(
+            'UPDATE users
+             SET username = ?,
+                 full_name = ?,
+                 avatar_path = CASE
+                     WHEN ? = 1 THEN NULL
+                     WHEN ? IS NOT NULL THEN ?
+                     ELSE avatar_path
+                 END
+             WHERE id = ? AND school_id = ? AND is_active = 1'
+        );
+        $stmt->execute([
+            $username,
+            $fullName,
+            $clearAvatar ? 1 : 0,
+            $avatarPath,
+            $avatarPath,
+            $userId,
+            $schoolId,
+        ]);
+
+        if ($stmt->rowCount() < 0) {
+            throw new \RuntimeException('User profile update failed.');
+        }
+    }
+
+    public function profileById(int $userId, int $schoolId): ?array
+    {
+        $this->assertSchoolId($schoolId);
+        $stmt = Database::connection()->prepare(
+            'SELECT id, school_id, username, full_name, avatar_path, role
+             FROM users
+             WHERE id = ? AND school_id = ? AND is_active = 1 AND account_status = \'active\'
+             LIMIT 1'
+        );
+        $stmt->execute([$userId, $schoolId]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    public function deleteBlockers(int $userId): array
+    {
+        return [
+            'attendance_records' => (int)$this->scalarCount('SELECT COUNT(*) FROM attendance WHERE recorded_by = ?', [$userId]),
+            'week_submissions' => (int)$this->scalarCount('SELECT COUNT(*) FROM attendance_week_submissions WHERE received_by = ?', [$userId]),
+            'login_codes' => (int)$this->scalarCount('SELECT COUNT(*) FROM sams_login_codes WHERE user_id = ?', [$userId]),
+            'school_import_batches' => (int)$this->scalarCount('SELECT COUNT(*) FROM school_import_batches WHERE created_by = ?', [$userId]),
+            'student_import_batches' => (int)$this->scalarCount('SELECT COUNT(*) FROM student_import_batches WHERE created_by = ?', [$userId]),
+        ];
+    }
+
+    public function deleteById(int $userId, int $schoolId): void
+    {
+        $this->assertSchoolId($schoolId);
+        $stmt = Database::connection()->prepare(
+            'DELETE FROM users WHERE id = ? AND school_id = ? AND role = \'admin\''
+        );
+        $stmt->execute([$userId, $schoolId]);
+
+        if ($stmt->rowCount() !== 1) {
+            throw new \InvalidArgumentException('Administrator account not found.');
+        }
+    }
+
+    private function scalarCount(string $sql, array $params): int
+    {
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        return (int)$stmt->fetchColumn();
     }
 
     public function findTeacherByEmployeeIdForUpdate(string $employeeId, int $schoolId): ?array
@@ -359,8 +448,16 @@ final class UserRepository
 
     public function touchPresence(int $userId): void
     {
+        $minInterval = self::PRESENCE_TOUCH_MIN_INTERVAL_SECONDS;
         $stmt = Database::connection()->prepare(
-            'UPDATE users SET last_seen_at = CURRENT_TIMESTAMP WHERE id = ? AND is_active = 1'
+            'UPDATE users
+             SET last_seen_at = CURRENT_TIMESTAMP
+             WHERE id = ?
+               AND is_active = 1
+               AND (
+                   last_seen_at IS NULL
+                   OR last_seen_at < CURRENT_TIMESTAMP - INTERVAL ' . $minInterval . ' SECOND
+               )'
         );
         $stmt->execute([$userId]);
     }
@@ -387,3 +484,4 @@ final class UserRepository
         }
     }
 }
+

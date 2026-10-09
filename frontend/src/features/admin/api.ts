@@ -49,14 +49,11 @@ export const adminApi = {
     name_ar: string
     name_en: string
     is_active: boolean
-  }) => post<IdResult>('/admin/teachers', { action: 'update_subject', ...body }),  createUser: (body: {
+  }) => post<IdResult>('/admin/teachers', { action: 'update_subject', ...body }),  createAdministrator: (body: {
     username: string
     full_name: string
-    role: 'admin' | 'teacher' | 'counselor'
     password: string
-    employee_id?: string | undefined
-    phone?: string | undefined
-  }) => post<IdResult>('/admin/users', { action: 'create', ...body }),
+  }) => post<IdResult>('/admin/users', { action: 'create_admin', ...body }),
   updateUser: (body: {
     id: number
     full_name: string
@@ -82,8 +79,12 @@ export const adminApi = {
   }) => post<IdResult>('/admin/academic-years', { action: 'create', ...body }),
   activateAcademicYear: (id: number) =>
     post<IdResult>('/admin/academic-years', { action: 'activate', id }),
+  deleteAcademicYear: (id: number) =>
+    post<null>('/admin/academic-years', { action: 'delete', id }),
   rotateOnboardingCode: () =>
-    post<OnboardingCodeResult>('/admin/onboarding/code', {}),
+    apiClient.request<OnboardingCodeResult>('/admin/onboarding/code', { method: 'POST' }),
+  deleteAdministrator: (id: number) =>
+    post<null>('/admin/users', { action: 'delete', id }),
   reviewOnboarding: (id: number, decision: 'approve' | 'reject', reason?: string | undefined) =>
     post<{
       request_id: number
@@ -114,7 +115,7 @@ export const adminApi = {
     if (targetAcademicYearId !== undefined) {
       form.append('target_academic_year_id', String(targetAcademicYearId))
     }
-    return apiClient.request<{ id: number; status: string }>('/imports/school', {
+    return apiClient.request<{ batch_id: number; status: string }>('/imports/school', {
       method: 'POST',
       body: form,
     })
@@ -131,3 +132,4 @@ export const adminApi = {
   commitImport: (id: number) =>
     post<ImportWorkflowResult>('/imports/school/' + id + '/commit', {}),
 }
+

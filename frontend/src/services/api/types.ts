@@ -8,10 +8,20 @@ export type AccountStatus = 'active' | 'suspended' | 'deactivated'
 export interface AuthUser {
   id: number
   school_id: number | null
+  username: string
   employee_id: string
   full_name: string
   role: UserRole
   account_status: AccountStatus
+  avatar_url: string | null
+}
+
+export interface ProfileData {
+  id: number
+  username: string
+  full_name: string
+  role: UserRole
+  avatar_url: string | null
 }
 
 export interface AuthSessionData {
@@ -36,3 +46,4 @@ export interface AttendanceEntry {
   status?: AttendanceStatus
   expected_revision: number
 }
+

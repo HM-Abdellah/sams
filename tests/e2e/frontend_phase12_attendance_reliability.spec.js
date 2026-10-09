@@ -139,7 +139,7 @@ test.describe('frontend Phase 12 attendance reliability', () => {
     await expect(page.getByRole('group', { name: 'Period' }).getByRole('button')).toHaveCount(8)
 
     await page.setViewportSize({ width: 1280, height: 900 })
-    await expect(page.locator('table')).toBeVisible()
+    await expect(page.getByRole('table', { name: 'Attendance register' })).toBeVisible()
     await expect(page.locator('[data-attendance-row]:visible').filter({ hasText: 'Jean Dupont' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Previous week' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Next week' })).toBeVisible()

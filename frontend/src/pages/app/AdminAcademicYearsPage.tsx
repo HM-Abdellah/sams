@@ -35,6 +35,19 @@ export function AdminAcademicYearsPage() {
     finally { setSaving(false) }
   }
 
+  const remove = async (year: AcademicYear) => {
+    if (!window.confirm(t(TRANSLATION_KEYS.admin.confirmDeleteAcademicYear) + '\n\n' + year.name)) return
+    setSaving(true); setError(null)
+    try {
+      await adminApi.deleteAcademicYear(year.id)
+      await resource.reload()
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : t(TRANSLATION_KEYS.system.genericError))
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const filteredYears = useMemo(() => (resource.data?.academic_years ?? []).filter((year) => {
     const active = isActive(year.is_active)
     return statusFilter === 'all' || (statusFilter === 'active' ? active : !active)
@@ -79,9 +92,15 @@ export function AdminAcademicYearsPage() {
           <td className="px-3 py-2">{formatDate(year.starts_on)}</td>
           <td className="px-3 py-2">{formatDate(year.ends_on)}</td>
           <td className="px-3 py-2"><Badge variant={isActive(year.is_active) ? 'success' : 'neutral'}>{isActive(year.is_active) ? t(TRANSLATION_KEYS.admin.active) : t(TRANSLATION_KEYS.admin.inactive)}</Badge></td>
-          <td className="px-3 py-2">{!isActive(year.is_active) && <Button type="button" size="sm" disabled={saving} onClick={() => void activate(year)}>{t(TRANSLATION_KEYS.admin.activate)}</Button>}</td>
+          <td className="px-3 py-2">
+            <div className="flex flex-wrap gap-2">
+              {!isActive(year.is_active) && <Button type="button" size="sm" disabled={saving} onClick={() => void activate(year)}>{t(TRANSLATION_KEYS.admin.activate)}</Button>}
+              {!isActive(year.is_active) && <Button type="button" size="sm" variant="danger" disabled={saving} onClick={() => void remove(year)}>{t(TRANSLATION_KEYS.admin.deleteAcademicYear)}</Button>}
+            </div>
+          </td>
         </tr>)}
       </Table>
     </section>
   )
 }
+
