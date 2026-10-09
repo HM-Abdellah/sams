@@ -355,7 +355,7 @@ test.describe('frontend Phase 14 admin platform', () => {
     await expect(page.getByRole('combobox', { name: 'Teacher', exact: true })).toHaveCount(0)
     await expect(page.getByRole('combobox', { name: 'Subject', exact: true })).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Assign', exact: true })).toHaveCount(0)
-    await expect(page.getByText('E2E Teacher').last()).toBeVisible()
+    await expect(page.getByText('E2E Teacher', { exact: true }).first()).toBeVisible()
 
     await page.goto('/app/admin/users')
     await expect(page.getByRole('heading', { level: 1, name: 'Users' })).toBeVisible()

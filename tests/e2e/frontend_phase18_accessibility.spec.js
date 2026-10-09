@@ -181,13 +181,15 @@ test.describe('frontend Phase 18 accessibility', () => {
 
   test('login page passes accessibility scan and names its authentication controls', async ({ page }) => {
     await installAnonymousFixture(page)
+    // Avoid measuring contrast while the entrance animation is mid-fade.
+    await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto('/login')
     await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible()
 
     const controls = await page.locator('button, input, select, textarea').evaluateAll(controlNameIssues)
     expect(controls).toEqual([])
     expect(await page.getByLabel('SAMS code').count()).toBe(1)
-    expect(await page.getByLabel('Password').count()).toBe(1)
+    expect(await page.getByLabel('Password', { exact: true }).count()).toBe(1)
 
     const results = await new AxeBuilder({ page }).analyze()
     expect(results.violations).toEqual([])

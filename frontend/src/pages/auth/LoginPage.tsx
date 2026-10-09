@@ -92,7 +92,7 @@ export function LoginPage() {
               </div>
 
               <div aria-hidden="true" className="mt-4 overflow-hidden rounded-xl border border-[#a9d5e7] bg-[#f7fcff]">
-                <div className="grid grid-cols-[1.5fr_repeat(4,1fr)] text-[10px] text-[#5b7690]">
+                <div className="grid grid-cols-[1.5fr_repeat(4,1fr)] text-[10px] text-[#536b80]">
                   <div className="border-b border-r border-[#c9e0eb] bg-[#e8f6fb] px-3 py-2 font-semibold text-[#24506d]">
                     {t(TRANSLATION_KEYS.auth.student)}
                   </div>

@@ -11,7 +11,7 @@ permissions:
 
 on:
   push:
-    branches: [main, reconstruction/product-system-2026-10-01, feat/phase-11-final-review, refactor/phase-2-backend-foundation, feat/phase-3-school-import-v2, feat/phase-4-teacher-attendance-backend, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-7-security-reliability, feat/phase-8-ci-base-v2, feat/phase-8-final-gate-v4, feat/phase-9-clean-school-acceptance]
+    branches: [main, reconstruction/product-system-2026-10-01, feat/phase-11-final-review, refactor/phase-2-backend-foundation, feat/phase-3-school-import-v2, feat/phase-4-teacher-attendance-backend, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-7-security-reliability, feat/phase-8-ci-base-v2, feat/phase-8-final-gate-v4, feat/phase-9-clean-school-acceptance, verification/final-demo-qa-2026-10-02]
   pull_request:
     branches: [main, reconstruction/product-system-2026-10-01, refactor/phase-2-backend-foundation, feat/phase-5-administration-backend, feat/phase-6-archive-reports-signatures, feat/phase-8-ci-base-v2]
 
@@ -473,9 +473,21 @@ jobs:
         working-directory: frontend
         run: npm audit --audit-level=high
 
-      - name: Build production frontend
+      - name: Build production frontend at the default SAMS mount
         working-directory: frontend
-        run: npm run build -- --base /sams/
+        run: npm run build
+
+      - name: Guard against blank-screen asset paths in production build
+        working-directory: frontend
+        shell: sh
+        run: |
+          grep -Eq 'src="/sams/assets/[^"]+\.js"' dist/index.html
+          grep -Eq 'href="/sams/assets/[^"]+\.css"' dist/index.html
+          if grep -Eq '(src|href)="/assets/' dist/index.html; then
+            echo "Production HTML points assets outside /sams/; this can produce a white screen when hosted from XAMPP."
+            exit 1
+          fi
+          echo "[PASS] Default production build serves JavaScript and CSS from /sams/assets/."
 
       - name: Upload React build artifact
         uses: actions/upload-artifact@v4
@@ -727,9 +739,9 @@ jobs:
         working-directory: frontend
         run: npm ci --no-audit --no-fund
 
-      - name: Build React frontend for frontend E2E
+      - name: Build React frontend for root-mounted preview E2E
         working-directory: frontend
-        run: npm run build
+        run: npm run build -- --base /
 
       - name: Run Playwright E2E
         id: frontend_e2e
