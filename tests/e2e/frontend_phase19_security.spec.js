@@ -67,7 +67,7 @@ test.describe('frontend Phase 19 security', () => {
     }])
 
     await page.goto('/app/teacher')
-    await expect(page.getByText(maliciousName)).toBeVisible()
+    await expect(page.getByRole('heading', { name: maliciousName })).toBeVisible()
     await expect(page.locator('img[src="x"]')).toHaveCount(0)
     expect(await page.evaluate(() => window.__xss ?? 0)).toBe(0)
   })

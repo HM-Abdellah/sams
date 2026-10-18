@@ -7,6 +7,7 @@ export interface DialogProps {
   open: boolean
   title: string
   description?: string
+  role?: 'dialog' | 'alertdialog'
   children?: ReactNode
   closeLabel?: string
   onClose: () => void
@@ -21,6 +22,7 @@ export function Dialog({
   closeLabel = 'Close',
   onClose,
   className,
+  role = 'dialog',
 }: DialogProps) {
   const titleId = useId()
   const descriptionId = useId()
@@ -38,14 +40,14 @@ export function Dialog({
       }}
     >
       <section
-        role="dialog"
+        role={role}
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
         ref={dialogRef}
         tabIndex={-1}
         onKeyDown={handleKeyDown}
-        className={cn('max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-lg border bg-[var(--sams-surface)] p-4 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:p-5', className)}
+        className={cn('max-h-[calc(100dvh-2rem)] w-full max-w-[min(40rem,calc(100vw-2rem))] overflow-y-auto rounded-[var(--sams-radius-control)] border bg-[var(--sams-surface)] p-4 shadow-lg sm:max-h-[calc(100dvh-3rem)] sm:p-5', className)}
       >
         <div className="flex items-start justify-between gap-4">
           <div>

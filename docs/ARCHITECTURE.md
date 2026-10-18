@@ -222,14 +222,16 @@ POST /attendance/bulk
   ↓
 server revalidates every entry
   ↓
-transaction + audit + signoff invalidation
+transaction + revision lock + stale-write check
+  ↓
+audit + signoff invalidation + revision increment
   ↓
 authoritative response
   ↓
 client marks changes saved
 ```
 
-A failed batch restores the prior client state for that batch and shows an error. Signed lessons remain read-only until explicitly reopened.
+A failed batch restores the prior client state for that batch and shows an error. A stale revision returns HTTP 409 and the client loads the latest register while preserving local edits for an explicit keep-or-discard decision. Signed lessons remain read-only until explicitly reopened.
 
 Desktop renders the full weekly register. Mobile renders the same data as Morning -> horizontal swipe -> Afternoon.
 
@@ -243,7 +245,7 @@ Required:
 - install UI where supported
 - update handling for new builds
 
-The first release is not offline-first. Attendance writes remain online. No offline queue or conflict-resolution engine.
+The first release is not offline-first. Attendance writes remain online. Phase 38 uses server-authoritative per-lesson revisions for stale-write conflict detection; it does not introduce an offline queue or a persistent real-time collaboration channel.
 
 ## 9. Testing architecture
 

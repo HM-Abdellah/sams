@@ -7,6 +7,7 @@ namespace SAMS\Services;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use SAMS\Exceptions\ArchiveReportException;
+use SAMS\Helpers\AttendanceMetrics;
 use SAMS\Repositories\ClassRepository;
 use SAMS\Repositories\ReportRepository;
 
@@ -56,12 +57,37 @@ final class ReportService
             throw new ArchiveReportException('Class not found.', 404);
         }
 
+        $students = array_map(
+            static function (array $row): array {
+                return array_merge($row, AttendanceMetrics::counts($row));
+            },
+            $this->reports->monthlyStudents($classId, $start, $end),
+        );
+
+        $summary = [
+            'present_count' => 0,
+            'absent_count' => 0,
+            'late_count' => 0,
+            'excused_count' => 0,
+            'recorded_count' => 0,
+        ];
+        foreach ($students as $student) {
+            foreach ($summary as $key => $value) {
+                $summary[$key] = $value + (int)$student[$key];
+            }
+        }
+        $summary['presence_rate'] = AttendanceMetrics::presenceRate(
+            $summary['present_count'],
+            $summary['recorded_count'],
+        );
+
         return [
             'class' => $class,
             'month' => $month,
             'start' => $start,
             'end' => $end,
-            'students' => $this->reports->monthlyStudents($classId, $start, $end),
+            'summary' => $summary,
+            'students' => $students,
         ];
     }
 }

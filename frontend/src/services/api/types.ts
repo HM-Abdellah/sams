@@ -34,4 +34,5 @@ export interface AttendanceEntry {
   period: number
   action: AttendanceMutation
   status?: AttendanceStatus
+  expected_revision: number
 }

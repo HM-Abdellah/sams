@@ -30,6 +30,7 @@ const attendanceData = {
   week_end: '2026-09-26',
   students: [student],
   attendance: [],
+  attendance_revisions: [],
   period_signoffs: [],
 }
 
@@ -163,7 +164,7 @@ test.describe('frontend Phase 18 accessibility', () => {
     expect(results.violations).toEqual([])
 
     await page.setViewportSize({ width: 320, height: 640 })
-    const touchTargetIssues = await page.locator('button').evaluateAll((elements) => elements.flatMap((element) => {
+    const touchTargetIssues = await page.locator('button:visible').evaluateAll((elements) => elements.flatMap((element) => {
       const rect = element.getBoundingClientRect()
       return rect.width >= 24 && rect.height >= 24 ? [] : [element.outerHTML]
     }))

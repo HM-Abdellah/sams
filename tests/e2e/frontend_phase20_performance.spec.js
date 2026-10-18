@@ -51,6 +51,7 @@ async function installSessionFixture(page, role) {
           week_end: weekEnd.toISOString().slice(0, 10),
           students: [{ id: 1, first_name: 'E2E', last_name: 'Performance Student' }],
           attendance: [],
+          attendance_revisions: [],
           period_signoffs: [],
         },
       }

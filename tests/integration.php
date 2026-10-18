@@ -81,6 +81,7 @@ $expectedTables = [
     'students',
     'student_enrollments',
     'attendance',
+    'attendance_register_revisions',
     'attendance_signoffs',
     'attendance_week_signatures',
     'attendance_week_submissions',

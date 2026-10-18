@@ -7,6 +7,7 @@ import { AsyncStateFeedback, EmptyState, PageHeader } from '../../components/ui/
 export function TeacherDashboardPage() {
   const { t } = useI18n()
   const classes = useTeacherClasses()
+  const firstClass = classes.classes[0]!
 
   if (classes.data === null) {
     return (
@@ -48,7 +49,26 @@ export function TeacherDashboardPage() {
           description={t(TRANSLATION_KEYS.teacher.noClasses)}
         />
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-5">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <Link to="/app/classes" className="sams-card p-5 transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--sams-info-surface)]">
+              <p className="text-xs font-bold uppercase tracking-[0.08em] text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.teacher.classes)}</p>
+              <p className="mt-2 text-3xl font-semibold tracking-tight">{classes.classes.length}</p>
+              <p className="mt-1 text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.teacher.classesAssigned)}</p>
+            </Link>
+            <Link to={'/app/attendance?class_id=' + firstClass.id} className="sams-card p-5 transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--sams-info-surface)]">
+              <p className="text-xs font-bold uppercase tracking-[0.08em] text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.navigation.attendance)}</p>
+              <p className="mt-2 text-lg font-semibold tracking-tight">{t(TRANSLATION_KEYS.teacher.openAttendance)}</p>
+              <p className="mt-1 text-sm text-[var(--sams-muted)]">{firstClass.name}</p>
+            </Link>
+            <Link to={'/app/students?class_id=' + firstClass.id} className="sams-card p-5 transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--sams-info-surface)]">
+              <p className="text-xs font-bold uppercase tracking-[0.08em] text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.navigation.students)}</p>
+              <p className="mt-2 text-lg font-semibold tracking-tight">{t(TRANSLATION_KEYS.teacher.openStudents)}</p>
+              <p className="mt-1 text-sm text-[var(--sams-muted)]">{firstClass.name}</p>
+            </Link>
+          </div>
+
+          <div className="space-y-4">
           <div>
             <h2 className="text-lg font-semibold tracking-tight">{t(TRANSLATION_KEYS.teacher.classes)}</h2>
             <p className="text-sm text-[var(--sams-muted)]">
@@ -83,6 +103,7 @@ export function TeacherDashboardPage() {
                 </div>
               </article>
             ))}
+          </div>
           </div>
         </div>
       )}

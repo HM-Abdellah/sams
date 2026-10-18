@@ -13,6 +13,16 @@ export interface ReportStudentTotals {
   excused_count: number
   other_count: number
   recorded_count: number
+  presence_rate: number | null
+}
+
+export interface MonthlyReportSummary {
+  present_count: number
+  absent_count: number
+  late_count: number
+  excused_count: number
+  recorded_count: number
+  presence_rate: number | null
 }
 
 export interface MonthlyReportData {
@@ -20,6 +30,7 @@ export interface MonthlyReportData {
   month: string
   start: string
   end: string
+  summary: MonthlyReportSummary
   students: ReportStudentTotals[]
 }
 

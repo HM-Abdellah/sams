@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { adminApi } from '../../features/admin/api.ts'
 import type { AdminSubject, AdminTeaching } from '../../features/admin/types.ts'
 import { useAdminResource } from '../../features/admin/useAdminResource.ts'
@@ -8,6 +8,7 @@ import { useI18n } from '../../features/i18n/useI18n.ts'
 import {
   Badge, Button, EmptyState, ErrorState, FormField, Input, Loading, PageHeader, Select, Table,
 } from '../../components/ui/index.ts'
+import { AdminWorkspaceToolbar } from '../../components/admin/AdminWorkspaceToolbar.tsx'
 
 export function AdminTeachersPage() {
   const { t } = useI18n()
@@ -26,6 +27,12 @@ export function AdminTeachersPage() {
   const [editingSubject, setEditingSubject] = useState<AdminSubject | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [teacherQuery, setTeacherQuery] = useState('')
+  const [teacherStatus, setTeacherStatus] = useState<'all' | 'active' | 'inactive'>('all')
+  const [presenceFilter, setPresenceFilter] = useState<'all' | 'online' | 'offline'>('all')
+  const [teacherSort, setTeacherSort] = useState<'name' | 'online' | 'status'>('name')
+  const [assignmentQuery, setAssignmentQuery] = useState('')
+  const [assignmentSort, setAssignmentSort] = useState<'teacher' | 'subject' | 'class'>('teacher')
 
   const reload = async () => { await resource.reload() }
   const saveSubject = async () => {
@@ -59,6 +66,46 @@ export function AdminTeachersPage() {
     catch (cause) { setError(cause instanceof Error ? cause.message : t(TRANSLATION_KEYS.system.genericError)) }
     finally { setSaving(false) }
   }
+
+  const filteredTeachers = useMemo(() => {
+    const normalized = teacherQuery.trim().toLocaleLowerCase()
+    return (resource.data?.teachers ?? []).filter((teacher) => {
+      const matchesQuery = normalized === '' || [teacher.full_name, teacher.username, teacher.employee_id]
+        .filter(Boolean)
+        .some((value) => String(value).toLocaleLowerCase().includes(normalized))
+      const active = isActive(teacher.is_active)
+      const matchesStatus = teacherStatus === 'all' || (teacherStatus === 'active' ? active : !active)
+      const online = Boolean(Number(teacher.is_online))
+      const matchesPresence = presenceFilter === 'all' || (presenceFilter === 'online' ? online : !online)
+      return matchesQuery && matchesStatus && matchesPresence
+    }).sort((a, b) => {
+      if (teacherSort === 'online') return Number(b.is_online) - Number(a.is_online) || a.full_name.localeCompare(b.full_name)
+      if (teacherSort === 'status') return Number(isActive(b.is_active)) - Number(isActive(a.is_active)) || a.full_name.localeCompare(b.full_name)
+      return a.full_name.localeCompare(b.full_name)
+    })
+  }, [resource.data, teacherQuery, teacherStatus, presenceFilter, teacherSort])
+
+  const filteredAssignments = useMemo(() => {
+    const normalized = assignmentQuery.trim().toLocaleLowerCase()
+    return (resource.data?.teachings ?? []).filter((teaching) => {
+      if (normalized === '') return true
+      return [
+        teaching.subject_code,
+        teaching.subject_name_fr,
+        teaching.subject_name_ar,
+        teaching.subject_name_en,
+        teaching.class_name,
+        teaching.class_level,
+        teaching.class_branch,
+        resource.data?.teachers.find((teacher) => teacher.id === teaching.teacher_id)?.full_name,
+      ].filter(Boolean).some((value) => String(value).toLocaleLowerCase().includes(normalized))
+    }).sort((a, b) => {
+      if (assignmentSort === 'subject') return a.subject_name_fr.localeCompare(b.subject_name_fr) || a.class_name.localeCompare(b.class_name)
+      if (assignmentSort === 'class') return a.class_name.localeCompare(b.class_name) || a.subject_name_fr.localeCompare(b.subject_name_fr)
+      const teacherName = (id: number) => resource.data?.teachers.find((teacher) => teacher.id === id)?.full_name ?? String(id)
+      return teacherName(a.teacher_id).localeCompare(teacherName(b.teacher_id)) || a.class_name.localeCompare(b.class_name)
+    })
+  }, [resource.data, assignmentQuery, assignmentSort])
 
   if (resource.status === 'idle' || resource.status === 'loading') return <Loading label={t(TRANSLATION_KEYS.auth.loading)} />
   if (resource.status === 'error' || resource.data === null) {
@@ -97,10 +144,19 @@ export function AdminTeachersPage() {
         </section>
       </div>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">{t(TRANSLATION_KEYS.admin.teachingAssignments)}</h2>        {teachings.length === 0 ? <EmptyState title={t(TRANSLATION_KEYS.admin.teachingAssignments)} description={t(TRANSLATION_KEYS.admin.noAssignments)} /> : (
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold">{t(TRANSLATION_KEYS.admin.teachingAssignments)}</h2>
+        <AdminWorkspaceToolbar searchLabel={t(TRANSLATION_KEYS.admin.search)} searchPlaceholder={t(TRANSLATION_KEYS.admin.searchAssignments)} searchValue={assignmentQuery} onSearchChange={setAssignmentQuery}>
+          <FormField label={t(TRANSLATION_KEYS.admin.sort)}>
+            {({ id, ...aria }) => <Select id={id} {...aria} value={assignmentSort} onChange={(event) => setAssignmentSort(event.target.value as typeof assignmentSort)}>
+              <option value="teacher">{t(TRANSLATION_KEYS.admin.sortName)}</option>
+              <option value="subject">{t(TRANSLATION_KEYS.admin.sortSubject)}</option>
+              <option value="class">{t(TRANSLATION_KEYS.admin.sortClass)}</option>
+            </Select>}
+          </FormField>
+        </AdminWorkspaceToolbar>        {teachings.length === 0 ? <EmptyState title={t(TRANSLATION_KEYS.admin.teachingAssignments)} description={t(TRANSLATION_KEYS.admin.noAssignments)} /> : (
           <Table caption={t(TRANSLATION_KEYS.admin.teachingAssignments)} headers={[t(TRANSLATION_KEYS.admin.teacher), t(TRANSLATION_KEYS.admin.subject), t(TRANSLATION_KEYS.admin.className), t(TRANSLATION_KEYS.admin.actions)]}>
-            {teachings.map((x) => <tr key={x.id} className="border-b border-[var(--sams-border)] last:border-b-0">
+            {filteredAssignments.map((x) => <tr key={x.id} className="border-b border-[var(--sams-border)] last:border-b-0">
               <td className="px-3 py-2">{teachers.find((teacher) => teacher.id === x.teacher_id)?.full_name ?? x.teacher_id}</td>
               <td className="px-3 py-2">{x.subject_code} · {x.subject_name_fr}</td>
               <td className="px-3 py-2">{x.class_name}</td>
@@ -110,10 +166,24 @@ export function AdminTeachersPage() {
         )}
       </section>
 
-      <section className="space-y-3">
+      <section className="space-y-4">
         <h2 className="text-lg font-semibold">{t(TRANSLATION_KEYS.admin.teacherDirectory)}</h2>
+        <AdminWorkspaceToolbar searchLabel={t(TRANSLATION_KEYS.admin.search)} searchPlaceholder={t(TRANSLATION_KEYS.admin.searchTeachers)} searchValue={teacherQuery} onSearchChange={setTeacherQuery}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField label={t(TRANSLATION_KEYS.admin.status)}>{({ id, ...aria }) => <Select id={id} {...aria} value={teacherStatus} onChange={(event) => setTeacherStatus(event.target.value as typeof teacherStatus)}><option value="all">{t(TRANSLATION_KEYS.admin.allStatuses)}</option><option value="active">{t(TRANSLATION_KEYS.admin.activeOnly)}</option><option value="inactive">{t(TRANSLATION_KEYS.admin.inactiveOnly)}</option></Select>}</FormField>
+            <FormField label={t(TRANSLATION_KEYS.admin.sort)}>
+              {({ id, ...aria }) => <Select id={id} {...aria} value={teacherSort} onChange={(event) => setTeacherSort(event.target.value as typeof teacherSort)}>
+                <option value="name">{t(TRANSLATION_KEYS.admin.sortName)}</option>
+                <option value="online">{t(TRANSLATION_KEYS.admin.sortOnline)}</option>
+                <option value="status">{t(TRANSLATION_KEYS.admin.sortStatus)}</option>
+              </Select>}
+            </FormField>
+            <FormField label={t(TRANSLATION_KEYS.admin.onlineTeachers)}>{({ id, ...aria }) => <Select id={id} {...aria} value={presenceFilter} onChange={(event) => setPresenceFilter(event.target.value as typeof presenceFilter)}><option value="all">{t(TRANSLATION_KEYS.admin.allStatuses)}</option><option value="online">{t(TRANSLATION_KEYS.admin.online)}</option><option value="offline">{t(TRANSLATION_KEYS.admin.offline)}</option></Select>}</FormField>
+          </div>
+        </AdminWorkspaceToolbar>
+        <p className="text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.admin.showingResults)}: {filteredTeachers.length} / {teachers.length}</p>
         <Table caption={t(TRANSLATION_KEYS.admin.teacherDirectory)} headers={[t(TRANSLATION_KEYS.admin.teacher), t(TRANSLATION_KEYS.admin.status), t(TRANSLATION_KEYS.admin.lastSeen)]}>
-          {teachers.map((x) => <tr key={x.id} className="border-b border-[var(--sams-border)] last:border-b-0">
+          {filteredTeachers.map((x) => <tr key={x.id} className="border-b border-[var(--sams-border)] last:border-b-0">
             <td className="px-3 py-2 font-medium">{x.full_name}</td>
             <td className="px-3 py-2"><Badge variant={isActive(x.is_active) ? 'success' : 'neutral'}>{isActive(x.is_active) ? t(TRANSLATION_KEYS.admin.active) : t(TRANSLATION_KEYS.admin.inactive)}</Badge></td>
             <td className="px-3 py-2">{x.is_online ? t(TRANSLATION_KEYS.admin.online) : t(TRANSLATION_KEYS.admin.offline)}</td>

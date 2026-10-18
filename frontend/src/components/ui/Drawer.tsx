@@ -42,7 +42,7 @@ export function Drawer({
         tabIndex={-1}
         onKeyDown={handleKeyDown}
         className={cn(
-          'absolute inset-y-0 max-h-dvh w-full max-w-md overflow-y-auto bg-[var(--sams-surface)] p-4 shadow-lg sm:p-5',
+          'absolute inset-y-0 max-h-dvh w-full max-w-[min(28rem,100vw)] overflow-y-auto bg-[var(--sams-surface)] p-4 shadow-lg sm:p-5',
           side === 'start' ? 'inset-s-0' : 'inset-e-0',
         )}
       >

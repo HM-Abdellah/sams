@@ -376,6 +376,7 @@ tenant_expect_scope_required(
             'period' => 1,
             'action' => 'upsert',
             'status' => 'present',
+            'expected_revision' => 0,
         ]]
     ),
     'Attendance writer accepted a request without tenant scope.'

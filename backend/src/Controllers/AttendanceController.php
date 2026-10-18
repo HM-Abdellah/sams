@@ -109,10 +109,15 @@ final class AttendanceController
                 ),
             ]);
         } catch (AttendanceWorkflowException $e) {
+            $headers = [];
+            if ($e->errorCode() !== null) {
+                $headers['X-SAMS-Error-Code'] = $e->errorCode();
+            }
+
             return Response::json([
                 'success' => false,
                 'error' => $e->getMessage(),
-            ], $e->httpStatus());
+            ], $e->httpStatus(), $headers);
         } catch (\SAMS\Exceptions\RequestPayloadTooLargeException $e) {
             return Response::json([
                 'success' => false,

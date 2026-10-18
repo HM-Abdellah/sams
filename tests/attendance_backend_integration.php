@@ -104,9 +104,9 @@ expect_throw(
     'Teacher was allowed to read another teacher class.'
 );
 $saved = $service->saveBulk(2, 'teacher', 1, [
-    ['student_id' => 1, 'attendance_date' => '2026-09-23', 'period' => 1, 'action' => 'upsert', 'status' => 'absent'],
-    ['student_id' => 2, 'attendance_date' => '2026-09-23', 'period' => 2, 'action' => 'upsert', 'status' => 'late'],
-    ['student_id' => 2, 'attendance_date' => '2026-09-23', 'period' => 3, 'action' => 'delete'],
+    ['student_id' => 1, 'attendance_date' => '2026-09-23', 'period' => 1, 'action' => 'upsert', 'status' => 'absent', 'expected_revision' => 0],
+    ['student_id' => 2, 'attendance_date' => '2026-09-23', 'period' => 2, 'action' => 'upsert', 'status' => 'late', 'expected_revision' => 0],
+    ['student_id' => 2, 'attendance_date' => '2026-09-23', 'period' => 3, 'action' => 'delete', 'expected_revision' => 0],
 ], 1);
 expect_true($saved['changed'] === 2, 'Bulk save should report two changed rows.');
 expect_true($saved['unchanged'] === 1, 'Deleting a missing row should be a no-op.');
@@ -120,7 +120,7 @@ $pdo->exec("INSERT INTO attendance_week_submissions
     VALUES (1, '2026-09-21', 1)");
 
 $revised = $service->saveBulk(2, 'teacher', 1, [
-    ['student_id' => 1, 'attendance_date' => '2026-09-23', 'period' => 1, 'action' => 'upsert', 'status' => 'late'],
+    ['student_id' => 1, 'attendance_date' => '2026-09-23', 'period' => 1, 'action' => 'upsert', 'status' => 'late', 'expected_revision' => 1],
 ], 1);
 expect_true($revised['changed'] === 1, 'Changed attendance should be persisted.');
 $signatureStatus = (string)$pdo->query("SELECT status FROM attendance_week_signatures WHERE class_id = 1 AND teacher_id = 2 AND week_start = '2026-09-21'")->fetchColumn();
@@ -128,28 +128,28 @@ expect_true($signatureStatus === 'needs_resign', 'Weekly signature was not inval
 expect_true((int)$pdo->query("SELECT COUNT(*) FROM attendance_week_submissions WHERE class_id = 1 AND week_start = '2026-09-21'")->fetchColumn() === 0, 'Weekly administration submission was not cleared after attendance correction.');
 
 $noop = $service->saveBulk(2, 'teacher', 1, [
-    ['student_id' => 1, 'attendance_date' => '2026-09-23', 'period' => 1, 'action' => 'upsert', 'status' => 'late'],
+    ['student_id' => 1, 'attendance_date' => '2026-09-23', 'period' => 1, 'action' => 'upsert', 'status' => 'late', 'expected_revision' => 1],
 ], 1);
 expect_true($noop['changed'] === 0 && $noop['unchanged'] === 1, 'Exact no-op must not report a change.');
 
 expect_throw(
     static fn() => $service->saveBulk(2, 'teacher', 1, [
-        ['student_id' => 1, 'attendance_date' => '2026-09-23', 'period' => 4, 'action' => 'upsert', 'status' => 'absent'],
-        ['student_id' => 1, 'attendance_date' => '2026-09-23', 'period' => 4, 'action' => 'upsert', 'status' => 'late'],
+        ['student_id' => 1, 'attendance_date' => '2026-09-23', 'period' => 4, 'action' => 'upsert', 'status' => 'absent', 'expected_revision' => 0],
+        ['student_id' => 1, 'attendance_date' => '2026-09-23', 'period' => 4, 'action' => 'upsert', 'status' => 'late', 'expected_revision' => 0],
     ], 1),
     'Duplicate attendance keys inside one batch were accepted.'
 );
 
 expect_throw(
     static fn() => $service->saveBulk(2, 'teacher', 1, [
-        ['student_id' => 4, 'attendance_date' => '2026-09-23', 'period' => 4, 'action' => 'upsert', 'status' => 'absent'],
+        ['student_id' => 4, 'attendance_date' => '2026-09-23', 'period' => 4, 'action' => 'upsert', 'status' => 'absent', 'expected_revision' => 0]
     ], 1),
     'Attendance for another class was accepted.'
 );
 
 expect_throw(
     static fn() => $service->saveBulk(2, 'teacher', 1, [
-        ['student_id' => 1, 'attendance_date' => '2028-01-01', 'period' => 4, 'action' => 'upsert', 'status' => 'absent'],
+        ['student_id' => 1, 'attendance_date' => '2028-01-01', 'period' => 4, 'action' => 'upsert', 'status' => 'absent', 'expected_revision' => 0]
     ], 1),
     'Attendance outside the academic year was accepted.'
 );
@@ -160,7 +160,7 @@ $pdo->exec("INSERT INTO attendance_signoffs
 
 expect_throw(
     static fn() => $service->saveBulk(2, 'teacher', 1, [
-        ['student_id' => 1, 'attendance_date' => '2026-09-23', 'period' => 5, 'action' => 'upsert', 'status' => 'absent'],
+        ['student_id' => 1, 'attendance_date' => '2026-09-23', 'period' => 5, 'action' => 'upsert', 'status' => 'absent', 'expected_revision' => 0]
     ], 1),
     'Signed lesson was editable without reopening.'
 );
@@ -176,8 +176,8 @@ $beforeRollback = (int)$pdo->query('SELECT COUNT(*) FROM attendance')->fetchColu
 
 expect_throw(
     static fn() => $service->saveBulk(2, 'teacher', 1, [
-        ['student_id' => 1, 'attendance_date' => '2026-09-24', 'period' => 1, 'action' => 'upsert', 'status' => 'absent'],
-        ['student_id' => 2, 'attendance_date' => '2026-09-24', 'period' => 2, 'action' => 'upsert', 'status' => 'late'],
+        ['student_id' => 1, 'attendance_date' => '2026-09-24', 'period' => 1, 'action' => 'upsert', 'status' => 'absent', 'expected_revision' => 0],
+        ['student_id' => 2, 'attendance_date' => '2026-09-24', 'period' => 2, 'action' => 'upsert', 'status' => 'late', 'expected_revision' => 0],
     ], 1),
     'Forced failure did not abort the attendance transaction.'
 );
@@ -187,8 +187,8 @@ expect_true($beforeRollback === $afterRollback, 'Failed attendance batch was not
 $pdo->exec('DROP TRIGGER fail_attendance_audit');
 
 $recovered = $service->saveBulk(2, 'teacher', 1, [
-    ['student_id' => 1, 'attendance_date' => '2026-09-24', 'period' => 1, 'action' => 'upsert', 'status' => 'absent'],
-    ['student_id' => 2, 'attendance_date' => '2026-09-24', 'period' => 2, 'action' => 'upsert', 'status' => 'late'],
+    ['student_id' => 1, 'attendance_date' => '2026-09-24', 'period' => 1, 'action' => 'upsert', 'status' => 'absent', 'expected_revision' => 0],
+    ['student_id' => 2, 'attendance_date' => '2026-09-24', 'period' => 2, 'action' => 'upsert', 'status' => 'late', 'expected_revision' => 0],
 ], 1);
 expect_true($recovered['changed'] === 2, 'Attendance batch did not recover after rollback.');
 

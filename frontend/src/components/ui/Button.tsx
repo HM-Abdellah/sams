@@ -40,7 +40,7 @@ export function Button({
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-lg font-medium',
+        'inline-flex items-center justify-center gap-2 rounded-[var(--sams-radius-control)] font-medium',
         'transition-[background-color,border-color,color,box-shadow,transform] duration-150',
         'active:scale-[0.98]',
         'focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0',

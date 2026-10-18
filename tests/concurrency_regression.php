@@ -85,6 +85,7 @@ function c_seed(PDO $pdo): void
 function c_reset_transfer(PDO $pdo): void
 {
     $pdo->exec('DELETE FROM attendance');
+    $pdo->exec('DELETE FROM attendance_register_revisions');
     $pdo->exec('DELETE FROM student_enrollments');
     $pdo->exec("UPDATE students SET class_id = 1, status = 'active' WHERE id = 1");
     $pdo->exec("INSERT INTO student_enrollments (student_id, class_id, starts_on)
@@ -94,6 +95,7 @@ function c_reset_transfer(PDO $pdo): void
 function c_reset_deactivation(PDO $pdo): void
 {
     $pdo->exec('DELETE FROM attendance');
+    $pdo->exec('DELETE FROM attendance_register_revisions');
     $pdo->exec('DELETE FROM student_enrollments');
     $pdo->exec("UPDATE students SET class_id = 1, status = 'active' WHERE id = 1");
     $pdo->exec("INSERT INTO student_enrollments (student_id, class_id, starts_on)
@@ -102,6 +104,7 @@ function c_reset_deactivation(PDO $pdo): void
 
 function c_reset_certification(PDO $pdo): void
 {
+    $pdo->exec('DELETE FROM attendance_register_revisions');
     $pdo->exec('DELETE FROM attendance_week_submissions');
     $pdo->exec('DELETE FROM attendance_week_signatures');
     $pdo->exec('DELETE FROM attendance_signoffs');
@@ -169,6 +172,7 @@ function c_child(string $mode, string $gate): never
                         'period' => 1,
                         'action' => 'upsert',
                         'status' => 'absent',
+                        'expected_revision' => 0,
                     ]],
                     1
                 );

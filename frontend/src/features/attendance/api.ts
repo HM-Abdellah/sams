@@ -20,12 +20,19 @@ export interface AttendanceRecord {
   status: AttendanceStatus
 }
 
+export interface AttendanceRevision {
+  attendance_date: string
+  period: number
+  revision: number
+}
+
 export interface WeeklyRegisterData {
   class_id: number
   week_start: string
   week_end: string
   students: AttendanceStudent[]
   attendance: AttendanceRecord[]
+  attendance_revisions: AttendanceRevision[]
   period_signoffs: AttendanceSignoff[]
 }
 
@@ -33,6 +40,7 @@ export interface SaveBulkData {
   changed: number
   unchanged: number
   total: number
+  revisions: AttendanceRevision[]
 }
 
 export const attendanceApi = {

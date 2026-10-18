@@ -11,7 +11,7 @@ export function Select({ className, invalid = false, ...props }: SelectProps) {
       {...props}
       aria-invalid={invalid || undefined}
       className={cn(
-        'block min-h-11 w-full rounded-lg border bg-[var(--sams-surface)] px-3.5 py-2.5',
+        'block min-h-[var(--sams-control-min)] w-full rounded-[var(--sams-radius-control)] border bg-[var(--sams-surface)] px-3.5 py-2.5',
         'text-[var(--sams-text)] shadow-sm',
         'focus-visible:outline-none focus-visible:border-[var(--sams-focus)] focus-visible:ring-4 focus-visible:ring-[var(--sams-info-surface)]',
         'disabled:cursor-not-allowed disabled:opacity-60',

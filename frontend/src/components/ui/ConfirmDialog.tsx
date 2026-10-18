@@ -31,6 +31,7 @@ export function ConfirmDialog({
     <Dialog
       open={open}
       title={title}
+      role="alertdialog"
       {...(description === undefined ? {} : { description })}
       onClose={onCancel}
     >

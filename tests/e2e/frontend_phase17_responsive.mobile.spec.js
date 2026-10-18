@@ -31,6 +31,7 @@ const attendanceData = {
   week_end: '2026-09-26',
   students: students.map(({ id, first_name, last_name }) => ({ id, first_name, last_name })),
   attendance: [],
+  attendance_revisions: [],
   period_signoffs: [],
 }
 
@@ -86,7 +87,7 @@ async function assertNoPageOverflow(page) {
 }
 
 test.describe('frontend Phase 17 responsive engineering', () => {
-  test('teacher shell stays within the viewport at phone, tablet, and desktop widths', async ({ page }) => {
+  test('teacher shell stays within the viewport and uses persistent desktop navigation plus a mobile drawer', async ({ page }) => {
     await installTeacherFixture(page)
     await page.goto('/app/teacher')
     await expect(page.getByRole('heading', { name: 'Teacher workspace' })).toBeVisible()
@@ -94,17 +95,40 @@ test.describe('frontend Phase 17 responsive engineering', () => {
     for (const width of [320, 768, 1280]) {
       await page.setViewportSize({ width, height: 800 })
       await assertNoPageOverflow(page)
-      const profileName = page.locator('header p.truncate')
-      await expect(profileName).toBeVisible()
+      await expect(page.getByRole('banner')).toBeVisible()
+      await expect(page.getByRole('banner').locator('.grid.size-10')).toBeVisible()
     }
 
     await page.setViewportSize({ width: 320, height: 800 })
-    const nav = page.getByRole('navigation', { name: 'Application' })
+    const menuTrigger = page.getByRole('button', { name: 'Open navigation' })
+    await expect(menuTrigger).toBeVisible()
+
+    await menuTrigger.click()
+    const drawer = page.getByRole('dialog', { name: 'SAMS' })
+    await expect(drawer).toBeVisible()
+    const nav = drawer.getByRole('navigation', { name: 'Application' })
     await expect(nav).toBeVisible()
-    expect(await nav.evaluate((element) => element.scrollWidth)).toBeGreaterThan(await nav.evaluate((element) => element.clientWidth))
-    const lastLink = nav.getByRole('link').last()
-    await lastLink.evaluate((element) => element.scrollIntoView({ inline: 'end', block: 'nearest' }))
-    await expect(lastLink).toBeInViewport()
+    await expect(nav.getByRole('link', { name: 'Classes' })).toBeVisible()
+    await expect(nav.getByRole('link', { name: 'Attendance' })).toBeVisible()
+    await assertNoPageOverflow(page)
+
+    await page.keyboard.press('Escape')
+    await expect(drawer).toBeHidden()
+    await expect(menuTrigger).toBeFocused()
+
+    await menuTrigger.click()
+    await expect(drawer).toBeVisible()
+    await drawer.getByRole('navigation', { name: 'Application' }).getByRole('link', { name: 'Classes' }).click()
+    await expect(drawer).toBeHidden()
+    await expect(page).toHaveURL(new RegExp('/app/classes$'))
+
+    await page.setViewportSize({ width: 1280, height: 800 })
+    const desktopNav = page.locator('aside nav[aria-label="Application"]')
+    await expect(desktopNav).toBeVisible()
+    const classesLink = desktopNav.getByRole('link', { name: 'Classes' })
+    await expect(classesLink).toHaveAttribute('aria-current', 'page')
+    await expect(page.getByRole('banner')).toContainText('Classes')
+    await assertNoPageOverflow(page)
   })
 
   test('attendance register stays inside the viewport and exposes all periods on narrow phones', async ({ page }) => {
@@ -112,18 +136,19 @@ test.describe('frontend Phase 17 responsive engineering', () => {
     await page.goto('/app/attendance?class_id=1&week_start=2026-09-21')
     await expect(page.getByRole('heading', { name: 'Attendance register' })).toBeVisible()
     await page.setViewportSize({ width: 320, height: 640 })
-    await expect(page.locator('table tbody tr').filter({ hasText: 'Demo Student' })).toBeVisible()
+    await expect(page.locator('[data-attendance-row]:visible').filter({ hasText: 'Demo Student' })).toBeVisible()
     await assertNoPageOverflow(page)
 
-    const periodHeaders = page.getByRole('columnheader', { name: /Period [1-8]/ })
-    await expect(periodHeaders).toHaveCount(8)
-    const statusCells = page.locator('button.sams-touch-cell')
+    const periodSelector = page.getByRole('group', { name: 'Period' })
+    await expect(periodSelector.getByRole('button')).toHaveCount(8)
+    await periodSelector.getByRole('button', { name: /Period 8/ }).click()
+    const statusCells = page.locator('button.sams-touch-cell:visible')
     await expect(statusCells.first()).toBeVisible()
     const target = await statusCells.first().boundingBox()
     expect(target).not.toBeNull()
     expect(target.width).toBeGreaterThanOrEqual(48)
     expect(target.height).toBeGreaterThanOrEqual(48)
-    await expect(page.getByText('Swipe horizontally to reach the afternoon periods.')).toBeVisible()
+    await expect(periodSelector.getByRole('button', { name: /Period 8.*17:00–18:00/ })).toHaveAttribute('aria-pressed', 'true')
   })
 
   test('student form dialog remains contained and scrollable on a short phone', async ({ page }) => {
@@ -185,11 +210,11 @@ test.describe('frontend Phase 17 responsive engineering', () => {
     await page.setViewportSize({ width: 320, height: 640 })
     await assertNoPageOverflow(page)
 
-    const formGrid = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Create class' }) }).locator('.grid')
+    const formGrid = page.locator('section.sams-card').filter({ has: page.getByRole('heading', { name: 'Create class' }) }).locator('div.mt-4.grid').first()
     await expect(formGrid).toBeVisible()
     expect(await formGrid.evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(1)
 
-    const tableScroller = page.locator('.overflow-x-auto').last()
+    const tableScroller = page.locator('.sams-scroll-x').last()
     await expect(tableScroller).toBeVisible()
     const scrollerBox = await tableScroller.boundingBox()
     expect(scrollerBox).not.toBeNull()

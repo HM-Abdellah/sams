@@ -9,6 +9,19 @@
   --sams-muted: #6b6b6b;
   --sams-border: #d4d4d4;
 
+  /* Layout + interaction contracts */
+  --sams-content-max: 72rem;
+  --sams-app-shell-max: 90rem;
+  --sams-admin-sidebar-width: 17rem;
+  --sams-app-sidebar-width: 16rem;
+  --sams-app-header-height: 4.25rem;
+  --sams-radius-control: 0.5rem;
+  --sams-radius-surface: 0.75rem;
+  --sams-radius-elevated: 1rem;
+  --sams-touch-min: 2.5rem;
+  --sams-control-min: 2.75rem;
+  --sams-page-gutter: 1rem;
+
   --sams-action: #171717;
   --sams-action-hover: #303030;
   --sams-action-foreground: #ffffff;
@@ -83,29 +96,68 @@ button {
 .sams-card {
   border: 1px solid var(--sams-border);
   background: var(--sams-surface);
-  border-radius: 12px;
+  border-radius: var(--sams-radius-surface);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
+/* Shared page/container contracts. Pages opt into these instead of inventing
+   their own width and gutter rules. */
+.sams-page {
+  width: 100%;
+  max-width: var(--sams-content-max);
+  margin-inline: auto;
+}
+
+.sams-page-gutter {
+  padding-inline: var(--sams-page-gutter);
+}
+
+.sams-interactive-target {
+  min-width: var(--sams-touch-min);
+  min-height: var(--sams-touch-min);
+}
+
+.sams-scroll-x {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
 .sams-admin-page {
+  width: 100%;
+  max-width: var(--sams-content-max);
+  margin-inline: auto;
   animation: sams-admin-page-in 180ms ease-out both;
 }
 
 .sams-admin-page .sams-card {
-  border-radius: 12px;
+  border-radius: var(--sams-radius-surface);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .sams-admin-toolbar {
   border: 1px solid var(--sams-border);
   background: var(--sams-surface);
-  border-radius: 12px;
+  border-radius: var(--sams-radius-surface);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 @keyframes sams-admin-page-in {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@media (min-width: 640px) {
+  :root {
+    --sams-page-gutter: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --sams-page-gutter: 2rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -128,8 +180,10 @@ button {
 }
 
 .sams-scroll-surface {
+  max-width: 100%;
   scrollbar-width: thin;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-inline: contain;
 }
 
 @media (prefers-reduced-motion: reduce) {

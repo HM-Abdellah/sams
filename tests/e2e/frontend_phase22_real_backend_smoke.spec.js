@@ -17,9 +17,9 @@ test.describe('frontend Phase 22 real backend smoke', () => {
     await login(page, teacherCode, teacherPassword)
     await expect(page).toHaveURL(/\/sams\/app\/teacher$/)
     await expect(page.getByRole('heading', { name: 'Teacher workspace' })).toBeVisible()
-    await expect(page.getByText('E2E-2BAC-A')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'E2E-2BAC-A' })).toBeVisible()
 
-    await page.getByRole('link', { name: 'Open attendance' }).click()
+    await page.getByRole('link', { name: 'Open attendance' }).first().click()
     await expect(page).toHaveURL(/\/sams\/app\/attendance/)
     await expect(page.getByRole('heading', { name: 'Attendance register' })).toBeVisible()
   })
