@@ -68,6 +68,7 @@ final class SchoolWorkbookImportService
         } catch (InvalidArgumentException $e) {
             throw $e;
         } catch (Throwable $e) {
+            error_log('[SAMS workbook parser] ' . get_class($e) . ': ' . $e->getMessage());
             throw new InvalidArgumentException('Unable to read the Excel workbook.', 0, $e);
         }
 

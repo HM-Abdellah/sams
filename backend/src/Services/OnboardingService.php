@@ -9,6 +9,7 @@ use SAMS\Helpers\Database;
 use SAMS\Helpers\Security;
 use SAMS\Repositories\AuditLogRepository;
 use SAMS\Repositories\OnboardingRepository;
+use SAMS\Repositories\SyncEventRepository;
 use SAMS\Repositories\UserRepository;
 
 final class OnboardingService
@@ -141,6 +142,7 @@ final class OnboardingService
             );
 
             $pdo->commit();
+            $this->publishChangeSignal((int)$code['school_id']);
 
             return [
                 'request_id' => $requestId,
@@ -218,6 +220,8 @@ final class OnboardingService
 
             if ((string)$request['status'] === 'pending' && strtotime((string)$request['expires_at']) <= time()) {
                 $this->repository->markExpired($requestId, $schoolId);
+                // Keep the expiration transition even though review itself must fail.
+                $pdo->commit();
                 throw new OnboardingWorkflowException('Onboarding request has expired.', 409);
             }
 
@@ -341,6 +345,8 @@ final class OnboardingService
 
             if ((string)$request['status'] === 'pending' && strtotime((string)$request['expires_at']) <= time()) {
                 $this->repository->markExpired((int)$request['id'], (int)$request['school_id']);
+                // Keep the expiration transition even though activation must fail.
+                $pdo->commit();
                 throw new OnboardingWorkflowException('Onboarding request has expired.', 409);
             }
             if ((string)$request['status'] !== 'approved') {
@@ -376,6 +382,7 @@ final class OnboardingService
             );
 
             $pdo->commit();
+            $this->publishChangeSignal((int)$request['school_id']);
 
             return [
                 'request_id' => (int)$request['id'],
@@ -402,7 +409,22 @@ final class OnboardingService
             throw new OnboardingWorkflowException('Administrator not found.', 403);
         }
 
+        // Expire overdue pending requests before filtering, so the admin list and
+        // its "expired" view reflect the deadline even if nobody opened the token.
+        $this->repository->expirePendingRequests($schoolId);
+
         return $this->repository->listRequests($schoolId, $status);
+    }
+
+    private function publishChangeSignal(int $schoolId): void
+    {
+        try {
+            (new SyncEventRepository())->publish($schoolId);
+        } catch (\Throwable $e) {
+            // The onboarding write has already committed; a notification failure
+            // must not make the public request/activation appear to have failed.
+            error_log('[SAMS sync] Unable to publish onboarding change signal: ' . $e->getMessage());
+        }
     }
 
     private function generateOnboardingCode(): string

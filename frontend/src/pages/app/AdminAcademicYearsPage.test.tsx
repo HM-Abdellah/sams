@@ -18,6 +18,21 @@ describe('AdminAcademicYearsPage', () => {
     vi.unstubAllGlobals()
   })
 
+  test('blocks creating an academic year when the end date is not after the start date', async () => {
+    const createSpy = vi.spyOn(adminApi, 'createAcademicYear').mockResolvedValue({ id: 2 })
+    render(
+      <MemoryRouter initialEntries={['/app/admin/academic-years']}>
+        <I18nProvider><AdminAcademicYearsPage /></I18nProvider>
+      </MemoryRouter>,
+    )
+    await waitFor(() => expect(screen.getByLabelText('Name')).toBeInTheDocument())
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: '2026/2027' } })
+    fireEvent.change(screen.getByLabelText('Starts on'), { target: { value: '2027-07-01' } })
+    fireEvent.change(screen.getByLabelText('Ends on'), { target: { value: '2026-09-01' } })
+    expect(screen.getByRole('button', { name: 'Create' })).toBeDisabled()
+    expect(createSpy).not.toHaveBeenCalled()
+  })
+
   test('allows deleting an inactive dependency-free academic year', async () => {
     const deleteSpy = vi.spyOn(adminApi, 'deleteAcademicYear').mockResolvedValue(null)
     const reloadSpy = vi.spyOn(adminApi, 'academicYears')

@@ -25,6 +25,7 @@ export function AdminUsersPage() {
   const [error, setError] = useState<string | null>(null)
   const [issuedCode, setIssuedCode] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null)
+  const [manageTarget, setManageTarget] = useState<AdminUser | null>(null)
   const [query, setQuery] = useState('')
   const [presenceFilter, setPresenceFilter] = useState<'all' | 'online' | 'offline'>('all')
 
@@ -141,6 +142,10 @@ export function AdminUsersPage() {
 
   const data = resource.data
   const adminCount = data.users.filter((user) => user.role === 'admin').length
+  const isCurrentAdmin = (user: AdminUser): boolean => {
+    const currentId = session.user?.id
+    return currentId !== null && currentId !== undefined && Number(currentId) === Number(user.id)
+  }
 
   return (
     <>
@@ -168,18 +173,19 @@ export function AdminUsersPage() {
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             <FormField label={t(TRANSLATION_KEYS.admin.fullName)}>
-              {({ id, ...aria }) => <Input id={id} {...aria} value={fullName} onChange={(event) => setFullName(event.target.value)} />}
+              {({ id, ...aria }) => <Input id={id} {...aria} value={fullName} onChange={(event) => setFullName(event.target.value)} maxLength={120} />}
             </FormField>
             <FormField label={t(TRANSLATION_KEYS.admin.username)}>
-              {({ id, ...aria }) => <Input id={id} {...aria} value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" />}
+              {({ id, ...aria }) => <Input id={id} {...aria} value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" maxLength={50} />}
             </FormField>
             <FormField label={t(TRANSLATION_KEYS.admin.password)}>
-              {({ id, ...aria }) => <Input id={id} {...aria} type="password" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} />}
+              {({ id, ...aria }) => <Input id={id} {...aria} type="password" autoComplete="new-password" minLength={10} maxLength={255} value={password} onChange={(event) => setPassword(event.target.value)} />}
             </FormField>
           </div>
+          <p className="text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.admin.passwordPolicyHint)}</p>
           <Button
             type="button"
-            disabled={!fullName.trim() || !username.trim() || !password || busy !== null}
+            disabled={!fullName.trim() || !username.trim() || password.length < 10 || busy !== null}
             loading={busy === 'form'}
             onClick={() => void createAdministrator()}
           >
@@ -204,7 +210,7 @@ export function AdminUsersPage() {
             searchValue={query}
             onSearchChange={setQuery}
           >
-            <FormField label={t(TRANSLATION_KEYS.admin.status)}>
+            <FormField label={t(TRANSLATION_KEYS.admin.presence)}>
               {({ id, ...aria }) => (
                 <Select id={id} {...aria} value={presenceFilter} onChange={(event) => setPresenceFilter(event.target.value as typeof presenceFilter)}>
                   <option value="all">{t(TRANSLATION_KEYS.admin.allStatuses)}</option>
@@ -224,6 +230,7 @@ export function AdminUsersPage() {
                 t(TRANSLATION_KEYS.admin.fullName),
                 t(TRANSLATION_KEYS.admin.username),
                 t(TRANSLATION_KEYS.admin.status),
+                t(TRANSLATION_KEYS.admin.presence),
                 t(TRANSLATION_KEYS.admin.lastSeen),
                 t(TRANSLATION_KEYS.admin.security),
                 t(TRANSLATION_KEYS.admin.actions),
@@ -236,6 +243,15 @@ export function AdminUsersPage() {
                     <td className="px-3 py-3 font-medium">{user.full_name}</td>
                     <td className="px-3 py-3">{user.username}</td>
                     <td className="px-3 py-3">
+                      <Badge variant={user.account_status === 'active' ? 'success' : user.account_status === 'suspended' ? 'warning' : 'danger'}>
+                        {user.account_status === 'active'
+                          ? t(TRANSLATION_KEYS.admin.statusActive)
+                          : user.account_status === 'suspended'
+                            ? t(TRANSLATION_KEYS.admin.statusSuspended)
+                            : t(TRANSLATION_KEYS.admin.statusDeactivated)}
+                      </Badge>
+                    </td>
+                    <td className="px-3 py-3">
                       <Badge variant={online ? 'success' : 'neutral'}>
                         {online ? t(TRANSLATION_KEYS.admin.online) : t(TRANSLATION_KEYS.admin.offline)}
                       </Badge>
@@ -246,27 +262,15 @@ export function AdminUsersPage() {
                       {user.locked_until ? ' · ' + t(TRANSLATION_KEYS.admin.locked) : ''}
                     </td>
                     <td className="px-3 py-3">
-                      <div className="flex flex-wrap gap-2">
-                        {user.locked_until && <Button type="button" size="sm" variant="secondary" disabled={busy === user.id} onClick={() => void action(user, 'unlock')}>{t(TRANSLATION_KEYS.admin.unlock)}</Button>}
-                        <Button type="button" size="sm" variant="secondary" disabled={busy === user.id} onClick={() => void action(user, user.account_status === 'active' ? 'suspended' : 'active')}>
-                          {user.account_status === 'active' ? t(TRANSLATION_KEYS.admin.suspend) : t(TRANSLATION_KEYS.admin.activate)}
-                        </Button>
-                        {user.account_status === 'active' && <Button type="button" size="sm" variant="secondary" disabled={busy === user.id} onClick={() => void action(user, 'deactivated')}>{t(TRANSLATION_KEYS.admin.deactivate)}</Button>}
-                        <Button type="button" size="sm" variant="secondary" disabled={busy === user.id} onClick={() => { setResetTarget(user); setResetPasswordValue(''); setError(null) }}>{t(TRANSLATION_KEYS.admin.resetPassword)}</Button>
-                        <Button type="button" size="sm" variant="secondary" disabled={busy === user.id} onClick={() => void action(user, 'revoke')}>{t(TRANSLATION_KEYS.admin.revokeSessions)}</Button>
-                        <Button type="button" size="sm" variant="secondary" disabled={busy === user.id} onClick={() => void action(user, 'code')}>{t(TRANSLATION_KEYS.admin.reissueCode)}</Button>
-                        {session.user?.id !== user.id && (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="danger"
-                            disabled={busy !== null}
-                            onClick={() => { setDeleteTarget(user); setError(null) }}
-                          >
-                            {t(TRANSLATION_KEYS.admin.deleteUser)}
-                          </Button>
-                        )}
-                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        disabled={busy !== null}
+                        onClick={() => setManageTarget(user)}
+                      >
+                        {t(TRANSLATION_KEYS.admin.actions)}
+                      </Button>
                     </td>
                   </tr>
                 )
@@ -275,6 +279,171 @@ export function AdminUsersPage() {
           )}
         </section>
       </section>
+
+      <Dialog
+        open={manageTarget !== null}
+        title={t(TRANSLATION_KEYS.admin.actions)}
+        description={manageTarget ? manageTarget.full_name + ' · ' + manageTarget.username : ''}
+        closeLabel={t(TRANSLATION_KEYS.admin.cancel)}
+        onClose={() => { if (busy === null) setManageTarget(null) }}
+        className="max-w-3xl"
+      >
+        {manageTarget !== null && (
+          <div className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <section className="rounded-xl border border-[var(--sams-border)] bg-[var(--sams-muted-surface)]/40 p-4">
+                <h3 className="text-sm font-semibold text-[var(--sams-text)]">
+                  {t(TRANSLATION_KEYS.admin.userAccountActions)}
+                </h3>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {(!isCurrentAdmin(manageTarget) || manageTarget.account_status !== 'active') && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      disabled={busy !== null}
+                      onClick={() => {
+                        const target = manageTarget
+                        if (target === null) return
+                        setManageTarget(null)
+                        void action(target, target.account_status === 'active' ? 'suspended' : 'active')
+                      }}
+                    >
+                      {manageTarget.account_status === 'active'
+                        ? t(TRANSLATION_KEYS.admin.suspend)
+                        : t(TRANSLATION_KEYS.admin.activate)}
+                    </Button>
+                  )}
+                  {manageTarget.account_status === 'active' && !isCurrentAdmin(manageTarget) && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      disabled={busy !== null}
+                      onClick={() => {
+                        const target = manageTarget
+                        if (target === null) return
+                        setManageTarget(null)
+                        void action(target, 'deactivated')
+                      }}
+                    >
+                      {t(TRANSLATION_KEYS.admin.deactivate)}
+                    </Button>
+                  )}
+                </div>
+              </section>
+
+              <section className="rounded-xl border border-[var(--sams-border)] bg-[var(--sams-muted-surface)]/40 p-4">
+                <h3 className="text-sm font-semibold text-[var(--sams-text)]">
+                  {t(TRANSLATION_KEYS.admin.securityActions)}
+                </h3>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {manageTarget.locked_until && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      disabled={busy !== null}
+                      onClick={() => {
+                        const target = manageTarget
+                        if (target === null) return
+                        setManageTarget(null)
+                        void action(target, 'unlock')
+                      }}
+                    >
+                      {t(TRANSLATION_KEYS.admin.unlock)}
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    disabled={busy !== null}
+                    onClick={() => {
+                      const target = manageTarget
+                      if (target === null) return
+                      setManageTarget(null)
+                      setResetTarget(target)
+                      setResetPasswordValue('')
+                      setError(null)
+                    }}
+                  >
+                    {t(TRANSLATION_KEYS.admin.resetPassword)}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    disabled={busy !== null}
+                    onClick={() => {
+                      const target = manageTarget
+                      if (target === null) return
+                      setManageTarget(null)
+                      void action(target, 'revoke')
+                    }}
+                  >
+                    {t(TRANSLATION_KEYS.admin.revokeSessions)}
+                  </Button>
+                </div>
+              </section>
+
+              <section className="rounded-xl border border-[var(--sams-border)] bg-[var(--sams-muted-surface)]/40 p-4 sm:col-span-2">
+                <h3 className="text-sm font-semibold text-[var(--sams-text)]">
+                  {t(TRANSLATION_KEYS.admin.userAccessCode)}
+                </h3>
+                <div className="mt-3">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    disabled={busy !== null}
+                    onClick={() => {
+                      const target = manageTarget
+                      if (target === null) return
+                      setManageTarget(null)
+                      void action(target, 'code')
+                    }}
+                  >
+                    {t(TRANSLATION_KEYS.admin.reissueCode)}
+                  </Button>
+                </div>
+              </section>
+            </div>
+
+            <section className="rounded-xl border border-[var(--sams-danger)]/25 bg-[var(--sams-danger-surface)]/40 p-4">
+              <h3 className="text-sm font-semibold text-[var(--sams-danger)]">
+                {t(TRANSLATION_KEYS.admin.dangerZone)}
+              </h3>
+              {isCurrentAdmin(manageTarget) ? (
+                <p className="mt-2 text-sm leading-6 text-[var(--sams-muted)]">
+                  {t(TRANSLATION_KEYS.admin.selfDeleteBlocked)}
+                </p>
+              ) : (
+                <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="max-w-xl text-sm leading-6 text-[var(--sams-muted)]">
+                    {t(TRANSLATION_KEYS.admin.deleteUserWarning)}
+                  </p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="danger"
+                    disabled={busy !== null || session.user?.id == null}
+                    onClick={() => {
+                      const target = manageTarget
+                      if (target === null || session.user?.id == null || isCurrentAdmin(target)) return
+                      setManageTarget(null)
+                      setDeleteTarget(target)
+                      setError(null)
+                    }}
+                  >
+                    {t(TRANSLATION_KEYS.admin.deleteUser)}
+                  </Button>
+                </div>
+              )}
+            </section>
+          </div>
+        )}
+      </Dialog>
 
       <Dialog
         open={deleteTarget !== null}
@@ -309,14 +478,15 @@ export function AdminUsersPage() {
         open={resetTarget !== null}
         title={t(TRANSLATION_KEYS.admin.resetPassword)}
         closeLabel={t(TRANSLATION_KEYS.admin.cancel)}
-        onClose={() => { setResetTarget(null); setResetPasswordValue('') }}
+        onClose={() => { if (busy === null) { setResetTarget(null); setResetPasswordValue('') } }}
       >
         <div className="space-y-4">
           <p className="text-sm text-[var(--sams-muted)]">{resetTarget?.full_name}</p>
           <FormField label={t(TRANSLATION_KEYS.admin.password)}>
-            {({ id, ...aria }) => <Input id={id} {...aria} type="password" autoComplete="new-password" value={resetPasswordValue} onChange={(event) => setResetPasswordValue(event.target.value)} />}
+            {({ id, ...aria }) => <Input id={id} {...aria} type="password" autoComplete="new-password" minLength={10} maxLength={255} value={resetPasswordValue} onChange={(event) => setResetPasswordValue(event.target.value)} />}
           </FormField>
-          <Button type="button" disabled={!resetPasswordValue.trim() || busy !== null} loading={resetTarget !== null && busy === resetTarget.id} onClick={() => void submitResetPassword()}>{t(TRANSLATION_KEYS.admin.save)}</Button>
+          <p className="text-sm text-[var(--sams-muted)]">{t(TRANSLATION_KEYS.admin.passwordPolicyHint)}</p>
+          <Button type="button" disabled={resetPasswordValue.length < 10 || busy !== null} loading={resetTarget !== null && busy === resetTarget.id} onClick={() => void submitResetPassword()}>{t(TRANSLATION_KEYS.admin.save)}</Button>
         </div>
       </Dialog>
     </>

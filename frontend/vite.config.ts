@@ -8,6 +8,8 @@ export default defineConfig(({ command }) => ({
   // Local Vite development and mocked-browser tests stay rooted at /.
   base: command === 'build' ? '/sams/' : '/',
   plugins: [react(), tailwindcss()],
+  // Same-origin API proxy for a usable Codespaces preview.
+  server: { proxy: { '/api': { target: 'http://127.0.0.1:8080', changeOrigin: false } } },
   build: {
     outDir: 'dist',
     emptyOutDir: true,

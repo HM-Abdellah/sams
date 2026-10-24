@@ -230,10 +230,10 @@ export function AdminOnboardingPage() {
                       <div className="flex flex-wrap gap-2">
                         {item.status === 'pending' && (
                           <>
-                            <Button type="button" size="sm" disabled={busy === item.id} onClick={() => void review(item.id, 'approve')}>
+                            <Button type="button" size="sm" disabled={busy !== null} onClick={() => void review(item.id, 'approve')}>
                               {t(TRANSLATION_KEYS.admin.approve)}
                             </Button>
-                            <Button type="button" size="sm" variant="secondary" disabled={busy === item.id} onClick={() => openReject(item)}>
+                            <Button type="button" size="sm" variant="secondary" disabled={busy !== null} onClick={() => openReject(item)}>
                               {t(TRANSLATION_KEYS.admin.reject)}
                             </Button>
                           </>

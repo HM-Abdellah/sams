@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import AxeBuilder from '@axe-core/playwright'
 
 test.describe('frontend Phase 14 admin platform', () => {
   let role
@@ -101,6 +102,23 @@ test.describe('frontend Phase 14 admin platform', () => {
       }
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: { id: payload.id ?? null, changed: true } }) })
     })
+    await page.route('**/api/v1/admin/teacher-presence', async (route) => {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+        success: true,
+        data: {
+          teachers: teachers.map((teacher) => ({
+            id: teacher.id,
+            full_name: teacher.full_name,
+            employee_id: teacher.employee_id,
+            is_active: teacher.is_active,
+            last_seen_at: teacher.last_seen_at,
+            is_online: teacher.is_online,
+          })),
+          online_window_seconds: 300,
+        },
+      }) })
+    })
+
     await page.route('**/api/v1/admin/teachers', async (route) => {
       if (route.request().method() === 'GET') {
         await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: { teachers, subjects, teachings, online_window_seconds: 300 } }) })
@@ -173,12 +191,12 @@ test.describe('frontend Phase 14 admin platform', () => {
         ...profile,
         username: 'updated.admin',
         full_name: 'Updated E2E Admin',
-        avatar_url: '/api/v1/profile/avatar',
+        avatar_url: '/api/v1/profile/avatar?v=avatar-e2e',
       }
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: { ...profile, csrf: 'e2e-csrf-token' } }) })
     })
-    await page.route('**/api/v1/profile/avatar', async (route) => {
-      await route.fulfill({ status: 200, contentType: 'image/png', body: Buffer.from([137,80,78,71,13,10,26,10]) })
+    await page.route('**/api/v1/profile/avatar*', async (route) => {
+      await route.fulfill({ status: 200, contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAADElEQVQImWNgYGAAAAAEAAGjChXjAAAAAElFTkSuQmCC', 'base64') })
     })
     await page.route('**/api/v1/admin/academic-years', async (route) => {
       if (route.request().method() === 'GET') {
@@ -270,6 +288,33 @@ test.describe('frontend Phase 14 admin platform', () => {
     })
   })
 
+  for (const route of [
+    '/app/admin/dashboard',
+    '/app/admin/classes',
+    '/app/admin/students',
+    '/app/admin/teachers',
+    '/app/admin/users',
+    '/app/admin/onboarding',
+    '/app/admin/academic-years',
+    '/app/admin/imports',
+    '/app/admin/archive',
+    '/app/admin/audit',
+  ]) {
+    test(`admin route ${route} passes the automated WCAG accessibility scan`, async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' })
+      await page.goto(route)
+      await expect(page.locator('h1').first()).toBeVisible()
+      const results = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+        .analyze()
+      expect(results.violations.map((violation) => ({
+        id: violation.id,
+        impact: violation.impact,
+        targets: violation.nodes.map((node) => node.target),
+      }))).toEqual([])
+    })
+  }
+
   test('admin dashboard and class administration use the canonical APIs', async ({ page }) => {
     await page.goto('/app/admin/dashboard')
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
@@ -338,38 +383,59 @@ test.describe('frontend Phase 14 admin platform', () => {
     await page.getByLabel('Profile picture').setInputFiles({
       name: 'avatar.png',
       mimeType: 'image/png',
-      buffer: Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+      buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAADElEQVQImWNgYGAAAAAEAAGjChXjAAAAAElFTkSuQmCC', 'base64'),
     })
 
     await page.getByRole('button', { name: 'Save changes' }).click()
     await expect(page.getByText('Profile updated successfully.')).toBeVisible()
     await expect(page.getByLabel('Full name')).toHaveValue('Updated E2E Admin')
     await expect(page.getByLabel('Username')).toHaveValue('updated.admin')
-    await expect(page.locator('img[src="/api/v1/profile/avatar"]')).toBeVisible()
+    await expect(page.locator('img[src^="/api/v1/profile/avatar"]')).toBeVisible()
   })
 
   test('teachers, users, onboarding and academic years execute the intended management workflow', async ({ page }) => {
     await page.goto('/app/admin/teachers')
     await expect(page.getByRole('heading', { level: 1, name: 'Teachers' })).toBeVisible()
     await expect(page.getByRole('combobox', { name: 'Status', exact: true })).toBeVisible()
-    await expect(page.getByRole('combobox', { name: 'Teacher', exact: true })).toHaveCount(0)
-    await expect(page.getByRole('combobox', { name: 'Subject', exact: true })).toHaveCount(0)
-    await expect(page.getByRole('button', { name: 'Assign', exact: true })).toHaveCount(0)
+    await expect(page.getByRole('combobox', { name: 'Teacher', exact: true })).toBeVisible()
+    await expect(page.getByRole('combobox', { name: 'Subject', exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Assign', exact: true })).toBeDisabled()
     await expect(page.getByText('E2E Teacher', { exact: true }).first()).toBeVisible()
+
+    await page.getByRole('combobox', { name: 'Teacher', exact: true }).selectOption('10')
+    await page.getByRole('combobox', { name: 'Subject', exact: true }).selectOption('21')
+    await page.getByRole('combobox', { name: 'Class', exact: true }).selectOption('1')
+    await expect(page.getByRole('button', { name: 'Assign', exact: true })).toBeEnabled()
+    await page.getByRole('button', { name: 'Assign', exact: true }).click()
+    const assignmentsTable = page.getByRole('table', { name: 'Teaching assignments' })
+    await expect(assignmentsTable.getByRole('row').filter({ hasText: 'E2E-2BAC-A' })).toBeVisible()
+
+    await page.getByRole('button', { name: 'Create subject', exact: true }).click()
+    await page.getByLabel('Subject code').fill('SCI')
+    await page.getByLabel('Subject name · FR').fill('Sciences')
+    await page.getByLabel('Subject name · AR').fill('العلوم')
+    await page.getByLabel('Subject name · EN').fill('Science')
+    await page.getByRole('button', { name: 'Save', exact: true }).click()
+    await expect(page.getByRole('cell', { name: 'SCI', exact: true })).toBeVisible()
 
     await page.goto('/app/admin/users')
     await expect(page.getByRole('heading', { level: 1, name: 'Users' })).toBeVisible()
     await expect(page.getByRole('row').filter({ hasText: 'admin.e2e' })).toBeVisible()
     await expect(page.getByRole('row').filter({ hasText: 'teacher.e2e' })).toHaveCount(0)
-    await expect(page.getByRole('combobox', { name: 'Status', exact: true })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Reissue SAMS Code' }).first()).toBeVisible()
-    await page.getByRole('button', { name: 'Reissue SAMS Code' }).first().click()
+    await expect(page.getByRole('combobox', { name: 'Presence', exact: true })).toBeVisible()
+    const administratorRow = page.getByRole('row').filter({ hasText: 'admin.e2e' })
+    await administratorRow.getByRole('button', { name: 'Actions' }).click()
+    const administratorActions = page.getByRole('dialog', { name: 'Actions' })
+    await expect(administratorActions.getByRole('button', { name: 'Reissue SAMS Code' })).toBeVisible()
+    await administratorActions.getByRole('button', { name: 'Reissue SAMS Code' }).click()
     await expect(page.getByText('E2E-ONCE-CODE')).toBeVisible()
 
     const disposable = users.find((entry) => entry.username === 'delete.e2e')
     expect(disposable).toBeTruthy()
-    await expect(page.getByRole('row').filter({ hasText: 'delete.e2e' })).toBeVisible()
-    await page.getByRole('row').filter({ hasText: 'delete.e2e' }).getByRole('button', { name: 'Delete account', exact: true }).click()
+    const disposableRow = page.getByRole('row').filter({ hasText: 'delete.e2e' })
+    await expect(disposableRow).toBeVisible()
+    await disposableRow.getByRole('button', { name: 'Actions' }).click()
+    await page.getByRole('dialog', { name: 'Actions' }).getByRole('button', { name: 'Delete account', exact: true }).click()
     const deleteDialog = page.getByRole('alertdialog', { name: 'Permanently delete this administrator account?' })
     await expect(deleteDialog).toBeVisible()
     await deleteDialog.getByRole('button', { name: 'Delete account', exact: true }).click()
@@ -390,8 +456,10 @@ test.describe('frontend Phase 14 admin platform', () => {
     await page.getByRole('button', { name: 'Create' }).click()
     await expect(page.getByText('2027/2028')).toBeVisible()
     page.once('dialog', (dialog) => dialog.accept())
-    await page.getByRole('button', { name: 'Delete year' }).last().click()
-    await expect(page.getByText('2027/2028')).toHaveCount(0)
+    const createdYearRow = page.getByRole('row').filter({ hasText: '2027/2028' })
+    await expect(createdYearRow).toBeVisible()
+    await createdYearRow.getByRole('button', { name: 'Delete year' }).click()
+    await expect(page.getByRole('row').filter({ hasText: '2027/2028' })).toHaveCount(0)
   })
 
   test('onboarding rejection requires an accessible confirmation', async ({ page }) => {
@@ -412,6 +480,7 @@ test.describe('frontend Phase 14 admin platform', () => {
 
   test('imports use multipart form data and preserve staged workflow boundaries', async ({ page }) => {
     await page.goto('/app/admin/imports')
+    await page.getByLabel('Target academic year').selectOption('1')
     const input = page.getByLabel('Import file')
     await expect(page.locator('label[for="admin-import-file"]')).toBeVisible()
     await input.setInputFiles({ name: 'synthetic.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: Buffer.from('SYNTHETIC FIXTURE ONLY') })
@@ -428,7 +497,7 @@ test.describe('frontend Phase 14 admin platform', () => {
     const commitDialog = page.getByRole('alertdialog', { name: 'Confirm committing this import' })
     await expect(commitDialog).toBeVisible()
     await commitDialog.getByRole('button', { name: 'Commit import' }).click()
-    await expect(page.getByText('Imported', { exact: true })).toBeVisible()
+    await expect(page.getByRole('status').getByText('Imported', { exact: true })).toBeVisible()
   })
 
   test('audit filters are sent to the server and Arabic admin stays RTL', async ({ page }) => {
@@ -452,7 +521,7 @@ test.describe('frontend Phase 14 admin platform', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'المستخدمون' })).toBeVisible()
     await expect(page.getByRole('row').filter({ hasText: 'admin.e2e' })).toBeVisible()
     await expect(page.getByRole('row').filter({ hasText: 'teacher.e2e' })).toHaveCount(0)
-    await expect(page.getByRole('combobox', { name: 'الحالة', exact: true })).toBeVisible()
+    await expect(page.getByRole('combobox', { name: 'الحضور', exact: true })).toBeVisible()
   })
 
   test('teacher role is denied from the admin route group', async ({ page }) => {

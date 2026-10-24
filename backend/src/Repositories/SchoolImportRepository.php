@@ -188,6 +188,49 @@ final class SchoolImportRepository
         return $rows;
     }
 
+    /**
+     * Whether persisted reconciliation results are complete enough for Commit.
+     *
+     * Derive this from database state so navigating away from the Imports page
+     * does not erase the user's ability to resume a validated import.
+     */
+    public function isReadyToImport(int $batchId): bool
+    {
+        $classStmt = Database::connection()->prepare(
+            "SELECT
+                COUNT(*) AS total_classes,
+                COALESCE(SUM(status = 'mapped'), 0) AS mapped_classes
+             FROM school_import_classes
+             WHERE batch_id = ?"
+        );
+        $classStmt->execute([$batchId]);
+        $classes = $classStmt->fetch();
+
+        $rowStmt = Database::connection()->prepare(
+            "SELECT
+                COUNT(*) AS total_rows,
+                COALESCE(SUM(
+                    r.status = 'matched'
+                    AND r.match_status IN ('new', 'existing')
+                    AND r.massar_code IS NOT NULL
+                    AND TRIM(r.massar_code) <> ''
+                ), 0) AS ready_rows
+             FROM school_import_rows r
+             INNER JOIN school_import_classes c ON c.id = r.import_class_id
+             WHERE c.batch_id = ?"
+        );
+        $rowStmt->execute([$batchId]);
+        $rows = $rowStmt->fetch();
+
+        $totalClasses = (int)($classes['total_classes'] ?? 0);
+        $totalRows = (int)($rows['total_rows'] ?? 0);
+
+        return $totalClasses > 0
+            && $totalRows > 0
+            && (int)($classes['mapped_classes'] ?? 0) === $totalClasses
+            && (int)($rows['ready_rows'] ?? 0) === $totalRows;
+    }
+
     public function rowsForClass(int $importClassId, int $page = 1, int $perPage = 50): array
     {
         $page = max(1, $page);
@@ -232,12 +275,14 @@ final class SchoolImportRepository
         }
         unset($row);
 
+        // Keep the preview payload aligned with the Admin Imports API contract.
+        // The frontend consumes rows.items and rows.total_pages.
         return [
-            'rows' => $rows,
+            'items' => $rows,
             'total' => $total,
             'page' => $page,
             'per_page' => $perPage,
-            'pages' => $total === 0 ? 0 : (int)ceil($total / $perPage),
+            'total_pages' => $total === 0 ? 0 : (int)ceil($total / $perPage),
         ];
     }
 

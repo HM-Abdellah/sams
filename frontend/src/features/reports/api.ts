@@ -35,10 +35,11 @@ export interface MonthlyReportData {
 }
 
 export const reportsApi = {
-  monthly(classId: number, month: string): Promise<MonthlyReportData> {
+  monthly(classId: number, month: string, signal?: AbortSignal): Promise<MonthlyReportData> {
     const query = new URLSearchParams({ month })
     return apiClient.request<MonthlyReportData>(
       `/classes/${classId}/report?${query}`,
+      signal === undefined ? {} : { signal },
     )
   },
 }

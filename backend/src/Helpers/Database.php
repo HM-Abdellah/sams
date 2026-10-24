@@ -47,6 +47,32 @@ final class Database
             throw new RuntimeException('Invalid database configuration.');
         }
 
+        // Integration suites may opt into a strictly isolated disposable DB.
+        // This override is CLI-only and refuses the production/default database
+        // name, so test routing can never leak into a web request.
+        $testDatabase = PHP_SAPI === 'cli' ? trim((string)(getenv('SAMS_TEST_DB_NAME') ?: '')) : '';
+        if ($testDatabase !== '') {
+            if (!preg_match('/^sams_test_[A-Za-z0-9_]+$/', $testDatabase)) {
+                throw new RuntimeException('Refusing an unsafe integration-test database name.');
+            }
+
+            $testConfig = [
+                'host' => getenv('SAMS_TEST_DB_HOST') ?: '',
+                'port' => getenv('SAMS_TEST_DB_PORT') ?: '',
+                'database' => $testDatabase,
+                'username' => getenv('SAMS_TEST_DB_USER') ?: '',
+                'password' => getenv('SAMS_TEST_DB_PASS') === false ? '' : (string)getenv('SAMS_TEST_DB_PASS'),
+            ];
+
+            foreach (['host', 'port', 'username'] as $key) {
+                if (trim((string)$testConfig[$key]) === '') {
+                    throw new RuntimeException('Incomplete isolated integration-test database configuration.');
+                }
+            }
+
+            $config = array_merge($config, $testConfig);
+        }
+
         foreach (['host', 'port', 'database', 'username', 'password', 'charset'] as $key) {
             if (!array_key_exists($key, $config)) {
                 throw new RuntimeException("Missing database setting: {$key}");

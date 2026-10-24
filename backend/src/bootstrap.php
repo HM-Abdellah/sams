@@ -218,3 +218,39 @@ if (defined('SAMS_LEGACY_RUNTIME') && SAMS_LEGACY_RUNTIME) {
         (int)($appConfig['session_lifetime'] ?? 3600)
     );
 }
+
+// Publish one generic, tenant-scoped event after a successful authenticated write.
+// Registering here covers both the versioned API and the remaining legacy endpoints.
+if (!defined('SAMS_SYNC_EVENT_SHUTDOWN_REGISTERED')) {
+    define('SAMS_SYNC_EVENT_SHUTDOWN_REGISTERED', true);
+    register_shutdown_function(static function (): void {
+        $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+        if (!in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
+            return;
+        }
+
+        $status = http_response_code();
+        if (!is_int($status) || $status < 200 || $status >= 300) {
+            return;
+        }
+
+        $sessionUser = $_SESSION['_auth_user'] ?? null;
+        if (!is_array($sessionUser)) {
+            return;
+        }
+
+        $schoolId = filter_var($sessionUser['school_id'] ?? null, FILTER_VALIDATE_INT);
+        $userId = filter_var($sessionUser['id'] ?? null, FILTER_VALIDATE_INT);
+        if (!is_int($schoolId) || $schoolId < 1 || !is_int($userId) || $userId < 1) {
+            return;
+        }
+
+        try {
+            (new \SAMS\Repositories\SyncEventRepository())->publish($schoolId);
+        } catch (\Throwable $e) {
+            // The mutation already succeeded. A failed signal must never falsify
+            // the write result; client-side refresh remains a fallback.
+            error_log('[SAMS sync] Unable to publish change signal: ' . $e->getMessage());
+        }
+    });
+}

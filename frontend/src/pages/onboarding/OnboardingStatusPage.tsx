@@ -38,16 +38,22 @@ export function OnboardingStatusPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(initialToken !== '')
 
-  const load = useCallback(async (requestToken: string) => {
-    setError(null)
-    setLoading(true)
+  const load = useCallback(async (requestToken: string, silent = false) => {
+    if (!silent) {
+      setError(null)
+      setLoading(true)
+    }
     try {
-      setData(await onboardingApi.status(requestToken))
+      const latest = await onboardingApi.status(requestToken)
+      setData(latest)
+      if (silent) setError(null)
     } catch (cause) {
-      setData(null)
-      setError(cause instanceof ApiError ? cause.message : t(TRANSLATION_KEYS.system.genericError))
+      if (!silent) {
+        setData(null)
+        setError(cause instanceof ApiError ? cause.message : t(TRANSLATION_KEYS.system.genericError))
+      }
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [t])
 
@@ -58,6 +64,36 @@ export function OnboardingStatusPage() {
     }
     if (initialToken !== '') void load(initialToken)
   }, [initialToken, load, navigate, queryToken, stateToken])
+
+  const shouldPollStatus = initialToken !== ''
+    && !loading
+    && data !== null
+    && data.status !== 'rejected'
+    && data.status !== 'expired'
+    && !data.activated
+
+  useEffect(() => {
+    if (!shouldPollStatus) return undefined
+
+    let inFlight = false
+    const timer = window.setInterval(() => {
+      if (inFlight || document.visibilityState === 'hidden') return
+      inFlight = true
+      void load(initialToken, true).finally(() => { inFlight = false })
+    }, 5_000)
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState !== 'visible' || inFlight) return
+      inFlight = true
+      void load(initialToken, true).finally(() => { inFlight = false })
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
+    return () => {
+      window.clearInterval(timer)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
+  }, [initialToken, load, shouldPollStatus])
 
   const updateToken = () => {
     const next = token.trim()

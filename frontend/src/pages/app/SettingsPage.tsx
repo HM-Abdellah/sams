@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { profileApi } from '../../features/profile/api.ts'
 import { profileAvatarUrl } from '../../features/profile/avatar.ts'
+import { ProfileAvatar } from '../../features/profile/ProfileAvatar.tsx'
 import { useSession } from '../../features/auth/useSession.ts'
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
 import { useI18n } from '../../features/i18n/useI18n.ts'
@@ -14,10 +15,6 @@ import {
   PageHeader,
   StatusMessage,
 } from '../../components/ui/index.ts'
-
-function initials(name: string) {
-  return name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase() ?? '').join('')
-}
 
 export function SettingsPage() {
   const { t } = useI18n()
@@ -120,11 +117,12 @@ export function SettingsPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#b8fbff]">{t(TRANSLATION_KEYS.settings.profile)}</p>
             <div className="mt-6 flex flex-col items-center text-center">
               <div className="grid size-28 place-items-center overflow-hidden rounded-full border-4 border-white/20 bg-white/10 shadow-[0_12px_30px_rgba(4,24,48,0.18)]">
-                {currentAvatar ? (
-                  <img src={currentAvatar} alt="" className="size-full object-cover" />
-                ) : (
-                  <span className="text-3xl font-semibold">{initials(fullName)}</span>
-                )}
+                <ProfileAvatar
+                  name={fullName}
+                  src={currentAvatar}
+                  imageClassName="size-full object-cover"
+                  fallbackClassName="text-3xl font-semibold"
+                />
               </div>
               <h2 className="mt-4 text-2xl font-semibold tracking-tight">{fullName || '—'}</h2>
               <p className="mt-1 text-sm text-white/65">{username || '—'}</p>

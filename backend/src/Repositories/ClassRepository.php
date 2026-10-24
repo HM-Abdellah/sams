@@ -70,9 +70,7 @@ final class ClassRepository
                     ay.name AS academic_year_name,
                     ay.is_active AS academic_year_active,
                     COUNT(DISTINCT CASE
-                        WHEN e.starts_on <= CURDATE()
-                         AND (e.ends_on IS NULL OR e.ends_on >= CURDATE())
-                         AND s.status = \'active\'
+                        WHEN s.status = \'active\'
                         THEN s.id
                     END) AS student_count,
                     COUNT(DISTINCT CASE
@@ -83,8 +81,8 @@ final class ClassRepository
                 FROM classes c
                 INNER JOIN academic_years ay ON ay.id = c.academic_year_id
                 LEFT JOIN student_enrollments e ON e.class_id = c.id
-                    AND e.starts_on <= CURDATE()
-                    AND (e.ends_on IS NULL OR e.ends_on >= CURDATE())
+                    AND e.starts_on <= ay.ends_on
+                    AND (e.ends_on IS NULL OR e.ends_on >= ay.starts_on)
                 LEFT JOIN students s ON s.id = e.student_id
                 LEFT JOIN teacher_teachings tt ON tt.class_id = c.id
                 LEFT JOIN users u ON u.id = tt.teacher_id';

@@ -11,6 +11,40 @@ use SAMS\Services\AuthService;
 use SAMS\Services\OnboardingService;
 use SAMS\Exceptions\OnboardingWorkflowException;
 
+// Build the schema only inside the disposable database provisioned by the runner.
+$testDb = trim((string)(getenv('SAMS_TEST_DB_NAME') ?: ''));
+$host = trim((string)(getenv('SAMS_TEST_DB_HOST') ?: ''));
+$port = (int)(getenv('SAMS_TEST_DB_PORT') ?: 3306);
+$user = trim((string)(getenv('SAMS_TEST_DB_USER') ?: ''));
+$pass = (string)(getenv('SAMS_TEST_DB_PASS') === false ? '' : getenv('SAMS_TEST_DB_PASS'));
+if (!preg_match('/^sams_test_[A-Za-z0-9_]+$/', $testDb) || $host === '' || $user === '') {
+    throw new RuntimeException('Refusing to run onboarding integration without an isolated test database.');
+}
+$schemaPdo = new PDO(
+    sprintf('mysql:host=%s;port=%d;charset=utf8mb4', $host, $port),
+    $user,
+    $pass,
+    [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
+);
+$schema = file_get_contents(__DIR__ . '/../database/schema.sql');
+if ($schema === false) throw new RuntimeException('Unable to read integration schema.');
+$replacementCount = 0;
+$schema = preg_replace(
+    '/CREATE DATABASE IF NOT EXISTS sams\\s+CHARACTER SET utf8mb4\\s+COLLATE utf8mb4_unicode_ci;\\s*USE sams;\\s*/i',
+    'USE ' . $testDb . ';',
+    $schema,
+    1,
+    $replacementCount
+);
+if ($schema === null || $replacementCount !== 1 || preg_match('/\\bUSE\\s+sams\\s*;/i', $schema) === 1) {
+    throw new RuntimeException('Refusing an unisolated onboarding schema selector.');
+}
+$schema = preg_replace('/^\\s*--.*$/m', '', $schema) ?? $schema;
+$schema = preg_replace('/;(?=(?:CREATE|ALTER|DROP|SET|USE)\\b)/i', ";\n", $schema) ?? $schema;
+foreach (preg_split('/;\\s*(?:\\R|$)/', $schema, -1, PREG_SPLIT_NO_EMPTY) as $statement) {
+    if (trim($statement) !== '') $schemaPdo->exec($statement);
+}
+
 function onboarding_assert(bool $condition, string $message): void
 {
     if (!$condition) throw new RuntimeException($message);
@@ -56,6 +90,7 @@ onboarding_assert(
 );
 
 $requestIp = '198.51.100.10';
+$syncCursorBeforeRequest = (int)$pdo->query("SELECT COALESCE(MAX(id), 0) FROM school_sync_events WHERE school_id = {$schoolA}")->fetchColumn();
 $request = $service->requestTeacher(
     $issued['onboarding_code'],
     'Pending Teacher',
@@ -69,6 +104,8 @@ onboarding_assert(strlen($request['request_token']) === 64, 'Request token must 
 $storedTokenHash = (string)$pdo->query("SELECT request_token_hash FROM teacher_onboarding_requests WHERE id = {$request['request_id']}")->fetchColumn();
 onboarding_assert($storedTokenHash === hash('sha256', $request['request_token']), 'Request token hash was not stored correctly.');
 onboarding_assert($storedTokenHash !== $request['request_token'], 'Plaintext request token was stored.');
+$syncRequestEvents = $pdo->query("SELECT id, event_type FROM school_sync_events WHERE school_id = {$schoolA} AND id > {$syncCursorBeforeRequest} ORDER BY id")->fetchAll(PDO::FETCH_ASSOC);
+onboarding_assert(count($syncRequestEvents) === 1 && $syncRequestEvents[0]['event_type'] === 'data.changed', 'Anonymous teacher onboarding request did not publish its school-scoped sync event.');
 
 $auditSchool = $pdo->query("SELECT school_id FROM audit_logs WHERE action = 'teacher_onboarding.requested' AND entity_id = {$request['request_id']} ORDER BY id DESC LIMIT 1")->fetchColumn();
 onboarding_assert((int)$auditSchool === $schoolA, 'Anonymous onboarding audit lost tenant ownership.');
@@ -134,8 +171,11 @@ onboarding_assert((int)$pdo->query("SELECT COUNT(*) FROM users WHERE school_id =
 $statusBeforeActivation = $service->status($secondRequest['request_token']);
 onboarding_assert($statusBeforeActivation['status'] === 'approved' && $statusBeforeActivation['activated'] === false, 'Approved request status is incorrect before activation.');
 
+$syncCursorBeforeActivation = (int)$pdo->query("SELECT COALESCE(MAX(id), 0) FROM school_sync_events WHERE school_id = {$schoolA}")->fetchColumn();
 $activation = $service->activate($secondRequest['request_token'], 'TeacherActivate123!');
 onboarding_assert($activation['user_id'] === $pendingTeacherId, 'Activation returned a different user identity.');
+$syncActivationEvents = $pdo->query("SELECT id, event_type FROM school_sync_events WHERE school_id = {$schoolA} AND id > {$syncCursorBeforeActivation} ORDER BY id")->fetchAll(PDO::FETCH_ASSOC);
+onboarding_assert(count($syncActivationEvents) === 1 && $syncActivationEvents[0]['event_type'] === 'data.changed', 'Public teacher activation did not publish its school-scoped sync event.');
 onboarding_assert(preg_match('/^T[0-9]{6}$/', $activation['sams_code']) === 1, 'Activation did not issue a valid teacher SAMS Code.');
 $activeTeacher = $pdo->query("SELECT account_status, is_active, password_hash, session_version FROM users WHERE id = {$pendingTeacherId}")->fetch();
 onboarding_assert($activeTeacher['account_status'] === 'active' && (int)$activeTeacher['is_active'] === 1, 'Teacher activation did not enable the account.');
@@ -208,6 +248,63 @@ onboarding_expect_status(
     static fn() => $service->activate($expireRequest['request_token'], 'ExpiredActivate123!'),
     409,
     'Expired onboarding request was activated.'
+);
+onboarding_assert(
+    (string)$pdo->query("SELECT status FROM teacher_onboarding_requests WHERE id = " . (int)$expireRequest['request_id'])->fetchColumn() === 'expired',
+    'Failed activation changed an already-expired request unexpectedly.'
+);
+
+$expireOnActivate = $service->requestTeacher(
+    $rotatedCode['onboarding_code'],
+    'Expired On Activation',
+    null,
+    null,
+    '198.51.100.35',
+    'SAMS-Test-Agent/1.0'
+);
+$pdo->exec("UPDATE teacher_onboarding_requests SET expires_at = '2000-01-01 00:00:00' WHERE id = " . (int)$expireOnActivate['request_id']);
+onboarding_expect_status(
+    static fn() => $service->activate($expireOnActivate['request_token'], 'ExpiredActivate123!'),
+    409,
+    'Activation accepted an overdue pending request.'
+);
+onboarding_assert(
+    (string)$pdo->query("SELECT status FROM teacher_onboarding_requests WHERE id = " . (int)$expireOnActivate['request_id'])->fetchColumn() === 'expired',
+    'Failed activation rolled back the pending-to-expired transition.'
+);
+
+$expireOnReview = $service->requestTeacher(
+    $rotatedCode['onboarding_code'],
+    'Expired Before Review',
+    null,
+    null,
+    '198.51.100.33',
+    'SAMS-Test-Agent/1.0'
+);
+$pdo->exec("UPDATE teacher_onboarding_requests SET expires_at = '2000-01-01 00:00:00' WHERE id = " . (int)$expireOnReview['request_id']);
+onboarding_expect_status(
+    static fn() => $service->review($adminA, (int)$expireOnReview['request_id'], 'approve', null, $schoolA),
+    409,
+    'Expired onboarding request was reviewable.'
+);
+onboarding_assert(
+    (string)$pdo->query("SELECT status FROM teacher_onboarding_requests WHERE id = " . (int)$expireOnReview['request_id'])->fetchColumn() === 'expired',
+    'Failed review rolled back the persisted expired state.'
+);
+
+$expireByList = $service->requestTeacher(
+    $rotatedCode['onboarding_code'],
+    'Expired In Administrative List',
+    null,
+    null,
+    '198.51.100.34',
+    'SAMS-Test-Agent/1.0'
+);
+$pdo->exec("UPDATE teacher_onboarding_requests SET expires_at = '2000-01-01 00:00:00' WHERE id = " . (int)$expireByList['request_id']);
+$expiredRequests = $service->listRequests($adminA, $schoolA, 'expired');
+onboarding_assert(
+    in_array((int)$expireByList['request_id'], array_map(static fn(array $row): int => (int)$row['id'], $expiredRequests), true),
+    'Expired onboarding request was not visible in the expired administrative filter.'
 );
 
 echo "[PASS] Teacher onboarding code rotation, request token security, rate limiting, approval/reuse, activation, initial SAMS Code, rejection, expiry, audit ownership, and tenant isolation verified." . PHP_EOL;

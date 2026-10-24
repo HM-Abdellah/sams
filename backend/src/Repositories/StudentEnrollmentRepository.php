@@ -138,6 +138,19 @@ final class StudentEnrollmentRepository
         return (int)Database::connection()->lastInsertId();
     }
 
+    public function setRosterNumber(int $enrollmentId, string $rosterNumber): void
+    {
+        $normalized = trim($rosterNumber);
+        if ($normalized === '' || $enrollmentId < 1) return;
+
+        $stmt = Database::connection()->prepare(
+            'UPDATE student_enrollments
+             SET roster_number = ?
+             WHERE id = ?'
+        );
+        $stmt->execute([$normalized, $enrollmentId]);
+    }
+
     public function hasOverlappingEnrollment(
         int $studentId,
         string $startsOn,

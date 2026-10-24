@@ -13,6 +13,7 @@ export function AdminAuditPage() {
   const [draftEntity, setDraftEntity] = useState('')
   const [draftFrom, setDraftFrom] = useState('')
   const [draftTo, setDraftTo] = useState('')
+  const [filterError, setFilterError] = useState<string | null>(null)
   const [filters, setFilters] = useState({ user_id: undefined as number | undefined, action: '', entity_type: '', from: '', to: '', page: 1 })
   const load = useCallback(async () => {
     const [audit, users] = await Promise.all([adminApi.audit({ ...filters, per_page: 50 }), adminApi.users()])
@@ -24,10 +25,17 @@ export function AdminAuditPage() {
   if (resource.status === 'error' || resource.data === null) return <ErrorState title={t(TRANSLATION_KEYS.system.errorTitle)} description={resource.error ?? t(TRANSLATION_KEYS.system.genericError)} action={<Button type='button' variant='secondary' onClick={() => void resource.reload()}>{t(TRANSLATION_KEYS.system.reload)}</Button>} />
   const data = resource.data
 
-  const apply = () => setFilters({
-    user_id: draftUser ? Number(draftUser) : undefined,
-    action: draftAction.trim(), entity_type: draftEntity.trim(), from: draftFrom, to: draftTo, page: 1,
-  })
+  const apply = () => {
+    if (draftFrom && draftTo && draftFrom > draftTo) {
+      setFilterError(t(TRANSLATION_KEYS.admin.auditDateRangeInvalid))
+      return
+    }
+    setFilterError(null)
+    setFilters({
+      user_id: draftUser ? Number(draftUser) : undefined,
+      action: draftAction.trim(), entity_type: draftEntity.trim(), from: draftFrom, to: draftTo, page: 1,
+    })
+  }
   const changePage = (page: number) => setFilters((current) => ({ ...current, page }))
 
   return (
@@ -36,6 +44,7 @@ export function AdminAuditPage() {
         title={t(TRANSLATION_KEYS.navigation.audit)}
         description={t(TRANSLATION_KEYS.admin.auditHint)}
       />
+      {filterError && <p role="alert" className="text-sm text-[var(--sams-danger)]">{filterError}</p>}
       <section className="sams-admin-toolbar grid gap-4 p-5 md:grid-cols-2 lg:grid-cols-3">
         <FormField label={t(TRANSLATION_KEYS.admin.user)}>
           {({ id, ...aria }) => <Select id={id} {...aria} value={draftUser} onChange={(e) => setDraftUser(e.target.value)}><option value="">{t(TRANSLATION_KEYS.admin.allUsers)}</option>{data.users.map((x) => <option key={x.id} value={x.id}>{x.full_name} · {x.username}</option>)}</Select>}

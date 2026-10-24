@@ -1,17 +1,57 @@
-import { useCallback, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { useI18n } from '../../features/i18n/useI18n.ts'
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
 import { adminApi } from '../../features/admin/api.ts'
-import type { AdminDashboard, DashboardTrendPoint } from '../../features/admin/types.ts'
+import type { AdminDashboard, AdminTeacherPresence, DashboardTrendPoint } from '../../features/admin/types.ts'
 import { useAdminResource } from '../../features/admin/useAdminResource.ts'
+import { useLiveRefresh } from '../../features/sync/useLiveRefresh.ts'
 import { asNumber, dateTime } from '../../features/admin/helpers.ts'
 import { Badge, Button, EmptyState, ErrorState, Loading, PageHeader, Table } from '../../components/ui/index.ts'
+
+interface LivePresenceSnapshot {
+  count: number
+  teachers: AdminDashboard['online_teachers']
+}
+
+function onlinePresenceSnapshot(teachers: AdminTeacherPresence[]): LivePresenceSnapshot {
+  const online = teachers
+    .filter((teacher) => Number(teacher.is_active) === 1 && Number(teacher.is_online) === 1)
+    .sort((a, b) => (b.last_seen_at ?? '').localeCompare(a.last_seen_at ?? ''))
+
+  return {
+    count: online.length,
+    teachers: online.slice(0, 12).map((teacher) => ({
+      id: teacher.id,
+      full_name: teacher.full_name,
+      employee_id: teacher.employee_id,
+      last_seen_at: teacher.last_seen_at,
+    })),
+  }
+}
 
 export function AdminDashboardPage() {
   const { t, formatDate, formatNumber } = useI18n()
   const load = useCallback(() => adminApi.dashboard(), [])
   const resource = useAdminResource(load)
+  const [livePresence, setLivePresence] = useState<LivePresenceSnapshot | null>(null)
+
+  const refreshPresence = useCallback(async () => {
+    const data = await adminApi.teacherPresence()
+    setLivePresence(onlinePresenceSnapshot(data.teachers))
+  }, [])
+
+  useEffect(() => {
+    if (resource.status !== 'success') return
+    void refreshPresence().catch(() => {
+      // Keep the initial dashboard snapshot if presence is temporarily unavailable.
+    })
+  }, [resource.status, refreshPresence])
+
+  useLiveRefresh(refreshPresence, {
+    enabled: resource.status === 'success',
+    intervalMs: 30_000,
+  })
 
   if (resource.status === 'idle' || resource.status === 'loading') {
     return <Loading label={t(TRANSLATION_KEYS.auth.loading)} />
@@ -31,7 +71,12 @@ export function AdminDashboardPage() {
     )
   }
 
-  const dashboard = resource.data
+  const snapshot = resource.data
+  const dashboard: AdminDashboard = livePresence === null ? snapshot : {
+    ...snapshot,
+    online_teachers: livePresence.teachers,
+    summary: { ...snapshot.summary, online_teachers: livePresence.count },
+  }
   const { summary, academic_year, attendance_trend, online_teachers } = dashboard
 
   return (

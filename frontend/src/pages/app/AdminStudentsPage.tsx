@@ -3,7 +3,12 @@ import { useSearchParams } from 'react-router'
 import { adminApi } from '../../features/admin/api.ts'
 import type { AdminClass } from '../../features/admin/types.ts'
 import { useAdminResource } from '../../features/admin/useAdminResource.ts'
-import { isActive } from '../../features/admin/helpers.ts'
+import {
+  compareClassNames,
+  compareRosterNumbers,
+  isActive,
+  studyLevelCode,
+} from '../../features/admin/helpers.ts'
 import { useClassStudents } from '../../features/students/useClassStudents.ts'
 import type { Student } from '../../features/students/types.ts'
 import { studentsApi } from '../../features/students/api.ts'
@@ -15,8 +20,13 @@ import {
 } from '../../components/ui/index.ts'
 import { AdminWorkspaceToolbar } from '../../components/admin/AdminWorkspaceToolbar.tsx'
 
+const EMPTY_ADMIN_CLASSES: AdminClass[] = []
+
 function todayIso() {
-  return new Date().toISOString().slice(0, 10)
+  const date = new Date()
+  return date.getFullYear()
+    + '-' + String(date.getMonth() + 1).padStart(2, '0')
+    + '-' + String(date.getDate()).padStart(2, '0')
 }
 
 export function AdminStudentsPage() {
@@ -35,13 +45,35 @@ export function AdminStudentsPage() {
   const [busy, setBusy] = useState<number | 'transfer' | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const classes = classesResource.data?.classes ?? []
-  const activeClasses = useMemo(
-    () => (classesResource.data?.classes ?? []).filter(
-      (item) => isActive(item.is_active) && isActive(item.academic_year_active),
-    ),
-    [classesResource.data?.classes],
+  const classes = classesResource.data?.classes ?? EMPTY_ADMIN_CLASSES
+  const allActiveClasses = useMemo(
+    () => classes.filter((item) => isActive(item.is_active)),
+    [classes],
   )
+  const activeYearClasses = useMemo(
+    () => allActiveClasses.filter((item) => isActive(item.academic_year_active)),
+    [allActiveClasses],
+  )
+
+  // Keep the everyday roster focused on the active academic year. A historical
+  // class is included only when the route explicitly requests its class_id.
+  const classOptions = useMemo(() => {
+    const options = [...(activeYearClasses.length > 0 ? activeYearClasses : allActiveClasses)]
+    const explicitlyRequested = allActiveClasses.find((item) => item.id === requestedClassId)
+    if (
+      explicitlyRequested !== undefined
+      && !isActive(explicitlyRequested.academic_year_active)
+      && !options.some((item) => item.id === explicitlyRequested.id)
+    ) {
+      options.push(explicitlyRequested)
+    }
+
+    const levelOrder = { '2BAC': 0, '1BAC': 1, TC: 2, other: 3 } as const
+    return options.sort((a, b) => (
+      levelOrder[studyLevelCode(a)] - levelOrder[studyLevelCode(b)]
+      || compareClassNames(a, b)
+    ))
+  }, [activeYearClasses, allActiveClasses, requestedClassId])
 
   const classGroups = useMemo(() => {
     const groups: Record<'TC' | '1BAC' | '2BAC' | 'other', AdminClass[]> = {
@@ -51,24 +83,22 @@ export function AdminStudentsPage() {
       other: [],
     }
 
-    for (const item of activeClasses) {
-      const level = (item.level ?? '').trim().toUpperCase()
-      if (level === 'TC') groups.TC.push(item)
-      else if (level === '1BAC') groups['1BAC'].push(item)
-      else if (level === '2BAC') groups['2BAC'].push(item)
-      else groups.other.push(item)
-    }
-
+    for (const item of classOptions) groups[studyLevelCode(item)].push(item)
+    for (const group of Object.values(groups)) group.sort(compareClassNames)
     return groups
-  }, [activeClasses])
+  }, [classOptions])
 
-  const requestedActiveClassId = activeClasses.some((item) => item.id === requestedClassId)
+  const requestedAvailableClassId = classOptions.some((item) => item.id === requestedClassId)
     ? requestedClassId
     : null
-  const effectiveClassId = selectedClassId !== null && activeClasses.some((item) => item.id === selectedClassId)
+  const defaultClassId = classOptions[0]?.id ?? null
+  const effectiveClassId = selectedClassId !== null && classOptions.some((item) => item.id === selectedClassId)
     ? selectedClassId
-    : requestedActiveClassId ?? activeClasses[0]?.id ?? null
+    : requestedAvailableClassId ?? defaultClassId
   const selectedClass = classes.find((item) => item.id === effectiveClassId) ?? null
+  const isWritableClass = selectedClass !== null
+    && isActive(selectedClass.is_active)
+    && isActive(selectedClass.academic_year_active)
   const students = useClassStudents(effectiveClassId)
 
   const visibleStudents = useMemo(() => {
@@ -80,19 +110,17 @@ export function AdminStudentsPage() {
         student.student_number,
         student.massar_code,
       ].filter(Boolean).some((value) => String(value).toLocaleLowerCase().includes(normalized)))
-      .sort((a, b) => (
-        (a.last_name + ' ' + a.first_name).localeCompare(b.last_name + ' ' + b.first_name)
-      ))
+      .sort(compareRosterNumbers)
   }, [students.students, query])
 
   const transferClasses = useMemo(() => (
     selectedClass === null
       ? []
-      : activeClasses.filter((item) => (
+      : classOptions.filter((item) => (
         item.id !== selectedClass.id
         && item.academic_year_id === selectedClass.academic_year_id
       ))
-  ), [activeClasses, selectedClass])
+  ), [classOptions, selectedClass])
 
   const openCreate = () => {
     setEditing(null)
@@ -149,7 +177,7 @@ export function AdminStudentsPage() {
         <PageHeader
           title={t(TRANSLATION_KEYS.navigation.students)}
           description={t(TRANSLATION_KEYS.admin.studentAdminHint)}
-          actions={<Button type="button" onClick={openCreate} disabled={effectiveClassId === null}>{t(TRANSLATION_KEYS.admin.create)}</Button>}
+          actions={<Button type="button" onClick={openCreate} disabled={!isWritableClass}>{t(TRANSLATION_KEYS.admin.create)}</Button>}
         />
 
         {error && <p role="alert" className="text-sm text-[var(--sams-danger)]">{error}</p>}
@@ -176,7 +204,7 @@ export function AdminStudentsPage() {
                 }}
               >
                 <option value="">{t(TRANSLATION_KEYS.admin.selectStudentClass)}</option>
-                {(['TC', '1BAC', '2BAC'] as const).map((group) => (
+                {(['2BAC', '1BAC', 'TC'] as const).map((group) => (
                   classGroups[group].length > 0 && (
                     <optgroup key={group} label={group}>
                       {classGroups[group].map((item) => (
@@ -230,6 +258,7 @@ export function AdminStudentsPage() {
                 <Table
                   caption={t(TRANSLATION_KEYS.navigation.students)}
                   headers={[
+                    t(TRANSLATION_KEYS.admin.rosterNumber),
                     t(TRANSLATION_KEYS.teacher.studentNumber),
                     t(TRANSLATION_KEYS.admin.fullName),
                     t(TRANSLATION_KEYS.teacher.massarCode),
@@ -239,14 +268,15 @@ export function AdminStudentsPage() {
                 >
                   {visibleStudents.map((student) => (
                     <tr key={student.id} className="border-b border-[var(--sams-border)] last:border-b-0">
-                      <td className="px-3 py-3">{student.student_number ?? '—'}</td>
+                      <td className="px-3 py-3 tabular-nums">{student.roster_number ?? '—'}</td>
+                      <td className="px-3 py-3 tabular-nums">{student.student_number ?? '—'}</td>
                       <td className="px-3 py-3 font-medium">{student.first_name} {student.last_name}</td>
                       <td className="px-3 py-3">{student.massar_code ?? '—'}</td>
                       <td className="px-3 py-3">{student.birth_date ? formatDate(student.birth_date) : '—'}</td>
                       <td className="px-3 py-3">
                         <div className="flex flex-wrap gap-2">
-                          <Button type="button" size="sm" variant="secondary" disabled={busy !== null} onClick={() => openEdit(student)}>{t(TRANSLATION_KEYS.admin.edit)}</Button>
-                          <Button type="button" size="sm" variant="secondary" disabled={busy !== null || transferClasses.length === 0} onClick={() => openTransfer(student)}>{t(TRANSLATION_KEYS.admin.transferStudent)}</Button>
+                          <Button type="button" size="sm" variant="secondary" disabled={busy !== null || !isWritableClass} onClick={() => openEdit(student)}>{t(TRANSLATION_KEYS.admin.edit)}</Button>
+                          <Button type="button" size="sm" variant="secondary" disabled={busy !== null || !isWritableClass || transferClasses.length === 0} onClick={() => openTransfer(student)}>{t(TRANSLATION_KEYS.admin.transferStudent)}</Button>
                         </div>
                       </td>
                     </tr>

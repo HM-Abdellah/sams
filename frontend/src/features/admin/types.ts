@@ -47,7 +47,19 @@ export interface AdminSubject {
   class_branch: string | null
   academic_year_id: number
   academic_year_name: string
+  class_is_active: boolean | number
+  academic_year_active: boolean | number
+  status: 'active' | 'inactive'
   assigned_at: string
+}
+
+export interface AdminTeacherPresence {
+  id: number
+  full_name: string
+  employee_id: string | null
+  is_active: boolean | number
+  last_seen_at: string | null
+  is_online: boolean | number
 }
 
 export interface AdminUser {
@@ -228,6 +240,7 @@ export interface ImportClass {
   source_level: string | null
   source_academic_year: string | null
   target_class_id: number | null
+  target_class_action?: 'existing' | 'create_on_commit'
   status: string
   student_count: number | string
   issues: unknown[] | null
@@ -262,6 +275,7 @@ export interface ImportWorkflowResult {
 
 export interface ImportPreview {
   batch: ImportBatch
+  ready_to_import?: boolean
   classes: ImportClass[]
   class?: ImportClass
   rows?: {

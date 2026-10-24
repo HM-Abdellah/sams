@@ -8,6 +8,7 @@ import { useAttendanceRegister } from '../../features/attendance/useAttendanceRe
 import { attendanceApi, type AttendanceStudent } from '../../features/attendance/api.ts'
 import type { AttendanceFilter, AttendanceViewStatus } from '../../features/attendance/types.ts'
 import { signaturesApi } from '../../features/signatures/api.ts'
+import { useLiveRefresh } from '../../features/sync/useLiveRefresh.ts'
 import { AsyncStateFeedback, Badge, Button, EmptyState, Search, Select, StatusMessage } from '../../components/ui/index.ts'
 
 const PERIODS = [
@@ -284,9 +285,18 @@ export function TeacherAttendancePage() {
 
   const selectedClass = classes.classes.find((item) => item.id === selectedClassId) ?? null
 
+  const refreshSignatureStatus = useCallback(async () => {
+    if (selectedClassId === null) return
+    const result = await signaturesApi.get(selectedClassId)
+    setHasSignature(result.signature !== null)
+  }, [selectedClassId])
+
+  useLiveRefresh(refreshSignatureStatus, { enabled: selectedClassId !== null })
+
   useEffect(() => {
     if (selectedClassId === null) {
       setHasSignature(false)
+      setSignatureLoading(false)
       return
     }
     let active = true

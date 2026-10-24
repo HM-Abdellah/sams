@@ -2,6 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { useAttendanceRegister } from './useAttendanceRegister.ts'
 import { attendanceApi } from './api.ts'
+import type { SaveBulkData } from './api.ts'
 import { ApiError } from '../../services/api/errors.ts'
 
 vi.mock('./api.ts', () => ({
@@ -229,4 +230,105 @@ describe('useAttendanceRegister integration', () => {
       expected_revision: 0,
     }])
   })
+
+  test('rebases a second edit made while the first save is in flight', async () => {
+    api.weeklyRegister
+      .mockResolvedValueOnce(register())
+      .mockResolvedValueOnce(register('absent', 1))
+      .mockResolvedValueOnce(register('late', 2))
+
+    let resolveFirstSave!: (value: SaveBulkData) => void
+    let saveCalls = 0
+    api.saveBulk.mockImplementation((_classId, entries) => {
+      saveCalls += 1
+      if (saveCalls === 1) {
+        return new Promise((resolve) => { resolveFirstSave = resolve })
+      }
+      if (entries.some((entry) => entry.expected_revision !== 1)) {
+        return Promise.reject(new ApiError(
+          409,
+          'Attendance was updated by another teacher.',
+          'ATTENDANCE_CONCURRENCY_CONFLICT',
+        ))
+      }
+      return Promise.resolve({
+        changed: 1,
+        unchanged: 0,
+        total: 1,
+        revisions: [{ attendance_date: '2026-09-28', period: 1, revision: 2 }],
+      })
+    })
+
+    const { result } = renderHook(() => useAttendanceRegister(1, '2026-09-28'))
+    await waitFor(() => expect(result.current.status).toBe('success'))
+
+    act(() => result.current.changeStatus(101, '2026-09-28', 1, 'absent'))
+    let flushPromise!: Promise<boolean>
+    act(() => { flushPromise = result.current.flush() })
+    await waitFor(() => expect(api.saveBulk).toHaveBeenCalledTimes(1))
+
+    act(() => result.current.changeStatus(101, '2026-09-28', 1, 'late'))
+
+    await act(async () => {
+      resolveFirstSave({
+        changed: 1,
+        unchanged: 0,
+        total: 1,
+        revisions: [{ attendance_date: '2026-09-28', period: 1, revision: 1 }],
+      })
+      await flushPromise
+    })
+
+    expect(await flushPromise).toBe(true)
+    expect(api.saveBulk).toHaveBeenCalledTimes(2)
+    expect(api.saveBulk.mock.calls[1]?.[1]).toEqual([{
+      student_id: 101,
+      attendance_date: '2026-09-28',
+      period: 1,
+      action: 'upsert',
+      status: 'late',
+      expected_revision: 1,
+    }])
+    expect(result.current.isDirty).toBe(false)
+    expect(result.current.getStatus(101, '2026-09-28', 1)).toBe('late')
+  })
+
+
+  test('does not silently rebase over a remote change after a successful save', async () => {
+    api.weeklyRegister
+      .mockResolvedValueOnce(register())
+      .mockResolvedValueOnce(register('excused', 2))
+
+    let resolveFirstSave!: (value: SaveBulkData) => void
+    api.saveBulk.mockImplementationOnce(() =>
+      new Promise((resolve) => { resolveFirstSave = resolve }),
+    )
+
+    const { result } = renderHook(() => useAttendanceRegister(1, '2026-09-28'))
+    await waitFor(() => expect(result.current.status).toBe('success'))
+
+    act(() => result.current.changeStatus(101, '2026-09-28', 1, 'absent'))
+    let flushPromise!: Promise<boolean>
+    act(() => { flushPromise = result.current.flush() })
+    await waitFor(() => expect(api.saveBulk).toHaveBeenCalledTimes(1))
+    act(() => result.current.changeStatus(101, '2026-09-28', 1, 'late'))
+
+    await act(async () => {
+      resolveFirstSave({
+        changed: 1,
+        unchanged: 0,
+        total: 1,
+        revisions: [{ attendance_date: '2026-09-28', period: 1, revision: 1 }],
+      })
+      await flushPromise
+    })
+
+    expect(await flushPromise).toBe(false)
+    expect(api.saveBulk).toHaveBeenCalledTimes(1)
+    expect(result.current.mutationState).toBe('conflict')
+    expect(result.current.hasConflict).toBe(true)
+    expect(result.current.isDirty).toBe(true)
+    expect(result.current.getStatus(101, '2026-09-28', 1)).toBe('excused')
+  })
+
 })

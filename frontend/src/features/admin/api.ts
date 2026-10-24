@@ -2,7 +2,7 @@ import { apiClient } from '../../services/api/client.ts'
 import type {
   AcademicYear, AdminClass, AdminDashboard, AdminSubject, AdminTeacher,
   AdminTeaching, AdminUser, AuditSearch, ImportPreview, OnboardingRequest,
-  ChangedResult, IdResult, ImportWorkflowResult, OnboardingCodeResult, SamsCodeResult, SessionVersionResult,
+  AdminTeacherPresence, ChangedResult, IdResult, ImportWorkflowResult, OnboardingCodeResult, SamsCodeResult, SessionVersionResult,
 } from './types.ts'
 
 const get = <T>(path: string) => apiClient.request<T>(path)
@@ -18,6 +18,10 @@ export const adminApi = {
     teachings: AdminTeaching[]
     online_window_seconds: number
   }>('/admin/teachers'),
+  teacherPresence: () => get<{
+    teachers: AdminTeacherPresence[]
+    online_window_seconds: number
+  }>('/admin/teacher-presence'),
   users: () => get<{ users: AdminUser[] }>('/admin/users'),
   academicYears: () => get<{ academic_years: AcademicYear[] }>('/admin/academic-years'),
   onboardingRequests: (status?: string) =>

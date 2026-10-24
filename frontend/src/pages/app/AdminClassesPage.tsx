@@ -3,13 +3,20 @@ import { Link } from 'react-router'
 import { adminApi } from '../../features/admin/api.ts'
 import type { AdminClass } from '../../features/admin/types.ts'
 import { useAdminResource } from '../../features/admin/useAdminResource.ts'
-import { asNumber } from '../../features/admin/helpers.ts'
+import {
+  asNumber,
+  compareClassNames,
+  isActive,
+  studyLevelCode,
+} from '../../features/admin/helpers.ts'
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
 import { useI18n } from '../../features/i18n/useI18n.ts'
 import {
-  Button, EmptyState, ErrorState, FormField, Input, Loading, PageHeader, Select, Table,
+  Button, Dialog, EmptyState, ErrorState, FormField, Input, Loading, PageHeader, Select, Table,
 } from '../../components/ui/index.ts'
 import { AdminWorkspaceToolbar } from '../../components/admin/AdminWorkspaceToolbar.tsx'
+
+const EMPTY_ADMIN_CLASSES: AdminClass[] = []
 
 export function AdminClassesPage() {
   const { t } = useI18n()
@@ -22,7 +29,7 @@ export function AdminClassesPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
-  const [yearFilter, setYearFilter] = useState('all')
+  const [yearFilter, setYearFilter] = useState('active')
   const [levelFilter, setLevelFilter] = useState<'all' | 'TC' | '1BAC' | '2BAC'>('all')
 
   const startEdit = (item: AdminClass) => {
@@ -66,25 +73,35 @@ export function AdminClassesPage() {
     for (const item of resource.data?.classes ?? []) {
       if (!seen.has(item.academic_year_id)) seen.set(item.academic_year_id, item.academic_year_name)
     }
-    return [...seen.entries()].sort((a, b) => a[1].localeCompare(b[1]))
+    return [...seen.entries()].sort((a, b) => b[1].localeCompare(a[1], undefined, { numeric: true, sensitivity: 'base' }))
   }, [resource.data?.classes])
+
+  const classList = resource.data?.classes ?? EMPTY_ADMIN_CLASSES
+  const hasActiveAcademicYear = classList.some((item) => isActive(item.academic_year_active))
+  const effectiveYearFilter = yearFilter === 'active' && !hasActiveAcademicYear ? 'all' : yearFilter
 
   const filteredClasses = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase()
-    return (resource.data?.classes ?? [])
+    const levelOrder = { '2BAC': 0, '1BAC': 1, TC: 2, other: 3 } as const
+    return classList
       .filter((item) => {
         const matchesQuery = normalized === '' || [
           item.name,
           item.level,
           item.branch,
         ].filter(Boolean).some((value) => String(value).toLocaleLowerCase().includes(normalized))
-        const normalizedLevel = (item.level ?? '').trim().toUpperCase()
-        const matchesLevel = levelFilter === 'all' || normalizedLevel === levelFilter
-        const matchesYear = yearFilter === 'all' || String(item.academic_year_id) === yearFilter
+        const matchesLevel = levelFilter === 'all' || studyLevelCode(item) === levelFilter
+        const matchesYear = effectiveYearFilter === 'all'
+          || (effectiveYearFilter === 'active' && isActive(item.academic_year_active))
+          || String(item.academic_year_id) === effectiveYearFilter
         return matchesQuery && matchesLevel && matchesYear
       })
-      .sort((a, b) => a.name.localeCompare(b.name) || a.academic_year_name.localeCompare(b.academic_year_name))
-  }, [resource.data?.classes, query, yearFilter, levelFilter])
+      .sort((a, b) => (
+        b.academic_year_name.localeCompare(a.academic_year_name, undefined, { numeric: true, sensitivity: 'base' })
+        || levelOrder[studyLevelCode(a)] - levelOrder[studyLevelCode(b)]
+        || compareClassNames(a, b)
+      ))
+  }, [classList, query, effectiveYearFilter, levelFilter])
 
   if (resource.status === 'idle' || resource.status === 'loading') {
     return <Loading label={t(TRANSLATION_KEYS.auth.loading)} />
@@ -100,14 +117,15 @@ export function AdminClassesPage() {
         description={t(TRANSLATION_KEYS.admin.classAdminHint)}
       />
 
-      {error && <p role="alert" className="text-sm text-[var(--sams-danger)]">{error}</p>}
-
-      {editing && (
-        <section className="sams-card space-y-4 p-5">
-          <div>
-            <p className="sams-section-label">{t(TRANSLATION_KEYS.admin.editClass)}</p>
-            <h2 className="mt-1 text-lg font-semibold">{editing.name}</h2>
-          </div>
+      <Dialog
+        open={editing !== null}
+        title={t(TRANSLATION_KEYS.admin.editClass)}
+        description={editing?.name ?? ''}
+        closeLabel={t(TRANSLATION_KEYS.admin.cancel)}
+        onClose={clearForm}
+      >
+        {error && <p role="alert" className="mb-4 text-sm text-[var(--sams-danger)]">{error}</p>}
+        <div className="space-y-4">
           <div className="grid gap-4 md:grid-cols-3">
             <FormField label={t(TRANSLATION_KEYS.admin.className)}>
               {({ id, ...aria }) => <Input id={id} {...aria} value={name} onChange={(event) => setName(event.target.value)} />}
@@ -119,12 +137,12 @@ export function AdminClassesPage() {
               {({ id, ...aria }) => <Input id={id} {...aria} value={branch} onChange={(event) => setBranch(event.target.value)} />}
             </FormField>
           </div>
-          <div className="flex gap-2">
-            <Button type="button" disabled={!name.trim() || saving} loading={saving} onClick={() => void save()}>{t(TRANSLATION_KEYS.admin.save)}</Button>
+          <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" disabled={saving} onClick={clearForm}>{t(TRANSLATION_KEYS.admin.cancel)}</Button>
+            <Button type="button" disabled={!name.trim() || saving} loading={saving} onClick={() => void save()}>{t(TRANSLATION_KEYS.admin.save)}</Button>
           </div>
-        </section>
-      )}
+        </div>
+      </Dialog>
 
       <AdminWorkspaceToolbar
         searchLabel={t(TRANSLATION_KEYS.admin.search)}
@@ -135,7 +153,8 @@ export function AdminClassesPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField label={t(TRANSLATION_KEYS.admin.academicYear)}>
             {({ id, ...aria }) => (
-              <Select id={id} {...aria} value={yearFilter} onChange={(event) => setYearFilter(event.target.value)}>
+              <Select id={id} {...aria} value={effectiveYearFilter} onChange={(event) => setYearFilter(event.target.value)}>
+                <option value="active" disabled={!hasActiveAcademicYear}>{t(TRANSLATION_KEYS.admin.activeAcademicYear)}</option>
                 <option value="all">{t(TRANSLATION_KEYS.admin.allAcademicYears)}</option>
                 {years.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
               </Select>

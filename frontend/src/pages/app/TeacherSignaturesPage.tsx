@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { useSearchParams } from 'react-router'
 import { useTeacherClasses } from '../../features/classes/useTeacherClasses.ts'
 import { signaturesApi } from '../../features/signatures/api.ts'
+import { useLiveRefresh } from '../../features/sync/useLiveRefresh.ts'
 import { useI18n } from '../../features/i18n/useI18n.ts'
 import { TRANSLATION_KEYS } from '../../features/i18n/types.ts'
 import { Badge, Button, EmptyState, ErrorState, FormField, Loading, PageHeader, Select } from '../../components/ui/index.ts'
@@ -20,8 +21,49 @@ export function TeacherSignaturesPage() {
   const [error, setError] = useState<string | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const drawingRef = useRef(false)
+  const dirtyRef = useRef(false)
+  const savingRef = useRef(false)
+  const pendingRefreshRef = useRef(false)
+  const activeClassIdRef = useRef<number | null>(null)
 
   const classId = Number(params.get('class_id') ?? 0) || null
+
+  useEffect(() => {
+    activeClassIdRef.current = classId
+  }, [classId])
+
+  const refreshSignature = useCallback(async () => {
+    const requestedClassId = classId
+    if (requestedClassId === null) return
+    if (dirtyRef.current || savingRef.current) {
+      pendingRefreshRef.current = true
+      return
+    }
+
+    const result = await signaturesApi.get(requestedClassId)
+    if (
+      activeClassIdRef.current !== requestedClassId
+      || dirtyRef.current
+      || savingRef.current
+    ) {
+      pendingRefreshRef.current = true
+      return
+    }
+
+    setSignature(result.signature?.signature_data ?? null)
+    setError(null)
+  }, [classId])
+
+  useLiveRefresh(refreshSignature, { enabled: classId !== null })
+
+  useEffect(() => {
+    dirtyRef.current = dirty
+    savingRef.current = saving
+    if (!dirty && !saving && pendingRefreshRef.current && classId !== null) {
+      pendingRefreshRef.current = false
+      void refreshSignature()
+    }
+  }, [classId, dirty, saving, refreshSignature])
 
   useEffect(() => {
     if (classId === null) {
@@ -83,30 +125,36 @@ export function TeacherSignaturesPage() {
 
   const save = async () => {
     if (classId === null || !dirty || !canvasRef.current) return
+    savingRef.current = true
     setSaving(true)
     setError(null)
     try {
       const result = await signaturesApi.save(classId, canvasRef.current.toDataURL('image/png'))
       setSignature(result.signature.signature_data)
+      dirtyRef.current = false
       setDirty(false)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : t(TRANSLATION_KEYS.system.genericError))
     } finally {
+      savingRef.current = false
       setSaving(false)
     }
   }
 
   const clear = async () => {
     if (classId === null || !signature) return
+    savingRef.current = true
     setSaving(true)
     setError(null)
     try {
       await signaturesApi.delete(classId)
       setSignature(null)
+      dirtyRef.current = false
       setDirty(false)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : t(TRANSLATION_KEYS.system.genericError))
     } finally {
+      savingRef.current = false
       setSaving(false)
     }
   }
@@ -162,6 +210,7 @@ export function TeacherSignaturesPage() {
               if (!context) return
               context.beginPath()
               context.moveTo(current.x, current.y)
+              dirtyRef.current = true
               setDirty(true)
             }}
             onPointerMove={(event) => {

@@ -33,6 +33,22 @@ function p7_expect_exception(callable $callback, string $message): Throwable
 
 function p7_execute_schema(PDO $pdo, string $sql): void
 {
+    $targetDatabase = trim((string)(getenv('SAMS_TEST_DB_NAME') ?: ''));
+    if (!preg_match('/^sams_test_[A-Za-z0-9_]+$/', $targetDatabase)) {
+        throw new RuntimeException('Refusing unsafe integration-test schema target.');
+    }
+    $replacementCount = 0;
+    $isolatedSchema = preg_replace(
+        '/CREATE DATABASE IF NOT EXISTS sams\\s+CHARACTER SET utf8mb4\\s+COLLATE utf8mb4_unicode_ci;\\s*USE sams;\\s*/i',
+        'USE ' . $targetDatabase . ';',
+        $sql,
+        1,
+        $replacementCount
+    );
+    if ($isolatedSchema === null || $replacementCount !== 1 || preg_match('/\\bUSE\\s+sams\\s*;/i', $isolatedSchema) === 1) {
+        throw new RuntimeException('Refusing to execute an unisolated production schema selector.');
+    }
+    $sql = $isolatedSchema;
     $sql = preg_replace('/^\s*--.*$/m', '', $sql) ?? $sql;
     foreach (preg_split('/;\s*(?:\R|$)/', $sql, -1, PREG_SPLIT_NO_EMPTY) as $statement) {
         if (trim($statement) !== '') {

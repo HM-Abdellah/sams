@@ -93,7 +93,7 @@ test.describe('frontend Phase 37 teacher attendance responsive reconstruction', 
     await expect(periodSelector.getByRole('button')).toHaveCount(8)
     await periodSelector.getByRole('button', { name: /Period 8/ }).click()
     await expect(periodSelector.getByRole('button', { name: /Period 8/ })).toHaveAttribute('aria-pressed', 'true')
-    await expect(page.locator('table')).toBeHidden()
+    await expect(page.locator('table:not(.sams-print-table)')).toBeHidden()
     await expect(page.locator('[data-attendance-row]:visible')).toHaveCount(1)
     await expect(page.locator('button.sams-touch-cell:visible').first()).toHaveAttribute('data-attendance-period', '8')
     await assertNoPageOverflow(page)

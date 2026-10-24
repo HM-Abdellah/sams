@@ -22,6 +22,10 @@ export function AdminAcademicYearsPage() {
   const [sort, setSort] = useState<'start' | 'name' | 'status'>('start')
 
   const create = async () => {
+    if (!name.trim() || !startsOn || !endsOn || startsOn >= endsOn) {
+      setError(t(TRANSLATION_KEYS.admin.academicYearDateRangeInvalid))
+      return
+    }
     setSaving(true); setError(null)
     try { await adminApi.createAcademicYear({ name, starts_on: startsOn, ends_on: endsOn, activate: activateOnCreate }); setName(''); setStartsOn(''); setEndsOn(''); setActivateOnCreate(false); await resource.reload() }
     catch (cause) { setError(cause instanceof Error ? cause.message : t(TRANSLATION_KEYS.system.genericError)) }
@@ -70,13 +74,17 @@ export function AdminAcademicYearsPage() {
 
       <section className="sams-card p-5 space-y-4">
         <h2 className="text-lg font-semibold">{t(TRANSLATION_KEYS.admin.createAcademicYear)}</h2>
+        <p className="max-w-3xl text-sm leading-6 text-[var(--sams-muted)]">
+          {t(TRANSLATION_KEYS.admin.academicYearOverlapHint)}
+        </p>
         <div className="grid gap-4 md:grid-cols-3">
           <FormField label={t(TRANSLATION_KEYS.admin.name)}>{({ id, ...aria }) => <Input id={id} {...aria} value={name} onChange={(e) => setName(e.target.value)} />}</FormField>
           <FormField label={t(TRANSLATION_KEYS.admin.startsOn)}>{({ id, ...aria }) => <Input id={id} {...aria} type="date" value={startsOn} onChange={(e) => setStartsOn(e.target.value)} />}</FormField>
           <FormField label={t(TRANSLATION_KEYS.admin.endsOn)}>{({ id, ...aria }) => <Input id={id} {...aria} type="date" value={endsOn} onChange={(e) => setEndsOn(e.target.value)} />}</FormField>
         </div>
+        {startsOn && endsOn && startsOn >= endsOn && <p role="alert" className="text-sm text-[var(--sams-danger)]">{t(TRANSLATION_KEYS.admin.academicYearDateRangeInvalid)}</p>}
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={activateOnCreate} onChange={(e) => setActivateOnCreate(e.target.checked)} /> {t(TRANSLATION_KEYS.admin.activateImmediately)}</label>
-        <Button type="button" disabled={!name || !startsOn || !endsOn || saving} loading={saving} onClick={() => void create()}>{t(TRANSLATION_KEYS.admin.create)}</Button>
+        <Button type="button" disabled={!name.trim() || !startsOn || !endsOn || startsOn >= endsOn || saving} loading={saving} onClick={() => void create()}>{t(TRANSLATION_KEYS.admin.create)}</Button>
       </section>
 
       <AdminWorkspaceToolbar>

@@ -23,6 +23,8 @@ function expect_true(bool $condition, string $message): void
 function execute_schema(PDO $pdo, string $sql): void
 {
     $sql = preg_replace('/^\s*--.*$/m', '', $sql) ?? $sql;
+    // Normalize adjacent schema statements before splitting for test setup.
+    $sql = preg_replace('/;(?=(?:CREATE|ALTER|DROP|SET|USE)\b)/i', ";\n", $sql) ?? $sql;
     $statements = preg_split('/;\s*(?:\R|$)/', $sql, -1, PREG_SPLIT_NO_EMPTY);
 
     foreach ($statements as $statement) {
@@ -107,6 +109,15 @@ $schema = file_get_contents(__DIR__ . '/../database/schema.sql');
 if ($schema === false) {
     throw new RuntimeException('Unable to read database/schema.sql.');
 }
+
+$schema = preg_replace(
+    '/CREATE DATABASE IF NOT EXISTS sams\s+CHARACTER SET utf8mb4\s+COLLATE utf8mb4_unicode_ci;\s*USE sams;\s*/i',
+    '',
+    $schema
+);
+if ($schema === null || preg_match('/\bUSE\s+sams\s*;/i', $schema) === 1) {
+    throw new RuntimeException('Unable to isolate the integration schema from the production database name.');
+}
 execute_schema($pdo, $schema);
 execute_schema($pdo, $schema);
 
@@ -118,7 +129,8 @@ $pdo->exec(
     "INSERT INTO academic_years (school_id, name, starts_on, ends_on, is_active)
      VALUES
        (1, '2025-2026', '2025-09-01', '2026-07-31', 0),
-       (1, '2026-2027', '2026-09-01', '2027-07-31', 1)"
+       (1, '2026-2027', '2026-09-01', '2027-07-31', 1),
+       (1, '2027-2028', '2027-09-01', '2028-07-31', 0)"
 );
 
 $pdo->exec(
@@ -128,6 +140,9 @@ $pdo->exec(
 
 $targetAcademicYearId = (int)$pdo->query(
     "SELECT id FROM academic_years WHERE name = '2026-2027'"
+)->fetchColumn();
+$futureAcademicYearId = (int)$pdo->query(
+    "SELECT id FROM academic_years WHERE name = '2027-2028'"
 )->fetchColumn();
 $oldAcademicYearId = (int)$pdo->query(
     "SELECT id FROM academic_years WHERE name = '2025-2026'"
@@ -188,8 +203,9 @@ expect_true(
 );
 
 $validWorkbook = createWorkbook([
-    [1, 'MC-EXIST', 'FamilyA', 'GivenA', '2009-01-02'],
-    [2, 'MC-NEW', 'FamilyB', 'GivenB', '2009-02-03'],
+    // Source order intentionally differs from alphabetical student-name order.
+    [2, 'MC-EXIST', 'FamilyA', 'GivenA', '2009-01-02'],
+    [1, 'MC-NEW', 'FamilyB', 'GivenB', '2009-02-03'],
 ]);
 
 try {
@@ -198,6 +214,19 @@ try {
 
     $staging = new SAMS\Services\SchoolWorkbookImportStagingService();
     $reconciliation = new SAMS\Services\SchoolWorkbookImportReconciliationService();
+
+    $batchesBeforeMissingYearAttempt = (int)$pdo->query('SELECT COUNT(*) FROM school_import_batches')->fetchColumn();
+    $missingYearRejected = false;
+    try {
+        $staging->stage($validWorkbook, $adminId, 'missing-target-year.xlsx', null, 1);
+    } catch (InvalidArgumentException $e) {
+        $missingYearRejected = str_contains($e->getMessage(), 'Select a target academic year');
+    }
+    expect_true($missingYearRejected, 'Upload staging must reject a workbook when no target year is selected.');
+    expect_true(
+        (int)$pdo->query('SELECT COUNT(*) FROM school_import_batches')->fetchColumn() === $batchesBeforeMissingYearAttempt,
+        'Missing target-year validation must not create a staging batch.'
+    );
 
     $staged = $staging->stage(
         $validWorkbook,
@@ -208,8 +237,38 @@ try {
 
     expect_true($staged['status'] === 'validated', 'Valid workbook should enter validated staging state.');
 
+    $stagedClassStmt = $pdo->prepare(
+        'SELECT id FROM school_import_classes WHERE batch_id = ? ORDER BY id LIMIT 1'
+    );
+    $stagedClassStmt->execute([(int)$staged['batch_id']]);
+    $stagedClassId = (int)$stagedClassStmt->fetchColumn();
+    expect_true($stagedClassId > 0, 'The staged workbook should contain a class to preview.');
+
+    $previewRows = (new SAMS\Repositories\SchoolImportRepository())->rowsForClass($stagedClassId);
+    expect_true(
+        isset($previewRows['items'], $previewRows['total_pages'])
+            && !isset($previewRows['rows'], $previewRows['pages']),
+        'Class-row preview must use the API contract keys items and total_pages.'
+    );
+    expect_true(
+        count($previewRows['items']) === 2
+            && $previewRows['total'] === 2
+            && $previewRows['total_pages'] === 1,
+        'Class-row preview must return both staged rows and accurate pagination metadata.'
+    );
+
+    $importRepository = new SAMS\Repositories\SchoolImportRepository();
+    expect_true(
+        $importRepository->isReadyToImport((int)$staged['batch_id']) === false,
+        'A newly staged batch must not be commit-ready before reconciliation.'
+    );
+
     $reconciled = $reconciliation->reconcile((int)$staged['batch_id'], $adminId, 1);
     expect_true($reconciled['ready_to_import'] === true, 'Valid workbook should be ready after reconciliation.');
+    expect_true(
+        $importRepository->isReadyToImport((int)$staged['batch_id']) === true,
+        'Commit readiness must be recoverable from persisted reconciliation state.'
+    );
     expect_true($reconciled['summary']['new_students'] === 1, 'Reconciliation should identify one new student.');
     expect_true($reconciled['summary']['existing_students'] === 1, 'Reconciliation should identify one existing student.');
     expect_true(
@@ -242,6 +301,16 @@ try {
     expect_true((int)$reusedStudent['id'] === $existingStudentId, 'Existing Massar must reuse the same student id.');
     expect_true((int)$reusedStudent['class_id'] === $targetClassId, 'Active-year import should move current class pointer to target class.');
     expect_true((int)$newStudent['class_id'] === $targetClassId, 'New student should point to the target class.');
+
+    $orderedRoster = (new SAMS\Repositories\StudentRepository())->forClass($targetClassId);
+    expect_true(
+        count($orderedRoster) === 2
+            && (string)$orderedRoster[0]['roster_number'] === '1'
+            && (string)$orderedRoster[0]['massar_code'] === 'MC-NEW'
+            && (string)$orderedRoster[1]['roster_number'] === '2'
+            && (string)$orderedRoster[1]['massar_code'] === 'MC-EXIST',
+        'Class roster must preserve imported roster numbers and order rather than sorting alphabetically.'
+    );
     expect_true($pdo->query(
         "SELECT student_number FROM students WHERE id = " . (int)$newStudent['id']
     )->fetchColumn() === null, 'Roster order must not be stored as student_number.');
@@ -259,6 +328,10 @@ try {
         "SELECT status FROM school_import_batches WHERE id = " . (int)$staged['batch_id']
     )->fetchColumn();
     expect_true($storedBatchStatus === 'imported', 'Imported batch status was not persisted.');
+    expect_true(
+        $importRepository->isReadyToImport((int)$staged['batch_id']) === false,
+        'An already imported batch must not be presented as awaiting Commit.'
+    );
 
     $rowsImported = (int)$pdo->query(
         "SELECT COUNT(*) FROM school_import_rows
@@ -494,24 +567,106 @@ $warningRosterWorkbook = createWorkbook([
             'unmapped-class.xlsx',
             $targetAcademicYearId
         , 1);
-        $unmappedReconcile = $reconciliation->reconcile((int)$unmappedStage['batch_id'], $adminId, 1);
-        expect_true($unmappedReconcile['ready_to_import'] === false, 'Unmapped class must block import.');
+        $unmappedClassBefore = $pdo->prepare(
+            'SELECT id FROM classes WHERE academic_year_id = ? AND name = ? LIMIT 1'
+        );
+        $unmappedClassBefore->execute([$targetAcademicYearId, '2BAC SP Z']);
+        expect_true($unmappedClassBefore->fetchColumn() === false, 'The missing target class must not be created during staging.');
 
-        $unmappedBlocked = false;
-        try {
-            $reconciliation->commit((int)$unmappedStage['batch_id'], $adminId, 1);
-        } catch (SAMS\Exceptions\SchoolImportWorkflowException) {
-            $unmappedBlocked = true;
-        }
-        expect_true($unmappedBlocked, 'Commit must reject an unmapped target class.');
+        $unmappedReconcile = $reconciliation->reconcile((int)$unmappedStage['batch_id'], $adminId, 1);
+        expect_true($unmappedReconcile['ready_to_import'] === true, 'A valid missing target class should be proposed for creation on Commit.');
+        expect_true(
+            (int)$pdo->query("SELECT COUNT(*) FROM students WHERE massar_code = 'MC-UNMAPPED'")->fetchColumn() === 0,
+            'Reconcile must not create production students.'
+        );
+
+        $unmappedCommit = $reconciliation->commit((int)$unmappedStage['batch_id'], $adminId, 1);
+        expect_true($unmappedCommit['summary']['new_students'] === 1, 'Commit should create the new class student.');
+
+        $unmappedClassBefore->execute([$targetAcademicYearId, '2BAC SP Z']);
+        $createdUnmappedClassId = (int)$unmappedClassBefore->fetchColumn();
+        expect_true($createdUnmappedClassId > 0, 'Commit should create the missing target class.');
+        $unmappedStudents = (new SAMS\Repositories\StudentRepository())->forClass($createdUnmappedClassId);
+        expect_true(count($unmappedStudents) === 1, 'The newly imported student should be available in the target class roster.');
     } finally {
         @unlink($unmappedWorkbook);
+    }
+
+    $futureWorkbook = createWorkbook([
+        [1, 'MC-EXIST', 'FamilyA', 'GivenA', '2009-01-02'],
+        [2, 'MC-FUTURE-NEW', 'FamilyFuture', 'GivenFuture', '2009-02-03'],
+    ], '2BAC FUTURE C');
+    try {
+        $futureBeforeStudents = (int)$pdo->query('SELECT COUNT(*) FROM students')->fetchColumn();
+        $futureBeforeEnrollments = (int)$pdo->query('SELECT COUNT(*) FROM student_enrollments')->fetchColumn();
+        $futureBeforeClasses = (int)$pdo->query(
+            'SELECT COUNT(*) FROM classes WHERE academic_year_id = ' . $futureAcademicYearId
+        )->fetchColumn();
+
+        $futureStage = $staging->stage(
+            $futureWorkbook,
+            $adminId,
+            'future-year-roster.xlsx',
+            $futureAcademicYearId,
+            1
+        );
+        $futureReconcile = $reconciliation->reconcile((int)$futureStage['batch_id'], $adminId, 1);
+        expect_true($futureReconcile['ready_to_import'] === true, 'An inactive future year with missing classes should reconcile cleanly.');
+        expect_true(
+            (int)$pdo->query('SELECT COUNT(*) FROM students')->fetchColumn() === $futureBeforeStudents
+                && (int)$pdo->query('SELECT COUNT(*) FROM student_enrollments')->fetchColumn() === $futureBeforeEnrollments
+                && (int)$pdo->query('SELECT COUNT(*) FROM classes WHERE academic_year_id = ' . $futureAcademicYearId)->fetchColumn() === $futureBeforeClasses,
+            'Reconcile must not create classes, students, or enrollments.'
+        );
+
+        $futureCommit = $reconciliation->commit((int)$futureStage['batch_id'], $adminId, 1);
+        expect_true($futureCommit['summary']['new_students'] === 1, 'Future-year commit should add only the new Massar identity.');
+        expect_true($futureCommit['summary']['existing_students'] === 1, 'Future-year commit should reuse the existing Massar identity.');
+        expect_true($futureCommit['summary']['enrollments_created'] === 2, 'Future-year commit should create both year-specific enrollments.');
+
+        $futureClassStmt = $pdo->prepare(
+            'SELECT id FROM classes WHERE academic_year_id = ? AND name = ? LIMIT 1'
+        );
+        $futureClassStmt->execute([$futureAcademicYearId, '2BAC FUTURE C']);
+        $futureClassId = (int)$futureClassStmt->fetchColumn();
+        expect_true($futureClassId > 0, 'Commit should create the missing class in the inactive target year.');
+
+        $futureClassSummaries = (new SAMS\Repositories\ClassRepository())->allForAdmin(1);
+        $futureClassSummary = array_values(array_filter(
+            $futureClassSummaries,
+            static fn(array $class): bool => (int)$class['id'] === $futureClassId
+        ))[0] ?? null;
+        expect_true(
+            is_array($futureClassSummary) && (int)$futureClassSummary['student_count'] === 2,
+            'Class counts must include year-specific enrollments scheduled for the target academic year.'
+        );
+
+        $existingCurrentClass = (int)$pdo->query(
+            'SELECT class_id FROM students WHERE id = ' . $existingStudentId
+        )->fetchColumn();
+        expect_true(
+            $existingCurrentClass === $targetClassId,
+            'Importing to an inactive future year must not change the existing student current-class pointer.'
+        );
+
+        $futureRoster = (new SAMS\Repositories\StudentRepository())->forAdminClassRoster($futureClassId);
+        expect_true(
+            count($futureRoster) === 2
+                && count(array_filter($futureRoster, static fn(array $student): bool => (int)$student['id'] === $existingStudentId)) === 1,
+            'Admin roster lookup should include current students enrolled in the inactive future year.'
+        );
+        expect_true(
+            array_reduce($futureRoster, static fn(bool $valid, array $student): bool => $valid && array_key_exists('roster_number', $student), true),
+            'Admin roster response must include the enrollment-specific roster number.'
+        );
+    } finally {
+        @unlink($futureWorkbook);
     }
 
     $transactionWorkbook = createWorkbook([
         [10, 'MC-TX-1', 'FamilyD', 'GivenD', '2009-04-04'],
         [11, 'MC-TXFAIL', 'FamilyE', 'GivenE', '2009-05-05'],
-    ]);
+    ], '2BAC SP TX');
     try {
         $transactionStage = $staging->stage(
             $transactionWorkbook,
@@ -535,6 +690,9 @@ $warningRosterWorkbook = createWorkbook([
 
         $txBeforeStudents = (int)$pdo->query('SELECT COUNT(*) FROM students')->fetchColumn();
         $txBeforeEnrollments = (int)$pdo->query('SELECT COUNT(*) FROM student_enrollments')->fetchColumn();
+        $txBeforeClasses = (int)$pdo->query(
+            'SELECT COUNT(*) FROM classes WHERE academic_year_id = ' . $targetAcademicYearId
+        )->fetchColumn();
 
         $rolledBack = false;
         try {
@@ -551,6 +709,10 @@ $warningRosterWorkbook = createWorkbook([
         expect_true(
             (int)$pdo->query('SELECT COUNT(*) FROM student_enrollments')->fetchColumn() === $txBeforeEnrollments,
             'Transactional failure must roll back every enrollment write.'
+        );
+        expect_true(
+            (int)$pdo->query('SELECT COUNT(*) FROM classes WHERE academic_year_id = ' . $targetAcademicYearId)->fetchColumn() === $txBeforeClasses,
+            'Transactional failure must roll back classes created during Commit.'
         );
         expect_true(
             (string)$pdo->query(

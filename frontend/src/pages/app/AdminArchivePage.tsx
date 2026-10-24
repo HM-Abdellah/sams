@@ -37,14 +37,21 @@ const currentMonth = () => {
   return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0')
 }
 
-const today = () => new Date().toISOString().slice(0, 10)
+const today = () => {
+  const date = new Date()
+  return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0')
+}
+
+const isArchiveView = (value: string | null): value is ArchiveView =>
+  value === 'days' || value === 'month' || value === 'day' || value === 'student'
 
 export function AdminArchivePage() {
   const { t, formatNumber, formatDate } = useI18n()
   const [params, setParams] = useSearchParams()
   const loadClasses = useCallback(() => adminApi.classes(), [])
   const classes = useAdminResource(loadClasses)
-  const view = (params.get('view') as ArchiveView | null) ?? 'days'
+  const requestedView = params.get('view')
+  const view: ArchiveView = isArchiveView(requestedView) ? requestedView : 'days'
   const classId = Number(params.get('class_id') ?? 0) || null
   const month = params.get('month') ?? currentMonth()
   const date = params.get('date') ?? today()

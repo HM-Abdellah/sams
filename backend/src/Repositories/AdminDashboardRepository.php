@@ -15,6 +15,7 @@ final class AdminDashboardRepository
         $schoolId = $this->normalizeSchoolId($schoolId);
         $yearScope = $schoolId === null ? '' : ' AND ay.school_id = ' . $schoolId;
         $userScope = $schoolId === null ? '' : ' AND school_id = ' . $schoolId;
+        $onlineWindowSeconds = UserRepository::ONLINE_WINDOW_SECONDS;
         $pdo = Database::connection();
         $summary = $pdo->query(
             "SELECT
@@ -29,10 +30,10 @@ final class AdminDashboardRepository
                  INNER JOIN students s ON s.id = e.student_id
                  WHERE c.is_active = 1 AND ay.is_active = 1{$yearScope}
                    AND s.status = 'active'
-                   AND e.starts_on <= CURDATE()
-                   AND (e.ends_on IS NULL OR e.ends_on >= CURDATE())) AS active_students,
+                   AND e.starts_on <= ay.ends_on
+                   AND (e.ends_on IS NULL OR e.ends_on >= ay.starts_on)) AS active_students,
                 (SELECT COUNT(*) FROM users WHERE role = 'teacher' AND is_active = 1{$userScope}) AS active_teachers,
-                (SELECT COUNT(*) FROM users WHERE role = 'teacher' AND is_active = 1 AND last_seen_at >= CURRENT_TIMESTAMP - INTERVAL 90 SECOND{$userScope}) AS online_teachers,
+                (SELECT COUNT(*) FROM users WHERE role = 'teacher' AND is_active = 1 AND last_seen_at >= CURRENT_TIMESTAMP - INTERVAL {$onlineWindowSeconds} SECOND{$userScope}) AS online_teachers,
                 (SELECT COUNT(*) FROM users WHERE role = 'teacher' AND is_active = 1 AND phone_verified = 0{$userScope}) AS unverified_teachers,
                 (SELECT COUNT(*) FROM users WHERE role = 'teacher' AND is_active = 1 AND locked_until IS NOT NULL AND locked_until > CURRENT_TIMESTAMP{$userScope}) AS locked_teachers,
                 (SELECT COUNT(*)
@@ -82,7 +83,7 @@ final class AdminDashboardRepository
                 c.branch,
                 ay.id AS academic_year_id,
                 ay.name AS academic_year_name,
-                COUNT(DISTINCT CASE WHEN e.starts_on <= CURDATE() AND (e.ends_on IS NULL OR e.ends_on >= CURDATE()) AND s.status = 'active' THEN s.id END) AS student_count,
+                COUNT(DISTINCT CASE WHEN s.status = 'active' THEN s.id END) AS student_count,
                 COUNT(a.id) AS today_records,
                 COALESCE(SUM(a.status = 'present'), 0) AS present_count,
                 COALESCE(SUM(a.status = 'absent'), 0) AS absent_count,
@@ -91,8 +92,8 @@ final class AdminDashboardRepository
              FROM classes c
              INNER JOIN academic_years ay ON ay.id = c.academic_year_id
              LEFT JOIN student_enrollments e ON e.class_id = c.id
-                AND e.starts_on <= CURDATE()
-                AND (e.ends_on IS NULL OR e.ends_on >= CURDATE())
+                AND e.starts_on <= ay.ends_on
+                AND (e.ends_on IS NULL OR e.ends_on >= ay.starts_on)
              LEFT JOIN students s ON s.id = e.student_id
              LEFT JOIN attendance a ON a.enrollment_id = e.id AND a.attendance_date = CURDATE()
              WHERE c.is_active = 1 AND ay.is_active = 1{$yearScope}
@@ -271,12 +272,13 @@ final class AdminDashboardRepository
     {
         $schoolId = $this->normalizeSchoolId($schoolId);
         $userScope = $schoolId === null ? '' : ' AND school_id = ' . $schoolId;
+        $onlineWindowSeconds = UserRepository::ONLINE_WINDOW_SECONDS;
         return Database::connection()->query(
             "SELECT id, full_name, employee_id, last_seen_at
              FROM users
              WHERE role = 'teacher'
                AND is_active = 1
-               AND last_seen_at >= CURRENT_TIMESTAMP - INTERVAL 90 SECOND
+               AND last_seen_at >= CURRENT_TIMESTAMP - INTERVAL {$onlineWindowSeconds} SECOND
                {$userScope}
              ORDER BY last_seen_at DESC, full_name
              LIMIT 12"

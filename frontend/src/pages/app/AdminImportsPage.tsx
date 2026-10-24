@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { adminApi } from '../../features/admin/api.ts'
 import { useAdminResource } from '../../features/admin/useAdminResource.ts'
 import { asNumber, isActive } from '../../features/admin/helpers.ts'
@@ -63,6 +63,13 @@ const ISSUE_KEYS: Record<string, TranslationKey> = {
 const statusText = (status: string, t: (key: TranslationKey) => string) =>
   t(STATUS_KEYS[status] ?? TRANSLATION_KEYS.admin.importIssueGeneric)
 
+const classStatusText = (
+  item: { status: string; target_class_action?: 'existing' | 'create_on_commit' },
+  t: (key: TranslationKey) => string,
+) => item.target_class_action === 'create_on_commit'
+  ? t(TRANSLATION_KEYS.admin.importClassWillBeCreated)
+  : statusText(item.status, t)
+
 const issueText = (issue: unknown, t: (key: TranslationKey) => string) =>
   t(ISSUE_KEYS[String(issue)] ?? TRANSLATION_KEYS.admin.importIssueGeneric)
 
@@ -102,17 +109,28 @@ export function AdminImportsPage() {
   const [confirmKind, setConfirmKind] = useState<WorkflowAction | null>(null)
   const [busy, setBusy] = useState<'upload' | WorkflowAction | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const previewRequestId = useRef(0)
 
   const loadPreview = async (id: number, classId?: number, page = 1) => {
+    const requestId = ++previewRequestId.current
+    if (id !== previewId) {
+      // Never leave actions for the previous batch available while a new batch loads.
+      setPreview(null)
+      setPreviewId(null)
+      setSelectedClassId(null)
+      setReadyToImport(false)
+    }
     setError(null)
     try {
       const result = await adminApi.importPreview(id, classId, page)
+      if (requestId !== previewRequestId.current) return
       setPreview(result)
       setPreviewId(id)
       setBatchId(String(id))
-      setReadyToImport(false)
+      setReadyToImport(result.ready_to_import === true)
       setSelectedClassId(classId ?? null)
     } catch (cause) {
+      if (requestId !== previewRequestId.current) return
       setError(cause instanceof Error ? cause.message : t(TRANSLATION_KEYS.system.genericError))
     }
   }
@@ -124,12 +142,18 @@ export function AdminImportsPage() {
 
   const upload = async () => {
     if (!file) return
+    if (!yearId) {
+      setError(t(TRANSLATION_KEYS.admin.importIssueTargetYearRequired))
+      return
+    }
     setBusy('upload')
     setError(null)
     try {
       const result = await adminApi.uploadSchoolImport(file, yearId ? Number(yearId) : undefined)
-      await loadPreview(result.batch_id)
+      // Preserve the server-issued batch ID so the user can retry preview loading.
+      setBatchId(String(result.batch_id))
       setFile(null)
+      await loadPreview(result.batch_id)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : t(TRANSLATION_KEYS.system.genericError))
     } finally {
@@ -139,12 +163,17 @@ export function AdminImportsPage() {
 
   const loadClassRows = async (classId: number, page = 1) => {
     if (previewId === null) return
+    const requestId = ++previewRequestId.current
+    const requestedBatchId = previewId
     setError(null)
     try {
-      const result = await adminApi.importPreview(previewId, classId, page)
+      const result = await adminApi.importPreview(requestedBatchId, classId, page)
+      if (requestId !== previewRequestId.current) return
+      if (result.batch.id !== requestedBatchId) return
       setPreview(result)
       setSelectedClassId(classId)
     } catch (cause) {
+      if (requestId !== previewRequestId.current) return
       setError(cause instanceof Error ? cause.message : t(TRANSLATION_KEYS.system.genericError))
     }
   }
@@ -274,7 +303,7 @@ export function AdminImportsPage() {
             </label>
 
             <div className="mt-4 flex flex-wrap items-center gap-2">
-              <Button type="button" disabled={!file || busy !== null} loading={busy === 'upload'} onClick={() => void upload()}>
+              <Button type="button" disabled={!file || !yearId || busy !== null} loading={busy === 'upload'} onClick={() => void upload()}>
                 {t(TRANSLATION_KEYS.admin.upload)}
               </Button>
               {file && (
@@ -309,7 +338,7 @@ export function AdminImportsPage() {
             <div className="mt-5 rounded-xl border border-[var(--sams-border)] bg-[var(--sams-muted-surface)] p-4">
               <FormField label={t(TRANSLATION_KEYS.admin.targetAcademicYear)}>
                 {({ id, ...aria }) => (
-                  <Select id={id} {...aria} value={yearId} onChange={(event) => setYearId(event.target.value)}>
+                  <Select id={id} {...aria} required value={yearId} onChange={(event) => setYearId(event.target.value)}>
                     <option value="">{t(TRANSLATION_KEYS.admin.selectAcademicYear)}</option>
                     {data.academic_years.map((year) => (
                       <option key={year.id} value={year.id}>
@@ -401,14 +430,22 @@ export function AdminImportsPage() {
 
             <div className="p-5 sm:p-6">
               <StatusMessage
-                variant={totalErrors > 0 ? 'warning' : readyToImport ? 'success' : 'info'}
+                variant={
+                  totalErrors > 0 || preview.classes.some((item) => item.status === 'error')
+                    ? 'warning'
+                    : readyToImport
+                      ? 'success'
+                      : 'info'
+                }
                 role="status"
               >
-                {totalErrors > 0
+                {totalErrors > 0 || preview.classes.some((item) => item.status === 'error')
                   ? t(TRANSLATION_KEYS.admin.importNeedsAttention)
                   : readyToImport
                     ? t(TRANSLATION_KEYS.admin.importReady)
-                    : t(TRANSLATION_KEYS.admin.importValidationSummary)}
+                    : preview.batch.status === 'imported'
+                      ? t(TRANSLATION_KEYS.admin.importStatusImported)
+                      : t(TRANSLATION_KEYS.admin.importAwaitingReconcile)}
               </StatusMessage>
 
               <div className="mt-4 flex flex-wrap gap-2">
@@ -453,7 +490,7 @@ export function AdminImportsPage() {
                     <td className="px-3 py-3 font-medium">{item.source_class_name}</td>
                     <td className="px-3 py-3">{item.source_level ?? '—'}</td>
                     <td className="px-3 py-3 tabular-nums">{asNumber(item.student_count)}</td>
-                    <td className="px-3 py-3"><Badge variant={statusVariant(item.status)}>{statusText(item.status, t)}</Badge></td>
+                    <td className="px-3 py-3"><Badge variant={statusVariant(item.status)}>{classStatusText(item, t)}</Badge></td>
                     <td className="px-3 py-3">
                       <Button
                         type="button"
@@ -479,7 +516,7 @@ export function AdminImportsPage() {
                   <p className="sams-section-label">{t(TRANSLATION_KEYS.admin.importRows)}</p>
                   <h2 className="mt-1 text-xl font-semibold">{selectedClass.source_class_name}</h2>
                 </div>
-                <Badge variant={statusVariant(selectedClass.status)}>{statusText(selectedClass.status, t)}</Badge>
+                <Badge variant={statusVariant(selectedClass.status)}>{classStatusText(selectedClass, t)}</Badge>
               </div>
 
               {Array.isArray(selectedClass.issues) && selectedClass.issues.length > 0 ? (

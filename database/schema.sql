@@ -176,6 +176,7 @@ CREATE TABLE student_enrollments (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     student_id BIGINT UNSIGNED NOT NULL,
     class_id BIGINT UNSIGNED NOT NULL,
+    roster_number VARCHAR(30) NULL,
     starts_on DATE NOT NULL,
     ends_on DATE NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -184,6 +185,7 @@ CREATE TABLE student_enrollments (
     UNIQUE KEY uq_enrollments_student_start (student_id, starts_on),
     UNIQUE KEY uq_enrollments_id_student (id, student_id),
     KEY idx_enrollments_class_dates (class_id, starts_on, ends_on),
+    KEY idx_enrollments_class_roster (class_id, roster_number, student_id),
     KEY idx_enrollments_student_dates (student_id, starts_on, ends_on),
     CONSTRAINT fk_enrollments_student
         FOREIGN KEY (student_id) REFERENCES students(id)
@@ -624,3 +626,16 @@ CREATE TABLE teacher_onboarding_requests (
 -- Business rule: the application must keep at most one currently usable
 -- onboarding code per school. Rotation is enforced by the service layer.
 
+-- School-scoped real-time change notifications. Only event metadata is stored.
+CREATE TABLE IF NOT EXISTS school_sync_events (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    school_id BIGINT UNSIGNED NOT NULL,
+    event_type VARCHAR(40) NOT NULL DEFAULT 'data.changed',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_school_sync_events_school_id (school_id, id),
+    KEY idx_school_sync_events_created_at (created_at),
+    CONSTRAINT fk_school_sync_events_school
+        FOREIGN KEY (school_id) REFERENCES schools(id)
+        ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB;

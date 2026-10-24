@@ -205,9 +205,22 @@ final class SchoolImportController
         }
 
         $classes = $imports->classesForBatch($batchId);
+        foreach ($classes as &$class) {
+            $class['target_class_action'] = ($class['status'] ?? '') === 'mapped'
+                && (int)($class['target_class_id'] ?? 0) < 1
+                ? 'create_on_commit'
+                : 'existing';
+        }
+        unset($class);
+
         $result = [
             'batch' => $batch,
             'classes' => $classes,
+            'ready_to_import' => ($batch['status'] ?? '') === 'validated'
+                && (int)($batch['target_academic_year_id'] ?? 0) > 0
+                && (int)($batch['error_rows'] ?? 0) === 0
+                && (int)($batch['error_classes'] ?? 0) === 0
+                && $imports->isReadyToImport($batchId),
         ];
 
         $rawClassId = $request->queryValue('class_id');

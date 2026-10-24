@@ -176,6 +176,91 @@ test.describe('frontend Phase 17 responsive engineering', () => {
     await assertNoPageOverflow(page)
   })
 
+  test('admin workspace pages stay within a 320px mobile viewport', async ({ page }) => {
+    const adminUser = {
+      id: 10, school_id: 20, username: 'admin.e2e', employee_id: null, full_name: 'E2E Admin',
+      phone: null, phone_verified: 1, role: 'admin', account_status: 'active', is_active: 1,
+      failed_login_attempts: 0, locked_until: null, last_login_at: null, last_seen_at: null,
+      is_online: 0, created_at: '2026-09-01T08:00:00Z', updated_at: '2026-09-01T08:00:00Z',
+    }
+    const academicYear = {
+      id: 1, school_id: 20, name: '2026/2027', starts_on: '2026-09-01',
+      ends_on: '2027-07-31', is_active: 1, created_at: '2026-08-01T08:00:00Z',
+    }
+
+    await page.setViewportSize({ width: 320, height: 640 })
+    await page.route('**/api/v1/auth/session', async (route) => {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+        success: true,
+        data: { authenticated: true, user: { id: 10, school_id: 20, employee_id: 'admin.e2e', full_name: 'E2E Admin', role: 'admin', account_status: 'active' }, csrf: 'e2e-csrf' },
+      }) })
+    })
+    await page.route('**/api/v1/admin/dashboard', async (route) => {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: {
+        date: '2026-10-12', academic_year: { id: 1, name: '2026/2027', starts_on: '2026-09-01', ends_on: '2027-07-31' },
+        absence_alert_threshold: 5,
+        summary: { active_classes: 1, active_students: 1, active_teachers: 1, online_teachers: 0, unverified_teachers: 0, locked_teachers: 0, today_records: 0, today_present: 0, today_absent: 0, today_late: 0, today_excused: 0, today_presence_rate: null },
+        attendance_trend: [], online_teachers: [], class_stats: [], attention_students: [], classes_without_today_records: [], recent_audit: [],
+      } }) })
+    })
+    await page.route('**/api/v1/admin/classes', async (route) => {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: { classes: [{
+        ...schoolClass, school_id: 20, is_active: 1, academic_year_active: 1, student_count: 1, teacher_count: 1,
+      }] } }) })
+    })
+    await page.route('**/api/students.php*', async (route) => {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: { students } }) })
+    })
+    await page.route('**/api/v1/admin/teacher-presence', async (route) => {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: {
+        teachers: [{ id: 11, full_name: 'Responsive Teacher', employee_id: 'teacher.e2e', is_active: 1, last_seen_at: null, is_online: 0 }],
+        online_window_seconds: 90,
+      } }) })
+    })
+    await page.route('**/api/v1/admin/teachers', async (route) => {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: {
+        teachers: [{ id: 11, username: 'teacher.e2e', employee_id: 'teacher.e2e', full_name: 'Responsive Teacher', phone: null, phone_verified: 1, is_active: 1, failed_login_attempts: 0, locked_until: null, last_login_at: null, last_seen_at: null, is_online: 0 }],
+        subjects: [], teachings: [], online_window_seconds: 300,
+      } }) })
+    })
+    await page.route('**/api/v1/admin/users', async (route) => {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: { users: [adminUser] } }) })
+    })
+    await page.route('**/api/v1/admin/academic-years', async (route) => {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: { academic_years: [academicYear] } }) })
+    })
+    await page.route('**/api/v1/admin/onboarding/requests*', async (route) => {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: { requests: [{
+        id: 21, school_id: 20, full_name: 'Responsive Teacher Applicant', employee_id: 'new.teacher', phone: '+212600000000',
+        status: 'pending', expires_at: '2026-10-20T00:00:00Z', reviewed_by: null, reviewed_at: null, rejection_reason: null,
+        created_user_id: null, created_at: '2026-10-10T08:00:00Z', updated_at: '2026-10-10T08:00:00Z',
+      }] } }) })
+    })
+    await page.route('**/api/v1/admin/audit*', async (route) => {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: { items: [], total: 0, page: 1, per_page: 50, total_pages: 1 } }) })
+    })
+
+    const pages = [
+      ['/app/admin/dashboard', 'Dashboard'],
+      ['/app/admin/classes', 'Classes'],
+      ['/app/admin/students', 'Students'],
+      ['/app/admin/teachers', 'Teachers'],
+      ['/app/admin/users', 'Users'],
+      ['/app/admin/onboarding', 'Onboarding'],
+      ['/app/admin/academic-years', 'Academic years'],
+      ['/app/admin/imports', 'Imports'],
+      ['/app/admin/archive', 'Archive'],
+      ['/app/admin/audit', 'Audit'],
+    ]
+
+    for (const [path, heading] of pages) {
+      await page.goto(path)
+      await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible()
+      await page.evaluate(() => document.fonts.ready)
+      await assertNoPageOverflow(page)
+    }
+  })
+
   test('admin class management keeps the filter workspace and table inside the mobile viewport', async ({ page }) => {
     await page.route('**/api/v1/auth/session', async (route) => {
       await route.fulfill({

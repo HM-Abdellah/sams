@@ -22,21 +22,26 @@ try {
     if ($classId < 1) Response::error('Invalid class.', 422);
 
     $classes = new ClassRepository();
+    $method = sams_method();
+    $schoolId = isset($user['school_id']) ? (int)$user['school_id'] : null;
 
-    if (!$classes->hasAccess(
-        (int)$user['id'],
-        (string)$user['role'],
-        $classId,
-        isset($user['school_id']) ? (int)$user['school_id'] : null
-    )) {
+    // Admins may inspect an inactive or future academic year's roster, but
+    // all write operations remain restricted to currently active classes/years.
+    $canAccessClass = $method === 'GET' && (string)$user['role'] === 'admin'
+        ? $classes->hasHistoricalAccess((int)$user['id'], 'admin', $classId, $schoolId)
+        : $classes->hasAccess((int)$user['id'], (string)$user['role'], $classId, $schoolId);
+
+    if (!$canAccessClass) {
         Response::error('Forbidden.', 403);
     }
 
     $repo = new StudentRepository();
-    $method = sams_method();
 
     if ($method === 'GET') {
-        Response::success(['students' => $repo->forClass($classId)]);
+        $roster = (string)$user['role'] === 'admin'
+            ? $repo->forAdminClassRoster($classId)
+            : $repo->forClass($classId);
+        Response::success(['students' => $roster]);
     }
 
     if (!Csrf::verify((string)($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''))) {

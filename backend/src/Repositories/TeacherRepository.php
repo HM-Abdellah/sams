@@ -12,6 +12,7 @@ final class TeacherRepository
 
     public function all(?int $schoolId = null): array
     {
+        $onlineWindowSeconds = self::ONLINE_WINDOW_SECONDS;
         $sql = "SELECT
                 u.id,
                 u.username,
@@ -25,8 +26,9 @@ final class TeacherRepository
                 u.last_login_at,
                 u.last_seen_at,
                 CASE
-                    WHEN u.last_seen_at IS NOT NULL
-                     AND u.last_seen_at >= CURRENT_TIMESTAMP - INTERVAL 90 SECOND
+                    WHEN u.is_active = 1
+                     AND u.last_seen_at IS NOT NULL
+                     AND u.last_seen_at >= CURRENT_TIMESTAMP - INTERVAL {$onlineWindowSeconds} SECOND
                     THEN 1 ELSE 0
                 END AS is_online
              FROM users u
@@ -38,6 +40,41 @@ final class TeacherRepository
             $params[] = $schoolId;
         }
         $sql .= ' ORDER BY u.full_name, u.employee_id, u.id';
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Return only the minimal fields needed for online-presence indicators.
+     * Presence polling should not fetch contact, lockout, subject, or assignment data.
+     */
+    public function presence(?int $schoolId = null): array
+    {
+        $onlineWindowSeconds = self::ONLINE_WINDOW_SECONDS;
+        $sql = "SELECT
+                    u.id,
+                    u.full_name,
+                    u.employee_id,
+                    u.is_active,
+                    u.last_seen_at,
+                    CASE
+                        WHEN u.is_active = 1
+                         AND u.last_seen_at IS NOT NULL
+                         AND u.last_seen_at >= CURRENT_TIMESTAMP - INTERVAL {$onlineWindowSeconds} SECOND
+                        THEN 1 ELSE 0
+                    END AS is_online
+                FROM users u
+                WHERE u.role = 'teacher'";
+        $params = [];
+
+        if ($schoolId !== null) {
+            $this->assertSchoolId($schoolId);
+            $sql .= ' AND u.school_id = ?';
+            $params[] = $schoolId;
+        }
+
+        $sql .= ' ORDER BY u.id';
         $stmt = Database::connection()->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll();
@@ -59,13 +96,16 @@ final class TeacherRepository
                     c.branch AS class_branch,
                     c.academic_year_id,
                     ay.name AS academic_year_name,
+                    c.is_active AS class_is_active,
+                    ay.is_active AS academic_year_active,
+                    tt.status,
                     tt.assigned_at
                 FROM teacher_teachings tt
                 INNER JOIN users u ON u.id = tt.teacher_id
                 INNER JOIN subjects s ON s.id = tt.subject_id
                 INNER JOIN classes c ON c.id = tt.class_id
                 INNER JOIN academic_years ay ON ay.id = c.academic_year_id
-                WHERE c.is_active = 1 AND ay.is_active = 1';
+                WHERE u.role = \'teacher\'';
         $params = [];
 
         if ($schoolId !== null) {
@@ -74,7 +114,7 @@ final class TeacherRepository
             $params[] = $schoolId;
         }
 
-        $sql .= ' ORDER BY tt.teacher_id, s.name_fr, c.branch, c.name, tt.id';
+        $sql .= " ORDER BY CASE WHEN tt.status = 'active' AND c.is_active = 1 AND ay.is_active = 1 THEN 0 ELSE 1 END, tt.teacher_id, s.name_fr, c.branch, c.name, tt.id";
         $stmt = Database::connection()->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll();
@@ -92,6 +132,23 @@ final class TeacherRepository
     public function teacherExists(int $teacherId, ?int $schoolId = null): bool
     {
         $sql = "SELECT 1 FROM users WHERE id = ? AND role = 'teacher'";
+        $params = [$teacherId];
+
+        if ($schoolId !== null) {
+            $this->assertSchoolId($schoolId);
+            $sql .= ' AND school_id = ?';
+            $params[] = $schoolId;
+        }
+
+        $sql .= ' LIMIT 1';
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        return (bool)$stmt->fetchColumn();
+    }
+
+    public function activeTeacherExists(int $teacherId, ?int $schoolId = null): bool
+    {
+        $sql = "SELECT 1 FROM users WHERE id = ? AND role = 'teacher' AND is_active = 1";
         $params = [$teacherId];
 
         if ($schoolId !== null) {

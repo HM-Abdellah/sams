@@ -40,10 +40,11 @@ final class SchoolWorkbookImportStagingService
 
         $schoolId = $this->requireSchoolId($schoolId);
 
-        if ($targetAcademicYearId !== null) {
-            if ($targetAcademicYearId < 1 || $this->academicYears->find($targetAcademicYearId, $schoolId) === null) {
-                throw new InvalidArgumentException('Target academic year not found.');
-            }
+        if ($targetAcademicYearId === null || $targetAcademicYearId < 1) {
+            throw new InvalidArgumentException('Select a target academic year before uploading the workbook.');
+        }
+        if ($this->academicYears->find($targetAcademicYearId, $schoolId) === null) {
+            throw new InvalidArgumentException('Target academic year not found.');
         }
 
         $parsed = $this->parser->parse($path, $filename);

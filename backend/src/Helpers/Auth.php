@@ -48,13 +48,26 @@ final class Auth
     {
         if (session_status() !== PHP_SESSION_ACTIVE) return;
 
-        try {
-            $userId = isset($_SESSION[self::SESSION_USER]['id']) ? (int)$_SESSION[self::SESSION_USER]['id'] : 0;
-            if ($userId > 0) {
+        $sessionUser = $_SESSION[self::SESSION_USER] ?? [];
+        $userId = is_array($sessionUser) ? (int)($sessionUser['id'] ?? 0) : 0;
+        $schoolId = is_array($sessionUser) ? (int)($sessionUser['school_id'] ?? 0) : 0;
+
+        if ($userId > 0) {
+            try {
                 (new UserRepository())->clearPresence($userId);
+            } catch (\Throwable) {
+                // Logout must still destroy the session if presence cleanup fails.
             }
-        } catch (\Throwable) {
-            // Logout must still destroy the session if presence cleanup fails.
+        }
+
+        // The generic shutdown publisher cannot see a user after session destruction,
+        // so publish the logout/presence change before clearing the session identity.
+        if ($schoolId > 0) {
+            try {
+                (new \SAMS\Repositories\SyncEventRepository())->publish($schoolId);
+            } catch (\Throwable $e) {
+                error_log('[SAMS sync] Unable to publish logout change signal: ' . $e->getMessage());
+            }
         }
 
         $_SESSION = [];
@@ -120,7 +133,9 @@ final class Auth
             'full_name' => (string)$user['full_name'],
             'role' => (string)$user['role'],
             'account_status' => (string)($user['account_status'] ?? ($user['is_active'] ? 'active' : 'deactivated')),
-            'avatar_url' => !empty($user['avatar_path']) ? '/api/v1/profile/avatar' : null,
+            'avatar_url' => !empty($user['avatar_path'])
+                ? '/api/v1/profile/avatar?v=' . rawurlencode(basename((string)$user['avatar_path']))
+                : null,
         ];
     }
 

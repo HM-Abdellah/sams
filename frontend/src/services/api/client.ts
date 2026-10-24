@@ -1,6 +1,7 @@
 import { env } from '../../lib/env.ts'
 import { ApiError } from './errors.ts'
 import type { ApiEnvelope, AuthSessionData } from './types.ts'
+import { publishDataChanged } from '../../features/sync/changeSignal.ts'
 
 export type HttpMethod = 'GET' | 'POST' | 'DELETE'
 export type CsrfMode = 'required' | 'omit'
@@ -65,6 +66,7 @@ export class ApiClient {
     }
 
     this.captureCsrf(payload.data)
+    if (method !== 'GET') publishDataChanged()
     return payload.data
   }
 

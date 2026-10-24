@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { attendanceApi } from './api.ts'
-import type { AttendanceRecord, AttendanceRevision, WeeklyRegisterData } from './api.ts'
+import type { AttendanceRecord, AttendanceRevision, SaveBulkData, WeeklyRegisterData } from './api.ts'
 import { ApiError } from '../../services/api/errors.ts'
 import type { AttendanceEntry } from '../../services/api/types.ts'
 import { publishAttendancePendingWork } from './pendingWork.ts'
+import { useLiveRefresh } from '../sync/useLiveRefresh.ts'
 import type { AttendanceDraft, AttendanceMutationState, AttendanceViewStatus } from './types.ts'
 
 const keyFor = (studentId: number, date: string, period: number) =>
   `${studentId}|${date}|${period}`
+
+const lessonKeyFor = (date: string, period: number) => `${date}|${period}`
 
 const readServerStatus = (
   data: WeeklyRegisterData | null,
@@ -45,6 +48,7 @@ export function useAttendanceRegister(classId: number | null, weekStart: string)
   const [conflictData, setConflictData] = useState<WeeklyRegisterData | null>(null)
 
   const queryKeyRef = useRef<string | null>(null)
+  const loadRequestIdRef = useRef(0)
   const dataRef = useRef<WeeklyRegisterData | null>(null)
   const draftsRef = useRef<Map<string, AttendanceDraft>>(new Map())
   const versionRef = useRef(0)
@@ -56,7 +60,8 @@ export function useAttendanceRegister(classId: number | null, weekStart: string)
     return attendanceApi.weeklyRegister(classId, weekStart)
   }, [classId, weekStart])
 
-  const load = useCallback(async (signal?: AbortSignal) => {
+  const load = useCallback(async (signal?: AbortSignal, silent = false) => {
+    const requestId = ++loadRequestIdRef.current
     if (classId === null) {
       queryKeyRef.current = null
       setStatus('idle')
@@ -73,18 +78,24 @@ export function useAttendanceRegister(classId: number | null, weekStart: string)
       setData(null)
       dataRef.current = null
     }
-    setStatus('loading')
-    setError(null)
+    if (!silent) {
+      setStatus('loading')
+      setError(null)
+    }
     try {
       const result = await requestRegister()
-      if (signal?.aborted) return
+      if (signal?.aborted || requestId !== loadRequestIdRef.current) return
       dataRef.current = result
       setData(result)
       setStatus('success')
-      setMutationError(null)
+      if (!silent) setMutationError(null)
     } catch (cause) {
-      if (signal?.aborted) return
+      if (signal?.aborted || requestId !== loadRequestIdRef.current) return
       const message = cause instanceof Error ? cause.message : 'Unable to load attendance.'
+      if (silent && dataRef.current !== null) {
+        setError(message)
+        return
+      }
       setStatus('error')
       setError(message)
     }
@@ -106,6 +117,24 @@ export function useAttendanceRegister(classId: number | null, weekStart: string)
   const isBusy = drafts.size > 0
     || mutationState === 'saving'
     || mutationState === 'retrying'
+
+  const refreshQuietly = useCallback(() => {
+    if (
+      classId === null
+      || draftsRef.current.size > 0
+      || flushPromiseRef.current !== null
+      || mutationState === 'saving'
+      || mutationState === 'retrying'
+      || mutationState === 'conflict'
+      || mutationState === 'blocked'
+    ) return Promise.resolve()
+
+    return load(undefined, true)
+  }, [classId, load, mutationState])
+
+  useLiveRefresh(refreshQuietly, {
+    enabled: classId !== null && status === 'success' && !isBusy && mutationState !== 'conflict',
+  })
 
   useEffect(() => {
     publishAttendancePendingWork(isBusy)
@@ -144,8 +173,9 @@ export function useAttendanceRegister(classId: number | null, weekStart: string)
         const batch = Array.from(draftsRef.current.entries()).slice(0, 500)
         const entries = batch.map(([, draft]) => draft.entry)
 
+        let saved: SaveBulkData
         try {
-          await attendanceApi.saveBulk(classId, entries)
+          saved = await attendanceApi.saveBulk(classId, entries)
         } catch (cause) {
           const message = cause instanceof Error ? cause.message : 'Unable to save attendance.'
 
@@ -184,15 +214,77 @@ export function useAttendanceRegister(classId: number | null, weekStart: string)
 
         dataRef.current = refreshed
         setData(refreshed)
-        setConflictData(null)
 
         const remaining = new Map(draftsRef.current)
         for (const [key, draft] of batch) {
           const current = remaining.get(key)
           if (current?.version === draft.version) remaining.delete(key)
         }
+
+        // A teacher can keep editing while a save is in flight. If a newer draft
+        // targets a lesson just saved by this batch, rebase it only when the
+        // confirmed server revision still matches that batch's committed revision.
+        const batchExpectedRevisions = new Map<string, number>()
+        for (const [, draft] of batch) {
+          batchExpectedRevisions.set(
+            lessonKeyFor(draft.entry.attendance_date, draft.entry.period),
+            draft.expectedRevision,
+          )
+        }
+        const pendingLessonKeys = new Set(
+          Array.from(remaining.values(), (draft) =>
+            lessonKeyFor(draft.entry.attendance_date, draft.entry.period)),
+        )
+        const committedRevisions = new Map(
+          saved.revisions.map((revision) => [
+            lessonKeyFor(revision.attendance_date, revision.period),
+            revision.revision,
+          ]),
+        )
+        const lessonOutcomes = new Map<string, { kind: 'rebase'; revision: number } | { kind: 'conflict' }>()
+
+        for (const lessonKey of batchExpectedRevisions.keys()) {
+          if (!pendingLessonKeys.has(lessonKey)) continue
+          const [date, periodText] = lessonKey.split('|')
+          const period = Number(periodText)
+          const latestRevision = readServerRevision(refreshed, date!, period)
+          const committedRevision = committedRevisions.get(lessonKey)
+          if (committedRevision !== undefined) {
+            lessonOutcomes.set(lessonKey, latestRevision === committedRevision
+              ? { kind: 'rebase', revision: committedRevision }
+              : { kind: 'conflict' })
+          } else if (latestRevision !== batchExpectedRevisions.get(lessonKey)) {
+            // No revision was committed by this batch, so a newer server revision
+            // indicates another writer changed this lesson while the save ran.
+            lessonOutcomes.set(lessonKey, { kind: 'conflict' })
+          }
+        }
+
+        for (const [key, draft] of remaining) {
+          const outcome = lessonOutcomes.get(
+            lessonKeyFor(draft.entry.attendance_date, draft.entry.period),
+          )
+          if (outcome?.kind !== 'rebase') continue
+          remaining.set(key, {
+            ...draft,
+            expectedRevision: outcome.revision,
+            entry: { ...draft.entry, expected_revision: outcome.revision },
+          })
+        }
+
         draftsRef.current = remaining
         setDrafts(remaining)
+
+        if (Array.from(lessonOutcomes.values()).some((outcome) => outcome.kind === 'conflict')) {
+          setConflictData(refreshed)
+          setMutationState('conflict')
+          setMutationError(
+            'Attendance changed again while this save was being confirmed. Review the latest register before saving your remaining changes.',
+          )
+          return false
+        }
+
+        setConflictData(null)
       }
 
       setMutationState('saved')

@@ -1,10 +1,25 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { describe, expect, test, vi } from 'vitest'
 import { I18nProvider } from '../../app/providers/I18nProvider.tsx'
-import type { AdminDashboard } from '../../features/admin/types.ts'
+import type { AdminDashboard, AdminTeacher } from '../../features/admin/types.ts'
 import { adminApi } from '../../features/admin/api.ts'
 import { AdminDashboardPage } from './AdminDashboardPage.tsx'
+
+const presenceTeacher = (id: number, fullName: string, online: boolean): AdminTeacher => ({
+  id,
+  username: `teacher.${id}`,
+  employee_id: `T00${id}`,
+  full_name: fullName,
+  phone: null,
+  phone_verified: 1,
+  is_active: 1,
+  failed_login_attempts: 0,
+  locked_until: null,
+  last_login_at: null,
+  last_seen_at: online ? '2026-10-23 12:00:00' : null,
+  is_online: online ? 1 : 0,
+})
 
 const dashboard: AdminDashboard = {
   date: '2026-10-01',
@@ -120,6 +135,10 @@ const dashboard: AdminDashboard = {
 describe('AdminDashboardPage', () => {
   test('renders the operational dashboard from the canonical snapshot', async () => {
     vi.spyOn(adminApi, 'dashboard').mockResolvedValueOnce(dashboard)
+    vi.spyOn(adminApi, 'teacherPresence').mockResolvedValue({
+      teachers: [presenceTeacher(7, 'Teacher One', true)],
+      online_window_seconds: 90,
+    })
 
     render(
       <MemoryRouter initialEntries={['/app/admin/dashboard']}>
@@ -143,6 +162,41 @@ describe('AdminDashboardPage', () => {
     expect(screen.getByRole('table', { name: 'Class statistics' })).toBeInTheDocument()
     expect(screen.queryByText('Late', { exact: true })).not.toBeInTheDocument()
     expect(screen.queryByText('Excused', { exact: true })).not.toBeInTheDocument()
+  })
+
+  test('keeps the Admin online-teacher list and count refreshed without reloading the dashboard snapshot', async () => {
+    vi.spyOn(adminApi, 'dashboard').mockResolvedValueOnce(dashboard)
+    vi.spyOn(adminApi, 'teacherPresence')
+      .mockResolvedValueOnce({
+        teachers: [presenceTeacher(7, 'Teacher One', true)],
+        online_window_seconds: 90,
+      })
+      .mockResolvedValue({
+        teachers: [presenceTeacher(8, 'Teacher Two', true)],
+        online_window_seconds: 90,
+      })
+    const intervalSpy = vi.spyOn(window, 'setInterval')
+
+    render(
+      <MemoryRouter initialEntries={['/app/admin/dashboard']}>
+        <I18nProvider>
+          <AdminDashboardPage />
+        </I18nProvider>
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => expect(screen.getByText('Teacher One')).toBeInTheDocument())
+    const presenceTimer = intervalSpy.mock.calls.find(([, delay]) => delay === 30_000)?.[0]
+    expect(typeof presenceTimer).toBe('function')
+
+    await act(async () => {
+      if (typeof presenceTimer === 'function') presenceTimer()
+    })
+
+    await waitFor(() => expect(screen.getByText('Teacher Two')).toBeInTheDocument())
+    expect(screen.queryByText('Teacher One')).not.toBeInTheDocument()
+    expect(adminApi.dashboard).toHaveBeenCalledTimes(1)
+    expect(adminApi.teacherPresence).toHaveBeenCalledTimes(2)
   })
 })
 

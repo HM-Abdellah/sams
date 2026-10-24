@@ -31,6 +31,40 @@ describe('AdminOnboardingPage', () => {
     vi.restoreAllMocks()
   })
 
+  test('disables all request actions while one review is in progress', async () => {
+    const otherRequest: OnboardingRequest = {
+      ...request,
+      id: 18,
+      full_name: 'Youssef Teacher',
+      employee_id: 'EMP-018',
+    }
+    vi.spyOn(adminApi, 'onboardingRequests').mockResolvedValue({ requests: [request, otherRequest] })
+    let finishReview!: (result: { request_id: number; user_id: number; reused: boolean; status: string }) => void
+    const pendingReview = new Promise<{ request_id: number; user_id: number; reused: boolean; status: string }>((resolve) => {
+      finishReview = resolve
+    })
+    const reviewSpy = vi.spyOn(adminApi, 'reviewOnboarding').mockReturnValue(pendingReview)
+
+    render(
+      <MemoryRouter initialEntries={['/app/admin/onboarding']}>
+        <I18nProvider>
+          <AdminOnboardingPage />
+        </I18nProvider>
+      </MemoryRouter>,
+    )
+
+    const approveButtons = await screen.findAllByRole('button', { name: 'Approve' })
+    expect(approveButtons).toHaveLength(2)
+    fireEvent.click(approveButtons[0]!)
+
+    await waitFor(() => expect(reviewSpy).toHaveBeenCalledWith(17, 'approve', undefined))
+    expect(approveButtons.every((button) => (button as HTMLButtonElement).disabled)).toBe(true)
+    expect(screen.getAllByRole('button', { name: 'Reject' }).every((button) => (button as HTMLButtonElement).disabled)).toBe(true)
+
+    finishReview({ request_id: 17, user_id: 101, reused: false, status: 'approved' })
+    await waitFor(() => expect(adminApi.onboardingRequests).toHaveBeenCalledTimes(2))
+  })
+
   test('uses a focused confirmation dialog before rejecting a request', async () => {
     const reviewSpy = vi.spyOn(adminApi, 'reviewOnboarding').mockResolvedValue({
       request_id: 17,

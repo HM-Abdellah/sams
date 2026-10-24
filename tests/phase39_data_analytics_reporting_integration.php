@@ -20,6 +20,22 @@ function expect_true(bool $condition, string $message): void
 
 function execute_schema(PDO $pdo, string $sql): void
 {
+    $targetDatabase = trim((string)(getenv('SAMS_TEST_DB_NAME') ?: ''));
+    if (!preg_match('/^sams_test_[A-Za-z0-9_]+$/', $targetDatabase)) {
+        throw new RuntimeException('Refusing unsafe integration-test schema target.');
+    }
+    $replacementCount = 0;
+    $isolatedSchema = preg_replace(
+        '/CREATE DATABASE IF NOT EXISTS sams\\s+CHARACTER SET utf8mb4\\s+COLLATE utf8mb4_unicode_ci;\\s*USE sams;\\s*/i',
+        'USE ' . $targetDatabase . ';',
+        $sql,
+        1,
+        $replacementCount
+    );
+    if ($isolatedSchema === null || $replacementCount !== 1 || preg_match('/\\bUSE\\s+sams\\s*;/i', $isolatedSchema) === 1) {
+        throw new RuntimeException('Refusing to execute an unisolated production schema selector.');
+    }
+    $sql = $isolatedSchema;
     $sql = preg_replace('/^\s*--.*$/m', '', $sql) ?? $sql;
     foreach (preg_split('/;\s*(?:\R|$)/', $sql, -1, PREG_SPLIT_NO_EMPTY) as $statement) {
         if (trim($statement) !== '') $pdo->exec($statement);
@@ -119,5 +135,56 @@ $emptyDashboard = (new AdminDashboardService())->snapshot($schoolId);
 $emptyClass = array_values(array_filter($emptyDashboard['class_stats'], static fn(array $row): bool => (int)$row['id'] === $emptyClassId))[0] ?? null;
 expect_true($emptyClass !== null && $emptyClass['presence_rate'] === null, 'Unrecorded class rate must remain null.');
 
+// Regression: a future active academic year has a roster even before its first day.
+// Dashboard headcount must agree with Admin Classes without using CURDATE() as
+// the boundary for enrollment membership in that academic year.
+$futureYearStmt = $pdo->prepare(
+    "INSERT INTO academic_years (school_id, name, starts_on, ends_on, is_active)
+     VALUES (?, '2027-2028', '2027-09-01', '2028-07-31', 0)"
+);
+$futureYearStmt->execute([$schoolId]);
+$futureYearId = (int)$pdo->lastInsertId();
+
+$futureClassStmt = $pdo->prepare(
+    "INSERT INTO classes (academic_year_id, name, level, branch, is_active)
+     VALUES (?, 'P39-FUTURE', '2BAC', 'SP', 1)"
+);
+$futureClassStmt->execute([$futureYearId]);
+$futureClassId = (int)$pdo->lastInsertId();
+
+$futureStudentStmt = $pdo->prepare(
+    "INSERT INTO students (class_id, student_number, first_name, last_name, status)
+     VALUES (?, 'P39-FUTURE-S1', 'Future', 'Student', 'active')"
+);
+$futureStudentStmt->execute([$futureClassId]);
+$futureStudentId = (int)$pdo->lastInsertId();
+
+$futureEnrollmentStmt = $pdo->prepare(
+    'INSERT INTO student_enrollments (student_id, class_id, starts_on) VALUES (?, ?, ?)'
+);
+$futureEnrollmentStmt->execute([$futureStudentId, $futureClassId, '2027-09-01']);
+
+$pdo->exec("UPDATE academic_years SET is_active = 0 WHERE school_id = {$schoolId}");
+$pdo->exec("UPDATE academic_years SET is_active = 1 WHERE id = {$futureYearId} AND school_id = {$schoolId}");
+
+$futureDashboard = (new AdminDashboardService())->snapshot($schoolId);
+$futureClassStats = array_values(array_filter(
+    $futureDashboard['class_stats'],
+    static fn(array $row): bool => (int)$row['id'] === $futureClassId
+))[0] ?? null;
+
+expect_true(
+    (int)$futureDashboard['summary']['active_students'] === 1,
+    'Dashboard active student summary must count future-year roster enrollments.'
+);
+expect_true(
+    $futureClassStats !== null && (int)$futureClassStats['student_count'] === 1,
+    'Dashboard class statistics must match the future-year class roster.'
+);
+expect_true(
+    $futureClassStats !== null && (int)$futureClassStats['today_records'] === 0,
+    'Future-year roster must not invent attendance records for today.'
+);
+
 echo "[PASS] Phase 39 data/analytics/reporting integration\n";
-echo "[PASS] dashboard, trend, teacher report, archive, and zero-record semantics verified\n";
+echo "[PASS] dashboard, trend, teacher report, archive, and academic-year roster semantics verified\n";

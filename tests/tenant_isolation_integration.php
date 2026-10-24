@@ -46,6 +46,7 @@ function tenant_expect_scope_required(callable $callback, string $message): void
 function tenant_exec_schema(PDO $pdo, string $sql): void
 {
     $sql = preg_replace('/^\s*--.*$/m', '', $sql) ?? $sql;
+    $sql = preg_replace('/;(?=(?:CREATE|ALTER|DROP|SET|USE)\b)/i', ";\n", $sql) ?? $sql;
     $statements = preg_split('/;\s*(?:\R|$)/', $sql, -1, PREG_SPLIT_NO_EMPTY);
     foreach ($statements as $statement) {
         if (trim($statement) !== '') $pdo->exec($statement);
@@ -54,6 +55,15 @@ function tenant_exec_schema(PDO $pdo, string $sql): void
 
 $schema = file_get_contents(__DIR__ . '/../database/schema.sql');
 tenant_assert($schema !== false, 'Unable to read schema.');
+$schema = preg_replace(
+    '/CREATE DATABASE IF NOT EXISTS sams\s+CHARACTER SET utf8mb4\s+COLLATE utf8mb4_unicode_ci;\s*USE sams;\s*/i',
+    '',
+    $schema
+);
+tenant_assert(
+    $schema !== null && preg_match('/\bUSE\s+sams\s*;/i', $schema) !== 1,
+    'Refusing to execute the production database selector inside an integration test.'
+);
 tenant_exec_schema($pdo, $schema);
 $pdo->exec('USE ' . $db);
 

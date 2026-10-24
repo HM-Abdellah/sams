@@ -1,6 +1,7 @@
 export interface Student {
   id: number
   student_number: string | null
+  roster_number?: string | null
   massar_code: string | null
   birth_date: string | null
   first_name: string

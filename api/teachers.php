@@ -46,7 +46,7 @@ try {
         if ($teacherId < 1 || $subjectId < 1 || $classId < 1) {
             Response::error('Invalid teaching assignment.', 422);
         }
-        if (!$repo->teacherExists($teacherId, $schoolId)) Response::error('Teacher not found.', 404);
+        if (!$repo->activeTeacherExists($teacherId, $schoolId)) Response::error('Teacher not found or inactive.', 404);
         if (!$repo->subjectExistsActive($subjectId)) Response::error('Subject not found or inactive.', 404);
         if (!$repo->classExistsActive($classId, $schoolId)) Response::error('Class not found or inactive.', 404);
 

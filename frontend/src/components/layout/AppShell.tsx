@@ -12,15 +12,7 @@ import { LanguageSelect } from '../ui/LanguageSelect.tsx'
 import { useI18n } from '../../features/i18n/useI18n.ts'
 import { TRANSLATION_KEYS, type TranslationKey } from '../../features/i18n/types.ts'
 import { profileAvatarUrl } from '../../features/profile/avatar.ts'
-
-function initials(name: string) {
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? '')
-    .join('')
-}
+import { ProfileAvatar } from '../../features/profile/ProfileAvatar.tsx'
 
 function navIcon(path: string) {
   const common = {
@@ -274,11 +266,12 @@ export function AppShell() {
             >
               <div className="flex items-center gap-3">
                 <div className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-[var(--sams-action-soft)] text-xs font-bold text-[var(--sams-action)]">
-                  {profileAvatarUrl(session.user.avatar_url) ? (
-                    <img src={profileAvatarUrl(session.user.avatar_url)!} alt="" className="size-full object-cover" />
-                  ) : (
-                    initials(session.user.full_name)
-                  )}
+                  <ProfileAvatar
+                    name={session.user.full_name}
+                    src={profileAvatarUrl(session.user.avatar_url)}
+                    imageClassName="size-full object-cover"
+                    fallbackClassName="text-xs font-bold"
+                  />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold">{session.user.full_name}</p>

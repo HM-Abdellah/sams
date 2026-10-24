@@ -38,6 +38,8 @@ function expect_db_reject(PDO $pdo, callable $callback, string $message): void
 function execute_schema(PDO $pdo, string $sql): void
 {
     $sql = preg_replace('/^\s*--.*$/m', '', $sql) ?? $sql;
+    // Normalize adjacent schema statements before splitting for test setup.
+    $sql = preg_replace('/;(?=(?:CREATE|ALTER|DROP|SET|USE)\b)/i', ";\n", $sql) ?? $sql;
     $statements = preg_split('/;\s*(?:\R|$)/', $sql, -1, PREG_SPLIT_NO_EMPTY);
 
     foreach ($statements as $statement) {
@@ -54,10 +56,20 @@ $pdo = new PDO($serverDsn, $user, $pass, [
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     PDO::ATTR_EMULATE_PREPARES => false,
 ]);
+$pdo->exec('USE ' . $db);
 
 $schema = file_get_contents(__DIR__ . '/../database/schema.sql');
 if ($schema === false) {
     throw new RuntimeException('Unable to read database/schema.sql.');
+}
+
+$schema = preg_replace(
+    '/CREATE DATABASE IF NOT EXISTS sams\s+CHARACTER SET utf8mb4\s+COLLATE utf8mb4_unicode_ci;\s*USE sams;\s*/i',
+    '',
+    $schema
+);
+if ($schema === null || preg_match('/\bUSE\s+sams\s*;/i', $schema) === 1) {
+    throw new RuntimeException('Unable to isolate the integration schema from the production database name.');
 }
 
 execute_schema($pdo, $schema);
@@ -95,6 +107,7 @@ $expectedTables = [
     'sams_login_codes',
     'school_onboarding_codes',
     'teacher_onboarding_requests',
+    'school_sync_events',
 ];
 
 sort($tables);
@@ -139,6 +152,12 @@ $pdo->exec(
      VALUES (1, 'integration-admin', 'Integration Admin', 'hash-admin', 'admin')"
 );
 
+$pdo->exec(
+    "INSERT INTO academic_years (school_id, name, starts_on, ends_on, is_active)
+     VALUES (1, '2026-2027', '2026-09-01', '2027-07-31', 1)"
+);
+$targetAcademicYearId = (int)$pdo->lastInsertId();
+
 try {
     $workbook = new Spreadsheet();
     $sheet = $workbook->getActiveSheet();
@@ -164,7 +183,7 @@ try {
         $stagingWorkbook,
         1,
         'integration-school.xlsx',
-        null,
+        $targetAcademicYearId,
         1
     );
 
@@ -199,11 +218,6 @@ try {
     @unlink($stagingWorkbook);
 }
 
-
-$pdo->exec(
-    "INSERT INTO academic_years (school_id, name, starts_on, ends_on, is_active)
-     VALUES (1, '2026-2027', '2026-09-01', '2027-07-31', 1)"
-);
 
 $pdo->exec(
     "INSERT INTO users (school_id, username, full_name, password_hash, role)

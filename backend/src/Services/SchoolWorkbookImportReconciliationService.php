@@ -110,23 +110,45 @@ final class SchoolWorkbookImportReconciliationService
                 if ($sourceName !== '') {
                     $target = $this->classes->findByAcademicYearAndName(
                         $targetAcademicYearId,
-                        $sourceName
+                        $sourceName,
+                        $schoolId
                     );
                 }
 
                 if ($target === null) {
-                    $issues[] = 'target_class_not_found';
+                    if ($sourceName === '') {
+                        $issues[] = 'target_class_not_found';
+                        $this->imports->updateClassMapping(
+                            $batchId,
+                            (int)$class['id'],
+                            null,
+                            'error',
+                            $issues
+                        );
+                        ++$errorClassCount;
+                        $classContext[(int)$class['id']] = [
+                            'source' => $class,
+                            'target' => null,
+                            'create_on_commit' => false,
+                        ];
+                        continue;
+                    }
+
+                    // A whole-school import must also be able to seed classes in a
+                    // new academic year. Resolve the mapping in staging, but defer
+                    // creating the real class until the atomic Commit transaction.
                     $this->imports->updateClassMapping(
                         $batchId,
                         (int)$class['id'],
                         null,
-                        'error',
+                        'mapped',
                         $issues
                     );
-                    ++$errorClassCount;
+                    ++$readyClassCount;
                     $classContext[(int)$class['id']] = [
                         'source' => $class,
                         'target' => null,
+                        'create_on_commit' => true,
                     ];
                     continue;
                 }
@@ -143,6 +165,7 @@ final class SchoolWorkbookImportReconciliationService
                 $classContext[(int)$class['id']] = [
                     'source' => $class,
                     'target' => $target,
+                    'create_on_commit' => false,
                 ];
             }
 
@@ -153,7 +176,10 @@ final class SchoolWorkbookImportReconciliationService
                 $rowsByClass[$classId][] = $row;
 
                 if (
-                    ($classContext[$classId]['target'] ?? null) !== null
+                    (
+                        ($classContext[$classId]['target'] ?? null) !== null
+                        || ($classContext[$classId]['create_on_commit'] ?? false) === true
+                    )
                     && in_array(($row['status'] ?? ''), ['valid', 'warning'], true)
                 ) {
                     $massar = trim((string)($row['massar_code'] ?? ''));
@@ -182,7 +208,8 @@ final class SchoolWorkbookImportReconciliationService
                 $context = $classContext[$importClassId] ?? null;
                 $target = is_array($context['target'] ?? null) ? $context['target'] : null;
 
-                if ($target === null) {
+                $createOnCommit = ($context['create_on_commit'] ?? false) === true;
+                if ($target === null && !$createOnCommit) {
                     foreach ($classRows as $row) {
                         $this->imports->updateRowMatch(
                             $batchId,
@@ -200,7 +227,6 @@ final class SchoolWorkbookImportReconciliationService
                     }
                     continue;
                 }
-
 
                 $classHasRowConflict = false;
 
@@ -231,7 +257,15 @@ final class SchoolWorkbookImportReconciliationService
                             $this->addIdentityIssues($issues, $student, $row);
 
                             $enrollmentList = $yearEnrollments[$matchedStudentId] ?? [];
-                            if (count($enrollmentList) === 1) {
+                            if ($target === null) {
+                                // Until Commit creates a new class, any existing
+                                // enrollment in this target year belongs elsewhere.
+                                if (count($enrollmentList) === 1) {
+                                    $issues[] = 'student_enrollment_conflict';
+                                } elseif (count($enrollmentList) > 1) {
+                                    $issues[] = 'multiple_enrollments_in_target_academic_year';
+                                }
+                            } elseif (count($enrollmentList) === 1) {
                                 if ((int)$enrollmentList[0]['class_id'] === (int)$target['id']) {
                                     $targetEnrollmentId = (int)$enrollmentList[0]['id'];
                                 } else {
@@ -272,7 +306,7 @@ final class SchoolWorkbookImportReconciliationService
                     $this->imports->updateClassMapping(
                         $batchId,
                         $importClassId,
-                        (int)$target['id'],
+                        $target === null ? null : (int)$target['id'],
                         'error',
                         $classIssues
                     );
@@ -379,10 +413,13 @@ final class SchoolWorkbookImportReconciliationService
             foreach ($classes as $class) {
                 if (
                     ($class['status'] ?? '') !== 'mapped'
-                    || (int)($class['target_class_id'] ?? 0) < 1
+                    || (
+                        (int)($class['target_class_id'] ?? 0) < 1
+                        && trim((string)($class['source_class_name'] ?? '')) === ''
+                    )
                 ) {
                     throw new SchoolImportWorkflowException(
-                        'All source classes must be mapped successfully before import.'
+                        'All source classes must be mapped or ready for creation before import.'
                     );
                 }
             }
@@ -399,32 +436,108 @@ final class SchoolWorkbookImportReconciliationService
                 }
             }
 
-            $targetClassIds = array_values(array_unique(array_map(
-                static fn(array $class): int => (int)$class['target_class_id'],
-                $classes
-            )));
-            $expectedTargetClassNames = [];
-            foreach ($classes as $class) {
-                $targetClassId = (int)($class['target_class_id'] ?? 0);
-                if ($targetClassId > 0) {
-                    $expectedTargetClassNames[$targetClassId] = trim((string)($class['source_class_name'] ?? ''));
-                }
-            }
-
             $targetClasses = [];
-            foreach ($targetClassIds as $targetClassId) {
-                $target = $this->classes->findForUpdate($targetClassId, $schoolId);
-                if (
-                    $target === null
-                    || (int)$target['academic_year_id'] !== $targetAcademicYearId
-                    || trim((string)$target['name']) !== ($expectedTargetClassNames[$targetClassId] ?? '')
-                ) {
-                    throw new SchoolImportWorkflowException(
-                        'A target class changed or no longer matches the reconciled source class.'
+            $targetClassByImportClassId = [];
+
+            foreach ($classes as &$class) {
+                $importClassId = (int)$class['id'];
+                $sourceName = trim((string)($class['source_class_name'] ?? ''));
+                $targetClassId = (int)($class['target_class_id'] ?? 0);
+
+                if ($targetClassId > 0) {
+                    $target = $this->classes->findForUpdate($targetClassId, $schoolId);
+                    if (
+                        $target === null
+                        || (int)$target['academic_year_id'] !== $targetAcademicYearId
+                        || trim((string)$target['name']) !== $sourceName
+                    ) {
+                        throw new SchoolImportWorkflowException(
+                            'A target class changed or no longer matches the reconciled source class.'
+                        );
+                    }
+                } else {
+                    if ($sourceName === '') {
+                        throw new SchoolImportWorkflowException(
+                            'A source class has no name and cannot be created safely.'
+                        );
+                    }
+
+                    // Reconcile only proposes missing classes. Create them here,
+                    // inside the same transaction as students and enrollments, so
+                    // any later validation failure rolls the whole operation back.
+                    $target = $this->classes->findByAcademicYearAndName(
+                        $targetAcademicYearId,
+                        $sourceName,
+                        $schoolId
                     );
+
+                    if ($target === null) {
+                        $sourceLevel = trim((string)($class['source_level'] ?? ''));
+                        $level = $sourceLevel === ''
+                            ? null
+                            : mb_substr($sourceLevel, 0, 50);
+
+                        try {
+                            $targetClassId = $this->classes->create(
+                                $targetAcademicYearId,
+                                $sourceName,
+                                $level,
+                                null
+                            );
+                        } catch (\PDOException $e) {
+                            // Handle a concurrent administrator creating the same
+                            // class after Reconcile without duplicating the class.
+                            if ((int)($e->errorInfo[1] ?? 0) !== 1062) {
+                                throw $e;
+                            }
+                            $target = $this->classes->findByAcademicYearAndName(
+                                $targetAcademicYearId,
+                                $sourceName,
+                                $schoolId
+                            );
+                            if ($target === null) {
+                                throw $e;
+                            }
+                            $targetClassId = (int)$target['id'];
+                        }
+
+                        if ($target === null) {
+                            $target = $this->classes->findForUpdate($targetClassId, $schoolId);
+                        }
+                    }
+
+                    // Lock even a same-named class discovered at Commit time.
+                    // This guards the school/year/name mapping until the
+                    // enrollment and student writes commit.
+                    if ($target !== null) {
+                        $target = $this->classes->findForUpdate((int)$target['id'], $schoolId);
+                    }
+
+                    if (
+                        $target === null
+                        || (int)$target['academic_year_id'] !== $targetAcademicYearId
+                        || trim((string)$target['name']) !== $sourceName
+                    ) {
+                        throw new SchoolImportWorkflowException(
+                            'The target class could not be created or verified.'
+                        );
+                    }
+
+                    $targetClassId = (int)$target['id'];
+                    $this->imports->updateClassMapping(
+                        $batchId,
+                        $importClassId,
+                        $targetClassId,
+                        'mapped',
+                        $this->withoutReconciliationIssues($class['issues'] ?? [])
+                    );
+                    $class['target_class_id'] = $targetClassId;
                 }
+
+                $targetClassByImportClassId[$importClassId] = $targetClassId;
                 $targetClasses[$targetClassId] = $target;
             }
+            unset($class);
 
             $massars = array_values(array_unique(array_filter(
                 array_map(static fn(array $row): string => trim((string)$row['massar_code']), $rows),
@@ -447,10 +560,15 @@ final class SchoolWorkbookImportReconciliationService
             $newStudents = 0;
             $existingStudentCount = 0;
             $enrollmentsCreated = 0;
-            $activeTargetClasses = [];
-
             foreach ($rows as $row) {
-                $targetClassId = (int)$row['target_class_id'];
+                $importClassId = (int)$row['import_class_id'];
+                $targetClassId = $targetClassByImportClassId[$importClassId] ?? 0;
+                if ($targetClassId < 1 || !isset($targetClasses[$targetClassId])) {
+                    throw new SchoolImportWorkflowException(
+                        'A reconciled student row has no verified target class.'
+                    );
+                }
+
                 $enrollmentId = null;
                 $target = $targetClasses[$targetClassId];
 
@@ -550,25 +668,26 @@ final class SchoolWorkbookImportReconciliationService
                     }
                 }
 
+                $committedEnrollmentId = $enrollmentId ?? $targetEnrollmentId ?? null;
+                $rosterNumber = trim((string)($row['roster_number'] ?? ''));
+                if ($committedEnrollmentId !== null && $rosterNumber !== '') {
+                    $this->enrollments->setRosterNumber((int)$committedEnrollmentId, $rosterNumber);
+                }
+
                 $this->imports->updateRowMatch(
                     $batchId,
                     (int)$row['id'],
                     'imported',
                     (string)$row['match_status'],
                     $studentId,
-                    $enrollmentId ?? $targetEnrollmentId,
+                    $committedEnrollmentId,
                     []
                 );
 
-                $activeTargetClasses[$targetClassId] = true;
             }
 
-            foreach (array_keys($activeTargetClasses) as $targetClassId) {
-                foreach ($classes as $class) {
-                    if ((int)$class['target_class_id'] === (int)$targetClassId) {
-                        $this->imports->markClassImported($batchId, (int)$class['id']);
-                    }
-                }
+            foreach ($classes as $class) {
+                $this->imports->markClassImported($batchId, (int)$class['id']);
             }
 
             $this->imports->markBatchImported($batchId);

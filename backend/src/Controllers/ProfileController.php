@@ -48,7 +48,9 @@ final class ProfileController
                         'username' => (string)$profile['username'],
                         'full_name' => (string)$profile['full_name'],
                         'role' => (string)$profile['role'],
-                        'avatar_url' => $profile['avatar_path'] ? '/api/v1/profile/avatar' : null,
+                        'avatar_url' => $profile['avatar_path']
+                            ? '/api/v1/profile/avatar?v=' . rawurlencode(basename((string)$profile['avatar_path']))
+                            : null,
                     ],
                 ]);
             }
@@ -235,7 +237,9 @@ final class ProfileController
                     'role' => (string)$user['role'],
                     'avatar_url' => $clearAvatar
                         ? null
-                        : ($newAvatarPath !== null || $existing['avatar_path'] ? '/api/v1/profile/avatar' : null),
+                        : (($newAvatarPath ?? $existing['avatar_path'])
+                            ? '/api/v1/profile/avatar?v=' . rawurlencode(basename((string)($newAvatarPath ?? $existing['avatar_path'])))
+                            : null),
                     'csrf' => Csrf::token(),
                 ],
             ]);

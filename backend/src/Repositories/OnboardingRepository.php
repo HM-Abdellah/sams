@@ -187,6 +187,18 @@ final class OnboardingRepository
         }
     }
 
+    public function expirePendingRequests(int $schoolId): int
+    {
+        $stmt = Database::connection()->prepare(
+            "UPDATE teacher_onboarding_requests
+             SET status = 'expired'
+             WHERE school_id = ? AND status = 'pending'
+               AND expires_at <= CURRENT_TIMESTAMP"
+        );
+        $stmt->execute([$schoolId]);
+        return $stmt->rowCount();
+    }
+
     public function markExpired(int $requestId, int $schoolId): void
     {
         $stmt = Database::connection()->prepare(

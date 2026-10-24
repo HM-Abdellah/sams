@@ -75,7 +75,19 @@ Run the critical flows on:
 
 Stateful authenticated E2E workflows run sequentially on the clean test database to prevent cross-test data contamination.
 
-## 8. Release gate
+## 8. Real-time admin/teacher synchronization
+
+- Keep an administrator and a teacher signed in from separate browser contexts.
+- Assign the teacher a class for the active academic year and verify that the class list refreshes without logout/reload.
+- Add or update an approved student record and verify that the authorized roster views converge to the same saved server state.
+- Save an attendance mark as the teacher and verify that the admin/archive/report view updates after the live event.
+- Change a class signature and verify the attendance page updates signature availability.
+- Submit a teacher onboarding request and verify it appears in the admin queue; approve/activate and confirm the status page updates.
+- Simulate an SSE interruption; verify EventSource reconnects and fallback refresh still recovers state.
+- Verify an account in another school never receives or reads this school's change events.
+- Make a local attendance edit, interrupt connectivity, and confirm background refresh never discards the unsaved draft.
+
+## 9. Release gate
 
 Release is accepted only when:
 
@@ -89,7 +101,7 @@ Release is accepted only when:
 - Deployment and backup instructions are present.
 - Demo/presentation data is separated from real school data.
 
-## 9. Freeze rule
+## 10. Freeze rule
 
 After acceptance and through 2026-09-28:
 

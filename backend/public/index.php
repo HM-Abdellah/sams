@@ -12,6 +12,7 @@ use SAMS\Controllers\AdminOnboardingController;
 use SAMS\Controllers\AdminTeacherClassController;
 use SAMS\Controllers\OnboardingController;
 use SAMS\Controllers\AdminTeacherController;
+use SAMS\Controllers\AdminTeacherPresenceController;
 use SAMS\Controllers\AdminUserController;
 use SAMS\Controllers\ArchiveController;
 use SAMS\Controllers\AuthController;
@@ -22,6 +23,7 @@ use SAMS\Controllers\SchoolImportController;
 use SAMS\Controllers\SignatureController;
 use SAMS\Controllers\ProfileController;
 use SAMS\Controllers\SetupController;
+use SAMS\Controllers\SyncEventsController;
 use SAMS\Exceptions\RequestPayloadTooLargeException;
 use SAMS\Http\Request;
 use SAMS\Http\Response;
@@ -66,6 +68,12 @@ try {
     $apiPath = $afterPrefix === '' ? '/' : $afterPrefix;
     $apiRequest = $request->withPath($apiPath);
 
+    // SSE is handled outside the finite-response router: it streams briefly,
+    // then lets EventSource reconnect while avoiding long-held PHP sessions.
+    if ($apiPath === '/events') {
+        (new SyncEventsController())->stream($apiRequest);
+    }
+
     $router = new Router();
 
     $setup = new SetupController();
@@ -79,7 +87,9 @@ try {
     $profile = new ProfileController();
     $router->get('/profile', $profile);
     $router->post('/profile', $profile);
-    $router->get('/profile/avatar', $profile);
+    $router->get('/profile/avatar', static function (Request $request, array $params = []) use ($profile): Response {
+        return $profile($request, ['action' => 'avatar']);
+    });
 
     $router->get('/health', new HealthController());
     $attendance = new AttendanceController();
@@ -127,6 +137,9 @@ try {
     $adminTeachers = new AdminTeacherController();
     $router->get('/admin/teachers', $adminTeachers);
     $router->post('/admin/teachers', $adminTeachers);
+
+    $adminTeacherPresence = new AdminTeacherPresenceController();
+    $router->get('/admin/teacher-presence', $adminTeacherPresence);
 
     $adminTeacherClasses = new AdminTeacherClassController();
     $router->get('/admin/teacher-classes', $adminTeacherClasses);

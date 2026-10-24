@@ -4,6 +4,15 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 $uri = parse_url((string)($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/';
+
+// The production bundle is mounted at /sams/. Codespaces opens forwarded ports
+// at /, so send the root URL to the application mount instead of rendering a
+// bundle whose router basename does not match the browser URL.
+if ($uri === '/') {
+    header('Location: /sams/', true, 302);
+    exit;
+}
+
 $sitePrefix = '/sams';
 if ($uri === $sitePrefix) {
     $uri = '/';

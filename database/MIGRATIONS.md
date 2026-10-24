@@ -14,14 +14,14 @@ For a new school installation, use the current release schema:
 
 The supported existing-installation upgrade path for this release is:
 
-`SAMS main baseline` → `005_school_import_staging.sql` → `006_school_auth_identity.sql` → `007_revoke_predictable_login_codes.sql` → `008_onboarding_rate_limit_metadata.sql` → `009_attendance_concurrency_revisions.sql` → `010_user_profile.sql`
+`SAMS main baseline` → `005_school_import_staging.sql` → `006_school_auth_identity.sql` → `007_revoke_predictable_login_codes.sql` → `008_onboarding_rate_limit_metadata.sql` → `009_attendance_concurrency_revisions.sql` → `010_user_profile.sql` → `011_student_enrollment_roster_number.sql` → `012_school_realtime_sync_events.sql`
 
 The release CI verifies these migration steps against the appropriate isolated baselines. The migration tests are separate upgrade-step checks, not a substitute for validating the target school's actual database state.
 
 For an existing production database at the supported `main` baseline:
 
 1. Take and verify a full backup.
-2. Apply 005, then 006, then 007, then 008, then 009, then 010 exactly once and in that order.
+2. Apply the supported migrations 005 through 012 in order, skipping only migrations that are already verified as applied. Migration 012 is additive and does not rewrite student, enrollment, attendance, or class records.
 3. Run the isolated regression/integration checks for the deployed release where practical.
 4. Perform a read-only smoke test before returning the system to teacher use.
 
@@ -39,8 +39,10 @@ For a database at that baseline:
 5. Apply `database/migrations/008_onboarding_rate_limit_metadata.sql`.
 6. Apply `database/migrations/009_attendance_concurrency_revisions.sql`.
 7. Apply `database/migrations/010_user_profile.sql`.
-8. Run the isolated regression/integration checks for the deployed release.
-9. Perform a read-only smoke test before returning the system to teacher use.
+8. Apply `database/migrations/011_student_enrollment_roster_number.sql` if it has not already been applied and verified.
+9. Apply `database/migrations/012_school_realtime_sync_events.sql`.
+10. Run the isolated regression/integration checks for the deployed release.
+11. Perform a read-only smoke test before returning the system to teacher use.
 
 Do not apply `database/schema.sql` to an existing database containing real data.
 Do not apply historical migrations 001–004 to this baseline; those changes are already included in it.
@@ -80,3 +82,10 @@ That check is part of the release CI gate.
 
 This migration is part of the supported production upgrade path for the current release because the Phase 38 release gate is closed.
 
+
+
+## Migration 012 real-time synchronization notifications
+
+Migration 012 adds `school_sync_events`, a small school-scoped event log used by the authenticated Server-Sent Events feed. Event rows contain only an ID, school ID, generic event type, and timestamp; no student, attendance, or account data is placed in the stream. Successful authenticated write requests publish a generic change signal. Each client then re-reads data through the existing role- and school-authorized APIs.
+
+The table is included in fresh-install `database/schema.sql`. For an existing database, verify the prior supported migrations and take a verified backup before applying `database/migrations/012_school_realtime_sync_events.sql`. This migration is additive and idempotent, and it does not edit existing school records. Never run `database/schema.sql` against a populated database.

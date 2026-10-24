@@ -31,6 +31,18 @@ final class TeacherAdministrationService
         ];
     }
 
+    public function presence(?int $schoolId = null): array
+    {
+        if ($schoolId !== null && $schoolId < 1) {
+            throw new \InvalidArgumentException('Invalid school.');
+        }
+
+        return [
+            'teachers' => $this->repository->presence($schoolId),
+            'online_window_seconds' => TeacherRepository::ONLINE_WINDOW_SECONDS,
+        ];
+    }
+
     public function assignTeaching(
         int $adminId,
         int $teacherId,
@@ -45,7 +57,7 @@ final class TeacherAdministrationService
             throw new \InvalidArgumentException('Invalid teaching assignment.');
         }
 
-        if (!$this->repository->teacherExists($teacherId, $schoolId)) {
+        if (!$this->repository->activeTeacherExists($teacherId, $schoolId)) {
             throw new AdministrationException('Teacher not found.', 404);
         }
         if (!$this->repository->subjectExistsActive($subjectId)) {

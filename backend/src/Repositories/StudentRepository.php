@@ -11,12 +11,90 @@ final class StudentRepository
     public function forClass(int $classId): array
     {
         $stmt = Database::connection()->prepare(
-            'SELECT id, student_number, massar_code, birth_date, first_name, last_name, status, created_at, updated_at
-             FROM students
-             WHERE class_id = ?
-             ORDER BY last_name, first_name, id'
+            'SELECT
+                s.id,
+                s.student_number,
+                s.massar_code,
+                s.birth_date,
+                s.first_name,
+                s.last_name,
+                s.status,
+                s.created_at,
+                s.updated_at,
+                (
+                    SELECT e.roster_number
+                    FROM student_enrollments e
+                    WHERE e.student_id = s.id
+                      AND e.class_id = ?
+                    ORDER BY e.starts_on DESC, e.id DESC
+                    LIMIT 1
+                ) AS roster_number
+             FROM students s
+             WHERE s.class_id = ?
+             ORDER BY
+                CASE
+                    WHEN roster_number REGEXP \'^[0-9]+$\' THEN 0
+                    WHEN roster_number IS NOT NULL AND TRIM(roster_number) <> \'\' THEN 1
+                    ELSE 2
+                END,
+                CASE WHEN roster_number REGEXP \'^[0-9]+$\' THEN CAST(roster_number AS UNSIGNED) ELSE 0 END,
+                roster_number,
+                s.last_name,
+                s.first_name,
+                s.id'
         );
-        $stmt->execute([$classId]);
+        $stmt->execute([$classId, $classId]);
+
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Admin-only roster projection that includes students enrolled in a class
+     * for a future academic year even while students.class_id remains pointed
+     * at the student's currently active-year class.
+     */
+    public function forAdminClassRoster(int $classId): array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT
+                s.id,
+                s.student_number,
+                s.massar_code,
+                s.birth_date,
+                s.first_name,
+                s.last_name,
+                s.status,
+                s.created_at,
+                s.updated_at,
+                (
+                    SELECT e.roster_number
+                    FROM student_enrollments e
+                    WHERE e.student_id = s.id
+                      AND e.class_id = ?
+                    ORDER BY e.starts_on DESC, e.id DESC
+                    LIMIT 1
+                ) AS roster_number
+             FROM students s
+             WHERE s.class_id = ?
+                OR EXISTS (
+                    SELECT 1
+                    FROM student_enrollments e
+                    WHERE e.student_id = s.id
+                      AND e.class_id = ?
+                )
+             ORDER BY
+                CASE
+                    WHEN roster_number REGEXP \'^[0-9]+$\' THEN 0
+                    WHEN roster_number IS NOT NULL AND TRIM(roster_number) <> \'\' THEN 1
+                    ELSE 2
+                END,
+                CASE WHEN roster_number REGEXP \'^[0-9]+$\' THEN CAST(roster_number AS UNSIGNED) ELSE 0 END,
+                roster_number,
+                s.last_name,
+                s.first_name,
+                s.id'
+        );
+        $stmt->execute([$classId, $classId, $classId]);
 
         return $stmt->fetchAll();
     }
